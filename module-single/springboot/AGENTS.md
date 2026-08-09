@@ -78,6 +78,10 @@ places or in none.
 mvn install verify
 ```
 
+That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamunda8` needs a
+running cluster and `vanillabp.adapters.camunda8.rest-address` configured; do not report a
+failure of that profile as a defect of the generated code before having checked it.
+
 `LoanApprovalIT` has to pass: it starts a workflow and waits until the service task has
 written to the aggregate. If the task is never executed, the wiring between BPMN and code is
 wrong — the startup log names which BPMN task has no method or which method has no task.

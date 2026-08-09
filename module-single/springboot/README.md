@@ -31,12 +31,38 @@ files by convention.
 
 ## Running it
 
-Requires a JDK 21. Camunda 7 is embedded, so nothing else has to run.
+Requires a JDK 21. Camunda 7 is embedded, so nothing else has to run:
 
 ```bash
-mvn install verify                 # the default: Camunda 7
-mvn install verify -Pcamunda8      # ... another BPMS, without one line of Java changing
+mvn install verify
 ```
+
+Running it on another BPMS is a Maven profile — not one line of Java changes:
+
+```bash
+mvn install verify -Pcamunda8
+```
+
+Camunda 8 is a remote engine, so a cluster has to run and be pointed at. Start one, then add
+its address to `application/src/main/resources/application.yaml` and to
+`loan-approval/src/test/resources/application.yaml`:
+
+```yaml
+vanillabp:
+  adapters:
+    camunda8:
+      rest-address: http://localhost:8080
+```
+
+Without it the application does not boot, and says so:
+
+```
+Camunda 8 adapter 'camunda8' is used but not configured: the property
+'vanillabp.adapters.camunda8.rest-address' is missing.
+```
+
+That is the normal way to work with VanillaBP: configuration is validated while booting, and
+the message names what to do.
 
 Start the application:
 

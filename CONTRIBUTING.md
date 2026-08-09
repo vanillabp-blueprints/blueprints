@@ -94,7 +94,9 @@ verification loop for generated code — without it, a blueprint cannot be used 
 3. Write `README.md` (for humans) and `AGENTS.md` (for agents) from the templates.
 4. Add the entry to `blueprints.yaml` of the `.github` repository. CI flips
    `platforms.<platform>.status` to `available` once the blueprint has been split out.
-5. `./mvnw install verify` for every BPMS profile the blueprint supports.
+5. `./mvnw install verify` for every BPMS profile the blueprint supports. Only `camunda7`
+   runs without infrastructure — it is embedded. `camunda8` needs a running cluster and its
+   `rest-address` configured, which is why it is not part of the default build.
 
 The index and this repository have to agree — every blueprint directory is a module of the
 root POM and has an index entry, and no index entry claims a blueprint which is not here.
