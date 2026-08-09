@@ -1,0 +1,85 @@
+# VanillaBP blueprints
+
+Development monorepo of the [VanillaBP](https://www.vanillabp.io) blueprints: many small
+projects, each showing and explaining one aspect of building a business process application
+with VanillaBP.
+
+**This README is for contributors.** If you are looking for a blueprint to use, start at the
+[organisation page](https://github.com/vanillabp-blueprints) — it lists all blueprints by
+platform and links the repository of each.
+
+## How blueprints are developed and delivered
+
+Blueprints are *developed* in this monorepo and *delivered* as one repository per blueprint
+and platform:
+
+|             |                                                                                          |
+|-------------|------------------------------------------------------------------------------------------|
+| Development | this repository — one build, one PR for a version bump, one CI covering all blueprints   |
+| Delivery    | `vanillabp-blueprints/<blueprint-id>-<platform>`, pushed by CI using `git subtree split` |
+
+The delivered repositories are read-only mirrors. **Issues and pull requests belong here.**
+
+## Repository layout
+
+```
+blueprints/
+├── pom.xml                  aggregator, formatting, BPMS profiles
+├── formatting_conventions.xml
+├── <blueprint-id>/
+│   ├── springboot/          -> repository <blueprint-id>-springboot
+│   ├── quarkus/             -> repository <blueprint-id>-quarkus
+│   └── twin-diff-allow.txt  approved differences between the platform twins
+...
+```
+
+Blueprint IDs are `<category>-<aspect>` in lower case, the category being one of `module-`,
+`persistence-`, `bpmn-` or `showcase-`. `<platform>` is `springboot` or `quarkus`.
+
+There are no blueprints yet — this repository currently provides the build, the formatting
+rules and the conventions they will follow.
+
+## Building
+
+Requires a JDK 21; Maven comes with the wrapper.
+
+```bash
+./mvnw install verify                    # all blueprints, default BPMS
+./mvnw install verify -Pcamunda8         # ... on another BPMS
+./mvnw install verify -pl module-single/springboot
+./mvnw spotless:apply                    # fix formatting violations
+```
+
+`install` is needed alongside `verify` because Quarkus integration tests resolve modules from
+the local Maven repository.
+
+Each blueprint also builds on its own, which is what a user gets after cloning a delivered
+repository:
+
+```bash
+cd module-single/springboot && mvn verify
+```
+
+## The BPMS is a Maven profile
+
+VanillaBP application code is BPMS-invariant, so a blueprint runs on every supported BPMS
+without a single line changing. Which one is used is selected by a profile:
+
+`-Pcamunda7` (default) · `-Pcamunda8` · `-Pprocess-engine-api`
+
+## Contributing
+
+Conventions for adding a blueprint, the self-containment rule for blueprint POMs and the
+versions currently targeted are described in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Documentation of VanillaBP itself
+
+Blueprints do not repeat the reference documentation, they link it:
+
+- [spi-for-java](https://github.com/vanillabp/spi-for-java) — using the SPI
+- [adapter-platform-integration wiki](https://github.com/vanillabp/adapter-platform-integration/wiki) — concepts, platforms, configuration
+- the wiki of the respective [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) — BPMS-specific fine-tuning
+
+## License
+
+[Apache License, Version 2.0](LICENSE), see also [NOTICE](NOTICE).
