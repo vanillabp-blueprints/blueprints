@@ -96,6 +96,15 @@ verification loop for generated code — without it, a blueprint cannot be used 
    `platforms.<platform>.status` to `available` once the blueprint has been split out.
 5. `./mvnw install verify` for every BPMS profile the blueprint supports.
 
+The index and this repository have to agree — every blueprint directory is a module of the
+root POM and has an index entry, and no index entry claims a blueprint which is not here.
+CI checks that on every push; to check it locally:
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/blueprints.yaml
+python3 bin/check_index_consistency.py blueprints.yaml
+```
+
 ## Versions
 
 Blueprints target the versions below. Since they are repeated in every blueprint POM, this

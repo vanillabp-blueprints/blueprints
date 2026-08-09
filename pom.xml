@@ -85,6 +85,11 @@
             <excludes>
               <exclude>**/target/**/</exclude>
               <exclude>**/node_modules/**/</exclude>
+              <!--
+                Workflow files are excluded on purpose: the formatter drops comments and
+                unquotes version numbers, which silently turns '3.10' into '3.1'.
+              -->
+              <exclude>.github/workflows/**</exclude>
             </excludes>
             <jackson>
               <yamlFeatures>
