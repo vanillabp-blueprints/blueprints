@@ -51,6 +51,18 @@ understanding all of them:
     └── AggregateRepository.java
 ```
 
+The same applies to resources, and there it is not a matter of taste: workflow modules share
+one classpath, so **all** resources of a module belong into one subdirectory named after the
+workflow module ID. Only the marker file is outside it.
+
+```
+src/main/resources/
+├── META-INF/workflow-module              <- contains 'loan-approval'
+└── loan-approval/
+    ├── loan-approval.yaml                <- the module's own configuration
+    └── processes/<adapter-id>/*.bpmn     <- one directory per adapter id
+```
+
 Placeholders are identical in every blueprint, which is what makes them mechanically
 replaceable:
 

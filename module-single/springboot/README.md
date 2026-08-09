@@ -15,6 +15,11 @@ Four things are worth looking at:
 
 - **The workflow module is a JAR of its own** (`loan-approval/`) and cannot be started
   alone. It declares itself by the marker file `META-INF/workflow-module` containing its ID.
+- **Everything it owns is named after that ID.** There is no classloader isolation between
+  workflow modules — they share one classpath — so each module needs a namespace of its own
+  in two places: a unique Java package (`blueprint.workflowmodule.loanapproval`) and a
+  single resource subdirectory (`src/main/resources/loan-approval/`) holding *all* of its
+  resources. The marker file is the one exception; it has to sit at `META-INF/`.
 - **It knows no BPMS.** Its only VanillaBP dependency is `vanillabp-spring-boot-support`,
   which deliberately exposes no engine API. The adapter is a dependency of the application
   (`application/`) — the BPMN files are the only thing that differs between engines, which

@@ -26,6 +26,12 @@ the resource directory `src/main/resources/loan-approval/`, the configuration fi
 `loan-approval.yaml` and its property prefix, and the REST path. A missed occurrence does
 not fail the build — it makes VanillaBP report at startup that no BPMN file was found.
 
+That resource directory is not decoration: workflow modules share one classpath, so **all**
+resources of a module have to live in the one subdirectory named after its ID, and its
+classes in one Java package of their own. Only `META-INF/workflow-module` sits outside.
+Adding a resource at the classpath root works until a second module ships a file of the same
+name.
+
 `retrieveCreditRating` is the task definition: the name of the `@WorkflowTask` method, the
 Camunda 7 expression `${retrieveCreditRating}` and the Camunda 8 job type. Rename it in all
 places or in none.
