@@ -128,13 +128,20 @@ released independently and carry their own version.
 Spotless runs during `process-sources` and fails the build on violations:
 
 ```bash
-./mvnw spotless:apply
+./mvnw -N spotless:apply
 ```
+
+The goal is invoked non-recursively (`-N`) because Spotless is declared in the root POM
+only — a blueprint's POM shows what a VanillaBP application needs and no build tooling of
+ours.
 
 Java is formatted by the Eclipse JDT formatter configured in `formatting_conventions.xml`
 (2-space indentation, import order `java,javax,org,com,at.phactum`, one line per method call
-in fluent APIs of more than one call). POMs are sorted, Markdown and YAML are formatted as
-well.
+in fluent APIs of more than one call). POMs are sorted, Markdown is formatted as well.
+
+Two kinds of YAML are excluded, both because the formatter drops comments: GitHub workflow
+files (where it also unquotes version numbers, turning `"3.10"` into `3.1`) and everything
+below a blueprint's `src/` — in a blueprint the comments are what is being taught.
 
 ## License
 

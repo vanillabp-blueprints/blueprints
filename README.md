@@ -47,7 +47,7 @@ Requires a JDK 21; Maven comes with the wrapper.
 ./mvnw install verify                    # all blueprints, default BPMS
 ./mvnw install verify -Pcamunda8         # ... on another BPMS
 ./mvnw install verify -pl module-single/springboot
-./mvnw spotless:apply                    # fix formatting violations
+./mvnw -N spotless:apply                 # fix formatting violations
 ```
 
 `install` is needed alongside `verify` because Quarkus integration tests resolve modules from
