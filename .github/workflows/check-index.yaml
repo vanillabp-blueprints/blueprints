@@ -1,4 +1,4 @@
-name: Check blueprints index
+name: Check blueprints index and documentation
 "on":
   push:
     branches-ignore:
@@ -25,3 +25,5 @@ jobs:
           "https://raw.githubusercontent.com/vanillabp-blueprints/.github/${INDEX_REF}/blueprints.yaml"
       - name: Compare the monorepo against the index
         run: python bin/check_index_consistency.py blueprints.yaml
+      - name: Check the documentation of every blueprint
+        run: python bin/check_docs_structure.py blueprints.yaml
