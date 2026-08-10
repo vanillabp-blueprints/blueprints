@@ -1,0 +1,85 @@
+name: Build
+"on":
+  push:
+    branches-ignore:
+      # Renovate branches are built through their pull request, once instead of twice.
+      - renovate/**
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  # The VanillaBP artifacts are 2.0.0-SNAPSHOT and live in GitHub Packages until the
+  # release. Reading them needs a token, see .github/workflows/github-packages-settings.xml.
+  USER_NAME: "${{ secrets.VANILLABP_USER_NAME }}"
+  USER_TOKEN: "${{ secrets.VANILLABP_USER_TOKEN }}"
+jobs:
+  # The list of blueprints is not maintained anywhere: it is the directories that exist.
+  # The same rule the split job follows, so the matrix cannot fall behind the repository.
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      blueprints: "${{ steps.list.outputs.blueprints }}"
+    steps:
+      - uses: actions/checkout@v5
+      - id: list
+        name: Collect the blueprint directories
+        run: |
+          list=$(ls -d */springboot */quarkus 2>/dev/null | jq -R -s -c 'split("\n")[:-1]')
+          echo "blueprints=${list}" >> "$GITHUB_OUTPUT"
+          echo "Building: ${list}"
+
+  # What a user gets after the split: the blueprint directory alone, with a plain Maven
+  # and without the aggregator, the wrapper or the root POM of this repository. This is
+  # the job that has to be green before a blueprint is delivered.
+  blueprint:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        blueprint: "${{ fromJSON(needs.discover.outputs.blueprints) }}"
+        bpms: [camunda7, camunda8]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          java-version: 21
+          distribution: temurin
+          cache: maven
+      - name: Start a Camunda 8 cluster
+        if: matrix.bpms == 'camunda8'
+        run: bin/camunda8_cluster.sh start
+      - name: Build and test the blueprint on its own
+        working-directory: "${{ matrix.blueprint }}"
+        run: mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
+          --batch-mode --no-transfer-progress -P${{ matrix.bpms }} install verify
+        env:
+          # Relaxed binding of 'vanillabp.adapters.camunda8.rest-address'. The blueprint
+          # itself stays free of a CI-specific address.
+          VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS: http://localhost:8080
+          # A stock self-managed cluster has multi-tenancy switched off and rejects the
+          # tenant the adapter deploys into by default. Prefixed identifiers keep the
+          # modules apart without tenants.
+          VANILLABP_ADAPTERS_CAMUNDA8_NAMECLASHAVOIDANCE: use-prefix
+      - name: The Camunda 8 cluster's log, if something went wrong
+        if: failure() && matrix.bpms == 'camunda8'
+        run: bin/camunda8_cluster.sh logs
+      - name: Stop the Camunda 8 cluster
+        if: always() && matrix.bpms == 'camunda8'
+        run: bin/camunda8_cluster.sh stop
+
+  # The aggregator adds what a single blueprint does not see: Spotless over the whole
+  # repository, and every blueprint built together.
+  monorepo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          java-version: 21
+          distribution: temurin
+          cache: maven
+      - name: Build every blueprint through the aggregator
+        run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
+          --batch-mode --no-transfer-progress install verify

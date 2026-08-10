@@ -4,6 +4,9 @@ Development monorepo of the [VanillaBP](https://www.vanillabp.io) blueprints: ma
 projects, each showing and explaining one aspect of building a business process application
 with VanillaBP.
 
+[![Build](https://github.com/vanillabp-blueprints/blueprints/actions/workflows/build.yaml/badge.svg)](https://github.com/vanillabp-blueprints/blueprints/actions/workflows/build.yaml)
+[![Nightly](https://github.com/vanillabp-blueprints/blueprints/actions/workflows/nightly.yaml/badge.svg)](https://github.com/vanillabp-blueprints/blueprints/actions/workflows/nightly.yaml)
+
 **This README is for contributors.** If you are looking for a blueprint to use, start at the
 [organisation page](https://github.com/vanillabp-blueprints). It lists all blueprints by
 platform and links the repository of each.

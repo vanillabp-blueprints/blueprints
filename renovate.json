@@ -1,0 +1,32 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard"],
+  "timezone": "Europe/Vienna",
+  "prConcurrentLimit": 5,
+  "labels": ["dependencies"],
+  "minimumReleaseAge": "3 days",
+  "automerge": true,
+  "platformAutomerge": true,
+  "automergeStrategy": "squash",
+  "packageRules": [
+    {
+      "description": "VanillaBP and the BPMS adapters follow the framework, not Renovate. Their versions are bumped when a release is cut, and while they are snapshots there is nothing to look up.",
+      "matchPackagePatterns": ["^io\\.vanillabp", "^org\\.camunda\\.community\\.vanillabp"],
+      "enabled": false
+    },
+    {
+      "description": "One PR per dependency across all blueprints. The same version is repeated in every blueprint POM on purpose, so an upgrade has to touch all of them at once or they drift apart.",
+      "matchManagers": ["maven"],
+      "groupName": "{{{depName}}}"
+    },
+    {
+      "description": "The versions table of CONTRIBUTING.md names Spring Boot and Quarkus. A bump of either has to be carried into that table by hand, so it gets a PR to look at rather than an automerge.",
+      "matchPackageNames": [
+        "org.springframework.boot:spring-boot-starter-parent",
+        "io.quarkus.platform:quarkus-bom"
+      ],
+      "automerge": false,
+      "addLabels": ["needs-doc-update"]
+    }
+  ]
+}

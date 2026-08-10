@@ -168,8 +168,9 @@ integration test *is* the proof of the aspect and is supposed to differ.
 4. Add the entry to `blueprints.yaml` of the `.github` repository. CI flips
    `platforms.<platform>.status` to `available` once the blueprint has been split out.
 5. `./mvnw install verify` for every BPMS profile the blueprint supports. Only `camunda7`
-   runs without infrastructure, because it is embedded. `camunda8` needs a running cluster
-   and its `rest-address` configured, which is why it is not part of the default build.
+   runs without infrastructure, because it is embedded. `camunda8` needs a cluster, which
+   `bin/camunda8_cluster.sh start` gives you (see below), and is therefore not part of the
+   default build.
 
 The index and this repository have to agree: every blueprint directory is a module of the
 root POM and has an index entry, and no index entry claims a blueprint which is not here.
@@ -227,6 +228,61 @@ table is the place to look up what is current.
 
 VanillaBP artifacts are version-managed by `io.vanillabp:vanillabp-bom`; BPMS adapters are
 released independently and carry their own version.
+
+## What CI builds
+
+Three workflows, and they answer three different questions.
+
+|    Workflow    |                                            Question                                             |
+|----------------|-------------------------------------------------------------------------------------------------|
+| `checks.yaml`  | do the index, the documentation structure and the test harness copies agree?                    |
+| `build.yaml`   | does every blueprint build and test, alone and through the aggregator, on every BPMS it claims? |
+| `nightly.yaml` | does it still, against today's snapshots of the framework?                                      |
+
+The job that matters most is `blueprint`: it builds `<blueprint-id>/<platform>/` with a
+plain `mvn`, without the aggregator, the wrapper or the root POM. That is exactly the
+repository a user clones after the split, so a blueprint does not need to be split to find
+out whether it works. The matrix is not maintained anywhere; it is the list of directories
+that exist, the same rule the split job follows.
+
+Camunda 7 is embedded and needs nothing. Camunda 8 is remote, so the job starts a cluster
+first:
+
+```bash
+bin/camunda8_cluster.sh start
+cd bpmn-service-task/springboot && mvn -Pcamunda8 install verify
+bin/camunda8_cluster.sh stop
+```
+
+The address reaches the blueprint as the environment variable
+`VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS`, which Spring binds to
+`vanillabp.adapters.camunda8.rest-address`. No CI-specific address is checked in anywhere.
+
+### Reading the VanillaBP snapshots
+
+Until 2.0.0 is released to Maven Central, the framework repositories publish their
+snapshots to GitHub Packages, which requires a token even for public packages.
+`.github/workflows/github-packages-settings.xml` names the registries; the credentials come
+from the repository secrets `VANILLABP_USER_NAME` and `VANILLABP_USER_TOKEN`, a token
+carrying `read:packages`. Locally, the same settings file works with those two variables
+exported. The blueprint POMs stay free of all this: a blueprint shows what an application
+needs, and after the release that is Maven Central.
+
+## Dependency updates
+
+Renovate opens the pull requests (`renovate.json`) and merges them itself once the checks
+above are green. Since every blueprint POM repeats the same versions, an upgrade is one PR
+touching all of them, never one PR per blueprint.
+
+Two exceptions are deliberate:
+
+- VanillaBP and the BPMS adapters are excluded. Their versions follow the framework and are
+  bumped when a release is cut.
+- Spring Boot and Quarkus are not merged automatically. Their versions are also written in
+  the table below, and a bot cannot carry them there.
+
+Automerge relies on the checks being required for the branch. Without branch protection
+naming them, Renovate merges as soon as GitHub lets it, which is not what anybody wants.
 
 ## Writing style
 

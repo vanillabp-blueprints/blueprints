@@ -65,3 +65,34 @@ see, for example a transactional proxy somewhere further down the call chain.
 
 **Affects:** every platform, since the mechanism is the platform's transaction interceptor
 rather than the BPMS. Verified on Spring Boot with the Camunda 7 adapter.
+
+## G2: deploying to a Camunda 8 cluster without multi-tenancy fails with the engine's error
+
+**Status:** open, found 2026-08-10 while running the blueprints against a Camunda 8 cluster
+in CI.
+
+**What happens.** `name-clash-avoidance` defaults to `by-adapter`, which deploys the BPMN
+resources into a tenant named after the workflow module. A self-managed cluster started
+from the stock image has multi-tenancy switched off and rejects that, so the boot fails
+with what Camunda said:
+
+```
+Failed to deploy BPMN resources of workflow module 'loan-approval' to Camunda 8 (adapter 'camunda8')!
+Caused by: io.camunda.client.api.command.ProblemException: Failed with code 400: 'Bad Request'.
+  detail: Expected to handle request Deploy Resources with tenant identifier 'loan-approval',
+          but multi-tenancy is disabled
+```
+
+The remedy is `vanillabp.adapters.<id>.name-clash-avoidance: use-prefix` (or `none`), and
+the adapter's own wiki states the rule: a cluster without multi-tenancy cannot use
+`by-adapter`. The message does not, so the developer has to find the wiki page first, and
+the engine's wording ("tenant identifier") does not name any VanillaBP property.
+
+**What VanillaBP should do.** Recognise this rejection while deploying and re-raise it with
+the property to change, naming the adapter id and the workflow module. Everything needed is
+known at that moment. A check before deploying would be even better: whether the cluster has
+multi-tenancy enabled can be asked, and a mismatch with the configured mode is a startup
+error that names both sides.
+
+**Affects:** the Camunda 8 adapter on every platform. Camunda 7 has no equivalent, its
+name-clash avoidance is not tenant based.

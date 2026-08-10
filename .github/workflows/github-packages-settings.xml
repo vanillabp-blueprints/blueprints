@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Where CI reads the VanillaBP 2.0.0-SNAPSHOT artifacts from.
+
+  Until 2.0.0 is released to Maven Central, the framework repositories publish their
+  snapshots to GitHub Packages, one registry per repository. GitHub Packages requires
+  authentication even for public packages, which is why the credentials below are
+  needed; they come from the repository secrets VANILLABP_USER_NAME and
+  VANILLABP_USER_TOKEN (a token carrying 'read:packages').
+
+  This file is build infrastructure and deliberately not a <repositories> section of a
+  blueprint POM: a blueprint shows what an application needs, and after the release that
+  is Maven Central and nothing else.
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <activeProfiles>
+        <activeProfile>github</activeProfile>
+    </activeProfiles>
+    <profiles>
+        <profile>
+            <id>github</id>
+            <repositories>
+                <repository>
+                    <id>central</id>
+                    <url>https://repo1.maven.org/maven2</url>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                </repository>
+                <repository>
+                    <id>vanillabp-spi-for-java</id>
+                    <url>https://maven.pkg.github.com/vanillabp/spi-for-java</url>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                </repository>
+                <repository>
+                    <id>vanillabp-adapter-platform-integration</id>
+                    <url>https://maven.pkg.github.com/vanillabp/adapter-platform-integration</url>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                </repository>
+                <repository>
+                    <id>vanillabp-camunda7-adapter</id>
+                    <url>https://maven.pkg.github.com/vanillabp/camunda7-adapter</url>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                </repository>
+                <repository>
+                    <id>vanillabp-camunda8-adapter</id>
+                    <url>https://maven.pkg.github.com/vanillabp/camunda8-adapter</url>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                </repository>
+            </repositories>
+        </profile>
+    </profiles>
+    <servers>
+        <server>
+            <id>vanillabp-spi-for-java</id>
+            <username>${env.USER_NAME}</username>
+            <password>${env.USER_TOKEN}</password>
+        </server>
+        <server>
+            <id>vanillabp-adapter-platform-integration</id>
+            <username>${env.USER_NAME}</username>
+            <password>${env.USER_TOKEN}</password>
+        </server>
+        <server>
+            <id>vanillabp-camunda7-adapter</id>
+            <username>${env.USER_NAME}</username>
+            <password>${env.USER_TOKEN}</password>
+        </server>
+        <server>
+            <id>vanillabp-camunda8-adapter</id>
+            <username>${env.USER_NAME}</username>
+            <password>${env.USER_TOKEN}</password>
+        </server>
+    </servers>
+</settings>

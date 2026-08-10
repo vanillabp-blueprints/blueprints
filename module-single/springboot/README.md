@@ -64,6 +64,9 @@ vanillabp:
   adapters:
     camunda8:
       rest-address: http://localhost:8080
+      # A cluster started from the stock image has multi-tenancy switched off, and the
+      # default way of keeping workflow modules apart is a tenant per module.
+      name-clash-avoidance: use-prefix
 ```
 
 Without it the application does not boot, and says so:
