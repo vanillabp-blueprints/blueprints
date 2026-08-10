@@ -294,6 +294,11 @@ Two exceptions are deliberate:
 Automerge relies on the checks being required for the branch. Without branch protection
 naming them, Renovate merges as soon as GitHub lets it, which is not what anybody wants.
 
+Require the job `verified` and not the matrix jobs. The matrix is generated from the
+directories that exist, so its job names change with every blueprint added, and a required
+check nobody produces any more blocks every pull request. `verified` waits for all of them
+and keeps its name.
+
 ## Writing style
 
 Blueprints are read more often than they are run, so the prose matters as much as the code.
