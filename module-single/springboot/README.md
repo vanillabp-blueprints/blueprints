@@ -32,7 +32,9 @@ Five things are worth looking at:
   the only place `@WorkflowTask` methods live. Here the translation is a single line -
   which is why it is worth seeing: the shape stays the same once a process needs messages
   correlated or tasks completed, and then it keeps that vocabulary out of the business
-  code.
+  code. A `@WorkflowTask` method translates and logs; the rating itself is computed by
+  `Aggregate#assessCreditRating`, because it is a property of the loan request and not of
+  the process which happens to trigger it.
 - **It is tested on its own.** The integration test lives in the workflow module and brings
   a minimal application with it; the application only carries a smoke test.
 
@@ -103,7 +105,7 @@ Opening that URL shows the aggregate, including the credit rating the service ta
 |----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/resources/META-INF/workflow-module`                            | contains `loan-approval` and thereby declares this JAR to be a workflow module                                                           |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: start event, service task, end event. The task names the method implementing it                                             |
-| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, a normal JPA entity keyed by the loan request ID                                                                 |
+| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, a normal JPA entity keyed by the loan request ID - and the home of business logic about it                       |
 | `.../loanapproval/Service.java`                                                        | the business code: builds the aggregate and tells `Workflow` that a loan was requested                                                   |
 | `.../loanapproval/Workflow.java`                                                       | `@WorkflowService` bound to the BPMN process, `@WorkflowTask` implementing the service task, and the only place `ProcessService` is used |
 | `.../loanapproval/ApiController.java`                                                  | the GET endpoints operating the process                                                                                                  |

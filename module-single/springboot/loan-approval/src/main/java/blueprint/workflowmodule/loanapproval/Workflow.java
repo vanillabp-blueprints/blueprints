@@ -72,8 +72,12 @@ public class Workflow {
    * it.
    *
    * <p>
-   * A real application would delegate the work to a domain service here; what must not
-   * move out of this class is the BPMN wiring.
+   * A {@code @WorkflowTask} method contains no business logic. It turns what the BPMS
+   * delivers into a call to business code and logs which point the process reached - here
+   * that is little more than reading a configuration value, because the process is a single
+   * task. In a multi-instance task or a user task the same method has real work to do:
+   * picking the element the invocation is about, keeping the task ID, reacting to the task
+   * having been canceled.
    * </p>
    *
    * @param loanApproval The workflow's aggregate.
@@ -84,16 +88,12 @@ public class Workflow {
   public void retrieveCreditRating(
       final Aggregate loanApproval) {
 
-    final var rating = Math.min(
-        properties.getRatingScale(),
-        loanApproval.getAmount() / 100);
-
-    loanApproval.setCreditRating(rating);
+    loanApproval.assessCreditRating(properties.getRatingScale());
 
     log.info(
         "Credit rating of loan approval '{}' is {}",
         loanApproval.getLoanRequestId(),
-        rating);
+        loanApproval.getCreditRating());
 
   }
 

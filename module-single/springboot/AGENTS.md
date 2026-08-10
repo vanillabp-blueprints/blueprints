@@ -44,7 +44,7 @@ places or in none.
 | `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the process. One directory per adapter ID, because BPMN carries engine specific attributes                                                                                                |
 | `loan-approval/src/main/java/.../loanapproval/Workflow.java`                               | `@WorkflowService` binds the class to the BPMN process, `@WorkflowTask` binds a method to a task, `ProcessService#startWorkflow` starts a workflow. The ONLY class using `ProcessService` |
 | `loan-approval/src/main/java/.../loanapproval/Service.java`                                | the business code. Calls `Workflow` naming the business event, never touches VanillaBP                                                                                                    |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the workflow aggregate: a JPA entity with the natural ID as primary key, holding all state the process needs                                                                              |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the workflow aggregate: a JPA entity with the natural ID as primary key, holding all state the process needs and the business logic about it                                              |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the module's own configuration, loaded by its file name and taking precedence over `application.yaml`                                                                                     |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | starts a real workflow and waits for the effect of the task                                                                                                                               |
 
@@ -78,7 +78,8 @@ extending `WorkflowModuleTest`, never into the base class.
    The adapter ID is the configured one, which defaults to the adapter type.
 4. Add the workflow aggregate as a JPA entity with the natural ID as `@Id`, plus a Spring
    Data repository for it. If the project already has an entity for this business case, use
-   it — do not add a second one.
+   it — do not add a second one. Business logic about that object is a method of
+   it; a `@WorkflowTask` method must not compute anything itself.
 5. Add `Workflow` with the `@WorkflowService` annotation, one `@WorkflowTask` method per BPMN
    task and a method per business event translating it for the process. Add `Service` with the
    business methods calling them. If the project already has a business service for this use
