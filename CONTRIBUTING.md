@@ -177,6 +177,36 @@ curl -fsSLO https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/
 python3 bin/check_index_consistency.py blueprints.yaml
 ```
 
+## Delivery: how a blueprint reaches its own repository
+
+Pushing to `main` runs `.github/workflows/split.yaml`, which calls
+`bin/split_blueprints.sh`. For every directory `<blueprint-id>/<platform>/` that exists it
+
+1. creates `vanillabp-blueprints/<blueprint-id>-<platform>` unless it is already there, and
+   sets its description and homepage from `blueprints.yaml`,
+2. runs `git subtree split` and force-pushes the result onto the mirror's `main`,
+3. sets `platforms.<platform>.status` in the index to `available`.
+
+The job is **directory driven**: nothing is created on stock. A blueprint appears in the
+catalogue as `available` when — and only when — its directory exists and has been pushed
+out, so the index can never advertise a repository which is not there. A platform that
+arrives later is picked up by the next run without anybody having to remember it.
+
+Force-pushing is safe because a mirror never carries commits of its own; it is derived from
+this repository. That is also why the mirrors are read-only and every blueprint README says
+where issues belong — the documentation check enforces that link.
+
+To see what a run would do, without creating or pushing anything:
+
+```bash
+DRY_RUN=1 bin/split_blueprints.sh
+```
+
+The job needs the repository secret `BLUEPRINTS_SPLIT_TOKEN` — a fine-grained token for the
+organisation with `Administration: read and write` and `Contents: read and write`. The
+`GITHUB_TOKEN` of the workflow cannot be used: it is scoped to this repository and can
+neither create the mirrors nor push into them.
+
 ## Versions
 
 Blueprints target the versions below. Since they are repeated in every blueprint POM, this

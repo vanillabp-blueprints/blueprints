@@ -11,7 +11,9 @@ Checked per blueprint directory '<blueprint-id>/<platform>/':
   - they contain the required '##' sections, in the defined order,
   - they contain no section outside the defined set,
   - they do not mention the other platform - a Spring Boot blueprint does not know that
-    Quarkus exists, and the other way round.
+    Quarkus exists, and the other way round,
+  - the README points back at the monorepo: a blueprint repository is a read-only mirror,
+    and a reader who found a bug has to know where the issue belongs.
 
 The templates in templates/ are checked as well, minus the platform rule.
 
@@ -52,6 +54,9 @@ FOREIGN_PLATFORM = {
 
 SECTION_PATTERN = re.compile(r"^## +(.+?)\s*$", re.MULTILINE)
 
+# The split repositories are mirrors; this is how a reader learns where to file an issue.
+MONOREPO_URL = "https://github.com/vanillabp-blueprints/blueprints"
+
 
 def check_file(path, filename, required_sections, platform, errors, root):
     display = path.relative_to(root)
@@ -86,6 +91,12 @@ def check_file(path, filename, required_sections, platform, errors, root):
         errors.append(
             f"{display}: sections are out of order -"
             f" expected {' < '.join(expected)}, found {' < '.join(in_order)}"
+        )
+
+    if platform is not None and filename == "README.md" and MONOREPO_URL not in text:
+        errors.append(
+            f"{display}: does not link {MONOREPO_URL}. A blueprint repository is a"
+            " read-only mirror and has to say where issues belong."
         )
 
     if platform is not None:

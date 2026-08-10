@@ -1,0 +1,31 @@
+name: Split blueprints into their repositories
+"on":
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  # Never two splits at once: they would race for the index of the '.github' repository.
+  group: split-blueprints
+  cancel-in-progress: false
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # 'git subtree split' rewrites the history of a directory and needs all of it.
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install --quiet pyyaml "ruamel.yaml"
+      - name: Split every blueprint into its own repository
+        env:
+          # Not GITHUB_TOKEN: that one is scoped to this repository and can neither create
+          # the mirrors nor push into them.
+          GH_TOKEN: ${{ secrets.BLUEPRINTS_SPLIT_TOKEN }}
+        run: bin/split_blueprints.sh
