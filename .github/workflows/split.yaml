@@ -18,6 +18,10 @@ jobs:
         with:
           # 'git subtree split' rewrites the history of a directory and needs all of it.
           fetch-depth: 0
+          # Without this, checkout leaves an Authorization header configured for every
+          # github.com URL, which would silently override the token this job pushes with -
+          # and GITHUB_TOKEN may not write to the mirrors.
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
