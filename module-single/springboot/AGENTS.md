@@ -80,7 +80,10 @@ extending `WorkflowModuleTest`, never into the base class.
    Data repository for it. If the project already has an entity for this business case, use
    it instead of adding a second one.
 5. Add `WorkflowTaskHandler` with the `@WorkflowService` annotation and one `@WorkflowTask`
-   method per BPMN task, each doing nothing but calling `Service`. Add `Workflow` with one
+   method per BPMN task, each doing nothing but calling `Service`. Never annotate the
+   handler or the service methods it calls with `@Transactional`: VanillaBP runs a task in
+   a transaction of its own and commits it for a `TaskException`, which a transaction
+   declared here would roll back. Add `Workflow` with one
    method per business event the process has to learn about. Add `Service` with the business
    methods. If the project already has a business service for this use case, add the methods
    there instead of creating a second one. Never inject `ProcessService` into it, and never

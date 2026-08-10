@@ -27,11 +27,19 @@ import lombok.extern.slf4j.Slf4j;
  * Both directions meet here, and that is the point: this is the one class describing the
  * use case, and it does so without naming a single BPMN element.
  * </p>
+ *
+ * <p>
+ * Note where {@code @Transactional} sits. It is on the method the API calls, because
+ * starting a workflow has to run in a transaction. It is deliberately absent from the
+ * methods a task handler calls: VanillaBP already runs a task in a transaction it owns,
+ * and it commits that transaction for a {@code TaskException} on purpose. A transaction
+ * declared here would roll back instead and throw away what the handler wrote for the
+ * process to react to.
+ * </p>
  */
 @Slf4j
 @org.springframework.stereotype.Service
 @EnableConfigurationProperties(LoanApprovalProperties.class)
-@Transactional
 public class Service {
 
   @Autowired
@@ -49,6 +57,7 @@ public class Service {
    * @param loanRequestId The natural id of the loan request.
    * @param amount        The amount requested.
    */
+  @Transactional
   public void initiateLoanApproval(
       final String loanRequestId,
       final int amount) {

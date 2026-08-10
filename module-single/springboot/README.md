@@ -122,6 +122,9 @@ persists the aggregate and starts the process in the same transaction, so an agg
 without a workflow, or the other way round, cannot happen. The BPMS then reaches the service
 task and calls `WorkflowTaskHandler#retrieveCreditRating`, which does nothing but hand over
 to `Service#assessCreditRating`, with the aggregate loaded before and saved after the call.
+That happens in a transaction VanillaBP owns, which is why neither of the two classes
+declares one of its own. Only the method the API calls does, since starting a workflow has
+to run in a transaction.
 
 That the test waits instead of asserting immediately is not accidental: a BPMS runs tasks in
 its own transactions, and a remote one does so eventually. A test assuming otherwise passes
