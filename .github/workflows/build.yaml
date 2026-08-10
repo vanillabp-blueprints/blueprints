@@ -49,19 +49,22 @@ jobs:
           cache: maven
       - name: Start a Camunda 8 cluster
         if: matrix.bpms == 'camunda8'
-        run: bin/camunda8_cluster.sh start
+        # The address and the isolation mode are published here rather than in the build
+        # step: a Camunda 7 build must not see a configured camunda8 adapter, because
+        # VanillaBP then rightly refuses to boot with no such adapter on the classpath.
+        run: |
+          bin/camunda8_cluster.sh start
+          {
+            echo "VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS=http://localhost:8080"
+            # A stock cluster has multi-tenancy switched off and rejects the tenant the
+            # adapter deploys into by default. Prefixed identifiers keep the modules apart
+            # without tenants.
+            echo "VANILLABP_ADAPTERS_CAMUNDA8_NAMECLASHAVOIDANCE=use-prefix"
+          } >> "$GITHUB_ENV"
       - name: Build and test the blueprint on its own
         working-directory: "${{ matrix.blueprint }}"
         run: mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress -P${{ matrix.bpms }} install verify
-        env:
-          # Relaxed binding of 'vanillabp.adapters.camunda8.rest-address'. The blueprint
-          # itself stays free of a CI-specific address.
-          VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS: http://localhost:8080
-          # A stock self-managed cluster has multi-tenancy switched off and rejects the
-          # tenant the adapter deploys into by default. Prefixed identifiers keep the
-          # modules apart without tenants.
-          VANILLABP_ADAPTERS_CAMUNDA8_NAMECLASHAVOIDANCE: use-prefix
       - name: The Camunda 8 cluster's log, if something went wrong
         if: failure() && matrix.bpms == 'camunda8'
         run: bin/camunda8_cluster.sh logs
