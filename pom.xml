@@ -145,33 +145,9 @@
   </build>
 
   <!--
-    The BPMS a blueprint runs on is a Maven profile, never a code change - that is one
-    of the statements every blueprint makes. The profiles are declared here so that
-    '-P<bpms>' can be passed to the entire reactor; each blueprint declares profiles of
-    the same IDs adding the VanillaBP adapter dependency of that BPMS.
+    The BPMS a blueprint runs on is a Maven profile, never a code change: '-Pcamunda7'
+    (the default), '-Pcamunda8' or '-Pprocess-engine-api'. The profiles are declared by
+    each blueprint rather than here, because a blueprint has to build standalone after
+    having been split into its own repository - see CONTRIBUTING.md.
   -->
-  <profiles>
-    <profile>
-      <!-- The default: an embedded engine, so 'mvn verify' needs no infrastructure. -->
-      <id>camunda7</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <blueprint.bpms>camunda7</blueprint.bpms>
-      </properties>
-    </profile>
-    <profile>
-      <id>camunda8</id>
-      <properties>
-        <blueprint.bpms>camunda8</blueprint.bpms>
-      </properties>
-    </profile>
-    <profile>
-      <id>process-engine-api</id>
-      <properties>
-        <blueprint.bpms>process-engine-api</blueprint.bpms>
-      </properties>
-    </profile>
-  </profiles>
 </project>

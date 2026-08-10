@@ -75,25 +75,12 @@
   </build>
 
   <!--
-    The BPMS is a Maven profile, never a code change. Not a single Java file of this
-    blueprint differs between the profiles - only which adapter is on the classpath and
-    which directory the BPMN files are read from.
+    The BPMS is a Maven profile, never a code change: '-Pcamunda7' (the default) or
+    '-Pcamunda8'. Not a single Java file of this blueprint differs between them - only
+    which adapter is on the classpath and which directory the BPMN files are read from.
+
+    The profiles are declared by the modules which need the adapter: the application, and
+    the workflow module for the sake of its test. Declaring them here as well would only
+    repeat the choice in a place that does not act on it.
   -->
-  <profiles>
-    <profile>
-      <id>camunda7</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <blueprint.bpms>camunda7</blueprint.bpms>
-      </properties>
-    </profile>
-    <profile>
-      <id>camunda8</id>
-      <properties>
-        <blueprint.bpms>camunda8</blueprint.bpms>
-      </properties>
-    </profile>
-  </profiles>
 </project>
