@@ -99,10 +99,47 @@ A blueprint ships an integration test which plays through the aspect it shows, u
 simulator for surrounding systems, plus a smoke test of the application. That test is the
 verification loop for generated code — without it, a blueprint cannot be used by an agent.
 
+The workflow module is tested by running it: since a workflow module is a JAR which cannot
+be started alone, its test sources bring a minimal application (`TestApplication`) along.
+Assert on the **workflow aggregate**, never on the engine — the aggregate is the only state
+that means the same on every BPMS — and **wait** instead of asserting immediately, because a
+remote BPMS gets to a task eventually.
+
+## The test harness
+
+What every blueprint needs for that is the same, so it is written once and copied:
+
+```
+templates/test-harness/springboot/
+├── workflow-module/         -> <maven-module>/src/test/java/blueprint/workflowmodule/
+│   ├── TestApplication.java     boots the workflow module for its test
+│   ├── WorkflowModuleTest.java  base class: waiting for a workflow to make progress
+│   └── Simulator.java           base class of a stand-in for a surrounding system
+└── application/             -> <maven-module>/src/test/java/blueprint/workflowmodule/
+    └── ApplicationSmokeTest.java
+```
+
+Copies rather than a shared module, because a blueprint has to build standalone after the
+split and an agent has to be able to read the code that verifies its work.
+
+```bash
+python3 bin/sync_harness.py            # copy the reference over every existing copy
+python3 bin/sync_harness.py --check    # what CI does
+```
+
+**Never edit a copy** — change the reference and run the sync. The script only refreshes
+copies which already exist; putting the first one into a new blueprint is part of creating
+it, and a blueprint takes only the files it needs (`Simulator.java` only if it has a
+surrounding system to simulate).
+
+Everything else in a blueprint's tests is specific to it and is never compared: the
+integration test *is* the proof of the aspect and is supposed to differ.
+
 ## Adding a blueprint
 
 1. Create `<blueprint-id>/<platform>/` and add it to `<modules>` of the root POM.
-2. Copy the structure of `module-single/<platform>/` and apply your delta.
+2. Copy the structure of `module-single/<platform>/` and apply your delta, including the
+   test harness files it needs (see below).
 3. Write `README.md` (for humans) and `AGENTS.md` (for agents) from the templates.
 4. Add the entry to `blueprints.yaml` of the `.github` repository. CI flips
    `platforms.<platform>.status` to `available` once the blueprint has been split out.

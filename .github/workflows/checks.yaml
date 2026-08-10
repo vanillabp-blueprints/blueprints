@@ -1,4 +1,4 @@
-name: Check blueprints index and documentation
+name: Checks
 "on":
   push:
     branches-ignore:
@@ -27,3 +27,5 @@ jobs:
         run: python bin/check_index_consistency.py blueprints.yaml
       - name: Check the documentation of every blueprint
         run: python bin/check_docs_structure.py blueprints.yaml
+      - name: Check the test harness copies against their reference
+        run: python bin/sync_harness.py --check

@@ -1,30 +1,27 @@
 package blueprint.workflowmodule.loanapproval;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
-import java.time.Duration;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
+import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
 /**
- * The integration test of the workflow module: it starts a real workflow in a real BPMS
+ * The integration test of this workflow module: it starts a real workflow in a real BPMS
  * and waits for the process to have done its work.
  *
  * <p>
  * This is the level a blueprint proves its aspect on, and the level generated code has to
- * be verified on. Waiting instead of asserting immediately is not accidental: a BPMS
- * executes tasks in its own transactions, and remote ones do so eventually - a test which
- * assumes otherwise passes on one BPMS and fails on the next.
+ * be verified on. Everything not specific to this blueprint - booting the module, waiting
+ * for progress - comes from {@link WorkflowModuleTest}, so that what remains here is the
+ * aspect and nothing else.
  * </p>
  */
-@SpringBootTest
-public class LoanApprovalIT {
+public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Autowired
   private Service service;
@@ -39,15 +36,12 @@ public class LoanApprovalIT {
 
     service.initiateLoanApproval(loanRequestId, 5000);
 
-    await()
-        .atMost(Duration.ofSeconds(30))
-        .pollInterval(Duration.ofMillis(200))
-        .untilAsserted(() -> assertThat(
-            loanApprovals
-                .findById(loanRequestId)
-                .orElseThrow()
-                .getCreditRating())
-                    .isEqualTo(50));
+    final var loanApproval = awaitAggregate(
+        loanApprovals,
+        loanRequestId,
+        aggregate -> aggregate.getCreditRating() != null);
+
+    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
 
   }
 

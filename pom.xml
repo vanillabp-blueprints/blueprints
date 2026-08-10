@@ -107,6 +107,20 @@
             </jackson>
           </yaml>
           <java>
+            <!--
+              Spotless runs in this POM only, and its default Java includes cover the
+              sources of THIS project - which has none. The blueprints and the test
+              harness reference have to be named explicitly, otherwise their Java is
+              never formatted and the harness copies drift from their reference.
+            -->
+            <includes>
+              <include>**/src/main/java/**/*.java</include>
+              <include>**/src/test/java/**/*.java</include>
+              <include>templates/**/*.java</include>
+            </includes>
+            <excludes>
+              <exclude>**/target/**/</exclude>
+            </excludes>
             <eclipse>
               <!-- https://help.eclipse.org/latest/index.jsp?topic=%2Forg.eclipse.jdt.doc.isv%2Freference%2Fapi%2Forg%2Feclipse%2Fjdt%2Fcore%2Fformatter%2FDefaultCodeFormatterConstants.html -->
               <file>${maven.multiModuleProjectDirectory}/formatting_conventions.xml</file>

@@ -58,7 +58,12 @@ places or in none.
 | `application/src/main/resources/application.yaml`                 | datasource only; no `vanillabp.*` property is needed             |
 | `loan-approval/src/test/java/.../TestApplication.java`            | the minimal application the module's test boots                  |
 | `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring   |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress  |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                              |
+
+`TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
+blueprint - copy them unchanged. Everything specific to the use case belongs into the test
+extending `WorkflowModuleTest`, never into the base class.
 
 ## Adding this blueprint to an existing project
 

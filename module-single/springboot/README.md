@@ -103,6 +103,7 @@ Opening that URL shows the aggregate, including the credit rating the service ta
 | `.../loanapproval/config/LoanApprovalProperties.java`                                  | the module's own configuration                                                                                                  |
 | `application/.../Application.java`                                                     | the Spring Boot application; its package is the parent of the module's, so scanning finds everything                            |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a real workflow and waits for the aggregate to have been filled                                                          |
+| `loan-approval/src/test/.../WorkflowModuleTest.java`                                   | the base class it inherits from: booting the module and waiting for workflow progress, identical in every blueprint             |
 | `application/src/test/.../ApplicationSmokeTest.java`                                   | boots the application, which is where VanillaBP validates that every BPMN task is wired to code                                 |
 
 The order of events when a workflow starts: `Service#initiateLoanApproval` builds the

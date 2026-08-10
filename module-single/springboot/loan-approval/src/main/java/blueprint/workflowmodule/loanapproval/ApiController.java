@@ -62,7 +62,9 @@ public class ApiController {
     return loanApprovals
         .findById(loanRequestId)
         .map(Object::toString)
-        .orElse("unknown loan request '" + loanRequestId + "'");
+        .orElse("unknown loan request '"
+            + loanRequestId
+            + "'");
 
   }
 
