@@ -83,3 +83,18 @@ jobs:
       - name: Build every blueprint through the aggregator
         run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress install verify
+
+  # One name that never changes, so branch protection has something to require and
+  # Renovate has something to wait for. The matrix above is generated from the
+  # directories, and its job names grow with every blueprint added.
+  verified:
+    if: always()
+    needs: [blueprint, monorepo]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every build job succeeded
+        run: |
+          echo "blueprints: ${{ needs.blueprint.result }}"
+          echo "monorepo:   ${{ needs.monorepo.result }}"
+          [ "${{ needs.blueprint.result }}" = "success" ] \
+            && [ "${{ needs.monorepo.result }}" = "success" ]
