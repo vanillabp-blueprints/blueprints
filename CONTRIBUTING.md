@@ -163,7 +163,12 @@ integration test *is* the proof of the aspect and is supposed to differ.
 
 1. Create `<blueprint-id>/<platform>/` and add it to `<modules>` of the root POM.
 2. Copy the structure of `module-single/<platform>/` and apply your delta, including the
-   test harness files it needs (see above).
+   test harness files it needs (see above) and the three files every split repository
+   needs of its own:
+
+   ```bash
+   cp LICENSE NOTICE .gitignore <blueprint-id>/<platform>/
+   ```
 3. Write `README.md` (for humans) and `AGENTS.md` (for agents) from the templates.
 4. Add the entry to `blueprints.yaml` of the `.github` repository. CI flips
    `platforms.<platform>.status` to `available` once the blueprint has been split out.
@@ -190,6 +195,11 @@ Pushing to `main` runs `.github/workflows/split.yaml`, which calls
    sets its description and homepage from `blueprints.yaml`,
 2. runs `git subtree split` and force-pushes the result onto the mirror's `main`,
 3. sets `platforms.<platform>.status` in the index to `available`.
+
+What ends up in the mirror is the directory and nothing else, so everything a repository
+needs has to be inside it: `LICENSE`, `NOTICE` and `.gitignore` are copies of the ones at
+the root, and `bin/check_docs_structure.py` fails the build when a blueprint is missing one
+or has let it drift.
 
 The job is **directory driven**: nothing is created on stock. A blueprint appears in the
 catalogue as `available` when, and only when, its directory exists and has been pushed out,

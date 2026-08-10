@@ -13,7 +13,9 @@ Checked per blueprint directory '<blueprint-id>/<platform>/':
   - they do not mention the other platform - a Spring Boot blueprint does not know that
     Quarkus exists, and the other way round,
   - the README points back at the monorepo: a blueprint repository is a read-only mirror,
-    and a reader who found a bug has to know where the issue belongs.
+    and a reader who found a bug has to know where the issue belongs,
+  - LICENSE, NOTICE and .gitignore are there and are the ones of the repository root. The
+    split turns the directory into a repository, and the root files do not come along.
 
 The templates in templates/ are checked as well, minus the platform rule.
 
@@ -53,6 +55,11 @@ FOREIGN_PLATFORM = {
 }
 
 SECTION_PATTERN = re.compile(r"^## +(.+?)\s*$", re.MULTILINE)
+
+# Files a blueprint carries although the monorepo has them at its root: the split makes a
+# repository out of the directory alone, and a repository without its license is not one
+# anybody may use. Their content is the root's, byte for byte.
+REPOSITORY_FILES = ("LICENSE", "NOTICE", ".gitignore")
 
 # The split repositories are mirrors; this is how a reader learns where to file an issue.
 MONOREPO_URL = "https://github.com/vanillabp-blueprints/blueprints"
@@ -108,6 +115,24 @@ def check_file(path, filename, required_sections, platform, errors, root):
             )
 
 
+def check_repository_files(directory, errors, root):
+    """The files the split repository needs and only the root has."""
+    for filename in REPOSITORY_FILES:
+        copy = directory / filename
+        display = copy.relative_to(root)
+        reference = root / filename
+        if not copy.exists():
+            errors.append(
+                f"{display}: is missing. After the split this directory is a repository"
+                f" of its own - run 'cp {filename} {directory.relative_to(root)}/'"
+            )
+        elif copy.read_bytes() != reference.read_bytes():
+            errors.append(
+                f"{display}: differs from {filename} of the repository root -"
+                f" run 'cp {filename} {directory.relative_to(root)}/'"
+            )
+
+
 def main():
     root = Path(__file__).resolve().parent.parent
     bases = set()
@@ -148,6 +173,7 @@ def main():
             check_file(
                 directory / filename, filename, required, platform, errors, root
             )
+        check_repository_files(directory, errors, root)
 
     if errors:
         print("Blueprint documentation does not follow the templates:\n", file=sys.stderr)
