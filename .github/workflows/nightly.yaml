@@ -1,0 +1,63 @@
+name: Nightly
+"on":
+  schedule:
+    # Early enough to be green or red before anybody starts working.
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  USER_NAME: "${{ secrets.VANILLABP_USER_NAME }}"
+  USER_TOKEN: "${{ secrets.VANILLABP_USER_TOKEN }}"
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      blueprints: "${{ steps.list.outputs.blueprints }}"
+    steps:
+      - uses: actions/checkout@v5
+      - id: list
+        name: Collect the blueprint directories
+        run: |
+          list=$(ls -d */springboot */quarkus 2>/dev/null | jq -R -s -c 'split("\n")[:-1]')
+          echo "blueprints=${list}" >> "$GITHUB_OUTPUT"
+          echo "Building: ${list}"
+
+  # The same build as on a push, but against today's snapshots of spi-for-java,
+  # adapter-platform-integration and the adapters rather than whatever was cached. A
+  # blueprint breaking here means the framework moved, not the blueprint, and that is
+  # exactly what this job is for.
+  freshness:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        blueprint: "${{ fromJSON(needs.discover.outputs.blueprints) }}"
+        bpms: [camunda7, camunda8]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          java-version: 21
+          distribution: temurin
+      - name: Start a Camunda 8 cluster
+        if: matrix.bpms == 'camunda8'
+        run: bin/camunda8_cluster.sh start
+      - name: Build against the current snapshots
+        working-directory: "${{ matrix.blueprint }}"
+        run: mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
+          --batch-mode --no-transfer-progress --update-snapshots
+          -P${{ matrix.bpms }} install verify
+        env:
+          VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS: http://localhost:8080
+          # A stock self-managed cluster has multi-tenancy switched off and rejects the
+          # tenant the adapter deploys into by default. Prefixed identifiers keep the
+          # modules apart without tenants.
+          VANILLABP_ADAPTERS_CAMUNDA8_NAMECLASHAVOIDANCE: use-prefix
+      - name: The Camunda 8 cluster's log, if something went wrong
+        if: failure() && matrix.bpms == 'camunda8'
+        run: bin/camunda8_cluster.sh logs
+      - name: Stop the Camunda 8 cluster
+        if: always() && matrix.bpms == 'camunda8'
+        run: bin/camunda8_cluster.sh stop
