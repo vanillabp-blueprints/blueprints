@@ -17,6 +17,13 @@ that question. No more than four sentences.>
 
 ## What this blueprint shows
 
+![<What the picture shows, in one line>](docs/<process-id>.png)
+
+<!--
+The picture of the process comes first: a reader wants to see the model before reading
+about it. Render it with bin/render_bpmn_images.sh and commit it.
+-->
+
 <The aspect, explained. Name the BPMN elements and the SPI involved and say why it is done
 this way - the "why" is the part no reference documentation carries. Do not repeat the
 reference documentation, link it in "Documentation" instead.>

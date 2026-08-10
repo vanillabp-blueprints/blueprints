@@ -58,6 +58,7 @@ project already has.
 | `pom.xml`                              | dependencies, the BPMS profiles, the platform build |
 | `src/main/resources/application.yaml`  | datasource and VanillaBP configuration              |
 | `src/main/java/.../ApiController.java` | the GET endpoints operating the process             |
+| `docs/<process-id>.png`                | the picture of the process the README shows         |
 
 ## Adding this blueprint to an existing project
 

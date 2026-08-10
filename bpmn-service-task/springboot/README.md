@@ -8,6 +8,8 @@ the process.
 
 ## What this blueprint shows
 
+![The loan approval process, with an error boundary event on the service task](docs/loan_approval.png)
+
 The loan approval of the base blueprint, but the service task now asks a rating provider,
 and a provider can behave in three ways. Each one leaves the workflow somewhere else:
 

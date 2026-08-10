@@ -7,6 +7,8 @@ process application with VanillaBP, this is the shape it has.
 
 ## What this blueprint shows
 
+![The loan approval process](docs/loan_approval.png)
+
 A loan approval process consisting of one service task. Starting it stores a *workflow
 aggregate* and starts a workflow in the BPMS, the service task fills the aggregate, and the
 process ends.

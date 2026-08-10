@@ -14,6 +14,8 @@ Checked per blueprint directory '<blueprint-id>/<platform>/':
     Quarkus exists, and the other way round,
   - the README points back at the monorepo: a blueprint repository is a read-only mirror,
     and a reader who found a bug has to know where the issue belongs,
+  - the README shows the process in its first section, and the picture it points at is
+    there. A BPMN file is not something a reader reads (bin/render_bpmn_images.sh),
   - LICENSE, NOTICE and .gitignore are there and are the ones of the repository root. The
     split turns the directory into a repository, and the root files do not come along.
 
@@ -64,6 +66,10 @@ REPOSITORY_FILES = ("LICENSE", "NOTICE", ".gitignore")
 # The split repositories are mirrors; this is how a reader learns where to file an issue.
 MONOREPO_URL = "https://github.com/vanillabp-blueprints/blueprints"
 
+# The picture of the process, rendered by bin/render_bpmn_images.sh.
+IMAGE_PATTERN = re.compile(r"!\[[^\]]*\]\(([^)\s]+)\)")
+FIRST_SECTION = "What this blueprint shows"
+
 
 def check_file(path, filename, required_sections, platform, errors, root):
     display = path.relative_to(root)
@@ -112,6 +118,43 @@ def check_file(path, filename, required_sections, platform, errors, root):
             errors.append(
                 f"{display}:{line}: mentions '{match.group(0)}' - a {platform} blueprint"
                 " must not refer to the other platform"
+            )
+
+
+def check_process_picture(directory, errors, root):
+    """The README shows the process before it explains it."""
+    readme = directory / "README.md"
+    if not readme.exists():
+        return
+
+    display = readme.relative_to(root)
+    text = readme.read_text(encoding="utf-8")
+
+    heading = re.search(rf"^## +{re.escape(FIRST_SECTION)}\s*$", text, re.MULTILINE)
+    if not heading:
+        return
+    following = SECTION_PATTERN.search(text, heading.end())
+    section = text[heading.end() : following.start() if following else len(text)]
+
+    images = IMAGE_PATTERN.findall(section)
+    if not images:
+        errors.append(
+            f"{display}: section '## {FIRST_SECTION}' shows no picture of the process -"
+            " render it with bin/render_bpmn_images.sh and reference it as"
+            " '![...](docs/<process-id>.png)'"
+        )
+        return
+
+    for image in images:
+        if image.startswith(("http://", "https://", "/")):
+            errors.append(
+                f"{display}: references the picture as '{image}'. It has to be a relative"
+                " path, otherwise it breaks in the split repository"
+            )
+        elif not (directory / image).exists():
+            errors.append(
+                f"{display}: references '{image}', which is not there -"
+                " run bin/render_bpmn_images.sh"
             )
 
 
@@ -173,6 +216,7 @@ def main():
             check_file(
                 directory / filename, filename, required, platform, errors, root
             )
+        check_process_picture(directory, errors, root)
         check_repository_files(directory, errors, root)
 
     if errors:

@@ -59,6 +59,7 @@ instead of taking the error path.
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`                   | base class of the integration test: waits for workflow progress                |
 | `loan-approval/src/test/java/.../Simulator.java`                            | base class of a stand-in for a surrounding system                              |
 | `application/src/test/java/.../ApplicationSmokeTest.java`                   | boots the application, which validates the BPMN-to-code wiring                 |
+| `docs/loan_approval.png`                                                    | the picture of the process the README shows, rendered from the BPMN model      |
 
 `TestApplication`, `WorkflowModuleTest`, `Simulator` and `ApplicationSmokeTest` are
 identical in every blueprint - copy them unchanged.

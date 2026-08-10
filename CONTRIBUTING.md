@@ -159,6 +159,29 @@ surrounding system to simulate).
 Everything else in a blueprint's tests is specific to it and is never compared: the
 integration test *is* the proof of the aspect and is supposed to differ.
 
+## The picture of the process
+
+Every blueprint README shows its process in the first section, before a word is said about
+it. A BPMN file is not something a reader reads, and what a blueprint is about is usually
+visible in the model.
+
+The pictures are rendered from the BPMN files and committed, so a README renders on GitHub
+without any tooling:
+
+```bash
+npm install -g bpmn-to-image     # once
+bin/render_bpmn_images.sh
+```
+
+The result goes to `<blueprint-id>/<platform>/docs/<process-id>.png` and is referenced
+relatively (`docs/loan_approval.png`), which keeps working after the split. Re-run the
+script whenever a model changes, and commit what it wrote.
+
+One picture covers every BPMS: the BPMN files below `processes/<adapter-id>/` differ in
+engine specific attributes only, never in the diagram, so the script renders the models of
+the first adapter directory it finds. PNG rather than SVG, because bpmn-js draws dark
+strokes on no background at all and an SVG of that is unreadable in GitHub's dark mode.
+
 ## Adding a blueprint
 
 1. Create `<blueprint-id>/<platform>/` and add it to `<modules>` of the root POM.
@@ -169,7 +192,12 @@ integration test *is* the proof of the aspect and is supposed to differ.
    ```bash
    cp LICENSE NOTICE .gitignore <blueprint-id>/<platform>/
    ```
-3. Write `README.md` (for humans) and `AGENTS.md` (for agents) from the templates.
+3. Write `README.md` (for humans) and `AGENTS.md` (for agents) from the templates, and
+   render the picture of the process the README shows (see above):
+
+   ```bash
+   bin/render_bpmn_images.sh
+   ```
 4. Add the entry to `blueprints.yaml` of the `.github` repository. CI flips
    `platforms.<platform>.status` to `available` once the blueprint has been split out.
 5. `./mvnw install verify` for every BPMS profile the blueprint supports. Only `camunda7`
