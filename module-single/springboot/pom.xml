@@ -45,6 +45,19 @@
 
   <build>
     <plugins>
+      <!--
+        A blueprint must never show a deprecated API - it is copied, and what is copied
+        spreads. Making the compiler say so is cheaper than noticing it years later.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <compilerArgs>
+            <arg>-Xlint:deprecation,removal</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
       <!-- Tests named *IT are integration tests and run in 'verify', not in 'test'. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

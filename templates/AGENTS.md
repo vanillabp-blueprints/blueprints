@@ -43,7 +43,8 @@ The files carrying the aspect. Read these, adapt them, keep their structure.
 |                    File                     |                Why it matters                |
 |---------------------------------------------|----------------------------------------------|
 | `src/main/resources/.../loan_approval.bpmn` | <what the model contains>                    |
-| `src/main/java/.../Service.java`            | <the @WorkflowTask methods and what they do> |
+| `src/main/java/.../Workflow.java`           | <the @WorkflowTask methods and what they do> |
+| `src/main/java/.../Service.java`            | <what the business code does with them>      |
 | `src/main/java/.../model/Aggregate.java`    | <the state the process needs>                |
 | `src/test/java/.../<...>IT.java`            | <the test proving the aspect>                |
 
@@ -64,7 +65,8 @@ project already has.
 file for every step and say what to do if the project already has that file.>
 
 1. Add the BPMN model to the workflow module's resource directory.
-2. Add the `@WorkflowTask` methods to the workflow service of the use case.
+2. Add the `@WorkflowTask` methods to `Workflow` of the use case, and the business
+   methods calling them to `Service`.
 3. Extend the workflow aggregate by the attributes the process needs.
 4. Add the API endpoints continuing the process.
 5. Copy the integration test and adapt it to the use case.

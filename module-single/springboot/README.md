@@ -11,7 +11,7 @@ A loan approval process consisting of one service task. Starting it stores a *wo
 aggregate* and starts a workflow in the BPMS, the service task fills the aggregate, and the
 process ends.
 
-Four things are worth looking at:
+Five things are worth looking at:
 
 - **The workflow module is a JAR of its own** (`loan-approval/`) and cannot be started
   alone. It declares itself by the marker file `META-INF/workflow-module` containing its ID.
@@ -27,6 +27,12 @@ Four things are worth looking at:
 - **It brings its own configuration.** `loan-approval/loan-approval.yaml` inside the module
   is loaded automatically and takes precedence over `application.yaml`. Configuration a
   module needs stays with the module instead of scattering across the project.
+- **Business code and BPMN wiring are two classes.** `Service` is the business code and
+  never touches VanillaBP; `Workflow` is the only place `ProcessService` is injected and
+  the only place `@WorkflowTask` methods live. Here the translation is a single line -
+  which is why it is worth seeing: the shape stays the same once a process needs messages
+  correlated or tasks completed, and then it keeps that vocabulary out of the business
+  code.
 - **It is tested on its own.** The integration test lives in the workflow module and brings
   a minimal application with it; the application only carries a smoke test.
 
@@ -93,21 +99,24 @@ Opening that URL shows the aggregate, including the credit rating the service ta
 
 ## How it works
 
-|                                          File                                          |                                                              Role                                                               |
-|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/META-INF/workflow-module`                            | contains `loan-approval` and thereby declares this JAR to be a workflow module                                                  |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: start event, service task, end event. The task names the method implementing it                                    |
-| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, a normal JPA entity keyed by the loan request ID                                                        |
-| `.../loanapproval/Service.java`                                                        | `@WorkflowService` bound to the BPMN process, `@WorkflowTask` implementing the service task, and the method starting a workflow |
-| `.../loanapproval/ApiController.java`                                                  | the GET endpoints operating the process                                                                                         |
-| `.../loanapproval/config/LoanApprovalProperties.java`                                  | the module's own configuration                                                                                                  |
-| `application/.../Application.java`                                                     | the Spring Boot application; its package is the parent of the module's, so scanning finds everything                            |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a real workflow and waits for the aggregate to have been filled                                                          |
-| `loan-approval/src/test/.../WorkflowModuleTest.java`                                   | the base class it inherits from: booting the module and waiting for workflow progress, identical in every blueprint             |
-| `application/src/test/.../ApplicationSmokeTest.java`                                   | boots the application, which is where VanillaBP validates that every BPMN task is wired to code                                 |
+|                                          File                                          |                                                                   Role                                                                   |
+|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/META-INF/workflow-module`                            | contains `loan-approval` and thereby declares this JAR to be a workflow module                                                           |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: start event, service task, end event. The task names the method implementing it                                             |
+| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, a normal JPA entity keyed by the loan request ID                                                                 |
+| `.../loanapproval/Service.java`                                                        | the business code: builds the aggregate and tells `Workflow` that a loan was requested                                                   |
+| `.../loanapproval/Workflow.java`                                                       | `@WorkflowService` bound to the BPMN process, `@WorkflowTask` implementing the service task, and the only place `ProcessService` is used |
+| `.../loanapproval/ApiController.java`                                                  | the GET endpoints operating the process                                                                                                  |
+| `.../loanapproval/config/LoanApprovalProperties.java`                                  | the module's own configuration                                                                                                           |
+| `application/.../Application.java`                                                     | the Spring Boot application; its package is the parent of the module's, so scanning finds everything                                     |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a real workflow and waits for the aggregate to have been filled                                                                   |
+| `loan-approval/src/test/.../WorkflowModuleTest.java`                                   | the base class it inherits from: booting the module and waiting for workflow progress, identical in every blueprint                      |
+| `application/src/test/.../ApplicationSmokeTest.java`                                   | boots the application, which is where VanillaBP validates that every BPMN task is wired to code                                          |
 
-The order of events when a workflow starts: `Service#initiateLoanApproval` builds the
-aggregate and calls `ProcessService#startWorkflow`. VanillaBP persists the aggregate and
+The order of events when a workflow starts: `ApiController` calls
+`Service#initiateLoanApproval`, which builds the aggregate and tells `Workflow` what
+happened - `loanRequested`, not "start the process". `Workflow#loanRequested` calls
+`ProcessService#startWorkflow`. VanillaBP persists the aggregate and
 starts the process in the same transaction, so an aggregate without a workflow — or the
 other way round — cannot happen. The BPMS then reaches the service task and calls
 `Service#retrieveCreditRating`, with the aggregate loaded before and saved after the call.

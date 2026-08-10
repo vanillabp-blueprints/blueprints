@@ -9,12 +9,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * The API of this use case. It consists of GET requests only, so the process can be
- * walked through in a browser - no tooling, no request bodies.
+ * The API of this use case. It consists of GET requests only, so the process can be walked
+ * through in a browser - no tooling, no request bodies.
+ *
+ * <p>
+ * It talks to {@link Service} and to nothing else. That the use case happens to be
+ * implemented by a BPMN process is none of its business.
+ * </p>
  */
 @Slf4j
 @RestController
@@ -23,9 +27,6 @@ public class ApiController {
 
   @Autowired
   private Service service;
-
-  @Autowired
-  private AggregateRepository loanApprovals;
 
   /**
    * Starts a loan approval. This is the one URL the README names.
@@ -59,8 +60,8 @@ public class ApiController {
   public String show(
       @PathVariable final String loanRequestId) {
 
-    return loanApprovals
-        .findById(loanRequestId)
+    return service
+        .getLoanApproval(loanRequestId)
         .map(Object::toString)
         .orElse("unknown loan request '"
             + loanRequestId

@@ -43,13 +43,22 @@ understanding all of them:
 
 ```
 <base-package>.<usecase>
-├── ApiController.java
-├── Service.java                     <- @WorkflowService
+├── ApiController.java               <- talks to Service only
+├── Service.java                     <- business code, never touches VanillaBP
+├── Workflow.java                    <- @WorkflowService, @WorkflowTask, ProcessService
 ├── config/<UseCase>Properties.java
 └── model/
     ├── Aggregate.java
     └── AggregateRepository.java
 ```
+
+`Service` and `Workflow` stay two classes even where the second one only forwards, as in
+`module-single`. `Workflow` is the only place `ProcessService` is injected and the only place
+`@WorkflowTask` methods live; `Service` says what happened in business terms
+(`riskAssessmentSubmitted`) and `Workflow` translates that into what the process needs
+(correlate a message, complete a task). Blueprints which do need glue code — message
+correlation, asynchronous tasks — then only add methods instead of restructuring, which is
+what makes several deltas composable.
 
 The same applies to resources, and there it is not a matter of taste: workflow modules share
 one classpath, so **all** resources of a module belong into one subdirectory named after the

@@ -38,14 +38,15 @@ places or in none.
 
 ## Core files
 
-|                                            File                                            |                                                                   Why it matters                                                                   |
-|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/META-INF/workflow-module`                                | one line, the workflow module ID. Without it the JAR is not a workflow module                                                                      |
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the process. One directory per adapter ID, because BPMN carries engine specific attributes                                                         |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `@WorkflowService` binds the class to the BPMN process, `@WorkflowTask` binds a method to a task, `ProcessService#startWorkflow` starts a workflow |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the workflow aggregate: a JPA entity with the natural ID as primary key, holding all state the process needs                                       |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the module's own configuration, loaded by its file name and taking precedence over `application.yaml`                                              |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | starts a real workflow and waits for the effect of the task                                                                                        |
+|                                            File                                            |                                                                                      Why it matters                                                                                       |
+|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/META-INF/workflow-module`                                | one line, the workflow module ID. Without it the JAR is not a workflow module                                                                                                             |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the process. One directory per adapter ID, because BPMN carries engine specific attributes                                                                                                |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                               | `@WorkflowService` binds the class to the BPMN process, `@WorkflowTask` binds a method to a task, `ProcessService#startWorkflow` starts a workflow. The ONLY class using `ProcessService` |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | the business code. Calls `Workflow` naming the business event, never touches VanillaBP                                                                                                    |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the workflow aggregate: a JPA entity with the natural ID as primary key, holding all state the process needs                                                                              |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the module's own configuration, loaded by its file name and taking precedence over `application.yaml`                                                                                     |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | starts a real workflow and waits for the effect of the task                                                                                                                               |
 
 ## Boilerplate files
 
@@ -78,8 +79,11 @@ extending `WorkflowModuleTest`, never into the base class.
 4. Add the workflow aggregate as a JPA entity with the natural ID as `@Id`, plus a Spring
    Data repository for it. If the project already has an entity for this business case, use
    it — do not add a second one.
-5. Add the `@WorkflowService` class with a `@WorkflowTask` method per BPMN task, and a method
-   starting the workflow through `ProcessService#startWorkflow`.
+5. Add `Workflow` with the `@WorkflowService` annotation, one `@WorkflowTask` method per BPMN
+   task and a method per business event translating it for the process. Add `Service` with the
+   business methods calling them. If the project already has a business service for this use
+   case, add the methods there instead of creating a second one - but never inject
+   `ProcessService` into it.
 6. Add GET endpoints starting the process and showing the aggregate.
 7. Copy `LoanApprovalIT` and adapt it to the use case.
 
