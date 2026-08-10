@@ -43,22 +43,34 @@ understanding all of them:
 
 ```
 <base-package>.<usecase>
-├── ApiController.java               <- talks to Service only
+├── ApiController.java               <- driving adapter: HTTP calls in
 ├── Service.java                     <- business code, never touches VanillaBP
-├── Workflow.java                    <- @WorkflowService, @WorkflowTask, ProcessService
+├── Workflow.java                    <- outgoing: the application tells the process
+├── WorkflowTaskHandler.java         <- incoming: the process tells the application
 ├── config/<UseCase>Properties.java
 └── model/
     ├── Aggregate.java
     └── AggregateRepository.java
 ```
 
-`Service` and `Workflow` stay two classes even where the second one only forwards, as in
-`module-single`. `Workflow` is the only place `ProcessService` is injected and the only place
-`@WorkflowTask` methods live; `Service` says what happened in business terms
-(`riskAssessmentSubmitted`) and `Workflow` translates that into what the process needs
-(correlate a message, complete a task). Blueprints which do need glue code — message
-correlation, asynchronous tasks — then only add methods instead of restructuring, which is
-what makes several deltas composable.
+Talking to a BPMS happens in both directions, and each direction gets its own class:
+
+```
+ApiController ──────────┐
+                        ├──→ Service ──→ Workflow ──→ ProcessService     outgoing
+BPMS ──→ WorkflowTaskHandler ──┘                                         incoming
+```
+
+`Workflow` is the only place `ProcessService` is injected; `WorkflowTaskHandler` carries
+`@WorkflowService` and every `@WorkflowTask` method and calls `Service`. Merging the two
+would make the class depend on `Service` while `Service` depends on it — a circular bean
+reference Spring Boot rejects at startup unless worked around with `@Lazy`; an interface
+does not help, because the cycle is between beans, not types.
+
+All four classes exist even where a blueprint only forwards through them, as in
+`module-single`. Blueprints which need glue code — message correlation, asynchronous tasks —
+then only add methods instead of restructuring, which is what makes several deltas
+composable.
 
 The same applies to resources, and there it is not a matter of taste: workflow modules share
 one classpath, so **all** resources of a module belong into one subdirectory named after the

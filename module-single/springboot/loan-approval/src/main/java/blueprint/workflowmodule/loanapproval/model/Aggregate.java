@@ -40,28 +40,8 @@ public class Aggregate {
   @Column
   private Integer amount;
 
-  /** Filled by {@link #assessCreditRating(int)}. */
+  /** Filled by the business code the service task of the process triggers. */
   @Column
   private Integer creditRating;
-
-  /**
-   * Business logic about the business object itself belongs to the business object. The
-   * workflow only says when it happens, never what it is.
-   *
-   * <p>
-   * A real application would rate a loan by asking a rating service. What must not happen
-   * is putting the calculation into the {@code @WorkflowTask} method that triggers it: the
-   * rating is a property of this loan request, not of the process which happens to compute
-   * it, and it stays correct if the process is remodelled.
-   * </p>
-   *
-   * @param ratingScale The highest rating that may be awarded.
-   */
-  public void assessCreditRating(
-      final int ratingScale) {
-
-    creditRating = Math.min(ratingScale, amount / 100);
-
-  }
 
 }

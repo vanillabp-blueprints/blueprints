@@ -38,15 +38,16 @@ places or in none.
 
 ## Core files
 
-|                                            File                                            |                                                                                      Why it matters                                                                                       |
-|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/META-INF/workflow-module`                                | one line, the workflow module ID. Without it the JAR is not a workflow module                                                                                                             |
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the process. One directory per adapter ID, because BPMN carries engine specific attributes                                                                                                |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                               | `@WorkflowService` binds the class to the BPMN process, `@WorkflowTask` binds a method to a task, `ProcessService#startWorkflow` starts a workflow. The ONLY class using `ProcessService` |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | the business code. Calls `Workflow` naming the business event, never touches VanillaBP                                                                                                    |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the workflow aggregate: a JPA entity with the natural ID as primary key, holding all state the process needs and the business logic about it                                              |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the module's own configuration, loaded by its file name and taking precedence over `application.yaml`                                                                                     |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | starts a real workflow and waits for the effect of the task                                                                                                                               |
+|                                            File                                            |                                                                Why it matters                                                                 |
+|--------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/META-INF/workflow-module`                                | one line, the workflow module ID. Without it the JAR is not a workflow module                                                                 |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the process. One directory per adapter ID, because BPMN carries engine specific attributes                                                    |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | `@WorkflowService` binds the class to the BPMN process, `@WorkflowTask` binds a method to a task. Contains no business logic, calls `Service` |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                               | what the application tells the process, e.g. `ProcessService#startWorkflow`. The ONLY class using `ProcessService`                            |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | the business code. Calls `Workflow` naming the business event, is called by `WorkflowTaskHandler`, never touches VanillaBP                    |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the workflow aggregate: a JPA entity with the natural ID as primary key, holding all state the process needs                                  |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the module's own configuration, loaded by its file name and taking precedence over `application.yaml`                                         |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | starts a real workflow and waits for the effect of the task                                                                                   |
 
 ## Boilerplate files
 
@@ -78,13 +79,14 @@ extending `WorkflowModuleTest`, never into the base class.
    The adapter ID is the configured one, which defaults to the adapter type.
 4. Add the workflow aggregate as a JPA entity with the natural ID as `@Id`, plus a Spring
    Data repository for it. If the project already has an entity for this business case, use
-   it — do not add a second one. Business logic about that object is a method of
-   it; a `@WorkflowTask` method must not compute anything itself.
-5. Add `Workflow` with the `@WorkflowService` annotation, one `@WorkflowTask` method per BPMN
-   task and a method per business event translating it for the process. Add `Service` with the
-   business methods calling them. If the project already has a business service for this use
-   case, add the methods there instead of creating a second one - but never inject
-   `ProcessService` into it.
+   it — do not add a second one.
+5. Add `WorkflowTaskHandler` with the `@WorkflowService` annotation and one `@WorkflowTask`
+   method per BPMN task, each doing nothing but calling `Service`. Add `Workflow` with one
+   method per business event the process has to learn about. Add `Service` with the business
+   methods. If the project already has a business service for this use case, add the methods
+   there instead of creating a second one — but never inject `ProcessService` into it, and
+   never merge the two workflow classes: `Service` uses `Workflow` and is used by
+   `WorkflowTaskHandler`, so merging them creates a circular bean reference.
 6. Add GET endpoints starting the process and showing the aggregate.
 7. Copy `LoanApprovalIT` and adapt it to the use case.
 

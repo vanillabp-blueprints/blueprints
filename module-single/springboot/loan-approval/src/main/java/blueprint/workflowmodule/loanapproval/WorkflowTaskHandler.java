@@ -1,0 +1,64 @@
+package blueprint.workflowmodule.loanapproval;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import blueprint.workflowmodule.loanapproval.model.Aggregate;
+import io.vanillabp.spi.service.BpmnProcess;
+import io.vanillabp.spi.service.WorkflowService;
+import io.vanillabp.spi.service.WorkflowTask;
+
+/**
+ * What the process tells the application — the incoming half of the BPMN wiring.
+ *
+ * <p>
+ * This is a driving adapter, the same kind of thing as {@link ApiController}: something
+ * outside triggers, and the trigger is translated into a call to {@link Service}. That the
+ * caller is a BPMS rather than a browser changes nothing about the direction.
+ * </p>
+ *
+ * <p>
+ * A {@code @WorkflowTask} method therefore contains no business logic. It turns what the
+ * BPMS delivers — the aggregate, {@code @TaskId}, {@code @TaskEvent}, the multi-instance
+ * element and its index — into a call to business code. With a single service task that
+ * leaves one line, which is honest: there is nothing to translate. In a multi-instance task
+ * or a user task the same method has real work to do, and that work belongs here rather
+ * than in the business code.
+ * </p>
+ *
+ * <p>
+ * This class uses {@link Service}, and {@link Service} uses {@link Workflow} — never the
+ * other way round. Merging the two directions into one class is what would make the two
+ * beans depend on each other, which Spring Boot rejects at startup unless it is worked
+ * around with {@code @Lazy}. Splitting by direction removes the cycle instead of hiding it.
+ * </p>
+ *
+ * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-task">Wire up a task</a>
+ */
+@Component
+@WorkflowService(
+    workflowAggregateClass = Aggregate.class,
+    bpmnProcess = @BpmnProcess(bpmnProcessId = "loan_approval"))
+@Transactional
+public class WorkflowTaskHandler {
+
+  @Autowired
+  private Service service;
+
+  /**
+   * Called by VanillaBP when the BPMN service task of the same name is reached. The
+   * aggregate is loaded before and saved after the call, so the business code only has to
+   * change it.
+   *
+   * @param loanApproval The workflow's aggregate.
+   */
+  @WorkflowTask
+  public void retrieveCreditRating(
+      final Aggregate loanApproval) {
+
+    service.assessCreditRating(loanApproval);
+
+  }
+
+}

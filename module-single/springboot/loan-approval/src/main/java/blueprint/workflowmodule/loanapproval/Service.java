@@ -3,8 +3,10 @@ package blueprint.workflowmodule.loanapproval;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.transaction.annotation.Transactional;
 
+import blueprint.workflowmodule.loanapproval.config.LoanApprovalProperties;
 import blueprint.workflowmodule.loanapproval.model.Aggregate;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -15,15 +17,20 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>
  * It never touches VanillaBP. Whenever the business case moves on, it tells {@link Workflow}
- * what happened - {@code loanRequested}, not "start the process" - and that class decides
- * what this means for the BPMN. In this blueprint the method below is barely more than a
- * hand-over, which is what a two-line process deserves; the reason to have the seam anyway
- * is that it stops being one as soon as messages have to be correlated or tasks completed,
- * and then it keeps that BPMS vocabulary out of the business code.
+ * what happened — {@code loanRequested}, not "start the process" — and that class decides
+ * what this means for the BPMN. The other direction runs through
+ * {@link WorkflowTaskHandler}, which calls the methods below when the process reaches a
+ * task.
+ * </p>
+ *
+ * <p>
+ * Both directions meet here, and that is the point: this is the one class describing the
+ * use case, and it does so without naming a single BPMN element.
  * </p>
  */
 @Slf4j
 @org.springframework.stereotype.Service
+@EnableConfigurationProperties(LoanApprovalProperties.class)
 @Transactional
 public class Service {
 
@@ -32,6 +39,9 @@ public class Service {
 
   @Autowired
   private Workflow workflow;
+
+  @Autowired
+  private LoanApprovalProperties properties;
 
   /**
    * A customer requests a loan.
@@ -52,6 +62,29 @@ public class Service {
     workflow.loanRequested(loanApproval);
 
     log.info("Loan approval '{}' started", loanRequestId);
+
+  }
+
+  /**
+   * Rates a loan request. A real application would ask a rating service here; what matters
+   * for the blueprint is where this code sits — in the business service, not in the
+   * {@code @WorkflowTask} method which happens to trigger it.
+   *
+   * @param loanApproval The loan approval to rate.
+   */
+  public void assessCreditRating(
+      final Aggregate loanApproval) {
+
+    final var rating = Math.min(
+        properties.getRatingScale(),
+        loanApproval.getAmount() / 100);
+
+    loanApproval.setCreditRating(rating);
+
+    log.info(
+        "Credit rating of loan approval '{}' is {}",
+        loanApproval.getLoanRequestId(),
+        rating);
 
   }
 
