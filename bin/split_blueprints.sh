@@ -95,7 +95,7 @@ for platform in "${PLATFORMS[@]}"; do
     branch="split-${id}-${platform}"
 
     title="$(blueprint_value "${id}" title)"
-    description="${title} — a VanillaBP blueprint. Read-only mirror of the monorepo 'blueprints'."
+    description="${title}. A VanillaBP blueprint, read-only mirror of the monorepo 'blueprints'."
 
     echo "=== ${prefix} -> ${ORG}/${repo}"
 

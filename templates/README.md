@@ -63,10 +63,10 @@ Keep it to the files that matter; the boilerplate is listed in AGENTS.md.>
 
 <Links into the reference documentation, each with one line saying what it answers.>
 
-- [spi-for-java](https://github.com/vanillabp/spi-for-java) — using the SPI
-- [adapter-platform-integration wiki](https://github.com/vanillabp/adapter-platform-integration/wiki) — concepts, platform integration, configuration
-- the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use — everything specific to that engine
+- [spi-for-java](https://github.com/vanillabp/spi-for-java): using the SPI
+- [adapter-platform-integration wiki](https://github.com/vanillabp/adapter-platform-integration/wiki): concepts, platform integration, configuration
+- the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: everything specific to that engine
 
 This blueprint is developed in the monorepo
-[`blueprints`](https://github.com/vanillabp-blueprints/blueprints) — this repository is a
+[`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a
 read-only mirror, **issues and pull requests belong there.**

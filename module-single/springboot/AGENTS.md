@@ -6,8 +6,7 @@ structure, so build this first and then apply the deltas.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
-first — it carries the procedure, the reference structure and the list of things never to
-do.
+first. It carries the procedure, the reference structure and the list of things never to do.
 
 ## Placeholders
 
@@ -24,7 +23,7 @@ Replace all of these consistently; they are the same in every blueprint.
 to change together: the Maven module directory, the marker file `META-INF/workflow-module`,
 the resource directory `src/main/resources/loan-approval/`, the configuration file
 `loan-approval.yaml` and its property prefix, and the REST path. A missed occurrence does
-not fail the build — it makes VanillaBP report at startup that no BPMN file was found.
+not fail the build. It makes VanillaBP report at startup that no BPMN file was found.
 
 That resource directory is not decoration: workflow modules share one classpath, so **all**
 resources of a module have to live in the one subdirectory named after its ID, and its
@@ -55,7 +54,7 @@ places or in none.
 |-------------------------------------------------------------------|------------------------------------------------------------------|
 | `pom.xml` (blueprint root)                                        | the BPMS profiles and the VanillaBP BOM import                   |
 | `loan-approval/pom.xml`                                           | `vanillabp-spring-boot-support`, never an adapter                |
-| `application/pom.xml`                                             | the BPMS adapter — the only place a BPMS is named                |
+| `application/pom.xml`                                             | the BPMS adapter, the only place a BPMS is named                 |
 | `application/src/main/java/.../Application.java`                  | the Spring Boot application, in the parent package of the module |
 | `application/src/main/resources/application.yaml`                 | datasource only; no `vanillabp.*` property is needed             |
 | `loan-approval/src/test/java/.../TestApplication.java`            | the minimal application the module's test boots                  |
@@ -79,13 +78,13 @@ extending `WorkflowModuleTest`, never into the base class.
    The adapter ID is the configured one, which defaults to the adapter type.
 4. Add the workflow aggregate as a JPA entity with the natural ID as `@Id`, plus a Spring
    Data repository for it. If the project already has an entity for this business case, use
-   it — do not add a second one.
+   it instead of adding a second one.
 5. Add `WorkflowTaskHandler` with the `@WorkflowService` annotation and one `@WorkflowTask`
    method per BPMN task, each doing nothing but calling `Service`. Add `Workflow` with one
    method per business event the process has to learn about. Add `Service` with the business
    methods. If the project already has a business service for this use case, add the methods
-   there instead of creating a second one — but never inject `ProcessService` into it, and
-   never merge the two workflow classes: `Service` uses `Workflow` and is used by
+   there instead of creating a second one. Never inject `ProcessService` into it, and never
+   merge the two workflow classes: `Service` uses `Workflow` and is used by
    `WorkflowTaskHandler`, so merging them creates a circular bean reference.
 6. Add GET endpoints starting the process and showing the aggregate.
 7. Copy `LoanApprovalIT` and adapt it to the use case.
@@ -102,7 +101,7 @@ failure of that profile as a defect of the generated code before having checked 
 
 `LoanApprovalIT` has to pass: it starts a workflow and waits until the service task has
 written to the aggregate. If the task is never executed, the wiring between BPMN and code is
-wrong — the startup log names which BPMN task has no method or which method has no task.
+wrong, and the startup log names which BPMN task has no method or which method has no task.
 `ApplicationSmokeTest` passing means the application boots with the module on the classpath.
 
 Do not report success without having run this.

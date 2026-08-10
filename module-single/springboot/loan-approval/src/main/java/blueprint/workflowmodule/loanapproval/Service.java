@@ -17,8 +17,8 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>
  * It never touches VanillaBP. Whenever the business case moves on, it tells {@link Workflow}
- * what happened — {@code loanRequested}, not "start the process" — and that class decides
- * what this means for the BPMN. The other direction runs through
+ * what happened, {@code loanRequested} rather than "start the process", and that class
+ * decides what this means for the BPMN. The other direction runs through
  * {@link WorkflowTaskHandler}, which calls the methods below when the process reaches a
  * task.
  * </p>
@@ -67,7 +67,7 @@ public class Service {
 
   /**
    * Rates a loan request. A real application would ask a rating service here; what matters
-   * for the blueprint is where this code sits — in the business service, not in the
+   * for the blueprint is where this code sits: in the business service, not in the
    * {@code @WorkflowTask} method which happens to trigger it.
    *
    * @param loanApproval The loan approval to rate.

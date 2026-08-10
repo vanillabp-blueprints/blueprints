@@ -10,7 +10,7 @@ import io.vanillabp.spi.service.WorkflowService;
 import io.vanillabp.spi.service.WorkflowTask;
 
 /**
- * What the process tells the application — the incoming half of the BPMN wiring.
+ * What the process tells the application: the incoming half of the BPMN wiring.
  *
  * <p>
  * This is a driving adapter, the same kind of thing as {@link ApiController}: something
@@ -20,15 +20,15 @@ import io.vanillabp.spi.service.WorkflowTask;
  *
  * <p>
  * A {@code @WorkflowTask} method therefore contains no business logic. It turns what the
- * BPMS delivers — the aggregate, {@code @TaskId}, {@code @TaskEvent}, the multi-instance
- * element and its index — into a call to business code. With a single service task that
+ * BPMS delivers (the aggregate, {@code @TaskId}, {@code @TaskEvent}, the multi-instance
+ * element and its index) into a call to business code. With a single service task that
  * leaves one line, which is honest: there is nothing to translate. In a multi-instance task
  * or a user task the same method has real work to do, and that work belongs here rather
  * than in the business code.
  * </p>
  *
  * <p>
- * This class uses {@link Service}, and {@link Service} uses {@link Workflow} — never the
+ * This class uses {@link Service}, and {@link Service} uses {@link Workflow}, never the
  * other way round. Merging the two directions into one class is what would make the two
  * beans depend on each other, which Spring Boot rejects at startup unless it is worked
  * around with {@code @Lazy}. Splitting by direction removes the cycle instead of hiding it.

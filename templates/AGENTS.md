@@ -19,8 +19,7 @@ Never mention the other platform.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
-first — it carries the procedure, the reference structure and the list of things never to
-do.
+first. It carries the procedure, the reference structure and the list of things never to do.
 
 ## Placeholders
 

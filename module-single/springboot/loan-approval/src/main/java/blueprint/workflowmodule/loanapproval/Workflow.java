@@ -8,7 +8,7 @@ import blueprint.workflowmodule.loanapproval.model.Aggregate;
 import io.vanillabp.spi.process.ProcessService;
 
 /**
- * What the application tells the process — the outgoing half of the BPMN wiring.
+ * What the application tells the process: the outgoing half of the BPMN wiring.
  *
  * <p>
  * {@link Service} calls in, naming what happened in business terms ({@code loanRequested}),
@@ -18,13 +18,13 @@ import io.vanillabp.spi.process.ProcessService;
  * </p>
  *
  * <p>
- * Name the methods after the business event, never after the BPMN element — not
- * {@code correlateLoanRequestedMessage}. The model may be remodelled, a message may become
- * a timer, and the business code must not notice.
+ * Name the methods after the business event, never after the BPMN element, so
+ * {@code loanRequested} and not {@code correlateLoanRequestedMessage}. The model may be
+ * remodelled, a message may become a timer, and the business code must not notice.
  * </p>
  *
  * <p>
- * The incoming half — what the process tells the application — is
+ * The incoming half, what the process tells the application, is
  * {@link WorkflowTaskHandler}. Keeping the two directions in two classes is what keeps the
  * dependencies acyclic: this class is used by {@link Service}, the other one uses it.
  * </p>

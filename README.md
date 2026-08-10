@@ -5,7 +5,7 @@ projects, each showing and explaining one aspect of building a business process 
 with VanillaBP.
 
 **This README is for contributors.** If you are looking for a blueprint to use, start at the
-[organisation page](https://github.com/vanillabp-blueprints) — it lists all blueprints by
+[organisation page](https://github.com/vanillabp-blueprints). It lists all blueprints by
 platform and links the repository of each.
 
 ## How blueprints are developed and delivered
@@ -15,7 +15,7 @@ and platform:
 
 |             |                                                                                          |
 |-------------|------------------------------------------------------------------------------------------|
-| Development | this repository — one build, one PR for a version bump, one CI covering all blueprints   |
+| Development | this repository: one build, one PR for a version bump, one CI run for all blueprints     |
 | Delivery    | `vanillabp-blueprints/<blueprint-id>-<platform>`, pushed by CI using `git subtree split` |
 
 The delivered repositories are read-only mirrors. **Issues and pull requests belong here.**
@@ -36,8 +36,8 @@ blueprints/
 Blueprint IDs are `<category>-<aspect>` in lower case, the category being one of `module-`,
 `persistence-`, `bpmn-` or `showcase-`. `<platform>` is `springboot` or `quarkus`.
 
-There are no blueprints yet — this repository currently provides the build, the formatting
-rules and the conventions they will follow.
+So far the only blueprint here is `module-single` for Spring Boot. The rest of this
+repository is the build, the formatting rules and the conventions the others will follow.
 
 ## Building
 
@@ -76,9 +76,9 @@ versions currently targeted are described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Blueprints do not repeat the reference documentation, they link it:
 
-- [spi-for-java](https://github.com/vanillabp/spi-for-java) — using the SPI
-- [adapter-platform-integration wiki](https://github.com/vanillabp/adapter-platform-integration/wiki) — concepts, platforms, configuration
-- the wiki of the respective [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) — BPMS-specific fine-tuning
+- [spi-for-java](https://github.com/vanillabp/spi-for-java): using the SPI
+- [adapter-platform-integration wiki](https://github.com/vanillabp/adapter-platform-integration/wiki): concepts, platforms, configuration
+- the wiki of the respective [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters): BPMS-specific fine-tuning
 
 ## License
 
