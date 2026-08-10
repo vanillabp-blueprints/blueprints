@@ -24,6 +24,9 @@ must not depend on anything that only exists in this monorepo:
 - **Do not** rely on properties, dependency management or plugin management declared here.
 - Declare versions, the VanillaBP BOM import and the BPMS profiles in the blueprint's own
   POM.
+- Give the blueprint a groupId of its own, `io.vanillabp.blueprint.<blueprint-id>`. Every
+  blueprint names its Maven modules after the same use case, so without that the aggregator
+  sees two modules called `loan-approval` and refuses to build.
 
 The price is duplication between blueprints, and it is paid on purpose: a reader must be
 able to understand a blueprint from the files in front of them. CI keeps the copies from

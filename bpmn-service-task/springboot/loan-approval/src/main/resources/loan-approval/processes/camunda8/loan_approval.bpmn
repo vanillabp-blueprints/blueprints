@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToRetrieveCreditRating</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRetrieveCreditRating" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_RetrieveCreditRating" />
+    <!--
+      The job type names the task definition, which defaults to the method name of the
+      @WorkflowTask. The input mapping becomes the @TaskParam of that method: which
+      provider is asked is modelled, not compiled in.
+    -->
+    <bpmn:serviceTask id="ServiceTask_RetrieveCreditRating" name="Retrieve credit rating">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="retrieveCreditRating" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=&#34;acme-rating&#34;" target="ratingProvider" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToRetrieveCreditRating</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanAssessed</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <!--
+      The error path. A TaskException carrying this error code leaves the handler, and the
+      workflow continues here instead of the regular outgoing flow. A technical exception
+      does not come along this way: the job fails, is retried and the model never learns
+      about it.
+    -->
+    <bpmn:boundaryEvent id="BoundaryEvent_LoanRejected" name="Rating too low" attachedToRef="ServiceTask_RetrieveCreditRating">
+      <bpmn:outgoing>Flow_ToLoanRejected</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_LoanRejected" errorRef="Error_LoanRejected" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_ToLoanRejected" sourceRef="BoundaryEvent_LoanRejected" targetRef="EndEvent_LoanRejected" />
+    <bpmn:endEvent id="EndEvent_LoanRejected" name="Loan rejected">
+      <bpmn:incoming>Flow_ToLoanRejected</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ToLoanAssessed" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="EndEvent_LoanAssessed" />
+    <bpmn:endEvent id="EndEvent_LoanAssessed" name="Loan assessed">
+      <bpmn:incoming>Flow_ToLoanAssessed</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <!-- The error code is the string the business code passes to TaskException. -->
+  <bpmn:error id="Error_LoanRejected" name="Loan rejected" errorCode="loan-rejected" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="145" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RetrieveCreditRating_di" bpmnElement="ServiceTask_RetrieveCreditRating">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanAssessed_di" bpmnElement="EndEvent_LoanAssessed">
+        <dc:Bounds x="392" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="379" y="145" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_LoanRejected_di" bpmnElement="BoundaryEvent_LoanRejected">
+        <dc:Bounds x="272" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="256" y="185" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanRejected_di" bpmnElement="EndEvent_LoanRejected">
+        <dc:Bounds x="392" y="252" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="381" y="295" width="62" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanAssessed_di" bpmnElement="Flow_ToLoanAssessed">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="392" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanRejected_di" bpmnElement="Flow_ToLoanRejected">
+        <di:waypoint x="290" y="178" />
+        <di:waypoint x="290" y="270" />
+        <di:waypoint x="392" y="270" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

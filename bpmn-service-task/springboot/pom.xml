@@ -9,12 +9,12 @@
     <relativePath/>
   </parent>
 
-  <groupId>io.vanillabp.blueprint.module-single</groupId>
-  <artifactId>module-single</artifactId>
+  <groupId>io.vanillabp.blueprint.bpmn-service-task</groupId>
+  <artifactId>bpmn-service-task</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>Blueprint: application plus one workflow module</name>
-  <description>An application module pulling in one workflow module packaged as a JAR.</description>
+  <name>Blueprint: service tasks</name>
+  <description>A service task calling a surrounding system, its failure modes and the transaction boundaries around it.</description>
 
   <modules>
     <module>loan-approval</module>

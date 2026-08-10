@@ -1,0 +1,14 @@
+# Configuration of the workflow module 'loan-approval'.
+#
+# The file is named after the workflow module ID and is loaded automatically, with a
+# higher priority than application.yaml. Everything only this module needs belongs here -
+# that is what keeps a workflow module a self-contained application inside the
+# application.
+loan-approval:
+  rating-scale: 100
+  # A loan rated below this is rejected, and the process learns that as a BPMN error.
+  # Start with an amount of 500 to see it: 500 / 100 = a rating of 5.
+  minimum-rating: 10
+  # The stand-in rating provider refuses the first request per loan request, so the retry
+  # of the BPMS shows up in the log. Set it to false for an undisturbed run.
+  fail-first-rating-attempt: true
