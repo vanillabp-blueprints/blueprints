@@ -88,9 +88,11 @@ vanillabp:
   adapters:
     camunda8:
       rest-address: http://localhost:8080
-      # A cluster started from the stock image has multi-tenancy switched off, and the
-      # default way of keeping workflow modules apart is a tenant per module.
-      name-clash-avoidance: use-prefix
+      # Nothing else is needed: this adapter keeps workflow modules apart by nothing at all
+      # ('name-clash-avoidance: none') unless told otherwise, because a cluster started from
+      # the stock image has multi-tenancy switched off and rejects a tenant per module. The
+      # adapter warns about it while booting - with one workflow module the identifiers are
+      # unique anyway. Set 'name-clash-avoidance: use-prefix' to have VanillaBP prefix them.
 ```
 
 Start the application:

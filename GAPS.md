@@ -76,10 +76,16 @@ each platform tells the check which annotations it honors.
 
 ## G2: deploying to a Camunda 8 cluster without multi-tenancy fails with the engine's error
 
-**Status:** open, found 2026-08-10 while running the blueprints against a Camunda 8 cluster
-in CI.
+**Status:** partly closed 2026-08-11, found 2026-08-10 while running the blueprints against a
+Camunda 8 cluster in CI. The default is fixed: `name-clash-avoidance` is an adapter-declared
+default now (`AdapterDeploymentService#defaultNameClashAvoidance`) and the Camunda 8 adapter
+declares `none`, so an application which configures nothing boots against a stock cluster.
+Because `none` keeps nothing apart, every adapter reports it per workflow module with a WARN
+naming its own alternatives (`warnAboutUnscopedIdentifiers`). Still open: the deployment
+rejection of a configured `by-adapter` on a cluster without multi-tenancy is not re-raised
+with the property to change, and the cluster is not asked beforehand.
 
-**What happens.** `name-clash-avoidance` defaults to `by-adapter`, which deploys the BPMN
+**What happens.** `name-clash-avoidance` defaulted to `by-adapter`, which deploys the BPMN
 resources into a tenant named after the workflow module. A self-managed cluster started
 from the stock image has multi-tenancy switched off and rejects that, so the boot fails
 with what Camunda said:
@@ -94,7 +100,8 @@ Caused by: io.camunda.client.api.command.ProblemException: Failed with code 400:
 The remedy is `vanillabp.adapters.<id>.name-clash-avoidance: use-prefix` (or `none`), and
 the adapter's own wiki states the rule: a cluster without multi-tenancy cannot use
 `by-adapter`. The message does not, so the developer has to find the wiki page first, and
-the engine's wording ("tenant identifier") does not name any VanillaBP property.
+the engine's wording ("tenant identifier") does not name any VanillaBP property. An
+application configuring `by-adapter` explicitly still runs into exactly this.
 
 **What VanillaBP should do.** Recognise this rejection while deploying and re-raise it with
 the property to change, naming the adapter id and the workflow module. Everything needed is
