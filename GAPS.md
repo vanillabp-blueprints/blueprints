@@ -76,14 +76,23 @@ each platform tells the check which annotations it honors.
 
 ## G2: deploying to a Camunda 8 cluster without multi-tenancy fails with the engine's error
 
-**Status:** partly closed 2026-08-11, found 2026-08-10 while running the blueprints against a
-Camunda 8 cluster in CI. The default is fixed: `name-clash-avoidance` is an adapter-declared
-default now (`AdapterDeploymentService#defaultNameClashAvoidance`) and the Camunda 8 adapter
-declares `none`, so an application which configures nothing boots against a stock cluster.
-Because `none` keeps nothing apart, every adapter reports it per workflow module with a WARN
-naming its own alternatives (`warnAboutUnscopedIdentifiers`). Still open: the deployment
-rejection of a configured `by-adapter` on a cluster without multi-tenancy is not re-raised
-with the property to change, and the cluster is not asked beforehand.
+**Status:** closed 2026-08-11, found 2026-08-10 while running the blueprints against a
+Camunda 8 cluster in CI. Three changes, in the order they take effect:
+
+1. `name-clash-avoidance` is an adapter-declared default now
+   (`AdapterDeploymentService#defaultNameClashAvoidance`), and both Camunda adapters declare
+   `none` - an application which configures nothing boots against a stock cluster. Since
+   `none` keeps nothing apart, every adapter reports it per workflow module with a WARN
+   naming its own alternatives (`warnAboutUnscopedIdentifiers`).
+2. Configuration which only `by-adapter` could honor, and which no level of that adapter
+   reaches, fails the boot instead of being ignored
+   (`NameClashAvoidanceSupport#validateNoneNameClashStrategy`, called by both Camunda
+   adapters with their `tenant-id` - the core knows nothing about tenants).
+3. Where `by-adapter` does apply, the Camunda 8 adapter looks the tenant up in the cluster
+   before deploying (`Camunda8TenantCheck`): multi-tenancy switched off and an unknown tenant
+   both become a boot failure naming the property to change. Camunda 7 has nothing to ask -
+   a tenant id is an attribute of the deployment there - so it only warns about a tenant
+   missing in an identity service which knows others.
 
 **What happens.** `name-clash-avoidance` defaulted to `by-adapter`, which deploys the BPMN
 resources into a tenant named after the workflow module. A self-managed cluster started
@@ -100,14 +109,13 @@ Caused by: io.camunda.client.api.command.ProblemException: Failed with code 400:
 The remedy is `vanillabp.adapters.<id>.name-clash-avoidance: use-prefix` (or `none`), and
 the adapter's own wiki states the rule: a cluster without multi-tenancy cannot use
 `by-adapter`. The message does not, so the developer has to find the wiki page first, and
-the engine's wording ("tenant identifier") does not name any VanillaBP property. An
-application configuring `by-adapter` explicitly still runs into exactly this.
+the engine's wording ("tenant identifier") does not name any VanillaBP property.
 
-**What VanillaBP should do.** Recognise this rejection while deploying and re-raise it with
-the property to change, naming the adapter id and the workflow module. Everything needed is
-known at that moment. A check before deploying would be even better: whether the cluster has
-multi-tenancy enabled can be asked, and a mismatch with the configured mode is a startup
-error that names both sides.
+**What VanillaBP does now.** The cluster is asked before the deploy command is sent, which is
+where the mismatch between the configured mode and the cluster's multi-tenancy becomes a
+startup error naming both sides. An application which configures nothing never gets there,
+because no tenant is used until it asks for one.
 
-**Affects:** the Camunda 8 adapter on every platform. Camunda 7 has no equivalent, its
-name-clash avoidance is not tenant based.
+**Affects:** the Camunda 8 adapter on every platform. Camunda 7 uses tenants as well, but its
+engine accepts any tenant name without one having to exist, so there is nothing that could
+reject a deployment there.
