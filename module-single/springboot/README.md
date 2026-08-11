@@ -133,7 +133,9 @@ task and calls `WorkflowTaskHandler#retrieveCreditRating`, which does nothing bu
 to `Service#assessCreditRating`, with the aggregate loaded before and saved after the call.
 That happens in a transaction VanillaBP owns, which is why neither of the two classes
 declares one of its own. Only the method the API calls does, since starting a workflow has
-to run in a transaction.
+to run in a transaction. Putting `@Transactional` on a task handler anyway fails the boot
+with a message naming the method, and putting it on a bean the handler calls fails the task
+while it runs, so this is a rule VanillaBP enforces rather than one to remember.
 
 That the test waits instead of asserting immediately is not accidental: a BPMS runs tasks in
 its own transactions, and a remote one does so eventually. A test assuming otherwise passes

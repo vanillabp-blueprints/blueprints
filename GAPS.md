@@ -8,7 +8,8 @@ One section per finding. Keep the reproduction concrete enough to be turned into
 
 ## G1: an application-declared `@Transactional` silently disables the `TaskException` contract
 
-**Status:** open, found 2026-08-10 while building `bpmn-service-task/springboot`.
+**Status:** fixed in VanillaBP 2.0.0-SNAPSHOT on 2026-08-11, found 2026-08-10 while building
+`bpmn-service-task/springboot`. Kept here as the record of what the blueprints rely on.
 
 **Contract.** A `@WorkflowTask` method throwing a `TaskException` ends in a BPMN error, and
 everything the handler wrote onto the workflow aggregate is committed. This is what makes a
@@ -26,7 +27,7 @@ expected, so the model behaves correctly while the data does not, which is the w
 combination for finding it: the loan is rejected in the process and looks untouched in the
 database.
 
-**Reproduction.** In `bpmn-service-task/springboot`, add `@Transactional` to
+**Reproduction, as it was.** In `bpmn-service-task/springboot`, add `@Transactional` to
 `WorkflowTaskHandler` and run `LoanApprovalIT`:
 
 ```
@@ -36,7 +37,7 @@ LoanApprovalIT.aRejectedLoanTakesTheErrorPathAndKeepsWhatTheHandlerWrote
 ```
 
 Without the annotation the same test passes, with `creditRating=5` and the rejection reason
-persisted.
+persisted. The same annotation now fails the boot before any test runs.
 
 **Why it will be hit.** Putting `@Transactional` on a service class is the default reflex in
 a Spring Boot application, and it is the right thing to do for every method the API calls.
@@ -45,26 +46,33 @@ service, so anybody migrating brings the annotation along. The blueprints work a
 declaring transactions per method and writing down why, but a convention documented in a
 blueprint is not a safeguard.
 
-**What VanillaBP should do**, in descending order of preference:
+**How it was fixed.** The silence is gone, the annotation itself is still not allowed.
+Neither Spring nor JTA lets a rollback-only mark be cleared again, and the application's
+interceptor sits inside VanillaBP's transaction whatever propagation VanillaBP picks, so
+there is nothing left to repair once the mark is set. VanillaBP makes the mistake impossible
+to overlook instead, in two places:
 
-1. Handle it: run the task handler in a transaction VanillaBP fully controls, so that an
-   application-declared `@Transactional` joining it cannot decide about the rollback. If a
-   `TaskException` is on its way out, the rollback-only mark set by the interceptor has to be
-   irrelevant.
-2. Tell the developer at startup: the wiring analysis already inspects every
-   `@WorkflowTask` method. A method carrying `@Transactional` on itself or on its declaring
-   class is detectable there, and a startup message naming the class and what will happen
-   costs nothing at runtime.
-3. Tell the developer at runtime: when a `TaskException` is handled and the transaction
-   turns out to be rollback-only, log an error naming the workflow, the task and the likely
-   cause instead of committing nothing in silence.
+1. At startup, in the `@WorkflowTask` scanner. A transaction annotation on the handler
+   method, its class, a superclass, an interface or a custom annotation carrying one of them
+   fails the boot with a message naming the method and the way out. It is a defect only if
+   the propagation joins an existing transaction and the rollback rules do not exclude
+   `TaskException`, so `@Transactional(noRollbackFor = TaskException.class)`, which version 1
+   asked for, keeps booting.
+2. At runtime, after the handler has run. If the transaction turns out to be rollback-only,
+   the task fails with a message naming the workflow module, the BPMN process, the task and
+   the handler method. This is what catches a transactional bean further down the call chain,
+   which no startup check can see, and it also catches a handler swallowing the exception a
+   nested bean threw.
 
-Options 2 and 3 are not alternatives to each other. A startup check catches the common case
-before anybody runs a process, and the runtime check catches what a startup check cannot
-see, for example a transactional proxy somewhere further down the call chain.
+**What that means for a blueprint.** Nothing to change in the code: `@Transactional` belongs
+on the methods the API calls and nowhere near a task, which is what the blueprints already
+do. The prose no longer has to carry the warning as a safeguard, since a reader who ignores
+it gets a failed boot instead of a rejected loan looking untouched in the database.
 
 **Affects:** every platform, since the mechanism is the platform's transaction interceptor
-rather than the BPMS. Verified on Spring Boot with the Camunda 7 adapter.
+rather than the BPMS. On Quarkus, Spring's annotation only counts when `quarkus-spring-tx`
+maps it onto the JTA one, and `jakarta.ejb.@TransactionAttribute` counts on Spring alone, so
+each platform tells the check which annotations it honors.
 
 ## G2: deploying to a Camunda 8 cluster without multi-tenancy fails with the engine's error
 

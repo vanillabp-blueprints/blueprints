@@ -28,7 +28,9 @@ import lombok.extern.slf4j.Slf4j;
  * starting a workflow has to run in a transaction. It is deliberately absent from
  * {@link #assessCreditRating}: VanillaBP already runs a task handler in a transaction of
  * its own, and a second one declared here would roll back on {@code TaskException} and
- * throw away exactly the state the BPMN error is supposed to leave behind.
+ * throw away exactly the state the BPMN error is supposed to leave behind. VanillaBP sees
+ * the transaction it can no longer commit and fails the task naming it, so the mistake shows
+ * up rather than costing data.
  * </p>
  */
 @Slf4j

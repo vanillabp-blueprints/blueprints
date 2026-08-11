@@ -60,6 +60,11 @@ task handler in a transaction it owns and commits it for a `TaskException` delib
 transaction declared by the application would roll that back and throw away the rejection
 the process is about to react to.
 
+You do not have to remember that. An annotation on the handler or its class fails the boot
+with a message naming the method, and one on a bean the handler calls fails the task while it
+runs. What used to leave a rejected loan looking untouched in the database now stops the
+application instead.
+
 ## Running it
 
 Requires a JDK 21. Camunda 7 is embedded, so nothing else has to run:

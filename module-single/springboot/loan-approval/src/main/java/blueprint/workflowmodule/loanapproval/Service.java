@@ -34,7 +34,8 @@ import lombok.extern.slf4j.Slf4j;
  * methods a task handler calls: VanillaBP already runs a task in a transaction it owns,
  * and it commits that transaction for a {@code TaskException} on purpose. A transaction
  * declared here would roll back instead and throw away what the handler wrote for the
- * process to react to.
+ * process to react to. VanillaBP sees the transaction it can no longer commit and fails the
+ * task naming it, so the mistake shows up rather than costing data.
  * </p>
  */
 @Slf4j

@@ -75,7 +75,7 @@ identical in every blueprint - copy them unchanged.
 3. Add the `@WorkflowTask` method to `WorkflowTaskHandler`, named after the task
    definition. It takes the aggregate, adds a `@TaskParam` per input mapping the BPMN
    provides, calls `Service` and does nothing else. Never annotate it with
-   `@Transactional`, and never catch what the business code throws.
+   `@Transactional`, which fails the boot, and never catch what the business code throws.
 4. Add the business method to `Service`. Start it with a check on the aggregate that
    returns early if the work has been done already. Throw `TaskException(<error code>)` for
    an outcome the BPMN models, after writing to the aggregate what the process needs to
@@ -87,7 +87,9 @@ identical in every blueprint - copy them unchanged.
 
 If the project already has a business service for this use case, add the methods there
 rather than creating a second one, and keep `@Transactional` off the methods a task handler
-calls.
+calls. VanillaBP cannot see such an annotation while booting, but the task fails when it
+runs, with a message naming the workflow module, the process, the task and the handler
+method.
 
 ## Verifying
 
@@ -106,9 +108,9 @@ All three tests of `LoanApprovalIT` have to pass. They are the proof of the aspe
 - a rejected loan keeps its `rejectionReason`, which is what proves that a `TaskException`
   commits.
 
-If the third test fails while the first two pass, look for a `@Transactional` on the task
-handler or on the service method it calls. If a task is never executed, the wiring between
-BPMN and code is wrong, and the startup log names which BPMN task has no method or which
-method has no task.
+A `@Transactional` reaching the task no longer needs to be guessed from a failing assertion:
+on the handler it fails the boot, on a bean the handler calls it fails the task, and both
+messages name the method. If a task is never executed, the wiring between BPMN and code is
+wrong, and the startup log names which BPMN task has no method or which method has no task.
 
 Do not report success without having run this.
