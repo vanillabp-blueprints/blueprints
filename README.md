@@ -1,3 +1,5 @@
+![Header](./readme/vanillabp-headline.png)
+
 # VanillaBP blueprints
 
 Development monorepo of the [VanillaBP](https://www.vanillabp.io) blueprints: many small
@@ -6,6 +8,7 @@ with VanillaBP.
 
 [![Build](https://github.com/vanillabp-blueprints/blueprints/actions/workflows/build.yaml/badge.svg)](https://github.com/vanillabp-blueprints/blueprints/actions/workflows/build.yaml)
 [![Nightly](https://github.com/vanillabp-blueprints/blueprints/actions/workflows/nightly.yaml/badge.svg)](https://github.com/vanillabp-blueprints/blueprints/actions/workflows/nightly.yaml)
+[![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 **This README is for contributors.** If you are looking for a blueprint to use, start at the
 [organisation page](https://github.com/vanillabp-blueprints). It lists all blueprints by
@@ -83,6 +86,15 @@ Blueprints do not repeat the reference documentation, they link it:
 - [adapter-platform-integration wiki](https://github.com/vanillabp/adapter-platform-integration/wiki): concepts, platforms, configuration
 - the wiki of the respective [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters): BPMS-specific fine-tuning
 
+## Noteworthy & Contributors
+
+[VanillaBP](https://www.github.com/vanillabp/spi-for-java) was developed by [Phactum](https://www.phactum.at) with the
+intention of giving back to the community as it has benefited the community in the past.
+
+![Phactum](./readme/phactum.png)
+
 ## License
 
-[Apache License, Version 2.0](LICENSE), see also [NOTICE](NOTICE).
+Copyright 2026 Phactum Softwareentwicklung GmbH
+
+Licensed under the Apache License, Version 2.0

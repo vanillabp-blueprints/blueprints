@@ -1,4 +1,8 @@
+![Header](./readme/vanillabp-headline.png)
+
 # Application plus one workflow module
+
+[![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 This is the base blueprint, the normal case, and the one to start from. A workflow module
 is a JAR containing BPMN models and the code implementing them; an application pulls it in
@@ -146,3 +150,16 @@ on one engine and fails on the next.
 This blueprint is developed in the monorepo
 [`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a
 read-only mirror, **issues and pull requests belong there.**
+
+## Noteworthy & Contributors
+
+[VanillaBP](https://www.github.com/vanillabp/spi-for-java) was developed by [Phactum](https://www.phactum.at) with the
+intention of giving back to the community as it has benefited the community in the past.
+
+![Phactum](./readme/phactum.png)
+
+## License
+
+Copyright 2026 Phactum Softwareentwicklung GmbH
+
+Licensed under the Apache License, Version 2.0
