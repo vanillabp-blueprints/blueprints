@@ -35,6 +35,7 @@
   <modules>
     <module>module-single/springboot</module>
     <module>bpmn-service-task/springboot</module>
+    <module>bpmn-user-task/springboot</module>
   </modules>
 
   <scm>
