@@ -1,4 +1,8 @@
+![Header](./readme/vanillabp-headline.png)
+
 # <Blueprint title>
+
+[![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 <!--
 Template for the README.md of a blueprint. This file is for HUMANS: it explains the
@@ -77,3 +81,16 @@ Keep it to the files that matter; the boilerplate is listed in AGENTS.md.>
 This blueprint is developed in the monorepo
 [`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a
 read-only mirror, **issues and pull requests belong there.**
+
+## Noteworthy & Contributors
+
+[VanillaBP](https://www.github.com/vanillabp/spi-for-java) was developed by [Phactum](https://www.phactum.at) with the
+intention of giving back to the community as it has benefited the community in the past.
+
+![Phactum](./readme/phactum.png)
+
+## License
+
+Copyright 2026 Phactum Softwareentwicklung GmbH
+
+Licensed under the Apache License, Version 2.0

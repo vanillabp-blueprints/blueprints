@@ -40,6 +40,10 @@ SECTIONS = {
         ("Running it", True),
         ("How it works", True),
         ("Documentation", True),
+        # The footer every VanillaBP repository carries. A split blueprint is a repository
+        # of its own, so it says who wrote this and under which license it may be used.
+        ("Noteworthy & Contributors", True),
+        ("License", True),
     ],
     "AGENTS.md": [
         ("Placeholders", True),
