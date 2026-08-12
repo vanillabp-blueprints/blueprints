@@ -62,7 +62,9 @@ if [ "${DRY_RUN}" = "1" ]; then
     exit 1
   fi
 else
-  git clone --quiet --depth 1 --branch "${INDEX_BRANCH}" \
+  # Full history on purpose: the index is pushed at the end of this script and rebased
+  # onto whatever arrived meanwhile, which needs the commit both sides branched from.
+  git clone --quiet --branch "${INDEX_BRANCH}" \
     "https://x-access-token:${GH_TOKEN}@github.com/${INDEX_REPO}.git" "${index}"
 fi
 
@@ -169,5 +171,9 @@ git -C "${index}" add blueprints.yaml
 git -C "${index}" commit --quiet \
   -m "docs: mark blueprints available which have been split out" \
   -m "Written by the split job of the monorepo."
+# The index was cloned when this job started, and somebody may have pushed to it since -
+# a blueprint marked available by hand, or an entry added for a blueprint yet to come.
+# Rebasing onto that keeps both changes instead of losing the race.
+git -C "${index}" pull --rebase --quiet origin "${INDEX_BRANCH}"
 git -C "${index}" push --quiet
 echo "index updated - the organisation page is rendered by its own workflow"
