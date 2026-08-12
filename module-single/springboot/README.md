@@ -128,6 +128,23 @@ Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 
 Opening that URL shows the aggregate, including the credit rating the service task wrote.
 
+While the application runs on Camunda 7, Camunda's own web applications are served at
+
+```
+http://localhost:8080/camunda
+```
+
+Log in with `demo` / `demo`. Cockpit shows what the engine is doing with the workflows
+started above, which is the view the logged URLs cannot give: where an instance stands, and
+why a job failed. The user comes from
+`application/src/main/camunda7/resources/camunda7-webapps.yaml` and exists so that the
+blueprint can be operated without setting one up; an application with an identity provider
+of its own leaves that section out.
+
+The Camunda 8 profile ships neither the dependency nor that file. Its tooling is part of
+the cluster, and the file names a Camunda 7 adapter id, which VanillaBP would rightly
+refuse to start with.
+
 ## How it works
 
 |                                          File                                          |                                                        Role                                                         |

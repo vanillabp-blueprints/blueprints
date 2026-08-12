@@ -5,6 +5,10 @@
 # workflow module are enough for VanillaBP to derive the adapter, the workflow module and
 # the location its BPMN files are read from.
 spring:
+  # Present in the Camunda 7 profile only, where it configures the web applications
+  # served at /camunda. 'optional:' is what makes the other profiles ignore it.
+  config:
+    import: optional:classpath:camunda7-webapps.yaml
   datasource:
     url: jdbc:h2:mem:loan-approval;DB_CLOSE_DELAY=-1
     username: sa

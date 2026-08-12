@@ -45,21 +45,22 @@ instead of taking the error path.
 
 ## Boilerplate files
 
-|                                    File                                     |                                    Purpose                                     |
-|-----------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                                  | the BPMS profiles and the VanillaBP BOM import                                 |
-| `loan-approval/pom.xml`                                                     | `vanillabp-spring-boot-support`, never an adapter                              |
-| `application/pom.xml`                                                       | the BPMS adapter, the only place a BPMS is named                               |
-| `application/src/main/java/.../Application.java`                            | the Spring Boot application, in the parent package of the module               |
-| `application/src/main/resources/application.yaml`                           | datasource only; no `vanillabp.*` property is needed                           |
-| `loan-approval/src/main/java/.../loanapproval/LocalCreditRatingClient.java` | stand-in provider so the blueprint runs alone; replace it with the real client |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                | what the application tells the process; unchanged from the base blueprint      |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java`           | GET endpoints operating the process                                            |
-| `loan-approval/src/test/java/.../TestApplication.java`                      | the minimal application the module's test boots                                |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`                   | base class of the integration test: waits for workflow progress                |
-| `loan-approval/src/test/java/.../Simulator.java`                            | base class of a stand-in for a surrounding system                              |
-| `application/src/test/java/.../ApplicationSmokeTest.java`                   | boots the application, which validates the BPMN-to-code wiring                 |
-| `docs/loan_approval.png`                                                    | the picture of the process the README shows, rendered from the BPMN model      |
+|                                    File                                     |                                           Purpose                                           |
+|-----------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                                  | the BPMS profiles and the VanillaBP BOM import                                              |
+| `loan-approval/pom.xml`                                                     | `vanillabp-spring-boot-support`, never an adapter                                           |
+| `application/pom.xml`                                                       | the BPMS adapter, the only place a BPMS is named                                            |
+| `application/src/main/java/.../Application.java`                            | the Spring Boot application, in the parent package of the module                            |
+| `application/src/main/resources/application.yaml`                           | the datasource, and the optional import of the file below                                   |
+| `application/src/main/camunda7/resources/camunda7-webapps.yaml`             | the demo user of Camunda's web applications; on the classpath in the Camunda 7 profile only |
+| `loan-approval/src/main/java/.../loanapproval/LocalCreditRatingClient.java` | stand-in provider so the blueprint runs alone; replace it with the real client              |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                | what the application tells the process; unchanged from the base blueprint                   |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java`           | GET endpoints operating the process                                                         |
+| `loan-approval/src/test/java/.../TestApplication.java`                      | the minimal application the module's test boots                                             |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`                   | base class of the integration test: waits for workflow progress                             |
+| `loan-approval/src/test/java/.../Simulator.java`                            | base class of a stand-in for a surrounding system                                           |
+| `application/src/test/java/.../ApplicationSmokeTest.java`                   | boots the application, which validates the BPMN-to-code wiring                              |
+| `docs/loan_approval.png`                                                    | the picture of the process the README shows, rendered from the BPMN model                   |
 
 `TestApplication`, `WorkflowModuleTest`, `Simulator` and `ApplicationSmokeTest` are
 identical in every blueprint - copy them unchanged.
