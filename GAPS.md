@@ -116,6 +116,13 @@ where the mismatch between the configured mode and the cluster's multi-tenancy b
 startup error naming both sides. An application which configures nothing never gets there,
 because no tenant is used until it asks for one.
 
+**What that means for a blueprint.** The Camunda 8 snippet in both READMEs no longer sets
+`name-clash-avoidance`, since nothing has to be configured to boot against a stock cluster.
+The new WARN stays in the log on purpose: with one workflow module nothing can collide, and a
+blueprint showing how VanillaBP asks for a decision is worth more than a quiet log. Both
+READMEs explain it and name `accept-unscoped-identifiers` as the answer, so the blueprints
+keep their configuration free of `vanillabp.*` properties.
+
 **Affects:** the Camunda 8 adapter on every platform. Camunda 7 uses tenants as well, but its
 engine accepts any tenant name without one having to exist, so there is nothing that could
 reject a deployment there.

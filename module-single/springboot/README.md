@@ -93,6 +93,25 @@ Start the application:
 mvn -pl application spring-boot:run
 ```
 
+Booting logs a warning per workflow module, and it is meant to be read rather than filtered
+away. Both Camunda adapters start out with `name-clash-avoidance: none`, so the identifiers
+of this module reach the engine as they are, and the adapter names what it could do instead
+and asks for a decision. With one workflow module nothing can collide, which is why this
+blueprint leaves the setting alone and keeps its configuration free of `vanillabp.*`. An
+application that wants the question answered answers it once:
+
+```yaml
+vanillabp:
+  adapters:
+    camunda7:
+      accept-unscoped-identifiers: true
+```
+
+That is a promise that the identifiers are unique across all workflow modules, and it turns
+the warning into a debug line. Which modes a BPMS offers, and why switching the mode later is
+a migration rather than a configuration change, is in
+[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+
 Start a loan approval. This is the only URL you need:
 
 ```
@@ -147,6 +166,7 @@ on one engine and fails on the next.
 
 - [Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules): what a workflow module is, its ID, and where its BPMN files are looked for
 - [Defining a workflow module](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules-in-Spring-Boot#defining-a-workflow-module): the marker file, resource conventions and the module's own configuration files
+- [How name clashes are avoided](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided): what the warning at startup is about, and the modes keeping two workflow modules apart
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why there are no process variables
 - [Wire up a process / Wire up a task](https://github.com/vanillabp/spi-for-java#usage): the annotations used in `WorkflowTaskHandler.java`
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how a BPMN task has to be modelled for that engine
