@@ -19,7 +19,11 @@ jobs:
       - id: list
         name: Collect the blueprint directories
         run: |
-          list=$(ls -d */*/springboot */*/quarkus 2>/dev/null | jq -R -s -c 'split("\n")[:-1]')
+          # a blueprint is a directory with a POM: the harness reference in templates/
+          # matches the same shape and is not one
+          list=$(for directory in */*/springboot */*/quarkus; do
+            if [ -f "${directory}/pom.xml" ]; then echo "${directory}"; fi
+          done | jq -R -s -c 'split("\n")[:-1]')
           echo "blueprints=${list}" >> "$GITHUB_OUTPUT"
           echo "Building: ${list}"
 
