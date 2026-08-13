@@ -40,6 +40,15 @@ Two more things this blueprint carries:
   the workflow has taken away. `Service#openPartnerRequest` compares it with the one on the
   aggregate and refuses anything else, before the BPMS is involved.
 
+Who guards which direction is worth knowing. Everything the application sends to the BPMS
+goes through VanillaBP's transaction outbox, which keys operations for idempotency and
+dispatches them at least once - completing a task twice is a logged no-op, and the same is
+true for the answer of a partner arriving twice. The other direction is the application's
+job: a BPMS may deliver the same task again, and
+[the wiki says so plainly](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#what-happens-when-my-handler-throws)
+- key the decision on the state of the aggregate, which is what the early return above
+does.
+
 The difference to a user task is who answers, not how it works: the mechanics below are the
 same, and `bpmn-user-task` shows them for a person instead of a system.
 

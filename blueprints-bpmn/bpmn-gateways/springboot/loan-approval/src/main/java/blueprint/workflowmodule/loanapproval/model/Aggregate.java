@@ -60,8 +60,44 @@ public class Aggregate {
   @Column
   private String ratingBand;
 
-  /** Which way the gateway sent the workflow, written by the task on that branch. */
+  /** Which way the gateways sent the workflow, written by the task on that branch. */
   @Column
   private String outcome;
+
+  /** How the customer was told about the decision, written on the approved branch. */
+  @Column
+  private String notifiedBy;
+
+  /**
+   * The first decision of the process, expressed as the question the BPMN asks: may this
+   * loan be approved without anybody looking at it?
+   *
+   * <p>
+   * The gateway references this getter rather than {@link #ratingBand}, which is the
+   * technique the wiki recommends: the model asks a question, the aggregate answers it,
+   * and the data behind the answer stays free to change. Turning
+   * <code>ratingBand</code> into an enum, a number or three separate columns later is a
+   * migration of this class alone - the BPMN and every workflow already running keep
+   * working.
+   * </p>
+   *
+   * @return Whether the rating is good enough.
+   */
+  public boolean isRatedAcceptable() {
+
+    return "acceptable".equals(ratingBand);
+
+  }
+
+  /**
+   * The second half of the same decision: should a person look at this request?
+   *
+   * @return Whether the request goes to a manual review.
+   */
+  public boolean isRatedForManualReview() {
+
+    return "review".equals(ratingBand);
+
+  }
 
 }

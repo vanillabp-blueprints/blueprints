@@ -83,6 +83,32 @@ public class WorkflowTaskHandler {
   }
 
   /**
+   * Called on the branch of the second gateway taken for a large amount.
+   *
+   * @param loanApproval The workflow's aggregate.
+   */
+  @WorkflowTask
+  public void sendPaperLetter(
+      final Aggregate loanApproval) {
+
+    service.sendPaperLetter(loanApproval);
+
+  }
+
+  /**
+   * Called on the default flow of the second gateway.
+   *
+   * @param loanApproval The workflow's aggregate.
+   */
+  @WorkflowTask
+  public void sendEmail(
+      final Aggregate loanApproval) {
+
+    service.sendEmail(loanApproval);
+
+  }
+
+  /**
    * Called on the branch asking a person to look at the request.
    *
    * @param loanApproval The workflow's aggregate.

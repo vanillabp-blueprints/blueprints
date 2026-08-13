@@ -161,6 +161,39 @@ public class Service {
   }
 
   /**
+   * The customer gets a letter, which is the branch the second gateway takes for a large
+   * amount.
+   *
+   * @param loanApproval The workflow's aggregate.
+   */
+  public void sendPaperLetter(
+      final Aggregate loanApproval) {
+
+    loanApproval.setNotifiedBy("letter");
+
+    log.info(
+        "The customer of loan approval '{}' gets a paper letter",
+        loanApproval.getLoanRequestId());
+
+  }
+
+  /**
+   * The customer gets an email, which is the default flow of the second gateway.
+   *
+   * @param loanApproval The workflow's aggregate.
+   */
+  public void sendEmail(
+      final Aggregate loanApproval) {
+
+    loanApproval.setNotifiedBy("email");
+
+    log.info(
+        "The customer of loan approval '{}' gets an email",
+        loanApproval.getLoanRequestId());
+
+  }
+
+  /**
    * What a rating counts as. The three values are the vocabulary the BPMN routes on, so
    * they are part of the contract with the model - renaming one means touching both.
    *

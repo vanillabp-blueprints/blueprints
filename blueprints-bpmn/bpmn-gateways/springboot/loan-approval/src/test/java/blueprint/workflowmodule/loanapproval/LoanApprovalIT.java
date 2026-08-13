@@ -40,7 +40,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     return awaitAggregate(
         loanApprovals,
         loanRequestId,
-        aggregate -> aggregate.getOutcome() != null);
+        aggregate -> (aggregate.getOutcome() != null) && (!"approved"
+            .equals(aggregate.getOutcome()) || (aggregate.getNotifiedBy() != null)));
 
   }
 
@@ -53,7 +54,21 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     assertThat(loanApproval.getCreditRating()).isEqualTo(50);
     assertThat(loanApproval.getRatingBand()).isEqualTo("acceptable");
+    assertThat(loanApproval.isRatedAcceptable()).isTrue();
     assertThat(loanApproval.getOutcome()).isEqualTo("approved");
+    // the second gateway, the one reading the raw amount: 5000 is below its threshold
+    assertThat(loanApproval.getNotifiedBy()).isEqualTo("email");
+
+  }
+
+  @Test
+  @DisplayName("The second gateway sends a letter for a large amount")
+  public void aLargeAmountIsAnsweredByLetter() {
+
+    final var loanApproval = runWith(50000);
+
+    assertThat(loanApproval.getOutcome()).isEqualTo("approved");
+    assertThat(loanApproval.getNotifiedBy()).isEqualTo("letter");
 
   }
 
