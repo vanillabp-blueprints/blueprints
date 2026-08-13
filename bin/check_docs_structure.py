@@ -5,7 +5,7 @@ A blueprint carries a README.md for humans and an AGENTS.md for AI agents. Both 
 fixed section structure, which is what makes them predictable: an agent which has read one
 AGENTS.md knows where to look in all of them.
 
-Checked per blueprint directory '<blueprint-id>/<platform>/':
+Checked per blueprint directory '<group>/<blueprint-id>/<platform>/':
 
   - README.md and AGENTS.md exist,
   - they contain the required '##' sections, in the defined order,
@@ -207,7 +207,7 @@ def main():
             root,
         )
 
-    for pom in sorted(root.glob("*/*/pom.xml")):
+    for pom in sorted(root.glob("*/*/*/pom.xml")):
         directory = pom.parent
         blueprint_id, platform = directory.parent.name, directory.name
         if platform not in PLATFORMS:

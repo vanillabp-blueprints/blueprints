@@ -6,12 +6,12 @@
 # is not something you read. The pictures are committed, so a README renders on GitHub
 # without anybody having to run a tool.
 #
-# For each directory '<blueprint-id>/<platform>/' the models of one adapter are rendered,
+# For each directory '<group>/<blueprint-id>/<platform>/' the models of one adapter are rendered,
 # the first one alphabetically. The BPMN files below 'processes/<adapter-id>/' differ in
 # their engine specific attributes only, never in their diagram, so one picture holds for
 # every BPMS a blueprint supports.
 #
-# The picture goes to '<blueprint-id>/<platform>/docs/<process-id>.png', inside the
+# The picture goes to '<group>/<blueprint-id>/<platform>/docs/<process-id>.png', inside the
 # directory the split turns into a repository.
 #
 # PNG rather than SVG on purpose: bpmn-js draws dark strokes on no background at all, so an
@@ -40,7 +40,7 @@ fi
 count=0
 
 for platform in "${PLATFORMS[@]}"; do
-  for pom in */"${platform}"/pom.xml; do
+  for pom in */*/"${platform}"/pom.xml; do
     [ -f "${pom}" ] || continue
     blueprint="$(dirname "${pom}")"
 

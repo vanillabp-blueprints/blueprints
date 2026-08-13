@@ -173,7 +173,7 @@ npm install -g bpmn-to-image     # once
 bin/render_bpmn_images.sh
 ```
 
-The result goes to `<blueprint-id>/<platform>/docs/<process-id>.png` and is referenced
+The result goes to `<group>/<blueprint-id>/<platform>/docs/<process-id>.png` and is referenced
 relatively (`docs/loan_approval.png`), which keeps working after the split. Re-run the
 script whenever a model changes, and commit what it wrote.
 
@@ -184,13 +184,16 @@ strokes on no background at all and an SVG of that is unreadable in GitHub's dar
 
 ## Adding a blueprint
 
-1. Create `<blueprint-id>/<platform>/` and add it to `<modules>` of the root POM.
-2. Copy the structure of `module-single/<platform>/` and apply your delta, including the
+1. Create `<group>/<blueprint-id>/<platform>/` and add it to `<modules>` of the root POM.
+   The group is the blueprint's category: `blueprints-modules`, `blueprints-persistence`,
+   `blueprints-bpmn` or `showcases`. `bin/check_index_consistency.py` rejects a blueprint
+   sitting in the wrong one.
+2. Copy the structure of `blueprints-modules/module-single/<platform>/` and apply your delta, including the
    test harness files it needs (see above) and the three files every split repository
    needs of its own:
 
    ```bash
-   cp LICENSE NOTICE .gitignore <blueprint-id>/<platform>/
+   cp LICENSE NOTICE .gitignore <group>/<blueprint-id>/<platform>/
    ```
 3. Write `README.md` (for humans) and `AGENTS.md` (for agents) from the templates, and
    render the picture of the process the README shows (see above):
@@ -217,7 +220,7 @@ python3 bin/check_index_consistency.py blueprints.yaml
 ## Delivery: how a blueprint reaches its own repository
 
 Pushing to `main` runs `.github/workflows/split.yaml`, which calls
-`bin/split_blueprints.sh`. For every directory `<blueprint-id>/<platform>/` that exists it
+`bin/split_blueprints.sh`. For every directory `<group>/<blueprint-id>/<platform>/` that exists it
 
 1. creates `vanillabp-blueprints/<blueprint-id>-<platform>` unless it is already there, and
    sets its description and homepage from `blueprints.yaml`,
@@ -277,7 +280,7 @@ Three workflows, and they answer three different questions.
 | `build.yaml`   | does every blueprint build and test, alone and through the aggregator, on every BPMS it claims? |
 | `nightly.yaml` | does it still, against today's snapshots of the framework?                                      |
 
-The job that matters most is `blueprint`: it builds `<blueprint-id>/<platform>/` with a
+The job that matters most is `blueprint`: it builds `<group>/<blueprint-id>/<platform>/` with a
 plain `mvn`, without the aggregator, the wrapper or the root POM. That is exactly the
 repository a user clones after the split, so a blueprint does not need to be split to find
 out whether it works. The matrix is not maintained anywhere; it is the list of directories
@@ -288,7 +291,7 @@ first:
 
 ```bash
 bin/camunda8_cluster.sh start
-cd bpmn-service-task/springboot && mvn -Pcamunda8 install verify
+cd blueprints-bpmn/bpmn-service-task/springboot && mvn -Pcamunda8 install verify
 bin/camunda8_cluster.sh stop
 ```
 

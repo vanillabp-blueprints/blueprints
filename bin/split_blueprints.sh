@@ -3,7 +3,7 @@
 # Push every blueprint of this monorepo into a repository of its own.
 #
 # The job is DIRECTORY DRIVEN and IDEMPOTENT: it iterates over the directories
-# '<blueprint-id>/<platform>/' which exist and splits what it finds. A blueprint whose
+# '<group>/<blueprint-id>/<platform>/' which exist and splits what it finds. A blueprint whose
 # platform directory does not exist yet is not mentioned anywhere - no repository is
 # created on stock, and the index keeps saying 'planned' until the directory arrives. A
 # later run picks it up without anybody having to remember it.
@@ -89,7 +89,7 @@ split_count=0
 splitted=()
 
 for platform in "${PLATFORMS[@]}"; do
-  for pom in */"${platform}"/pom.xml; do
+  for pom in */*/"${platform}"/pom.xml; do
     [ -f "${pom}" ] || continue
     prefix="$(dirname "${pom}")"
     id="$(basename "$(dirname "${prefix}")")"

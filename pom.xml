@@ -27,15 +27,17 @@
   </developers>
 
   <!--
-    One module per blueprint and platform, using the path '<blueprint-id>/<platform>/'
-    (e.g. 'module-single/springboot'). This POM aggregates those modules but is
+    One module per blueprint and platform, using the path
+    '<group>/<blueprint-id>/<platform>/' (e.g. 'blueprints-modules/module-single/springboot').
+    The group directory is the blueprint's category, so the top level of this repository
+    stays a handful of entries however many blueprints there are. This POM aggregates those modules but is
     deliberately NOT their Maven parent: every blueprint has to build on its own after
     having been split into its own repository. See CONTRIBUTING.md.
   -->
   <modules>
-    <module>module-single/springboot</module>
-    <module>bpmn-service-task/springboot</module>
-    <module>bpmn-user-task/springboot</module>
+    <module>blueprints-modules/module-single/springboot</module>
+    <module>blueprints-bpmn/bpmn-service-task/springboot</module>
+    <module>blueprints-bpmn/bpmn-user-task/springboot</module>
   </modules>
 
   <scm>

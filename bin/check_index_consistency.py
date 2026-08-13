@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Check this monorepo against the blueprints index of the '.github' repository.
 
-Three things have to agree: the directories '<blueprint-id>/<platform>/' present here,
-the '<modules>' of the root POM, and the entries of blueprints.yaml.
+Three things have to agree: the directories '<group>/<blueprint-id>/<platform>/' present
+here, the '<modules>' of the root POM, and the entries of blueprints.yaml.
 
   monorepo directory  ->  has to be a module of the root POM
   monorepo directory  ->  has to be an entry of the index
+  monorepo directory  ->  has to sit in the group directory of its category
   index 'available'   ->  the directory has to exist here
 
 The one thing which is deliberately NOT an error by default is a directory whose index
@@ -25,13 +26,25 @@ import yaml
 MAVEN_NS = {"m": "http://maven.apache.org/POM/4.0.0"}
 PLATFORMS = ("springboot", "quarkus")
 
+# The group directory a blueprint of a category lives in. It keeps the top level of this
+# repository at a handful of entries, and it is a rule rather than a habit because this
+# check enforces it.
+GROUP_OF_CATEGORY = {
+    "module": "blueprints-modules",
+    "persistence": "blueprints-persistence",
+    "bpmn": "blueprints-bpmn",
+    "showcase": "showcases",
+}
+
 
 def blueprint_directories(root):
-    found = set()
-    for pom in root.glob("*/*/pom.xml"):
+    """Every blueprint directory, as (blueprint id, platform) -> group directory."""
+    found = {}
+    for pom in root.glob("*/*/*/pom.xml"):
         blueprint_id, platform = pom.parent.parent.name, pom.parent.name
+        group = pom.parent.parent.parent.name
         if platform in PLATFORMS:
-            found.add((blueprint_id, platform))
+            found[(blueprint_id, platform)] = group
     return found
 
 
@@ -40,8 +53,8 @@ def pom_modules(root):
     modules = set()
     for module in project.findall("m:modules/m:module", MAVEN_NS):
         parts = (module.text or "").strip().split("/")
-        if len(parts) == 2:
-            modules.add((parts[0], parts[1]))
+        if len(parts) == 3:
+            modules.add((parts[1], parts[2]))
         else:
             modules.add((module.text, None))
     return modules
@@ -62,6 +75,7 @@ def main():
         for blueprint in index["blueprints"]
         for platform in PLATFORMS
     }
+    category_of = {blueprint["id"]: blueprint["category"] for blueprint in index["blueprints"]}
     directories = blueprint_directories(root)
     modules = pom_modules(root)
 
@@ -72,6 +86,13 @@ def main():
             errors.append(
                 f"{blueprint_id}/{platform}: exists but is not a <module> of the root"
                 " POM, so it is never built"
+            )
+        category = category_of.get(blueprint_id)
+        expected_group = GROUP_OF_CATEGORY.get(category)
+        if expected_group is not None and directories[(blueprint_id, platform)] != expected_group:
+            errors.append(
+                f"{directories[(blueprint_id, platform)]}/{blueprint_id}/{platform}: a"
+                f" blueprint of category '{category}' belongs into '{expected_group}/'"
             )
         status = indexed.get((blueprint_id, platform))
         if status is None:

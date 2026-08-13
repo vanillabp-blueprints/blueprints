@@ -39,7 +39,7 @@ def references(root, platform):
 def copies(root, platform, known):
     """Every existing copy of a harness file, as (copy, reference) pairs."""
     found = []
-    for pom in sorted(root.glob(f"*/{platform}/**/pom.xml")):
+    for pom in sorted(root.glob(f"*/*/{platform}/**/pom.xml")):
         target = pom.parent / TARGET_PACKAGE
         if not target.is_dir():
             continue

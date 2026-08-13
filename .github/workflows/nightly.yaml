@@ -19,7 +19,7 @@ jobs:
       - id: list
         name: Collect the blueprint directories
         run: |
-          list=$(ls -d */springboot */quarkus 2>/dev/null | jq -R -s -c 'split("\n")[:-1]')
+          list=$(ls -d */*/springboot */*/quarkus 2>/dev/null | jq -R -s -c 'split("\n")[:-1]')
           echo "blueprints=${list}" >> "$GITHUB_OUTPUT"
           echo "Building: ${list}"
 

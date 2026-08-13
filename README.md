@@ -32,17 +32,22 @@ The delivered repositories are read-only mirrors. **Issues and pull requests bel
 blueprints/
 ├── pom.xml                  aggregator, formatting, BPMS profiles
 ├── formatting_conventions.xml
-├── <blueprint-id>/
-│   ├── springboot/          -> repository <blueprint-id>-springboot
-│   ├── quarkus/             -> repository <blueprint-id>-quarkus
-│   └── twin-diff-allow.txt  approved differences between the platform twins
+├── <group>/                 one per category: blueprints-modules, blueprints-persistence,
+│   │                        blueprints-bpmn, showcases
+│   └── <blueprint-id>/
+│       ├── springboot/      -> repository <blueprint-id>-springboot
+│       ├── quarkus/         -> repository <blueprint-id>-quarkus
+│       └── twin-diff-allow.txt  approved differences between the platform twins
 ...
 ```
 
 Blueprint IDs are `<category>-<aspect>` in lower case, the category being one of `module-`,
 `persistence-`, `bpmn-` or `showcase-`. `<platform>` is `springboot` or `quarkus`.
 
-So far the only blueprint here is `module-single` for Spring Boot. The rest of this
+So far the blueprints here are `module-single`, `bpmn-service-task` and `bpmn-user-task`,
+all for Spring Boot. They live in a directory per category (`blueprints-modules`,
+`blueprints-bpmn`, later `blueprints-persistence` and `showcases`), so the top level stays
+readable however many of them there are. The rest of this
 repository is the build, the formatting rules and the conventions the others will follow.
 
 ## Building
@@ -52,7 +57,7 @@ Requires a JDK 21; Maven comes with the wrapper.
 ```bash
 ./mvnw install verify                    # all blueprints, default BPMS
 ./mvnw install verify -Pcamunda8         # ... on another BPMS
-./mvnw install verify -pl module-single/springboot
+./mvnw install verify -pl blueprints-modules/module-single/springboot
 ./mvnw -N spotless:apply                 # fix formatting violations
 ```
 
@@ -63,7 +68,7 @@ Each blueprint also builds on its own, which is what a user gets after cloning a
 repository:
 
 ```bash
-cd module-single/springboot && mvn verify
+cd blueprints-modules/module-single/springboot && mvn verify
 ```
 
 ## The BPMS is a Maven profile
