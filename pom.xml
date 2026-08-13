@@ -41,6 +41,7 @@
     <module>blueprints-bpmn/bpmn-async-task/springboot</module>
     <module>blueprints-bpmn/bpmn-gateways/springboot</module>
     <module>blueprints-bpmn/bpmn-boundary-events/springboot</module>
+    <module>blueprints-bpmn/bpmn-message-correlation/springboot</module>
     <module>blueprints-bpmn/bpmn-message-start/springboot</module>
     <module>blueprints-bpmn/bpmn-timer/springboot</module>
   </modules>
