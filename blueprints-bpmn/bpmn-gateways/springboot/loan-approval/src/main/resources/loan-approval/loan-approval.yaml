@@ -1,0 +1,13 @@
+# Configuration of the workflow module 'loan-approval'.
+#
+# The file is named after the workflow module ID and is loaded automatically, with a
+# higher priority than application.yaml. Everything only this module needs belongs here -
+# that is what keeps a workflow module a self-contained application inside the
+# application.
+loan-approval:
+  rating-scale: 100
+  # What the gateway routes on. The BPMN reads two attributes of the workflow aggregate,
+  # the business code derives them from these two numbers - so a changed threshold does
+  # not touch the model.
+  minimum-rating: 30
+  manual-review-rating: 10
