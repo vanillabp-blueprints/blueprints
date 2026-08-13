@@ -38,6 +38,7 @@
     <module>blueprints-modules/module-single/springboot</module>
     <module>blueprints-bpmn/bpmn-service-task/springboot</module>
     <module>blueprints-bpmn/bpmn-user-task/springboot</module>
+    <module>blueprints-bpmn/bpmn-async-task/springboot</module>
   </modules>
 
   <scm>

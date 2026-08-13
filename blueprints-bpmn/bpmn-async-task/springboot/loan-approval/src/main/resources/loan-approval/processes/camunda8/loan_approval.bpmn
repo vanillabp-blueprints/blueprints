@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToRetrieveCreditRating</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRetrieveCreditRating" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_RetrieveCreditRating" />
+    <bpmn:serviceTask id="ServiceTask_RetrieveCreditRating" name="Retrieve credit rating">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="retrieveCreditRating" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToRetrieveCreditRating</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToRequestPartnerApproval</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToRequestPartnerApproval" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="SendTask_RequestPartnerApproval" />
+    <!--
+      The asynchronous task. Its job type is the task definition, and the job stays open
+      after the handler returned because that handler asks for the task's ID. The process
+      waits here until the application completes the task.
+    -->
+    <bpmn:sendTask id="SendTask_RequestPartnerApproval" name="Request partner approval">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="requestPartnerApproval" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToRequestPartnerApproval</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToInformCustomer</bpmn:outgoing>
+    </bpmn:sendTask>
+    <!--
+      The way out other than completing: the application cancels the task with this error
+      code, and the workflow leaves the user task here.
+    -->
+    <bpmn:boundaryEvent id="BoundaryEvent_PartnerRejected" name="Rejected" attachedToRef="SendTask_RequestPartnerApproval">
+      <bpmn:outgoing>Flow_ToNoteRejection</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_PartnerRejected" errorRef="Error_PartnerRejected" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_ToInformCustomer" sourceRef="SendTask_RequestPartnerApproval" targetRef="ServiceTask_InformCustomer" />
+    <bpmn:serviceTask id="ServiceTask_InformCustomer" name="Inform customer">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="informCustomer" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToInformCustomer</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanAssessed</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanAssessed" sourceRef="ServiceTask_InformCustomer" targetRef="EndEvent_LoanAssessed" />
+    <bpmn:endEvent id="EndEvent_LoanAssessed" name="Loan assessed">
+      <bpmn:incoming>Flow_ToLoanAssessed</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ToNoteRejection" sourceRef="BoundaryEvent_PartnerRejected" targetRef="ServiceTask_NoteRejection" />
+    <bpmn:serviceTask id="ServiceTask_NoteRejection" name="Note rejection">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="noteRejection" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToNoteRejection</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanRejected</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanRejected" sourceRef="ServiceTask_NoteRejection" targetRef="EndEvent_LoanRejected" />
+    <bpmn:endEvent id="EndEvent_LoanRejected" name="Loan rejected">
+      <bpmn:incoming>Flow_ToLoanRejected</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <!-- The error code is the string the business code passes to 'cancelTask'. -->
+  <bpmn:error id="Error_PartnerRejected" name="Partner rejected" errorCode="partner-rejected" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="145" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RetrieveCreditRating_di" bpmnElement="ServiceTask_RetrieveCreditRating">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SendTask_RequestPartnerApproval_di" bpmnElement="SendTask_RequestPartnerApproval">
+        <dc:Bounds x="400" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_InformCustomer_di" bpmnElement="ServiceTask_InformCustomer">
+        <dc:Bounds x="560" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanAssessed_di" bpmnElement="EndEvent_LoanAssessed">
+        <dc:Bounds x="712" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="699" y="145" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_PartnerRejected_di" bpmnElement="BoundaryEvent_PartnerRejected">
+        <dc:Bounds x="432" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="424" y="185" width="55" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_NoteRejection_di" bpmnElement="ServiceTask_NoteRejection">
+        <dc:Bounds x="560" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanRejected_di" bpmnElement="EndEvent_LoanRejected">
+        <dc:Bounds x="712" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="697" y="305" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRequestPartnerApproval_di" bpmnElement="Flow_ToRequestPartnerApproval">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="400" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToInformCustomer_di" bpmnElement="Flow_ToInformCustomer">
+        <di:waypoint x="500" y="120" />
+        <di:waypoint x="560" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanAssessed_di" bpmnElement="Flow_ToLoanAssessed">
+        <di:waypoint x="660" y="120" />
+        <di:waypoint x="712" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToNoteRejection_di" bpmnElement="Flow_ToNoteRejection">
+        <di:waypoint x="450" y="178" />
+        <di:waypoint x="450" y="280" />
+        <di:waypoint x="560" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanRejected_di" bpmnElement="Flow_ToLoanRejected">
+        <di:waypoint x="660" y="280" />
+        <di:waypoint x="712" y="280" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
