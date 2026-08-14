@@ -47,6 +47,7 @@
     <module>blueprints-bpmn/bpmn-timer/springboot</module>
     <module>blueprints-bpmn/bpmn-signals/springboot</module>
     <module>blueprints-bpmn/bpmn-bpms-initiated-start/springboot</module>
+    <module>blueprints-bpmn/bpmn-call-activity-decomposition/springboot</module>
   </modules>
 
   <scm>

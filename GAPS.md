@@ -208,3 +208,113 @@ part is Story 51's question about inbound idempotency, so the two belong togethe
 **What the blueprints do meanwhile.** `bpmn-boundary-events` uses `@DynamicUpdate` and its
 branches write different columns. `persistence-parallel-branches` will show one entity per
 phase, which avoids the conflict rather than resolving it.
+
+## G5: which process `startWorkflow` starts depends on the order classes are scanned in
+
+**Status:** open, found 2026-08-14 while building `bpmn-call-activity-decomposition/springboot`.
+
+**What happens.** Two classes annotated by `@WorkflowService` naming the same workflow
+aggregate class - the pattern the SPI documentation shows for a call activity used for
+decomposition:
+
+```java
+@WorkflowService(workflowAggregateClass = Aggregate.class,
+    bpmnProcess = @BpmnProcess(bpmnProcessId = "loan_approval"))
+public class WorkflowTaskHandler { ... }
+
+@WorkflowService(workflowAggregateClass = Aggregate.class,
+    bpmnProcess = @BpmnProcess(bpmnProcessId = "risk_assessment"))
+public class RiskAssessmentTaskHandler { ... }
+```
+
+`ProcessServiceBeanRegistrar` builds one `ProcessService` bean per aggregate class and takes
+its BPMN process from `serviceClasses.getFirst()`, the first class the classpath scan
+returned. `ClasspathScanner` does not sort, so which of the two that is comes out of the
+file system. In the blueprint it was `RiskAssessmentTaskHandler`, and
+`processService.startWorkflow(aggregate)` started the called process instead of the calling
+one.
+
+**Why it is bad.** Everything looks healthy. A workflow starts, a log line says
+`started workflow 'risk_assessment'`, the tasks of that process run and write to the
+aggregate. What is missing is the part of the business case the other process would have
+done, and the only way to notice is to read the process ID in a log line nobody looks at, or
+to have a test asserting an attribute the calling process writes.
+
+**Reproduction.** The blueprint before its handler classes were merged. Rename the classes
+and the outcome may change, which is the whole point.
+
+**Context.** VanillaBP 1 had `@BpmnProcess.primary()` for exactly this. It is gone in
+version 2 and nothing has taken its place, while `secondaryBpmnProcesses` still exists and
+does the job as long as everything sits in one class.
+
+**To decide.** Either the registrar picks deterministically and says how (a class declaring
+a process which no call activity of the module calls, for instance), or a second workflow
+service class on one aggregate class fails the boot with a message naming both classes.
+Silently picking one is the option to drop.
+
+**What the blueprint does meanwhile.** `bpmn-call-activity-decomposition` keeps the tasks of
+both processes in one class and names the called process in `secondaryBpmnProcesses`. The
+README and `AGENTS.md` say why, because the SPI documentation recommends the other way.
+
+## G6: Camunda 7 does not pass the business key to a called process, and nothing says so
+
+**Status:** open, found 2026-08-14 while building `bpmn-call-activity-decomposition/springboot`.
+
+**What happens.** A call activity starts a new process instance. On Camunda 7 that instance
+has no business key unless the model asks for one, and the business key is where the
+Camunda 7 adapter keeps the ID of the workflow aggregate. The first task of the called
+process therefore looks up an aggregate with no ID:
+
+```
+Error while evaluating expression: ${checkCollateral}. Cause: The given id must not be null
+```
+
+That is Spring Data speaking, through the engine, on a job which then retries and ends in an
+incident. Neither the call activity nor the business key nor VanillaBP is mentioned.
+
+**Reproduction.** In `bpmn-call-activity-decomposition/springboot`, remove
+
+```xml
+<camunda:in businessKey="#{execution.processBusinessKey}" />
+```
+
+from the call activity of `loan_approval.bpmn` and run `LoanApprovalIT`.
+
+**Where it lands.** VanillaBP already rewrites the BPMN of a workflow module while deploying
+it: it injects listeners, and the Camunda 7 adapter rewrites `calledElement` for name-clash
+avoidance. Adding the business key propagation to a call activity is the same kind of
+change, made in the same place, and it would make the difference between the two engines
+disappear for good - Camunda 8 propagates parent variables by default, so the aggregate's ID
+arrives there without anything being modelled.
+
+The fallback, if injecting is not wanted, is a check at deployment: a call activity without
+business key propagation is a defect on this engine every time, and the message can name the
+call activity and the line to add.
+
+**Affects:** Camunda 7. Camunda 8 works out of the box; the blueprint spells
+`propagateAllParentVariables="true"` out anyway, because switching it off breaks the same
+thing.
+
+## G7: reuse of a called process, checked before building a blueprint for it
+
+**Status:** closed on 2026-08-14, no gap. Recorded because the blueprint catalogue asks the
+question.
+
+**The question.** The catalogue lists `bpmn-call-activity-reuse` next to
+`bpmn-call-activity-decomposition`, marked "to be checked": is a call activity whose process
+is used by several unrelated parent processes something VanillaBP supports?
+
+**The answer.** It is not a call activity in VanillaBP. A process used by different parents
+is a business case of its own and therefore has a workflow aggregate of its own, and the
+documented way to model that is a collapsed pool started from a service task rather than a
+call activity - the same decoupling `module-interaction` shows between workflow modules.
+`spi-for-java` states this in [Call-activities](https://github.com/vanillabp/spi-for-java#call-activities),
+and it holds up in the code: the adapters find the aggregate of a called instance through the
+identity of the parent (business key on Camunda 7, a propagated variable on Camunda 8), which
+only makes sense while both instances share one aggregate.
+
+**Consequence for the catalogue.** `bpmn-call-activity-reuse` has no blueprint of its own.
+What it would show is a service task starting another workflow, which is
+`module-interaction` inside one module, and the difference between the two situations is
+explained where a reader meets it: in the README of
+`bpmn-call-activity-decomposition`.
