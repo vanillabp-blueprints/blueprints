@@ -70,8 +70,9 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 
 The one line worth understanding is `camunda:delegateExpression` in the Camunda 7 model. A
 task wired by `camunda:expression` is done as soon as the expression has been evaluated,
-which is right for a service task and wrong here. Camunda 8 needs no counterpart: there a
-job stays open until somebody completes it.
+which is right for a service task and wrong here, and the application does not start if the
+two disagree. Camunda 8 needs no counterpart: there a job stays open until somebody completes
+it.
 
 ## Running it
 

@@ -111,9 +111,10 @@ failure of that profile as a defect of the generated code before having checked 
 - after `completeTask` that service task has run,
 - after `cancelTask` the service task on the error path has run and the stored id is gone.
 
-If the task is completed as soon as the handler returns, the model wires it in a way that
-does not allow it to stay open - on Camunda 7 that is `camunda:expression`. If the workflow
-ends in an incident instead of taking the error path, the error code in the code and the one
-in the model differ.
+If the model wires the task in a way that does not allow it to stay open, the application
+does not start at all: on Camunda 7, `camunda:expression` next to a handler declaring
+`@TaskId` aborts the boot with a message naming the task and `camunda:delegateExpression` as
+the fix. If the workflow ends in an incident instead of taking the error path, the error code
+in the code and the one in the model differ.
 
 Do not report success without having run this.
