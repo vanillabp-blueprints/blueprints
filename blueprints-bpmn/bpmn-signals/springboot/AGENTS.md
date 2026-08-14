@@ -25,6 +25,8 @@ Blueprint-specific names, each occurring in more than one place:
 |-------------------------|-----------------------------------------------------------------------------------------|
 | `InterestRatePublished` | the constant `Workflow.INTEREST_RATE_PUBLISHED` and the `bpmn:signal` name in the model |
 | `applyInterestRate`     | the `@WorkflowTask` method behind the signal event and the task definition of that task |
+| `rate_watch`            | the BPMN process id of the second process and its model file                            |
+| `ratewatch`             | the Java package of the second use case, `rate-watch` in its REST path                  |
 
 The signal name is the contract between code and model. If the two drift apart, the
 broadcast reaches no waiting event and nothing happens - no exception, because a signal
@@ -41,6 +43,9 @@ nobody catches is a legitimate outcome.
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | where each workflow puts what it read                                                                     |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java`                          | the endpoint triggering the broadcast - deliberately without a business case id in its path               |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | waiting, one broadcast continuing two workflows, and a signal nobody caught                               |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/rate_watch.bpmn`    | a second process of the SAME workflow module, waiting for the same signal                                 |
+| `loan-approval/src/main/java/.../ratewatch/`                                               | the second use case: own aggregate, own API, no code shared with the loan approval                        |
+| `loan-approval/src/test/java/.../RateWatchIT.java`                                         | proves the scope: one use case broadcasts, the process of the other one continues                         |
 
 ## Boilerplate files
 
@@ -77,10 +82,19 @@ nobody catches is a legitimate outcome.
    that it continues every waiting workflow at once.
 7. Copy `LoanApprovalIT`: one test for the waiting workflow, one for a single broadcast
    continuing two of them, one for a signal nobody caught.
+8. If more than one process of the module is supposed to react, model the same signal in
+   each of them and send nothing extra. A broadcast covers the whole workflow module, so
+   `rate_watch` here needs no sender of its own.
 
-Sending the same signal in several workflow modules means calling `sendSignal` on the
-`ProcessService` of each module. A broadcast is scoped to one workflow module, and which
-modules are meant is a business decision VanillaBP does not take.
+A second use case in one workflow module brings name clashes the platform will not resolve
+for you, and this blueprint shows the answers: the entity gets a name of its own
+(`@Entity(name = "RateWatch")`), and so do the beans whose classes the reference structure
+calls `Service`, `Workflow`, `ApiController` and `WorkflowTaskHandler` in every use case.
+Spring Data names a repository bean after its interface, which needs the same treatment.
+
+Sending the same signal in several workflow MODULES is a different matter: it means calling
+`sendSignal` on the `ProcessService` of each module. A broadcast is scoped to one workflow
+module, and which modules are meant is a business decision VanillaBP does not take.
 
 ## Verifying
 
@@ -98,6 +112,9 @@ failure of that profile as a defect of the generated code before having checked 
   proves the workflow waits,
 - one broadcast continues two workflows nobody addressed, and both read the published value,
 - a workflow reaching the catch event after a broadcast stays there until the next one.
+
+`RateWatchIT` proves the scope and has to pass as well: the second process of the module
+continues although the broadcast was sent by the other use case.
 
 **A test must broadcast repeatedly rather than once.** A signal is not buffered, and the
 workflow aggregate showing progress does not prove the subscription of the catch event

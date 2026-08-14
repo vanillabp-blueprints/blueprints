@@ -26,6 +26,25 @@ offer is made. Three things are worth looking at:
   arriving at the catch event a second later gets nothing and waits for the next
   publication. Where a delivery has to wait for its recipient, correlate a message instead.
 
+### The scope is the workflow module, not the process
+
+![The rate watch process, waiting for the same signal](docs/rate_watch.png)
+
+A second process in the same workflow module, and it does nothing else: it starts, waits
+for `InterestRatePublished` and records that the signal arrived. It belongs to a use case of
+its own, `ratewatch`, with its own aggregate, its own API and no line of code shared with
+the loan approval.
+
+One broadcast reaches both processes. That is what "a signal is broadcast per workflow
+module" means, and it is easy to get wrong in either direction: nobody has to send the
+signal once per process, and nobody can keep it inside the process that sent it. What the
+broadcast does not cross is the workflow module. Another module is a scope of its own, and
+an application that wants the signal there sends it through the `ProcessService` of that
+module as well.
+
+`RateWatchIT` is the test of that claim: the rate watch waits, the loan approval use case
+publishes a rate, and the watch continues.
+
 Two things this blueprint deliberately does not show, and where to find them:
 
 - **A signal that starts a workflow**, which belongs to `bpmn-bpms-initiated-start`: nobody
@@ -47,6 +66,9 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `InterestRate.java`   | the published rate, application data belonging to no workflow                              |
 | `Aggregate.java`      | `interestRate`, which is where the rate ends up per loan approval                          |
 | `LoanApprovalIT.java` | waiting, one broadcast continuing two workflows, and a signal nobody caught                |
+| `ratewatch/`          | a second use case, whose process waits for the same signal                                 |
+| `rate_watch.bpmn`     | that process: start, catch the signal, record it                                           |
+| `RateWatchIT.java`    | the broadcast of one use case reaching the process of the other                            |
 
 ## Running it
 
@@ -119,6 +141,21 @@ Loan approval '4d20…' is offered at 3.5%
 Now start another loan approval and watch it wait, although the rate has been published:
 the signal is gone, and only the next publication reaches it. That is the property to
 remember before choosing a signal over a message.
+
+The rate watch is started at a URL of its own and waits for the same signal:
+
+```
+http://localhost:8080/api/rate-watch/start
+```
+
+Publish a rate while both a loan approval and a rate watch are waiting, and one call
+continues both:
+
+```
+An interest rate of 3.5% was published. Every loan approval waiting for it continues
+Loan approval '0f7c…' is offered at 3.5%
+Rate watch '7b31…' noticed the publication, although the broadcast was sent by the loan approval use case
+```
 
 While the application runs on Camunda 7, Camunda's own web applications are served at
 
