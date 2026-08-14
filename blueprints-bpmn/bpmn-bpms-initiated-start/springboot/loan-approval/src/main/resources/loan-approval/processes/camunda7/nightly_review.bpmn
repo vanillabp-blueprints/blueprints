@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_nightly_review" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <bpmn:process id="nightly_review" name="Nightly review" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <!--
+      TWO start events, and neither of them is triggered by the application. This is what
+      makes the process BPMS-initiated: there is no startWorkflow call anywhere in the code,
+      and no aggregate exists before the engine decides to begin.
+
+      The cycle is short so that the blueprint can be watched: R1/PT5S fires once, five
+      seconds after the process was deployed. A real review would use a cron expression.
+    -->
+    <bpmn:startEvent id="StartEvent_ScheduledReview" name="Review is due">
+      <bpmn:outgoing>Flow_FromSchedule</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_ScheduledReview">
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R1/PT5S</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_FromSchedule" sourceRef="StartEvent_ScheduledReview" targetRef="ServiceTask_ReviewPendingApprovals" />
+    <!--
+      The signal start event turns a broadcast into a workflow. The application can ask for
+      a review this way, but it still does not start one: it broadcasts a name, and every
+      element of the workflow module listening for it reacts - including this event.
+    -->
+    <bpmn:startEvent id="StartEvent_ReviewRequested" name="Review requested">
+      <bpmn:outgoing>Flow_FromRequest</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_ReviewRequested" signalRef="Signal_ReviewRequested" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_FromRequest" sourceRef="StartEvent_ReviewRequested" targetRef="ServiceTask_ReviewPendingApprovals" />
+    <bpmn:serviceTask id="ServiceTask_ReviewPendingApprovals" name="Review pending approvals" camunda:expression="${reviewPendingApprovals}">
+      <bpmn:incoming>Flow_FromSchedule</bpmn:incoming>
+      <bpmn:incoming>Flow_FromRequest</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToReviewDone</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToReviewDone" sourceRef="ServiceTask_ReviewPendingApprovals" targetRef="EndEvent_ReviewDone" />
+    <bpmn:endEvent id="EndEvent_ReviewDone" name="Review done">
+      <bpmn:incoming>Flow_ToReviewDone</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <!-- The signal name is the string the business code passes to 'sendSignal'. -->
+  <bpmn:signal id="Signal_ReviewRequested" name="ReviewRequested" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="nightly_review">
+      <bpmndi:BPMNShape id="StartEvent_ScheduledReview_di" bpmnElement="StartEvent_ScheduledReview">
+        <dc:Bounds x="152" y="82" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="141" y="125" width="61" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_ReviewRequested_di" bpmnElement="StartEvent_ReviewRequested">
+        <dc:Bounds x="152" y="192" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="130" y="235" width="83" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ReviewPendingApprovals_di" bpmnElement="ServiceTask_ReviewPendingApprovals">
+        <dc:Bounds x="290" y="115" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ReviewDone_di" bpmnElement="EndEvent_ReviewDone">
+        <dc:Bounds x="452" y="137" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="440" y="180" width="63" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_FromSchedule_di" bpmnElement="Flow_FromSchedule">
+        <di:waypoint x="188" y="100" />
+        <di:waypoint x="239" y="100" />
+        <di:waypoint x="239" y="155" />
+        <di:waypoint x="290" y="155" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_FromRequest_di" bpmnElement="Flow_FromRequest">
+        <di:waypoint x="188" y="210" />
+        <di:waypoint x="239" y="210" />
+        <di:waypoint x="239" y="155" />
+        <di:waypoint x="290" y="155" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToReviewDone_di" bpmnElement="Flow_ToReviewDone">
+        <di:waypoint x="390" y="155" />
+        <di:waypoint x="452" y="155" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
