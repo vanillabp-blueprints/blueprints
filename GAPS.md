@@ -173,3 +173,38 @@ that no side branch is in flight.
 **Affects:** every BPMS, but only visibly a remote one. On an embedded engine the branches
 rarely overlap long enough to lose a write, which is the worst kind of difference between
 development and production.
+
+## G4: nothing says what happens when the aggregate cannot be saved because of a version conflict
+
+**Status:** open, found 2026-08-14 while deciding how `bpmn-boundary-events` should survive
+two branches writing one aggregate. Follows from G3, which is the same collision seen from
+the data side. Framework story 59 in `prompts/ROADMAP.md`.
+
+**What an application would do.** A `@Version` column is the standard answer to two writers,
+and the only one that also covers two branches writing the SAME attribute, which
+`@DynamicUpdate` does not. It turns the silent overwrite of G3 into an exception - and that
+is where it stops being the application's business.
+
+**Where it lands.** VanillaBP owns the transaction of a workflow task: it loads the
+aggregate, calls the `@WorkflowTask` method, saves and commits. A version conflict therefore
+surfaces in the commit VanillaBP performs, after the handler returned. The application
+cannot catch it in its own code, and what becomes of it is whatever the BPMS does with a job
+that failed - a retry on one engine, an incident on another, and no VanillaBP behaviour
+between the two.
+
+The other side of the same collision is the application's own transaction, opened around an
+API call. There the application does control the retry, and nothing in the documentation
+tells it that it needs one.
+
+**Checked, not assumed.** `OptimisticLock`, `StaleObjectState` and `@Version` have no
+occurrence at all in `adapter-platform-integration`, `spi-for-java`, `camunda7-adapter`,
+`camunda8-adapter` and `process-engine-api-adapter`.
+
+**To decide.** Whether a version conflict is a technical failure the BPMS retries, an
+incident, or something VanillaBP retries itself; and if anything is retried, what that
+demands of a handler, since a repeated handler sends the reminder a second time. That last
+part is Story 51's question about inbound idempotency, so the two belong together.
+
+**What the blueprints do meanwhile.** `bpmn-boundary-events` uses `@DynamicUpdate` and its
+branches write different columns. `persistence-parallel-branches` will show one entity per
+phase, which avoids the conflict rather than resolving it.
