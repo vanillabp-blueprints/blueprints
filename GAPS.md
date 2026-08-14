@@ -126,3 +126,50 @@ keep their configuration free of `vanillabp.*` properties.
 **Affects:** the Camunda 8 adapter on every platform. Camunda 7 uses tenants as well, but its
 engine accepts any tenant name without one having to exist, so there is nothing that could
 reject a deployment there.
+
+## G3: two branches of one workflow overwrite each other's writes on the workflow aggregate
+
+**Status:** open, found 2026-08-14 while `bpmn-boundary-events/springboot` failed in CI on
+Camunda 8.
+
+**What happens.** A non-interrupting boundary event adds a token, so a side branch runs while
+the task it is attached to stays open. Both branches work on the same workflow aggregate: the
+side branch in a transaction VanillaBP opens for its task, the answer to the open task in a
+transaction the application opens. Each loads the aggregate, changes what it is about, and
+saves it.
+
+JPA saves the whole row. Whichever transaction commits second writes back the values it read
+when it started, so what the other branch committed in between is gone. Nothing reports it -
+no exception, no warning, and the process itself behaves exactly as modelled.
+
+**Reproduction.** `bpmn-boundary-events/springboot` against a Camunda 8 cluster, before the
+test was changed: `LoanApprovalIT#aReminderLeavesTheTaskOpen` answered the task as soon as the
+first of two reminders had been counted.
+
+```
+LoanApprovalIT.aReminderLeavesTheTaskOpen
+  java.lang.AssertionError:
+  Expecting actual not to be null
+    at LoanApprovalIT.aReminderLeavesTheTaskOpen(LoanApprovalIT.java:98)
+```
+
+`partnerApproved` was null although the workflow had passed the task and informed the
+customer: the second reminder loaded the aggregate before the answer was committed and saved
+it afterwards. Locally the same test passed four runs out of four, with one run showing the
+overlap in the log - reminder 2 at 09:22:15.853, the answer at 09:22:15.978. On the CI runner
+it lost the race.
+
+**Workarounds an application has today.** `@Version` on the aggregate turns the collision into
+an optimistic locking exception, and `@DynamicUpdate` narrows each write to the attributes a
+branch actually changed. Both are ordinary JPA and neither is mentioned anywhere in the
+VanillaBP documentation, although the framework is what creates the second writer.
+
+**Worth deciding for the framework.** Whether VanillaBP should recommend a version column for
+workflow aggregates (documentation), detect concurrent branches touching one aggregate, or
+say plainly that concurrent branches are the application's business. The blueprint states the
+trade-off in its README for now, and its test answers the task after the last reminder so
+that no side branch is in flight.
+
+**Affects:** every BPMS, but only visibly a remote one. On an embedded engine the branches
+rarely overlap long enough to lose a write, which is the worst kind of difference between
+development and production.
