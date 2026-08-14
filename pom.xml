@@ -45,6 +45,7 @@
     <module>blueprints-bpmn/bpmn-message-correlation/springboot</module>
     <module>blueprints-bpmn/bpmn-message-start/springboot</module>
     <module>blueprints-bpmn/bpmn-timer/springboot</module>
+    <module>blueprints-bpmn/bpmn-signals/springboot</module>
   </modules>
 
   <scm>
