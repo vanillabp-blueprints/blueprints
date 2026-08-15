@@ -488,3 +488,56 @@ this adapter could never reach.
 of what it finds: an active instance means `ACTIVE`, anything else `COMPLETED`, nothing at all
 `UNKNOWN_TO_BPMS`. The redispatch probe of the same class already did it that way, and said why
 in its comment.
+
+## G12: a shared derived getter is evaluated from a stale variable on Camunda 7
+
+**Status:** open, found 2026-08-15 while building `bpmn-aggregate-decoupling/springboot`.
+Blocks that blueprint, because it breaks exactly the pattern the wiki recommends.
+
+**What the wiki asks for.** Page
+[Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms)
+recommends this shape for an aggregate decoupled from its BPMN, and calls it the way to
+reduce synchronization to the bare minimum:
+
+```java
+@NoSyncWithBPMS
+public class Aggregate {
+  private RiskClass riskClass;
+  @SyncWithBPMS public boolean isApprovableWithoutReview() { return riskClass == RiskClass.LOW; }
+}
+```
+
+**What happens on Camunda 7.** The condition `${approvableWithoutReview}` is false for every
+workflow, so every instance takes the default flow. No exception, no warning, a process that
+runs to its end - and the wrong branch of a business decision.
+
+**Why.** The adapter writes the shared values as process variables when the workflow starts
+(`Camunda7ProcessService.operatorContext`, documented as the operator's view in Cockpit).
+At that moment the risk class is not assessed yet, so the variable is written as `false`.
+Camunda resolves a VARIABLE of that name before it asks VanillaBP's EL resolver, so the
+gateway never sees the live aggregate again. The variables are refreshed at a few operations
+(`refreshOperatorContext` for a task completion through the API, and for `aggregateChanged`),
+but NOT when a `@WorkflowTask` method returns - which is where a derived value changes.
+
+**Proven by narrowing, one run each.**
+
+| Aggregate | Condition | Result |
+|-----------|-----------|--------|
+| getter without annotations | `${approvableWithoutReview}` | branch taken |
+| getter with `@SyncWithBPMS` | `${approvableWithoutReview}` | default flow |
+| any | `${creditRating >= 30}` (a field) | branch taken |
+
+The blueprint `bpmn-gateways` works for the same reason the first row does: it shares nothing,
+so the resolver answers live.
+
+**What makes it bad rather than surprising.** The application follows the documentation, the
+BPMN reads a question rather than an attribute, and the answer is wrong. On Camunda 8 the same
+model behaves correctly, because that adapter pushes the shared values when a task completes
+(story 28b) - so the same code takes different branches on different engines, which is the
+one thing VanillaBP promises never to do.
+
+**To decide.** Either the Camunda 7 adapter refreshes the shared values at every sync point,
+as the Camunda 8 adapter does, or it stops writing them under names an expression can read -
+the operator context could carry a prefix, and expressions would always be answered live by
+the resolver. The second is closer to how this engine works (it reads the aggregate directly
+and needs no variables at all), the first keeps the two adapters symmetric.
