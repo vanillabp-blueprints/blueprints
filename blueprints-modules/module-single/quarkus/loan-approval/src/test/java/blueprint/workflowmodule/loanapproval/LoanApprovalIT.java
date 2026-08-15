@@ -39,7 +39,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     service.initiateLoanApproval(loanRequestId, 5000);
 
     final var loanApproval = awaitAggregate(
-        loanApprovals::findById,
+        loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> aggregate.getCreditRating() != null);
 

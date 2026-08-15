@@ -586,10 +586,24 @@ its repositories open an `EntityManager` per call, so this is a platform differe
 application would have to know about, which is exactly what a platform integration is there
 to remove.
 
-**What the blueprint does until then.** `AggregateRepository` carries `@Transactional`. It
-joins the transaction of whoever calls in, so nothing changes inside a task or an API call,
-and it opens one where there is none. The class comment says why, and the annotation stays
-harmless once VanillaBP provides the context.
+**It hits VanillaBP's own persistence too, since story 69.** The default implementations for
+the persistence patterns of this platform (`PanacheRepositoryAggregatePersistence`,
+`PanacheActiveRecordAggregatePersistence`, ...) reach the database from wherever VanillaBP
+calls them, and they open no transaction on purpose. So the gap is no longer "the
+application has to annotate its persistence" but "VanillaBP cannot use its own default on
+the phase-two path".
+
+Proven on 2026-08-15 with the blueprint: as a Panache **active record** (no repository, no
+class of the application in the path at all) `LoanApprovalIT` fails on Camunda 8 with the
+exception above, and there is nowhere left to put the annotation.
+
+**What the blueprint does until then.** The aggregate is stored by a Panache **repository**,
+and that repository carries `@Transactional`. VanillaBP's default calls the repository, the
+interceptor applies, and the transaction is there. It joins the transaction of whoever calls
+in, so nothing changes inside a task or an API call, and it opens one where there is none.
+The class comment says why, and the annotation goes away once VanillaBP brings the
+transaction along - at which point the blueprint can also show the active record, which is
+the shorter code and the reason the pattern exists.
 
 ## G14: a workflow module tested on Quarkus does not find its own BPMN files
 

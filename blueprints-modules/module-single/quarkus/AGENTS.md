@@ -46,7 +46,7 @@ places or in none.
 | `loan-approval/src/main/java/.../loanapproval/Workflow.java`                               | what the application tells the process, e.g. `ProcessService#startWorkflow`. The ONLY class using `ProcessService`                            |
 | `loan-approval/src/main/java/.../loanapproval/Service.java`                                | the business code. Calls `Workflow` naming the business event, is called by `WorkflowTaskHandler`, never touches VanillaBP                    |
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the workflow aggregate: a JPA entity with the natural ID as primary key, holding all state the process needs                                  |
-| `loan-approval/src/main/java/.../loanapproval/model/AggregateRepository.java`              | `AggregatePersistenceAware`: how VanillaBP loads and saves that entity. Without it VanillaBP cannot persist the aggregate                     |
+| `loan-approval/src/main/java/.../loanapproval/model/AggregateRepository.java`              | the Panache repository of the aggregate. VanillaBP recognises it and loads and saves the aggregate through it                                 |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the module's own configuration, loaded by its file name and taking precedence over `application.yaml`                                         |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | starts a real workflow and waits for the effect of the task                                                                                   |
 
@@ -83,7 +83,9 @@ itself; inheriting it from the base class is not enough to make the test a bean.
 3. Put the BPMN file into `src/main/resources/<workflow-module-id>/processes/<adapter-id>/`.
    The adapter ID is the configured one, which defaults to the adapter type.
 4. Add the workflow aggregate as a JPA entity with the natural ID as `@Id`, plus a bean
-   implementing `AggregatePersistenceAware` for it. If the project already has an entity for
+   a repository for it (Panache, Panache Mongo or Spring Data), which VanillaBP recognises;
+   only a persistence fitting none of those needs a bean implementing
+   `AggregatePersistenceAware`. If the project already has an entity for
    this business case, use it instead of adding a second one.
 5. Add `WorkflowTaskHandler` with the `@WorkflowService` annotation and one `@WorkflowTask`
    method per BPMN task, each doing nothing but calling `Service`. Never annotate the

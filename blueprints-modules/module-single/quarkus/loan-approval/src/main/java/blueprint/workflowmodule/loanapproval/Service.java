@@ -107,7 +107,7 @@ public class Service {
   public Optional<Aggregate> getLoanApproval(
       final String loanRequestId) {
 
-    return loanApprovals.findById(loanRequestId);
+    return loanApprovals.findByIdOptional(loanRequestId);
 
   }
 

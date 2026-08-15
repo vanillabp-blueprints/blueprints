@@ -42,10 +42,11 @@ What is worth looking at:
   `Service`. Here each of them forwards a single line, which is exactly why it is worth
   seeing: the shape stays the same once a process needs messages correlated or tasks
   completed.
-- The application says how its aggregate is stored. `AggregateRepository` implements
-  `AggregatePersistenceAware`, and VanillaBP uses it to load the aggregate before a task and
-  to save it afterwards. There is no persistence VanillaBP could assume, so the application
-  states it, in the one class which does that anyway.
+- Persisting the aggregate is a repository and nothing else. `AggregateRepository` is a
+  Panache repository, and VanillaBP recognises it: it loads the aggregate before a task and
+  saves it afterwards without a line of glue. The same holds for the other persistence
+  patterns of this platform, and an application whose persistence fits none of them
+  implements `AggregatePersistenceAware`, which always wins.
 - It is tested on its own. The integration test lives in the workflow module and runs it;
   the application only carries a smoke test.
 

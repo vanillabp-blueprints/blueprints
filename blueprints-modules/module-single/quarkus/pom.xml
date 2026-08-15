@@ -19,6 +19,14 @@
     <maven.compiler.release>21</maven.compiler.release>
     <quarkus.version>3.37.1</quarkus.version>
     <jandex-maven-plugin.version>3.6.0</jandex-maven-plugin.version>
+    <!--
+      Without a parent POM nothing manages the versions of the build plugins, and an
+      unversioned plugin is resolved to whatever the local repository last learned about.
+      Naming them keeps a build reproducible.
+    -->
+    <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+    <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+    <maven-failsafe-plugin.version>3.5.6</maven-failsafe-plugin.version>
     <!-- Not part of the Quarkus BOM, so this blueprint says which version it uses. -->
     <lombok.version>1.18.46</lombok.version>
     <assertj.version>3.27.7</assertj.version>
@@ -74,6 +82,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven-compiler-plugin.version}</version>
         <configuration>
           <!-- Parameter names are what VanillaBP binds a task method's arguments by. -->
           <parameters>true</parameters>
@@ -91,6 +100,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <version>${maven-failsafe-plugin.version}</version>
         <configuration>
           <systemPropertyVariables>
             <!-- Quarkus brings its own log manager, and it has to be set before the JVM logs. -->
@@ -109,6 +119,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-surefire-plugin.version}</version>
         <configuration>
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
