@@ -373,3 +373,46 @@ iteration of the subprocess around it as well, and the total exists at all. The 
 translated to count from 0 like everywhere else. `bpmn-multi-instance-task` passes on both
 engines with the same Java code; the adapter's README explains the mechanism under
 "Multi-instance".
+
+## G9: an API call into a running workflow can fail with the engine's optimistic locking
+
+**Status:** open, found 2026-08-15 when `bpmn-boundary-events/springboot` failed once in CI on
+Camunda 7 and passed on the rerun. Related to G3 and G4, but a different collision: this one
+is on the BPMS' own entity, not on the workflow aggregate.
+
+**What happens.** The blueprint models a non-interrupting timer, so a reminder runs while the
+task it is attached to stays open. Its test then answers that task through the application's
+API, which is what an application does:
+
+```java
+service.partnerApproved(loanRequestId, taskId);
+```
+
+If a reminder job is being executed at that moment, two transactions touch the same
+execution, and Camunda 7 refuses the later one:
+
+```
+LoanApprovalIT.aReminderLeavesTheTaskOpen:95 » OptimisticLocking ENGINE-03005 Execution of
+'UPDATE ExecutionEntity[63]' failed. Entity was updated by another transaction concurrently.
+```
+
+The exception reaches the caller of `ProcessService#completeUserTask` - the application's own
+API call - and nothing in VanillaBP's contract says what to do with it.
+
+**Why this is not G3.** G3 and story 59 are about two writers of the workflow AGGREGATE, where
+the loser silently overwrites. Here the engine notices and throws, and the loser is an
+operation the application triggered. Camunda 7 retries its own jobs on this exception, which
+is why the reminder survives and the API call does not.
+
+**Reproduction.** Rare by nature: it needs the reminder job and the API call to overlap. It
+appeared once in about twenty CI runs of this blueprint and passed on the rerun.
+
+**To decide.** Whether an operation VanillaBP performs on behalf of an application call is
+retried by VanillaBP when the BPMS reports a concurrency conflict, and if not, what the
+documentation tells an application to do instead. The question belongs next to story 59,
+which decides the same for the aggregate, and to story 51, because a retried call must not
+send the reminder twice.
+
+**What it costs meanwhile.** A delivered blueprint has a test that fails roughly one run in
+twenty. Either the blueprint retries the API call and says why, or the framework does - which
+is the decision above.
