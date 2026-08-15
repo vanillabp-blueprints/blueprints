@@ -318,3 +318,49 @@ What it would show is a service task starting another workflow, which is
 `module-interaction` inside one module, and the difference between the two situations is
 explained where a reader meets it: in the README of
 `bpmn-call-activity-decomposition`.
+
+## G8: Camunda 8 supplies no multi-instance context, so the annotations do not work there
+
+**Status:** open, found 2026-08-15 while building `bpmn-multi-instance-task/springboot`.
+Framework story 62 in `prompts/ROADMAP.md`.
+
+**What happens.** A `@WorkflowTask` method may ask what the BPMS knows about the iteration it
+runs in: `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`. The Camunda
+7 adapter answers them (`Camunda7WorkflowTaskBehavior.determineMultiInstances` walks the
+execution hierarchy and reads `loopCounter` and `nrOfInstances`). The Camunda 8 adapter has no
+implementation at all: `Camunda8TaskInvocationContext` does not override `getMultiInstances`,
+so the SPI default `Map.of()` applies. Every iteration of a multi-instance task therefore
+fails:
+
+```
+No multi-instance context named 'ServiceTask_RequestPartnerOffer' was supplied by the BPMS
+adapter for the parameter 'partnerId' of @WorkflowTask method
+'...WorkflowTaskHandler#requestPartnerOffer'! Supplied multi-instance contexts: [].
+```
+
+The job is failed, retried and ends in an incident. The message is a good one, and it is the
+only reason this takes minutes rather than an afternoon: it names the parameter, the method,
+the element asked for and what was supplied.
+
+**Reproduction.** `bpmn-multi-instance-task/springboot` on the branch
+`feature/bpmn-multi-instance-task`, run with `-Pcamunda8` against a cluster. The same
+blueprint passes on Camunda 7 with the same Java code, which is the point: the model and the
+code are fine, one adapter is not.
+
+**What the cluster does deliver.** Zeebe creates one job per instance and puts the element
+into a local variable named by `inputElement`, and the iteration index is available to the
+model. So the values exist; nothing reads them into a `MultiInstanceValue` and hands them to
+the core. What the adapter has to work out is the key of the map, which the SPI defines as the
+ID of the multi-instance ELEMENT, and the nesting order (outermost first), which on this
+engine has to come out of the model rather than out of an execution hierarchy.
+
+**Beware of one difference.** Camunda 8 has no loop cardinality. A multi-instance element
+there always iterates over an `inputCollection`, so the advice in the
+[SPI documentation](https://github.com/vanillabp/spi-for-java#multi-instance) to prefer
+`loop-cardinality` over a collection cannot be followed on this engine. The blueprint keeps
+the collection to identifiers for that reason, and the documentation should say which engine
+its advice applies to.
+
+**Affects:** Camunda 8. It blocks two blueprints of the catalogue, `bpmn-multi-instance-task`
+and `bpmn-multi-instance-subprocess`, because a blueprint is built against every BPMS the
+build matrix knows.
