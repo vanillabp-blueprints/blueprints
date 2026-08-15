@@ -72,18 +72,33 @@ Requires a JDK 21. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-**Camunda 8 does not serve this blueprint yet.** Its adapter does not supply the
-multi-instance context, so the task fails at runtime with
+Running it on another BPMS is a Maven profile, not one line of Java changes:
 
-```
-No multi-instance context named 'ServiceTask_RequestPartnerOffer' was supplied by the BPMS
-adapter for the parameter 'partnerId' of @WorkflowTask method '...#requestPartnerOffer'!
-Supplied multi-instance contexts: [].
+```bash
+mvn install verify -Pcamunda8
 ```
 
-The model in `processes/camunda8/` is the Camunda 8 version of the same process and is
-waiting for the adapter, not for a change of this blueprint. Nothing in the Java code is
-affected: this is a gap of one adapter, and it is reported.
+Camunda 8 is a remote engine, so a cluster has to run and be pointed at. Start one, then
+add its address to `application/src/main/resources/application.yaml` and to
+`loan-approval/src/test/resources/application.yaml`:
+
+```yaml
+vanillabp:
+  adapters:
+    camunda8:
+      rest-address: http://localhost:8080
+      # Nothing else is needed: this adapter keeps workflow modules apart by nothing at all
+      # ('name-clash-avoidance: none') unless told otherwise, because a cluster started from
+      # the stock image has multi-tenancy switched off and rejects a tenant per module. The
+      # adapter warns about it while booting - with one workflow module the identifiers are
+      # unique anyway. Set 'name-clash-avoidance: use-prefix' to have VanillaBP prefix them.
+```
+
+That engine has no loop cardinality and reports neither the number of instances nor, to a
+nested task, the iteration around it. The adapter fills those gaps while deploying, so the
+same Java code and the same annotations work here; the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Deviations)
+says what it does.
 
 Start the application:
 

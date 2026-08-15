@@ -94,10 +94,9 @@ Nested iterations, a multi-instance task inside a multi-instance subprocess, are
 mvn install verify
 ```
 
-That runs on Camunda 7, which is embedded and needs no infrastructure. The Camunda 8 adapter
-does not supply the multi-instance context yet, so `-Pcamunda8` fails at runtime with
-`No multi-instance context named '...' was supplied by the BPMS adapter` - that is a reported
-gap of the adapter, not a defect of the generated code.
+That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamunda8` needs a
+running cluster and `vanillabp.adapters.camunda8.rest-address` configured; do not report a
+failure of that profile as a defect of the generated code before having checked it.
 
 `LoanApprovalIT` proves the aspect and has to pass: one row per element, the index each
 iteration was given, and the result computed after the last of them.
