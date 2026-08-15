@@ -49,6 +49,7 @@
     <module>blueprints-bpmn/bpmn-bpms-initiated-start/springboot</module>
     <module>blueprints-bpmn/bpmn-call-activity-decomposition/springboot</module>
     <module>blueprints-bpmn/bpmn-multi-instance-task/springboot</module>
+    <module>blueprints-bpmn/bpmn-multi-instance-subprocess/springboot</module>
   </modules>
 
   <scm>
