@@ -545,6 +545,7 @@ and needs no variables at all), the first keeps the two adapters symmetric.
 ## G13: on Quarkus the phase-two dispatch reaches the application without a transaction
 
 **Status:** open, found 2026-08-15 while building `module-single/quarkus` against Camunda 8.
+Framework story `67-quarkus-phase-two-application-callbacks.md` (to be analysed).
 
 **What happens.** A remote BPMS starts a workflow in two phases: the aggregate and an outbox
 entry are written in the application's transaction, and the outbox dispatcher starts the
@@ -592,7 +593,8 @@ harmless once VanillaBP provides the context.
 
 ## G14: a workflow module tested on Quarkus does not find its own BPMN files
 
-**Status:** open, found 2026-08-15 while building `module-single/quarkus`.
+**Status:** open, found 2026-08-15 while building `module-single/quarkus`. Framework story
+`68-quarkus-workflow-module-tested-as-main-artifact.md` (to be analysed).
 
 **What happens.** Where BPMN files are read from follows a convention: a workflow module
 shipped as its own artifact keeps them below its ID (`loan-approval/processes/<adapter-id>`),
