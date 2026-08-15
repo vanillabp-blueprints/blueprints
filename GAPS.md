@@ -407,11 +407,27 @@ is why the reminder survives and the API call does not.
 **Reproduction.** Rare by nature: it needs the reminder job and the API call to overlap. It
 appeared once in about twenty CI runs of this blueprint and passed on the rerun.
 
-**To decide.** Whether an operation VanillaBP performs on behalf of an application call is
-retried by VanillaBP when the BPMS reports a concurrency conflict, and if not, what the
-documentation tells an application to do instead. The question belongs next to story 59,
-which decides the same for the aggregate, and to story 51, because a retried call must not
-send the reminder twice.
+**Where a retry can live, checked in the code.** On Camunda 7 the core runs the operation in
+PHASE ONE, inside the caller's transaction (`MigrationProcessService` only schedules an
+outbox entry when the adapter needs a two-phase commit, which this one does not), and every
+engine command joins that transaction through Camunda's `SpringTransactionInterceptor`
+(a `TransactionTemplate` with propagation REQUIRED). A command which throws therefore leaves
+the caller's transaction rollback-only.
+
+That is also why the engine's own retry works and this one cannot be copied: the job executor
+re-runs the WHOLE command in a transaction of its own
+(`ExecuteJobHelper.callFailedJobListenerWithRetries`). The unit of work of an API call
+belongs to the application and holds its aggregate changes, so repeating only the engine part
+would either run in a transaction that can no longer commit, or - if it were given a
+transaction of its own - let the process advance while the application rolls back.
+
+**To decide.** Who repeats the unit of work: the application around its own call, or VanillaBP
+around an operation an application handed it. What is clearly the ADAPTER's part either way is
+the classification - only a Camunda 7 adapter knows that `OptimisticLockingException` means "a
+concurrent transaction touched the same execution, repeating is safe". That is the same split
+story 59 chose for the aggregate, where the platform classifies the conflict and the core
+decides what happens. Story 51 belongs to the decision too: a repeated call must not send the
+reminder twice.
 
 **What it costs meanwhile.** A delivered blueprint has a test that fails roughly one run in
 twenty. Either the blueprint retries the API call and says why, or the framework does - which
