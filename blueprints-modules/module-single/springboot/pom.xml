@@ -9,7 +9,7 @@
     <relativePath/>
   </parent>
 
-  <groupId>io.vanillabp.blueprint.module-single</groupId>
+  <groupId>io.vanillabp.blueprint.module-single-springboot</groupId>
   <artifactId>module-single</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>

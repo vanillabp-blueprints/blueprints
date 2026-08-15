@@ -9,7 +9,7 @@
     <relativePath/>
   </parent>
 
-  <groupId>io.vanillabp.blueprint.bpmn-service-task</groupId>
+  <groupId>io.vanillabp.blueprint.bpmn-service-task-springboot</groupId>
   <artifactId>bpmn-service-task</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>

@@ -9,7 +9,7 @@
     <relativePath/>
   </parent>
 
-  <groupId>io.vanillabp.blueprint.bpmn-call-activity-decomposition</groupId>
+  <groupId>io.vanillabp.blueprint.bpmn-call-activity-decomposition-springboot</groupId>
   <artifactId>bpmn-call-activity-decomposition</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
