@@ -166,6 +166,36 @@ surrounding system to simulate).
 Everything else in a blueprint's tests is specific to it and is never compared: the
 integration test *is* the proof of the aspect and is supposed to differ.
 
+## The platform twins
+
+A blueprint exists once per platform, and the two are supposed to say the same thing. What
+differs between them is the platform: its bean and injection annotations, its HTTP
+annotations, how configuration is bound, how a repository looks. What must not differ is the
+application: the BPMN wiring, the business methods, what the test asserts.
+
+`bin/check_twin_diff.py` keeps that honest. It compares the Java sources of the twins after
+removing package lines, imports and comments, so a different import or a Javadoc written for
+one platform is never a difference. Everything left over has to be approved in
+`<group>/<blueprint-id>/twin-diff-allow.txt`, one line per file:
+
+```
+<hash>  <kind>  <path>  # why the twins differ here
+```
+
+```bash
+python3 bin/check_twin_diff.py            # what CI does
+python3 bin/check_twin_diff.py --update   # write the entries, keeping the reasons given
+```
+
+The hash covers the difference, not the file. Changing both twins the same way keeps it, so
+ordinary work does not touch this file; changing one twin alone changes the hash and asks for
+the approval again. That is the whole point: a difference is either the platform, and then it
+has a reason written down, or it is a mistake that would otherwise spread to every blueprint
+copied from this one.
+
+Write the reason in terms of the platform, not of the code. "bean and injection annotations
+only" says what a reviewer needs; "uses @Inject" does not.
+
 ## The picture of the process
 
 Every blueprint README shows its process in the first section, before a word is said about
@@ -283,7 +313,7 @@ Three workflows, and they answer three different questions.
 
 |    Workflow    |                                            Question                                             |
 |----------------|-------------------------------------------------------------------------------------------------|
-| `checks.yaml`  | do the index, the documentation structure and the test harness copies agree?                    |
+| `checks.yaml`  | do index, documentation structure, test harness copies and platform twins agree?                |
 | `build.yaml`   | does every blueprint build and test, alone and through the aggregator, on every BPMS it claims? |
 | `nightly.yaml` | does it still, against today's snapshots of the framework?                                      |
 

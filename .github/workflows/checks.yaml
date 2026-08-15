@@ -29,3 +29,8 @@ jobs:
         run: python bin/check_docs_structure.py blueprints.yaml
       - name: Check the test harness copies against their reference
         run: python bin/sync_harness.py --check
+      # Active since the first platform twin exists (2026-08-15). It keeps the two twins of
+      # a blueprint saying the same thing: every difference between their Java sources is
+      # either the platform, and then it is approved with a reason, or a mistake.
+      - name: Compare the platform twins of every blueprint
+        run: python bin/check_twin_diff.py
