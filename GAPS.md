@@ -432,3 +432,59 @@ reminder twice.
 **What it costs meanwhile.** A delivered blueprint has a test that fails roughly one run in
 twenty. Either the blueprint retries the API call and says why, or the framework does - which
 is the decision above.
+
+## G10: the Camunda 7 viewer failed for every application using the default configuration
+
+**Status:** fixed in the Camunda 7 adapter on 2026-08-15, found the same day while building
+`bpmn-history-and-diagram/springboot`.
+
+**What happened.** The first call of `getProcessDefinitions` ended in
+
+```
+org.camunda.bpm.engine.exception.NullValueException: tenantIds contains null value
+	at org.camunda.bpm.engine.impl.HistoricProcessInstanceQueryImpl.tenantIdIn(...)
+	at io.vanillabp.camunda7.processservice.Camunda7WorkflowViewer.resolveHistoricInstance(...)
+```
+
+Three queries of the viewer passed the module's tenant id to `tenantIdIn()`. A workflow module
+without a tenant is not an exotic setup: `name-clash-avoidance: none` is the DEFAULT of that
+adapter, and then there is no tenant at all. Camunda does not read `null` as "no tenant", it
+refuses the query - so the whole viewer API was unusable for a default-configured application,
+in all three methods.
+
+**Why nobody noticed.** The adapter's integration tests run with
+`name-clash-avoidance: by-adapter`, where a tenant always exists. `Camunda7ProcessService` had
+the guard (`tenantId != null ? tenantIdIn(tenantId) : withoutTenantId()`) from the beginning;
+the viewer, written later, did not.
+
+**How it was fixed.** The viewer uses the same guard, and a unit test asserts that a module
+without a tenant asks without one. The lesson for the blueprints is the one they exist for: a
+feature is not covered until something runs it the way a reader of the documentation would.
+
+## G11: an ended workflow was unknown to Camunda 8 rather than completed
+
+**Status:** fixed in the Camunda 8 adapter on 2026-08-15, found the same day while building
+`bpmn-history-and-diagram/springboot`.
+
+**What happened.** Asking for the history of a workflow which had ENDED raised
+
+```
+WorkflowNotFoundException: No configured BPMS knows the workflow of aggregate '...' - the
+workflow history cannot be determined (probed adapters, in prioritized order: [camunda8])!
+```
+
+although the platform's wiki promises the opposite: "Viewing is not limited to running
+workflows: as long as the BPMS still holds the workflow's data, definitions and history are
+served for ended workflows too."
+
+`awarenessOfWorkflow` searched the process instances with `state(ACTIVE)` and answered
+`UNKNOWN_TO_BPMS` for everything else. That is the one answer with consequences: it permits
+falling back to another adapter, the viewer turns it into the exception above, and an operation
+arriving after the workflow ended fails instead of being ignored as too late.
+`WorkflowAwareness.COMPLETED` exists for exactly this, and the core has branches for it which
+this adapter could never reach.
+
+**How it was fixed.** The search filters by the aggregate-ID variable alone and reads the state
+of what it finds: an active instance means `ACTIVE`, anything else `COMPLETED`, nothing at all
+`UNKNOWN_TO_BPMS`. The redispatch probe of the same class already did it that way, and said why
+in its comment.

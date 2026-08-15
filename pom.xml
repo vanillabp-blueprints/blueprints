@@ -50,6 +50,7 @@
     <module>blueprints-bpmn/bpmn-call-activity-decomposition/springboot</module>
     <module>blueprints-bpmn/bpmn-multi-instance-task/springboot</module>
     <module>blueprints-bpmn/bpmn-multi-instance-subprocess/springboot</module>
+    <module>blueprints-bpmn/bpmn-history-and-diagram/springboot</module>
   </modules>
 
   <scm>
