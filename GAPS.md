@@ -129,8 +129,9 @@ reject a deployment there.
 
 ## G3: two branches of one workflow overwrite each other's writes on the workflow aggregate
 
-**Status:** open, found 2026-08-14 while `bpmn-boundary-events/springboot` failed in CI on
-Camunda 8.
+**Status:** answered in VanillaBP 2.0.0-SNAPSHOT on 2026-08-15 (story 59), found 2026-08-14
+while `bpmn-boundary-events/springboot` failed in CI on Camunda 8. Kept here as the record of
+what an application has to decide.
 
 **What happens.** A non-interrupting boundary event adds a token, so a side branch runs while
 the task it is attached to stays open. Both branches work on the same workflow aggregate: the
@@ -176,9 +177,9 @@ development and production.
 
 ## G4: nothing says what happens when the aggregate cannot be saved because of a version conflict
 
-**Status:** open, found 2026-08-14 while deciding how `bpmn-boundary-events` should survive
-two branches writing one aggregate. Follows from G3, which is the same collision seen from
-the data side. Framework story 59 in `prompts/ROADMAP.md`.
+**Status:** answered in VanillaBP 2.0.0-SNAPSHOT on 2026-08-15 (story 59), found 2026-08-14
+while deciding how `bpmn-boundary-events` should survive two branches writing one aggregate.
+Follows from G3, which is the same collision seen from the data side.
 
 **What an application would do.** A `@Version` column is the standard answer to two writers,
 and the only one that also covers two branches writing the SAME attribute, which
@@ -208,6 +209,28 @@ part is Story 51's question about inbound idempotency, so the two belong togethe
 **What the blueprints do meanwhile.** `bpmn-boundary-events` uses `@DynamicUpdate` and its
 branches write different columns. `persistence-parallel-branches` will show one entity per
 phase, which avoids the conflict rather than resolving it.
+
+**What VanillaBP does now (story 59).** Two branches remain the application's design
+decision - the framework neither locks the aggregate nor serializes the branches - but
+nothing about it is silent any more:
+
+- a BPMN process which can hold more than one token (a non-interrupting boundary event, a
+  forking parallel or inclusive gateway, a parallel multi-instance activity, a
+  non-interrupting event subprocess) is reported by the adapter while it wires the model, and
+  the application logs one WARN per process if the workflow aggregate has no version
+  attribute;
+- a version conflict in the commit VanillaBP owns is named by one guiding ERROR and the
+  exception is passed on unchanged, so the BPMS retries and ends in an incident. VanillaBP
+  never retries by itself, because a handler may have called a remote API before the commit
+  failed;
+- the four ways an application can deal with it - an entity per phase, `@DynamicUpdate`, a
+  version attribute plus a retry of its own, an additive relation - are described by the wiki
+  page
+  [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate),
+  which is where blueprints point instead of explaining it again;
+- a delivery whose transaction failed leaves no record, so the retried delivery runs the
+  handler again. That is the boundary of the inbound-idempotency feature, and the reason a
+  handler with side effects has to survive repetition.
 
 ## G5: which process `startWorkflow` starts depends on the order classes are scanned in
 
