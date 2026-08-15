@@ -24,9 +24,10 @@ must not depend on anything that only exists in this monorepo:
 - **Do not** rely on properties, dependency management or plugin management declared here.
 - Declare versions, the VanillaBP BOM import and the BPMS profiles in the blueprint's own
   POM.
-- Give the blueprint a groupId of its own, `io.vanillabp.blueprint.<blueprint-id>`. Every
-  blueprint names its Maven modules after the same use case, so without that the aggregator
-  sees two modules called `loan-approval` and refuses to build.
+- Give the blueprint a groupId of its own, `io.vanillabp.blueprint.<blueprint-id>-<platform>`,
+  which is the name of its repository. Every blueprint names its Maven modules after the same
+  use case, and the two platform twins name them identically, so without the platform in the
+  groupId the aggregator sees two modules called `loan-approval` and refuses to build.
 
 The price is duplication between blueprints, and it is paid on purpose: a reader must be
 able to understand a blueprint from the files in front of them. CI keeps the copies from
@@ -123,25 +124,31 @@ A blueprint ships an integration test which plays through the aspect it shows, u
 simulator for surrounding systems, plus a smoke test of the application. That test is the
 verification loop for generated code; without it, a blueprint cannot be used by an agent.
 
-The workflow module is tested by running it: since a workflow module is a JAR which cannot
-be started alone, its test sources bring a minimal application (`TestApplication`) along.
-Assert on the **workflow aggregate**, never on the engine, because the aggregate is the only
-state that means the same on every BPMS. And **wait** instead of asserting immediately, since
-a remote BPMS gets to a task eventually.
+The workflow module is tested by running it. What that takes differs by platform: on Spring
+Boot the test sources bring a minimal application (`TestApplication`) along, on Quarkus the
+module is booted as the application under test and names the location of its BPMN files
+(`src/test/resources/application.yaml`, per BPMS through resource filtering). Assert on the
+**workflow aggregate**, never on the engine, because the aggregate is the only state that
+means the same on every BPMS. And **wait** instead of asserting immediately, since a remote
+BPMS gets to a task eventually.
 
 ## The test harness
 
 What every blueprint needs for that is the same, so it is written once and copied:
 
 ```
-templates/test-harness/springboot/
+templates/test-harness/<platform>/
 ├── workflow-module/         -> <maven-module>/src/test/java/blueprint/workflowmodule/
-│   ├── TestApplication.java     boots the workflow module for its test
+│   ├── TestApplication.java     boots the workflow module for its test (Spring Boot only)
 │   ├── WorkflowModuleTest.java  base class: waiting for a workflow to make progress
 │   └── Simulator.java           base class of a stand-in for a surrounding system
 └── application/             -> <maven-module>/src/test/java/blueprint/workflowmodule/
     └── ApplicationSmokeTest.java
 ```
+
+The two platforms have a set each, and the sets differ where the platform does: a Quarkus
+workflow module needs no application class to be booted, and every Quarkus test class carries
+`@QuarkusTest` itself rather than inheriting it from the base class.
 
 Copies rather than a shared module, because a blueprint has to build standalone after the
 split and an agent has to be able to read the code that verifies its work.
@@ -299,9 +306,12 @@ cd blueprints-bpmn/bpmn-service-task/springboot && mvn -Pcamunda8 install verify
 bin/camunda8_cluster.sh stop
 ```
 
-The address reaches the blueprint as the environment variable
-`VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS`, which Spring binds to
-`vanillabp.adapters.camunda8.rest-address`. No CI-specific address is checked in anywhere.
+The address reaches the blueprint as an environment variable binding to
+`vanillabp.adapters.camunda8.rest-address`. Both spellings are set, because the platforms
+read the name differently: Spring Boot binds `VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS`,
+Quarkus expects the dash as an underscore
+(`VANILLABP_ADAPTERS_CAMUNDA8_REST_ADDRESS`), and a variable matching no property is
+ignored. No CI-specific address is checked in anywhere.
 
 ### Reading the VanillaBP snapshots
 

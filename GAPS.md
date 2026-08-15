@@ -521,11 +521,11 @@ but NOT when a `@WorkflowTask` method returns - which is where a derived value c
 
 **Proven by narrowing, one run each.**
 
-| Aggregate | Condition | Result |
-|-----------|-----------|--------|
-| getter without annotations | `${approvableWithoutReview}` | branch taken |
-| getter with `@SyncWithBPMS` | `${approvableWithoutReview}` | default flow |
-| any | `${creditRating >= 30}` (a field) | branch taken |
+|          Aggregate          |             Condition             |    Result    |
+|-----------------------------|-----------------------------------|--------------|
+| getter without annotations  | `${approvableWithoutReview}`      | branch taken |
+| getter with `@SyncWithBPMS` | `${approvableWithoutReview}`      | default flow |
+| any                         | `${creditRating >= 30}` (a field) | branch taken |
 
 The blueprint `bpmn-gateways` works for the same reason the first row does: it shares nothing,
 so the resolver answers live.
@@ -541,3 +541,94 @@ as the Camunda 8 adapter does, or it stops writing them under names an expressio
 the operator context could carry a prefix, and expressions would always be answered live by
 the resolver. The second is closer to how this engine works (it reads the aggregate directly
 and needs no variables at all), the first keeps the two adapters symmetric.
+
+## G13: on Quarkus the phase-two dispatch reaches the application without a transaction
+
+**Status:** open, found 2026-08-15 while building `module-single/quarkus` against Camunda 8.
+
+**What happens.** A remote BPMS starts a workflow in two phases: the aggregate and an outbox
+entry are written in the application's transaction, and the outbox dispatcher starts the
+workflow in the BPMS afterwards. The dispatcher runs on a thread of its own, and there it
+calls back into the application: the adapter needs the aggregate to build the variables it
+sends to the engine, so it asks the application's `AggregatePersistenceAware`.
+
+On Quarkus that call arrives with neither a transaction nor a CDI request context active,
+and an entity cannot be read that way. The workflow start fails and is retried forever:
+
+```
+WARN  [JdbcPhaseTwoOutboxDispatcher] Dispatching phase two (START_WORKFLOW) of BPMN process
+ 'loan_approval' of workflow module 'loan-approval' for aggregate '356d…' failed - will retry:
+ jakarta.enterprise.context.ContextNotActiveException: Cannot use the EntityManager/Session
+ because neither a transaction nor a CDI request context is active. ...
+   at io.vanillabp.camunda8.processservice.Camunda8ProcessService.variablesOf
+   at io.vanillabp.integration.runtime.outbox.JdbcPhaseTwoOutboxDispatcher.dispatch
+```
+
+The application looks healthy: the aggregate is in the database, the API answered, and the
+workflow simply never appears in the BPMS. The message names Quarkus' remedy ("add
+`@Transactional` to your method"), which points at the application although the call comes
+from VanillaBP's own thread.
+
+**Reproduction.** `blueprints-modules/module-single/quarkus`, remove `@Transactional` from
+`AggregateRepository`, start a Camunda 8 cluster and run
+`mvn -Pcamunda8 install verify`. `LoanApprovalIT` times out with the aggregate stored and
+`creditRating=null`.
+
+**Why it was not seen before.** Every Quarkus test of the platform and of the adapters
+implements `AggregatePersistenceAware` with a map, and a map needs no transaction. The
+blueprint is the first Quarkus application storing its aggregate the way applications do.
+
+**Where it belongs.** The `@WorkflowTask` path already runs in a context VanillaBP opens
+(`QuarkusTransactionRunner`), and the phase-two path should do the same rather than expect
+every application to annotate its persistence. Spring Boot does not show the problem because
+its repositories open an `EntityManager` per call, so this is a platform difference the
+application would have to know about, which is exactly what a platform integration is there
+to remove.
+
+**What the blueprint does until then.** `AggregateRepository` carries `@Transactional`. It
+joins the transaction of whoever calls in, so nothing changes inside a task or an API call,
+and it opens one where there is none. The class comment says why, and the annotation stays
+harmless once VanillaBP provides the context.
+
+## G14: a workflow module tested on Quarkus does not find its own BPMN files
+
+**Status:** open, found 2026-08-15 while building `module-single/quarkus`.
+
+**What happens.** Where BPMN files are read from follows a convention: a workflow module
+shipped as its own artifact keeps them below its ID (`loan-approval/processes/<adapter-id>`),
+whereas an application which IS the workflow module keeps them below `processes/<adapter-id>`.
+Which of the two applies is decided by whether the module descriptor comes from the
+application's main artifact.
+
+A workflow module tested inside its own Maven module is the main artifact on Quarkus, so the
+convention drops the module ID - while the files sit where the packaged application needs
+them, below the ID. Booting the test therefore reports:
+
+```
+WARN No executable BPMN processes found for workflow module 'loan-approval' at location
+ 'classpath*:processes/camunda7'! Adapter 'camunda7' is skipped for this workflow module.
+```
+
+and starting a workflow fails afterwards with the engine's own error (`no processes deployed
+with key 'loan_approval'`), which names neither the location nor VanillaBP.
+
+The same module in the application deploys correctly, so the failure appears only in the test
+which is supposed to prove the module works.
+
+**Reproduction.** `blueprints-modules/module-single/quarkus`, remove the `vanillabp` section
+from `loan-approval/src/test/resources/application.yaml` and run `mvn clean verify`.
+
+**Why the other platform does not show it.** There the module's test application lives in the
+test sources, whose classpath root is not the one carrying the descriptor, so the module
+counts as its own artifact and the convention matches the files.
+
+**What the blueprint does until then.** The module's test names the location per adapter
+(`loan-approval/src/test/resources/application.yaml`, naming the BPMS of the active Maven
+profile through resource filtering). It is the only property the blueprint configures, and it
+is one every Quarkus workflow module tested this way needs.
+
+**To decide.** Either the location convention also accepts the module's own subdirectory (a
+module's resources are where the module puts them, whoever runs it), or testing a workflow
+module inside its own Maven module is documented as needing this property. Deciding for the
+first would remove a per-blueprint file; deciding for the second means saying so in the wiki,
+because today nothing does.

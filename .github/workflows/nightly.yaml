@@ -53,11 +53,17 @@ jobs:
         run: |
           bin/camunda8_cluster.sh start
           {
+            # Two spellings of the same two properties, because the platforms read an
+            # environment variable differently: one maps a name without separators onto
+            # 'rest-address', the other expects the dash as an underscore. A variable which
+            # matches no property is ignored, so both are set for every blueprint.
             echo "VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS=http://localhost:8080"
+            echo "VANILLABP_ADAPTERS_CAMUNDA8_REST_ADDRESS=http://localhost:8080"
             # A stock cluster has multi-tenancy switched off and rejects the tenant the
             # adapter deploys into by default. Prefixed identifiers keep the modules apart
             # without tenants.
             echo "VANILLABP_ADAPTERS_CAMUNDA8_NAMECLASHAVOIDANCE=use-prefix"
+            echo "VANILLABP_ADAPTERS_CAMUNDA8_NAME_CLASH_AVOIDANCE=use-prefix"
           } >> "$GITHUB_ENV"
       - name: Build against the current snapshots
         working-directory: "${{ matrix.blueprint }}"
