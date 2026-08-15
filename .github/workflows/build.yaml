@@ -13,24 +13,36 @@ env:
   # release. Reading them needs a token, see .github/workflows/github-packages-settings.xml.
   USER_NAME: "${{ secrets.VANILLABP_USER_NAME }}"
   USER_TOKEN: "${{ secrets.VANILLABP_USER_TOKEN }}"
+  # The branch of vanillabp-blueprints/.github the index is read from - it says which
+  # BPMS a blueprint is built against.
+  INDEX_REF: main
 jobs:
   # The list of blueprints is not maintained anywhere: it is the directories that exist.
   # The same rule the split job follows, so the matrix cannot fall behind the repository.
+  #
+  # Which BPMS a blueprint is built against is not maintained here either: it is the
+  # 'bpms' list of its entry in the index. A blueprint which cannot run on an engine
+  # therefore says so where it declares everything else, and a reader of the index sees
+  # what the CI does.
   discover:
     runs-on: ubuntu-latest
     outputs:
-      blueprints: "${{ steps.list.outputs.blueprints }}"
+      combinations: "${{ steps.list.outputs.combinations }}"
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install --quiet pyyaml
+      - name: Download the blueprints index
+        run: curl -fsSL -o blueprints.yaml
+          "https://raw.githubusercontent.com/vanillabp-blueprints/.github/${INDEX_REF}/blueprints.yaml"
       - id: list
-        name: Collect the blueprint directories
+        name: Collect blueprint and BPMS combinations
         run: |
-          # a blueprint is a directory with a POM: the harness reference in templates/
-          # matches the same shape and is not one
-          list=$(for directory in */*/springboot */*/quarkus; do
-            if [ -f "${directory}/pom.xml" ]; then echo "${directory}"; fi
-          done | jq -R -s -c 'split("\n")[:-1]')
-          echo "blueprints=${list}" >> "$GITHUB_OUTPUT"
+          list=$(python bin/build_matrix.py blueprints.yaml)
+          echo "combinations=${list}" >> "$GITHUB_OUTPUT"
           echo "Building: ${list}"
 
   # What a user gets after the split: the blueprint directory alone, with a plain Maven
@@ -42,8 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        blueprint: "${{ fromJSON(needs.discover.outputs.blueprints) }}"
-        bpms: [camunda7, camunda8]
+        include: "${{ fromJSON(needs.discover.outputs.combinations) }}"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5

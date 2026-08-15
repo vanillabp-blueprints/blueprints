@@ -284,7 +284,11 @@ The job that matters most is `blueprint`: it builds `<group>/<blueprint-id>/<pla
 plain `mvn`, without the aggregator, the wrapper or the root POM. That is exactly the
 repository a user clones after the split, so a blueprint does not need to be split to find
 out whether it works. The matrix is not maintained anywhere; it is the list of directories
-that exist, the same rule the split job follows.
+that exist, the same rule the split job follows, crossed with the `bpms` list of each
+blueprint in the index (`bin/build_matrix.py`). A blueprint which cannot run on an engine
+says so once, in its index entry, next to everything else it declares - and a directory the
+index does not know yet is built against every engine, because being unknown is a finding of
+its own rather than a reason to test less.
 
 Camunda 7 is embedded and needs nothing. Camunda 8 is remote, so the job starts a cluster
 first:

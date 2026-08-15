@@ -321,8 +321,9 @@ explained where a reader meets it: in the README of
 
 ## G8: Camunda 8 supplies no multi-instance context, so the annotations do not work there
 
-**Status:** open, found 2026-08-15 while building `bpmn-multi-instance-task/springboot`.
-Framework story 62 in `prompts/ROADMAP.md`.
+**Status:** fixed in the Camunda 8 adapter on 2026-08-15 (framework story 62), found the same
+day while building `bpmn-multi-instance-task/springboot`. Kept as the record of what the
+blueprint relies on and why that engine needed more than a getter.
 
 **What happens.** A `@WorkflowTask` method may ask what the BPMS knows about the iteration it
 runs in: `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`. The Camunda
@@ -361,6 +362,14 @@ there always iterates over an `inputCollection`, so the advice in the
 the collection to identifiers for that reason, and the documentation should say which engine
 its advice applies to.
 
-**Affects:** Camunda 8. It blocks two blueprints of the catalogue, `bpmn-multi-instance-task`
-and `bpmn-multi-instance-subprocess`, because a blueprint is built against every BPMS the
-build matrix knows.
+**Affects:** Camunda 8. It blocked two blueprints of the catalogue,
+`bpmn-multi-instance-task` and `bpmn-multi-instance-subprocess`, because a blueprint is built
+against every BPMS the build matrix knows.
+
+**How it was fixed.** The adapter injects input mappings into every multi-instance element
+while deploying, one set per element and named after it, carrying the index, the size of the
+collection and the element. Those names cannot be shadowed, so a nested task sees the
+iteration of the subprocess around it as well, and the total exists at all. The index is
+translated to count from 0 like everywhere else. `bpmn-multi-instance-task` passes on both
+engines with the same Java code; the adapter's README explains the mechanism under
+"Multi-instance".
