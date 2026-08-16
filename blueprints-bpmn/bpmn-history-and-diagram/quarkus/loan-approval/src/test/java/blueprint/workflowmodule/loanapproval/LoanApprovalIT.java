@@ -176,7 +176,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var history = awaitHistory(
         loanRequestId,
-        candidate -> candidate.endTime() != null);
+        candidate -> (candidate.endTime() != null) && elementIds(candidate)
+            .contains("ServiceTask_DecideOnLoan"));
 
     assertThat(elementIds(history))
         .describedAs("every task the workflow ran through")
