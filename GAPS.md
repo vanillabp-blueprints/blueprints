@@ -648,3 +648,78 @@ module's resources are where the module puts them, whoever runs it), or testing 
 module inside its own Maven module is documented as needing this property. Deciding for the
 first would remove a per-blueprint file; deciding for the second means saying so in the wiki,
 because today nothing does.
+
+## G15: a bean only VanillaBP looks up is dropped while a Quarkus application is built
+
+**Status:** open, found 2026-08-16 while building `bpmn-multi-instance-subprocess/quarkus`.
+
+**What happens.** A multi-instance resolver is a bean of the application which nothing
+injects: it is named in an annotation,
+`@MultiInstanceElement(resolverBean = IterationResolver.class)`, and VanillaBP asks the bean
+container for it when the task runs. Quarkus removes beans nobody injects while it builds the
+application, so the lookup finds nothing and every iteration of the task fails:
+
+```
+Error while evaluating expression: ${requestPartnerOffer}. Cause: No bean of the resolver
+class 'blueprint.workflowmodule.loanapproval.IterationResolver' (used by the parameter
+'iteration' of @WorkflowTask method
+'blueprint.workflowmodule.loanapproval.WorkflowTaskHandler#requestPartnerOffer') is
+available! Define it as a bean of your application.
+```
+
+The message is VanillaBP's own and it is precise about what is missing, but it points at the
+application while the class is annotated correctly. What is missing is the instruction to
+Quarkus to keep the bean.
+
+**Reproduction.** `blueprints-bpmn/bpmn-multi-instance-subprocess/quarkus`, remove
+`@Unremovable` from `IterationResolver` and run `mvn -Pcamunda7 clean install verify`.
+
+**Why the other platform does not show it.** Spring Boot keeps every bean it finds, whether
+anything injects it or not.
+
+**What the blueprint does until then.** The resolver carries `io.quarkus.arc.Unremovable`
+next to `@ApplicationScoped`, with a comment saying why.
+
+**To decide.** The build step which reads `@MultiInstanceElement` knows the resolver class,
+so it can mark it unremovable itself, and the same holds for every other class VanillaBP
+resolves by name rather than by injection. Deciding for that removes the annotation from every
+application; deciding against it means the message has to say what Quarkus needs, because
+`Define it as a bean of your application` is what the developer has already done.
+
+## G16: Camunda 7 on Quarkus never reports the end of a workflow
+
+**Status:** open, found 2026-08-16 while building `bpmn-workflow-ended/quarkus`.
+
+**What happens.** A `@WorkflowEnded` method is registered like every other handler and the
+application boots without a word of complaint, but the method is never called. The workflow
+reaches its end event and the attributes the notification was supposed to fill stay empty.
+Nothing is logged, because nothing failed.
+
+The Camunda 7 adapter attaches its end listener while it parses the BPMN, and only when it has
+a `WorkflowEndedInvoker` to call:
+
+```java
+if (workflowEndedInvoker != null) {
+  parseListener.setWorkflowEnded(...);
+}
+```
+
+On Quarkus the invoker is never passed. `Camunda7EngineProducer` builds the engine holder with
+the seven-argument constructor, which fills the invoker with `null`, although the very
+registry it already passes twice implements the interface.
+
+**Reproduction.** `blueprints-bpmn/bpmn-workflow-ended/quarkus` on Camunda 7 (the blueprint is
+therefore not part of the Quarkus half yet). Its two tests wait for `closedAt` and time out.
+
+**Why the other platform does not show it.** The Spring Boot registrar looks the invoker up and
+passes it. The Camunda 8 Quarkus adapter passes it as well
+(`Camunda8DeploymentServiceProducer#setWorkflowEndedInvoker`), so this is one adapter on one
+platform rather than a hole in the SPI.
+
+**What the blueprint does until then.** Nothing can be done in an application, so the Quarkus
+twin of `bpmn-workflow-ended` waits for the fix.
+
+**To decide.** Passing the registry a third time is the fix. The question is what keeps it from
+happening again: a startup check comparing the handlers an adapter can deliver with the ones
+registered would report a `@WorkflowEnded` method no adapter will ever call, which is the class
+of mistake nobody notices before a workflow ends in production.

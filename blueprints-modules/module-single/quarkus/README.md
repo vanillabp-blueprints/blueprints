@@ -70,7 +70,7 @@ mvn install verify -Pcamunda8
 
 Camunda 8 is a remote engine, so a cluster has to run and be pointed at. Start one, then add
 its address to `application/src/main/resources/application.yaml` and to
-`loan-approval/src/test/camunda8/resources/application.properties`:
+`loan-approval/src/test/resources/application.yaml`:
 
 ```yaml
 vanillabp:

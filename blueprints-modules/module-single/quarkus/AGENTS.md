@@ -58,7 +58,6 @@ places or in none.
 | `loan-approval/pom.xml`                                           | `vanillabp-quarkus-support` and the index of the module's classes, never an adapter  |
 | `application/pom.xml`                                             | `vanillabp-quarkus-integration` and the BPMS adapter, the only place a BPMS is named |
 | `application/src/main/resources/application.yaml`                 | the database, and nothing about the workflow                                         |
-| `loan-approval/src/test/resources/application.yaml`               | the database of the module's own test                                                |
 | `loan-approval/src/test/resources/application.yaml`               | the database of the module's own test, and where that test reads its BPMN from       |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                      |
 | `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                       |
@@ -82,11 +81,11 @@ itself; inheriting it from the base class is not enough to make the test a bean.
    `@WorkflowService` class is never found.
 3. Put the BPMN file into `src/main/resources/<workflow-module-id>/processes/<adapter-id>/`.
    The adapter ID is the configured one, which defaults to the adapter type.
-4. Add the workflow aggregate as a JPA entity with the natural ID as `@Id`, plus a bean
-   a repository for it (Panache, Panache Mongo or Spring Data), which VanillaBP recognises;
-   only a persistence fitting none of those needs a bean implementing
-   `AggregatePersistenceAware`. If the project already has an entity for
-   this business case, use it instead of adding a second one.
+4. Add the workflow aggregate as a JPA entity with the natural ID as `@Id`, plus a
+   repository bean for it (Panache, Panache Mongo or Spring Data), which VanillaBP
+   recognises. A persistence fitting none of those needs a bean implementing
+   `AggregatePersistenceAware`, which always wins. If the project already has an entity
+   for this business case, use it instead of adding a second one.
 5. Add `WorkflowTaskHandler` with the `@WorkflowService` annotation and one `@WorkflowTask`
    method per BPMN task, each doing nothing but calling `Service`. Never annotate the
    handler or the service methods it calls with `@Transactional`: VanillaBP runs a task in
