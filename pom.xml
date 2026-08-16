@@ -37,6 +37,8 @@
   <modules>
     <module>blueprints-modules/module-single/springboot</module>
     <module>blueprints-modules/module-single/quarkus</module>
+    <module>blueprints-persistence/persistence-parallel-branches/springboot</module>
+    <module>blueprints-persistence/persistence-parallel-branches/quarkus</module>
     <module>blueprints-bpmn/bpmn-service-task/springboot</module>
     <module>blueprints-bpmn/bpmn-service-task/quarkus</module>
     <module>blueprints-bpmn/bpmn-user-task/springboot</module>
