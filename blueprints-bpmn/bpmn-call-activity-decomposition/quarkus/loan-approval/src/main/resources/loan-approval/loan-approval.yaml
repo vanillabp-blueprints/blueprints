@@ -1,0 +1,16 @@
+# Configuration of the workflow module 'loan-approval'.
+#
+# The file is named after the workflow module ID and is loaded automatically, with a
+# higher priority than application.yaml. Everything only this module needs belongs here -
+# that is what keeps a workflow module a self-contained application inside the
+# application.
+#
+# Both processes of this blueprint are served from here. A called process is part of the
+# workflow module which owns it, and configuration follows the module rather than the
+# model.
+loan-approval:
+  rating-scale: 100
+  minimum-rating: 30
+  # Used by the two steps of the risk assessment, which the called process runs through.
+  collateral-percentage: 60
+  maximum-debt-ratio: 40

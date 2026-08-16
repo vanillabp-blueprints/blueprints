@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_risk_assessment" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <!--
+    The called process. It is a process like any other, and the only thing making it a part
+    of the loan approval is that nobody else starts it: no ProcessService call, no API, no
+    message - only the call activity of 'loan_approval'.
+
+    Its start event is therefore plain. A start event which the BPMS triggers on its own
+    would need code saying what the business case is (see the blueprint
+    'bpmn-bpms-initiated-start'); here the business case exists already, and the workflow
+    aggregate with it.
+  -->
+  <bpmn:process id="risk_assessment" name="Risk assessment" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_RiskAssessmentRequested" name="Risk assessment requested">
+      <bpmn:outgoing>Flow_ToCheckCollateral</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToCheckCollateral" sourceRef="StartEvent_RiskAssessmentRequested" targetRef="ServiceTask_CheckCollateral" />
+    <bpmn:serviceTask id="ServiceTask_CheckCollateral" name="Check collateral">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="checkCollateral" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToCheckCollateral</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToCheckDebtRatio</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToCheckDebtRatio" sourceRef="ServiceTask_CheckCollateral" targetRef="ServiceTask_CheckDebtRatio" />
+    <bpmn:serviceTask id="ServiceTask_CheckDebtRatio" name="Check debt ratio">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="checkDebtRatio" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToCheckDebtRatio</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToRiskAssessed</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToRiskAssessed" sourceRef="ServiceTask_CheckDebtRatio" targetRef="EndEvent_RiskAssessed" />
+    <!--
+      Ending this process hands control back to the call activity. The parent goes on with
+      the next task, and the aggregate carries what was written here.
+    -->
+    <bpmn:endEvent id="EndEvent_RiskAssessed" name="Risk assessed">
+      <bpmn:incoming>Flow_ToRiskAssessed</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="risk_assessment">
+      <bpmndi:BPMNShape id="StartEvent_RiskAssessmentRequested_di" bpmnElement="StartEvent_RiskAssessmentRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="129" y="145" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_CheckCollateral_di" bpmnElement="ServiceTask_CheckCollateral">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_CheckDebtRatio_di" bpmnElement="ServiceTask_CheckDebtRatio">
+        <dc:Bounds x="400" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_RiskAssessed_di" bpmnElement="EndEvent_RiskAssessed">
+        <dc:Bounds x="562" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="546" y="145" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToCheckCollateral_di" bpmnElement="Flow_ToCheckCollateral">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToCheckDebtRatio_di" bpmnElement="Flow_ToCheckDebtRatio">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="400" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRiskAssessed_di" bpmnElement="Flow_ToRiskAssessed">
+        <di:waypoint x="500" y="120" />
+        <di:waypoint x="562" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
