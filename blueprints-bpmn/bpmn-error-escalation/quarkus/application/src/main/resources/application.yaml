@@ -1,0 +1,20 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is
+# in its own configuration file (loan-approval/loan-approval.yaml inside the module JAR).
+#
+# Note what is NOT here: nothing about the workflow itself. One adapter dependency and one
+# workflow module are enough for VanillaBP to derive the adapter, the workflow module and
+# the location its BPMN files are read from, so this application needs no vanillabp.*
+# property at all.
+quarkus:
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:error-escalation;DB_CLOSE_DELAY=-1
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO
