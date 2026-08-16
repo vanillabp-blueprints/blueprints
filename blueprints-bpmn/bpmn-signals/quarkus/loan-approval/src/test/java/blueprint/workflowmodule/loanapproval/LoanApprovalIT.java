@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 
@@ -85,10 +86,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   private boolean wasOffered(
       final String loanRequestId) {
 
-    return loanApprovals
-        .findByIdOptional(loanRequestId)
-        .filter(loanApproval -> loanApproval.getInterestRate() != null)
-        .isPresent();
+    // Awaitility polls on a thread of its own, which has neither a transaction nor a
+    // request context - the same reason the harness reads an aggregate this way.
+    return QuarkusTransaction
+        .requiringNew()
+        .call(() -> loanApprovals
+            .findByIdOptional(loanRequestId)
+            .filter(loanApproval -> loanApproval.getInterestRate() != null)
+            .isPresent());
 
   }
 

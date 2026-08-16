@@ -567,8 +567,14 @@ and needs no variables at all), the first keeps the two adapters symmetric.
 
 ## G13: on Quarkus the phase-two dispatch reaches the application without a transaction
 
-**Status:** open, found 2026-08-15 while building `module-single/quarkus` against Camunda 8.
-Framework story `67-quarkus-phase-two-application-callbacks.md` (to be analysed).
+**Status:** fixed 2026-08-16, found 2026-08-15 while building `module-single/quarkus` against
+Camunda 8. The platform integration merged
+[PR #37](https://github.com/vanillabp/adapter-platform-integration/pull/37) for framework story
+67: `PhaseTwoRouter` runs every dispatch through `TransactionRunner.requireTransaction`, which
+joins an active transaction and starts one otherwise. On Quarkus that runner brings JTA plus
+the request context, the same one the task path uses; on Spring Boot none is supplied on
+purpose, because gruelbox brings the transaction. The `@Transactional` the Quarkus twins
+carried on their repository is gone again.
 
 **What happens.** A remote BPMS starts a workflow in two phases: the aggregate and an outbox
 entry are written in the application's transaction, and the outbox dispatcher starts the
@@ -620,13 +626,15 @@ Proven on 2026-08-15 with the blueprint: as a Panache **active record** (no repo
 class of the application in the path at all) `LoanApprovalIT` fails on Camunda 8 with the
 exception above, and there is nowhere left to put the annotation.
 
-**What the blueprint does until then.** The aggregate is stored by a Panache **repository**,
-and that repository carries `@Transactional`. VanillaBP's default calls the repository, the
-interceptor applies, and the transaction is there. It joins the transaction of whoever calls
-in, so nothing changes inside a task or an API call, and it opens one where there is none.
-The class comment says why, and the annotation goes away once VanillaBP brings the
-transaction along - at which point the blueprint can also show the active record, which is
-the shorter code and the reason the pattern exists.
+**What the blueprint did until then.** The aggregate is stored by a Panache **repository**,
+and that repository carried `@Transactional` for a day. VanillaBP's default called the
+repository, the interceptor applied, and the transaction was there.
+
+**How it was answered.** The annotation is gone from all seventeen Quarkus twins since
+2026-08-16: the repository is a plain `@ApplicationScoped` bean again, and the class comment
+no longer has to explain a transaction the application does not own. With the guarantee in
+the platform, a blueprint showing the active record is possible as well - that is the shorter
+code and the reason the pattern exists.
 
 ## G14: a workflow module tested on Quarkus does not find its own BPMN files
 

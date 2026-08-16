@@ -10,7 +10,7 @@ e957da1a77c8449f  differs  loan-approval/src/main/java/blueprint/workflowmodule/
 480889f2ad9fb1a1  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/Workflow.java  # bean and injection annotations only; both inject ProcessService here and nowhere else
 6f779c401afdd136  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/WorkflowTaskHandler.java  # bean and injection annotations only; the VanillaBP annotations are identical, which is the point
 b3f6688c0c9c7111  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/config/LoanApprovalProperties.java  # configuration is bound to a class on one platform and to an interface on the other
-355fcca5ead83c13  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/model/AggregateRepository.java  # each platform's repository idiom, plus the transaction of GAPS G13 which goes away with framework story 67
+6dcdfbe2838c4f44  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/model/AggregateRepository.java  # each platform's repository idiom
 7478214e70e9a2b7  only-springboot  loan-approval/src/test/java/blueprint/workflowmodule/TestApplication.java  # only one platform needs an application class to boot a workflow module for its test
 c9ced98071215c82  differs  loan-approval/src/test/java/blueprint/workflowmodule/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
 cc0cde61ba7fc555  differs  loan-approval/src/test/java/blueprint/workflowmodule/loanapproval/LoanApprovalIT.java  # injection annotations, and the test class carries @QuarkusTest itself because inheriting it leaves it without a bean

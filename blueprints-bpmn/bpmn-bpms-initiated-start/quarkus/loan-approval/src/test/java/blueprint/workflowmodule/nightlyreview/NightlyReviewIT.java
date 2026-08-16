@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.nightlyreview.model.Aggregate;
 import blueprint.workflowmodule.nightlyreview.model.AggregateRepository;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 
@@ -42,7 +43,11 @@ public class NightlyReviewIT extends WorkflowModuleTest {
         .atMost(TIMEOUT)
         .pollInterval(Duration.ofMillis(500))
         .until(() -> {
-          final var candidates = reviews.findByStartedBy(kind);
+          // Awaitility polls on a thread of its own, which has neither a transaction nor a
+          // request context - the same reason the harness reads an aggregate this way.
+          final var candidates = QuarkusTransaction
+              .requiringNew()
+              .call(() -> reviews.findByStartedBy(kind));
           candidates.stream().findFirst().ifPresent(found::set);
           return found.get() != null;
         });
@@ -84,7 +89,10 @@ public class NightlyReviewIT extends WorkflowModuleTest {
         .pollInterval(Duration.ofMillis(500))
         .until(() -> {
           service.requestReview();
-          return !reviews.findByStartedBy("SIGNAL").isEmpty();
+          return !QuarkusTransaction
+              .requiringNew()
+              .call(() -> reviews.findByStartedBy("SIGNAL"))
+              .isEmpty();
         });
 
     final var review = awaitReviewStartedBy("SIGNAL");

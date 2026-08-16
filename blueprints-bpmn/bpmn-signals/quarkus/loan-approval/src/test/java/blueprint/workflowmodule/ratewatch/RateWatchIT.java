@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.ratewatch.model.AggregateRepository;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 
@@ -48,10 +49,14 @@ public class RateWatchIT extends WorkflowModuleTest {
         .pollInterval(Duration.ofMillis(500))
         .until(() -> {
           loanApprovals.publishInterestRate(RATE);
-          return watches
-              .findByIdOptional(watchId)
-              .filter(watch -> watch.getNoticedAt() != null)
-              .isPresent();
+          // Awaitility polls on a thread of its own, which has neither a transaction nor a
+          // request context - the same reason the harness reads an aggregate this way.
+          return QuarkusTransaction
+              .requiringNew()
+              .call(() -> watches
+                  .findByIdOptional(watchId)
+                  .filter(watch -> watch.getNoticedAt() != null)
+                  .isPresent());
         });
 
     final var watch = awaitAggregate(

@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.transaction.Transactional;
 
 /**
  * The published interest rates. Ordinary application data, not a workflow aggregate: it
@@ -17,7 +16,6 @@ import jakarta.transaction.Transactional;
  * </p>
  */
 @ApplicationScoped
-@Transactional
 public class InterestRateRepository implements PanacheRepositoryBase<InterestRate, LocalDate> {
 
   /**
