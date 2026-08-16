@@ -1,13 +1,5 @@
-# The configuration of the module's own test. The only thing it says beyond the database is
-# where the BPMN files are: in the application this workflow module is a dependency, so its
-# models are looked for below its ID and nothing has to be configured, while here the module
-# is the artifact being run, and for an application which IS the workflow module the
-# convention drops the ID. Naming the location puts the test back onto the files the module
-# ships.
-#
-# '${bpms}' is the BPMS of the active Maven profile, filled in while the file is copied. The
-# location is per adapter, and so is the profile - this is the one place the module's test
-# knows which engine it runs on.
+# The configuration of the module's own test: its database, and nothing else. Where the
+# BPMN files are is a convention VanillaBP knows, on both sides of the split.
 quarkus:
   datasource:
     db-kind: h2
@@ -21,9 +13,3 @@ quarkus:
     category:
       "blueprint.workflowmodule":
         level: INFO
-vanillabp:
-  workflow-modules:
-    loan-approval:
-      adapters:
-        "${bpms}":
-          resources-location: classpath*:loan-approval/processes/${bpms}

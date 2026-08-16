@@ -126,8 +126,8 @@ verification loop for generated code; without it, a blueprint cannot be used by 
 
 The workflow module is tested by running it. What that takes differs by platform: on Spring
 Boot the test sources bring a minimal application (`TestApplication`) along, on Quarkus the
-module is booted as the application under test and names the location of its BPMN files
-(`src/test/resources/application.yaml`, per BPMS through resource filtering). Assert on the
+module is booted as the application under test and needs nothing but a database in
+`src/test/resources/application.yaml`. Assert on the
 **workflow aggregate**, never on the engine, because the aggregate is the only state that
 means the same on every BPMS. And **wait** instead of asserting immediately, since a remote
 BPMS gets to a task eventually.

@@ -151,7 +151,7 @@ Opening that URL shows the aggregate, including the credit rating the service ta
 | `application/src/main/resources/application.yaml`                                      | the database, and nothing about the workflow                                                    |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a real workflow and waits for the aggregate to have been filled                          |
 | `loan-approval/src/test/.../WorkflowModuleTest.java`                                   | the base class it inherits from: waiting for workflow progress, identical in every blueprint    |
-| `loan-approval/src/test/resources/application.yaml`                                    | the database of the module's own test, and where that test reads its BPMN from                  |
+| `loan-approval/src/test/resources/application.yaml`                                    | the database of the module's own test                                                           |
 | `application/src/test/.../ApplicationSmokeTest.java`                                   | boots the application, which is where VanillaBP validates that every BPMN task is wired to code |
 
 The order of events: `ApiController` calls `Service#initiateLoanApproval`, which builds the
@@ -168,13 +168,10 @@ handler anyway fails the boot with a message naming the method, and putting it o
 handler calls fails the task while it runs, so this is a rule VanillaBP enforces rather than
 one to remember.
 
-The module's own test names one property the application does not need. Where BPMN files are
-read from follows from where the workflow module sits: in the application it is a dependency,
-so its models are looked for below its ID, while in its own test the module is the artifact
-being run and the convention drops the ID. The file
-`loan-approval/src/test/resources/application.yaml` points the test back at the models the
-module ships. The location is per adapter, so the file names the BPMS of the active Maven
-profile (`${bpms}`, filled in while the file is copied) instead of being written twice.
+Where the BPMN files are read from is a convention on both sides of the split: in the
+application this module is a dependency, so its models are looked for below its ID, and in its
+own test the module is the artifact being run, where VanillaBP looks below the ID as well
+before it looks at the root. Neither the module nor its test configures a location.
 
 That the test waits instead of asserting immediately is not accidental: a BPMS runs tasks in
 its own transactions, and a remote one does so eventually. A test assuming otherwise passes

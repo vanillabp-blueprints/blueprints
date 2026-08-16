@@ -74,17 +74,6 @@
   </dependencies>
 
   <build>
-    <testResources>
-      <!--
-        Filtered, so the test configuration can name the BPMS of the active Maven profile
-        (see src/test/resources/application.yaml). Rewritten on every build, which is what
-        keeps a build after switching the profile from reading the previous one.
-      -->
-      <testResource>
-        <filtering>true</filtering>
-        <directory>src/test/resources</directory>
-      </testResource>
-    </testResources>
     <plugins>
       <!--
         A workflow module is a Maven module of its own, so the application's build does not
@@ -108,9 +97,8 @@
   </build>
 
   <!--
-    The test of a workflow module names the BPMS it runs on twice: the adapter it puts on
-    the test classpath, and the property 'bpms' the test configuration is filtered with.
-    Neither reaches the module's main sources - the module itself knows no BPMS.
+    The test of a workflow module names the BPMS it runs on once: the adapter it puts on the
+    test classpath. It never reaches the module's main sources - the module knows no BPMS.
   -->
   <profiles>
     <profile>
@@ -119,7 +107,6 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
-        <bpms>camunda7</bpms>
         <!-- Read by the test which only runs where canceling a user task is supported. -->
         <blueprint.bpms>camunda7</blueprint.bpms>
       </properties>
@@ -135,7 +122,6 @@
     <profile>
       <id>camunda8</id>
       <properties>
-        <bpms>camunda8</bpms>
         <blueprint.bpms>camunda8</blueprint.bpms>
       </properties>
       <dependencies>

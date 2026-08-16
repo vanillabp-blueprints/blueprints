@@ -42,7 +42,7 @@ Blueprint-specific names, each occurring in more than one place:
 | `loan-approval/pom.xml`                                                 | `vanillabp-quarkus-support` and the index of the module's classes, never an adapter  |
 | `application/pom.xml`                                                   | `vanillabp-quarkus-integration` and the BPMS adapter, the only place a BPMS is named |
 | `application/src/main/resources/application.yaml`                       | the database, and nothing about the workflow                                         |
-| `loan-approval/src/test/resources/application.yaml`                     | the database of the module's own test, and where that test reads its BPMN from       |
+| `loan-approval/src/test/resources/application.yaml`                     | the database of the module's own test                                                |
 | `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java` | the tasks of the process, including the `@TaskId` one the workflow waits at          |
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`     | the workflow aggregate, holding the id of the task waited at                         |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`     | the two numbers the business code uses                                               |

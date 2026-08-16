@@ -50,7 +50,7 @@ contexts the BPMS did supply.
 | `loan-approval/pom.xml`                                           | `vanillabp-quarkus-support` and the index of the module's classes, never an adapter  |
 | `application/pom.xml`                                             | `vanillabp-quarkus-integration` and the BPMS adapter, the only place a BPMS is named |
 | `application/src/main/resources/application.yaml`                 | the database, and nothing about the workflow                                         |
-| `loan-approval/src/test/resources/application.yaml`               | the database of the module's own test, and where that test reads its BPMN from       |
+| `loan-approval/src/test/resources/application.yaml`               | the database of the module's own test                                                |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                  |
 | `loan-approval/src/main/java/.../loanapproval/Workflow.java`      | starts the workflow                                                                  |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                      |

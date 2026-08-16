@@ -58,7 +58,7 @@ places or in none.
 | `loan-approval/pom.xml`                                           | `vanillabp-quarkus-support` and the index of the module's classes, never an adapter  |
 | `application/pom.xml`                                             | `vanillabp-quarkus-integration` and the BPMS adapter, the only place a BPMS is named |
 | `application/src/main/resources/application.yaml`                 | the database, and nothing about the workflow                                         |
-| `loan-approval/src/test/resources/application.yaml`               | the database of the module's own test, and where that test reads its BPMN from       |
+| `loan-approval/src/test/resources/application.yaml`               | the database of the module's own test                                                |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                      |
 | `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                       |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                  |
@@ -99,10 +99,9 @@ itself; inheriting it from the base class is not enough to make the test a bean.
    merge the two workflow classes: `Service` uses `Workflow` and is used by
    `WorkflowTaskHandler`, so merging them creates a circular bean reference.
 6. Add GET endpoints starting the process and showing the aggregate.
-7. Copy `LoanApprovalIT` and adapt it to the use case. If the test lives in the workflow
-   module, copy `src/test/resources/application.yaml` and the filtered test resources of the
-   POM as well: the module is the artifact being run there, so the BPMN location has to be
-   named, and it is named per adapter.
+7. Copy `LoanApprovalIT` and adapt it to the use case. A test living in the workflow module
+   needs no configuration of its own beyond a database: VanillaBP looks for the BPMN below
+   the module's ID whether the module is a dependency or the artifact being run.
 
 ## Verifying
 

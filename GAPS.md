@@ -638,8 +638,13 @@ code and the reason the pattern exists.
 
 ## G14: a workflow module tested on Quarkus does not find its own BPMN files
 
-**Status:** open, found 2026-08-15 while building `module-single/quarkus`. Framework story
-`68-quarkus-workflow-module-tested-as-main-artifact.md` (to be analysed).
+**Status:** fixed 2026-08-16, found 2026-08-15 while building `module-single/quarkus`. The
+platform integration merged
+[PR #40](https://github.com/vanillabp/adapter-platform-integration/pull/40) for framework
+story 68: where the application IS the workflow module, the convention names both locations,
+the module's own one first, and the first location holding files wins. The property every
+Quarkus twin carried in its test configuration, and the resource filtering feeding it, are
+gone again.
 
 **What happens.** Where BPMN files are read from follows a convention: a workflow module
 shipped as its own artifact keeps them below its ID (`loan-approval/processes/<adapter-id>`),
@@ -669,16 +674,16 @@ from `loan-approval/src/test/resources/application.yaml` and run `mvn clean veri
 test sources, whose classpath root is not the one carrying the descriptor, so the module
 counts as its own artifact and the convention matches the files.
 
-**What the blueprint does until then.** The module's test names the location per adapter
+**What the blueprint did until then.** The module's test named the location per adapter
 (`loan-approval/src/test/resources/application.yaml`, naming the BPMS of the active Maven
-profile through resource filtering). It is the only property the blueprint configures, and it
-is one every Quarkus workflow module tested this way needs.
+profile through resource filtering). It was the only property the blueprints configured.
 
-**To decide.** Either the location convention also accepts the module's own subdirectory (a
-module's resources are where the module puts them, whoever runs it), or testing a workflow
-module inside its own Maven module is documented as needing this property. Deciding for the
-first would remove a per-blueprint file; deciding for the second means saying so in the wiki,
-because today nothing does.
+**How it was answered.** The first way: a module's resources are where the module puts them,
+whoever runs it. Where the application is the workflow module, both locations are looked at,
+the module's own one first, and only the first one holding files is deployed - so a process
+is never deployed twice. Two messages came with it: the warning about an empty location names
+both places now, and a workflow module no adapter found any resources for is an error rather
+than a quiet start with nothing to run.
 
 ## G15: a bean only VanillaBP looks up is dropped while a Quarkus application is built
 
