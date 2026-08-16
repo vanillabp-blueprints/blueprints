@@ -38,20 +38,35 @@
     <module>blueprints-modules/module-single/springboot</module>
     <module>blueprints-modules/module-single/quarkus</module>
     <module>blueprints-bpmn/bpmn-service-task/springboot</module>
+    <module>blueprints-bpmn/bpmn-service-task/quarkus</module>
     <module>blueprints-bpmn/bpmn-user-task/springboot</module>
+    <module>blueprints-bpmn/bpmn-user-task/quarkus</module>
     <module>blueprints-bpmn/bpmn-async-task/springboot</module>
+    <module>blueprints-bpmn/bpmn-async-task/quarkus</module>
     <module>blueprints-bpmn/bpmn-gateways/springboot</module>
+    <module>blueprints-bpmn/bpmn-gateways/quarkus</module>
     <module>blueprints-bpmn/bpmn-boundary-events/springboot</module>
+    <module>blueprints-bpmn/bpmn-boundary-events/quarkus</module>
     <module>blueprints-bpmn/bpmn-error-escalation/springboot</module>
+    <module>blueprints-bpmn/bpmn-error-escalation/quarkus</module>
     <module>blueprints-bpmn/bpmn-message-correlation/springboot</module>
+    <module>blueprints-bpmn/bpmn-message-correlation/quarkus</module>
     <module>blueprints-bpmn/bpmn-message-start/springboot</module>
+    <module>blueprints-bpmn/bpmn-message-start/quarkus</module>
     <module>blueprints-bpmn/bpmn-timer/springboot</module>
+    <module>blueprints-bpmn/bpmn-timer/quarkus</module>
     <module>blueprints-bpmn/bpmn-signals/springboot</module>
+    <module>blueprints-bpmn/bpmn-signals/quarkus</module>
     <module>blueprints-bpmn/bpmn-bpms-initiated-start/springboot</module>
+    <module>blueprints-bpmn/bpmn-bpms-initiated-start/quarkus</module>
     <module>blueprints-bpmn/bpmn-call-activity-decomposition/springboot</module>
+    <module>blueprints-bpmn/bpmn-call-activity-decomposition/quarkus</module>
     <module>blueprints-bpmn/bpmn-multi-instance-task/springboot</module>
+    <module>blueprints-bpmn/bpmn-multi-instance-task/quarkus</module>
     <module>blueprints-bpmn/bpmn-multi-instance-subprocess/springboot</module>
+    <module>blueprints-bpmn/bpmn-multi-instance-subprocess/quarkus</module>
     <module>blueprints-bpmn/bpmn-history-and-diagram/springboot</module>
+    <module>blueprints-bpmn/bpmn-history-and-diagram/quarkus</module>
     <module>blueprints-bpmn/bpmn-workflow-ended/springboot</module>
   </modules>
 
