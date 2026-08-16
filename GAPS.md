@@ -688,7 +688,13 @@ application; deciding against it means the message has to say what Quarkus needs
 
 ## G16: Camunda 7 on Quarkus never reports the end of a workflow
 
-**Status:** open, found 2026-08-16 while building `bpmn-workflow-ended/quarkus`.
+**Status:** fixed 2026-08-16, the same day it was found while building
+`bpmn-workflow-ended/quarkus`. The Camunda 7 adapter merged
+[PR #9](https://github.com/vanillabp/camunda7-adapter/pull/9): both platforms build the
+engine holder through one constructor which takes every invoker the core offers, and the
+deployment service now compares what the application registered with what the engine can
+deliver and says so while deploying. The Quarkus twin of the blueprint is part of the
+catalogue since then.
 
 **What happens.** A `@WorkflowEnded` method is registered like every other handler and the
 application boots without a word of complaint, but the method is never called. The workflow
@@ -708,18 +714,21 @@ On Quarkus the invoker is never passed. `Camunda7EngineProducer` builds the engi
 the seven-argument constructor, which fills the invoker with `null`, although the very
 registry it already passes twice implements the interface.
 
-**Reproduction.** `blueprints-bpmn/bpmn-workflow-ended/quarkus` on Camunda 7 (the blueprint is
-therefore not part of the Quarkus half yet). Its two tests wait for `closedAt` and time out.
+**Reproduction, before the fix.** `blueprints-bpmn/bpmn-workflow-ended/quarkus` on Camunda 7:
+its two tests waited for `closedAt` and timed out.
 
 **Why the other platform does not show it.** The Spring Boot registrar looks the invoker up and
 passes it. The Camunda 8 Quarkus adapter passes it as well
 (`Camunda8DeploymentServiceProducer#setWorkflowEndedInvoker`), so this is one adapter on one
 platform rather than a hole in the SPI.
 
-**What the blueprint does until then.** Nothing can be done in an application, so the Quarkus
-twin of `bpmn-workflow-ended` waits for the fix.
+**What the blueprint did until then.** Nothing can be done in an application, so the Quarkus
+twin of `bpmn-workflow-ended` was held back for a day.
 
-**To decide.** Passing the registry a third time is the fix. The question is what keeps it from
-happening again: a startup check comparing the handlers an adapter can deliver with the ones
-registered would report a `@WorkflowEnded` method no adapter will ever call, which is the class
-of mistake nobody notices before a workflow ends in production.
+**How it was answered.** Passing the registry a third time was the fix, and two things keep the
+same hole from opening again. The engine holders of both platforms have one constructor now,
+which takes every invoker the core offers, so a forgotten argument is a compile error instead
+of a feature switched off in silence. And the deployment service compares what the application
+registered with what the engine can deliver: a `@WorkflowEnded` method no adapter will ever
+call is reported while the BPMN is deployed rather than noticed when a workflow ends in
+production.

@@ -68,6 +68,7 @@
     <module>blueprints-bpmn/bpmn-history-and-diagram/springboot</module>
     <module>blueprints-bpmn/bpmn-history-and-diagram/quarkus</module>
     <module>blueprints-bpmn/bpmn-workflow-ended/springboot</module>
+    <module>blueprints-bpmn/bpmn-workflow-ended/quarkus</module>
   </modules>
 
   <scm>
