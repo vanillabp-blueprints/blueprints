@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import blueprint.workflowmodule.loanapproval.model.Aggregate;
-import io.quarkus.arc.Unremovable;
 import io.vanillabp.spi.service.MultiInstanceElementResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -30,10 +29,6 @@ import jakarta.enterprise.context.ApplicationScoped;
  * @see <a href="https://github.com/vanillabp/spi-for-java#multi-instance">Multi-instance</a>
  */
 @ApplicationScoped
-// Nothing injects this bean: VanillaBP looks it up by the class named in
-// '@MultiInstanceElement(resolverBean = ...)'. A bean nobody injects is dropped while the
-// application is built, and the task then fails at runtime saying the bean is missing.
-@Unremovable
 public class IterationResolver implements MultiInstanceElementResolver<Aggregate, Iteration> {
 
   /** The BPMN id of the multi-instance subprocess. */

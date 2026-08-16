@@ -674,7 +674,11 @@ because today nothing does.
 
 ## G15: a bean only VanillaBP looks up is dropped while a Quarkus application is built
 
-**Status:** open, found 2026-08-16 while building `bpmn-multi-instance-subprocess/quarkus`.
+**Status:** fixed 2026-08-16, the same day it was found while building
+`bpmn-multi-instance-subprocess/quarkus`. The platform integration merged
+[PR #38](https://github.com/vanillabp/adapter-platform-integration/pull/38): the build step
+collects the classes VanillaBP resolves by name from the index and keeps them, so an
+application needs no Quarkus annotation and stays the same on both platforms.
 
 **What happens.** A multi-instance resolver is a bean of the application which nothing
 injects: it is named in an annotation,
@@ -694,20 +698,21 @@ The message is VanillaBP's own and it is precise about what is missing, but it p
 application while the class is annotated correctly. What is missing is the instruction to
 Quarkus to keep the bean.
 
-**Reproduction.** `blueprints-bpmn/bpmn-multi-instance-subprocess/quarkus`, remove
-`@Unremovable` from `IterationResolver` and run `mvn -Pcamunda7 clean install verify`.
+**Reproduction, before the fix.** `blueprints-bpmn/bpmn-multi-instance-subprocess/quarkus`
+with a `vanillabp-quarkus-integration` older than the fix: all three tests time out.
 
 **Why the other platform does not show it.** Spring Boot keeps every bean it finds, whether
 anything injects it or not.
 
-**What the blueprint does until then.** The resolver carries `io.quarkus.arc.Unremovable`
-next to `@ApplicationScoped`, with a comment saying why.
+**What the blueprint did until then.** The resolver carried `io.quarkus.arc.Unremovable` next
+to `@ApplicationScoped` for a few hours. It is gone again, which is the point: the annotation
+was the one line of Quarkus in code that is supposed to read the same on both platforms.
 
-**To decide.** The build step which reads `@MultiInstanceElement` knows the resolver class,
-so it can mark it unremovable itself, and the same holds for every other class VanillaBP
-resolves by name rather than by injection. Deciding for that removes the annotation from every
-application; deciding against it means the message has to say what Quarkus needs, because
-`Define it as a bean of your application` is what the developer has already done.
+**How it was answered.** The build step which reads `@MultiInstanceElement` marks the resolver
+class itself, and the repository of the default aggregate persistence is marked the same way.
+The verdict about a class which is no bean at all moved to the build, and the runtime message
+now names what is left as a cause there: a class the build never saw, e.g. a workflow module
+shipped without an index.
 
 ## G16: Camunda 7 on Quarkus never reports the end of a workflow
 
