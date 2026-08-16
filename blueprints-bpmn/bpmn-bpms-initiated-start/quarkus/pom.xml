@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.vanillabp.blueprint.bpmn-bpms-initiated-start-quarkus</groupId>
+  <artifactId>bpmn-bpms-initiated-start</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Blueprint: workflows the BPMS starts</name>
+  <description>A workflow the engine starts on its own, by a timer or a broadcast signal, and the aggregate VanillaBP builds for it.</description>
+
+  <modules>
+    <module>loan-approval</module>
+    <module>application</module>
+  </modules>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>21</maven.compiler.release>
+    <quarkus.version>3.37.1</quarkus.version>
+    <jandex-maven-plugin.version>3.6.0</jandex-maven-plugin.version>
+    <!--
+      Without a parent POM nothing manages the versions of the build plugins, and an
+      unversioned plugin is resolved to whatever the local repository last learned about.
+      Naming them keeps a build reproducible.
+    -->
+    <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+    <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+    <maven-failsafe-plugin.version>3.5.6</maven-failsafe-plugin.version>
+    <!-- Not part of the Quarkus BOM, so this blueprint says which version it uses. -->
+    <lombok.version>1.18.46</lombok.version>
+    <assertj.version>3.27.7</assertj.version>
+    <!-- All VanillaBP artifacts are version managed by the VanillaBP BOM. -->
+    <vanillabp.version>2.0.0-SNAPSHOT</vanillabp.version>
+    <!-- BPMS adapters are released independently of the platform, so they carry their own version. -->
+    <camunda7-adapter.version>2.0.0-SNAPSHOT</camunda7-adapter.version>
+    <camunda8-adapter.version>2.0.0-SNAPSHOT</camunda8-adapter.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>${quarkus.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.vanillabp</groupId>
+        <artifactId>vanillabp-bom</artifactId>
+        <version>${vanillabp.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>${lombok.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>${assertj.version}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-maven-plugin</artifactId>
+          <version>${quarkus.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven-compiler-plugin.version}</version>
+        <configuration>
+          <!-- Parameter names are what VanillaBP binds a task method's arguments by. -->
+          <parameters>true</parameters>
+          <compilerArgs>
+            <!--
+              A blueprint must never show a deprecated API - it is copied, and what is
+              copied spreads. Making the compiler say so is cheaper than noticing it years
+              later.
+            -->
+            <arg>-Xlint:deprecation,removal</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+      <!-- Tests named *IT are integration tests and run in 'verify', not in 'test'. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>${maven-failsafe-plugin.version}</version>
+        <configuration>
+          <systemPropertyVariables>
+            <!-- Quarkus brings its own log manager, and it has to be set before the JVM logs. -->
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+          </systemPropertyVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-surefire-plugin.version}</version>
+        <configuration>
+          <systemPropertyVariables>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!--
+    The BPMS is a Maven profile, never a code change: '-Pcamunda7' (the default) or
+    '-Pcamunda8'. Not a single Java file of this blueprint differs between them - only
+    which adapter is on the classpath and which directory the BPMN files are read from.
+
+    The profiles are declared by the modules which need the adapter: the application, and
+    the workflow module for the sake of its test. Declaring them here as well would only
+    repeat the choice in a place that does not act on it.
+  -->
+</project>
