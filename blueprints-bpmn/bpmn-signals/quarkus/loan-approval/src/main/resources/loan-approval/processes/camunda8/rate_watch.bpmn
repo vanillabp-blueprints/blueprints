@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_rate_watch" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <!--
+    A second process in the same workflow module, and it does nothing but wait for the
+    signal the loan approval broadcasts. Nothing connects the two models: they name the
+    same signal, and a broadcast covers the whole workflow module.
+  -->
+  <bpmn:process id="rate_watch" name="Rate watch" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_WatchRequested" name="Watch requested">
+      <bpmn:outgoing>Flow_ToAwaitPublication</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToAwaitPublication" sourceRef="StartEvent_WatchRequested" targetRef="CatchEvent_InterestRatePublished" />
+    <bpmn:intermediateCatchEvent id="CatchEvent_InterestRatePublished" name="Interest rate published">
+      <bpmn:incoming>Flow_ToAwaitPublication</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToRecordPublication</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_RateWatch" signalRef="Signal_InterestRatePublished" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ToRecordPublication" sourceRef="CatchEvent_InterestRatePublished" targetRef="ServiceTask_RecordPublication" />
+    <bpmn:serviceTask id="ServiceTask_RecordPublication" name="Record publication">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="recordPublication" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToRecordPublication</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToWatchFinished</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToWatchFinished" sourceRef="ServiceTask_RecordPublication" targetRef="EndEvent_WatchFinished" />
+    <bpmn:endEvent id="EndEvent_WatchFinished" name="Watch finished">
+      <bpmn:incoming>Flow_ToWatchFinished</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <!-- The same name the loan approval passes to 'sendSignal', declared once per model. -->
+  <bpmn:signal id="Signal_InterestRatePublished" name="InterestRatePublished" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="rate_watch">
+      <bpmndi:BPMNShape id="StartEvent_WatchRequested_di" bpmnElement="StartEvent_WatchRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="132" y="145" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CatchEvent_InterestRatePublished_di" bpmnElement="CatchEvent_InterestRatePublished">
+        <dc:Bounds x="252" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="229" y="145" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RecordPublication_di" bpmnElement="ServiceTask_RecordPublication">
+        <dc:Bounds x="350" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_WatchFinished_di" bpmnElement="EndEvent_WatchFinished">
+        <dc:Bounds x="512" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="497" y="145" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToAwaitPublication_di" bpmnElement="Flow_ToAwaitPublication">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="252" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRecordPublication_di" bpmnElement="Flow_ToRecordPublication">
+        <di:waypoint x="288" y="120" />
+        <di:waypoint x="350" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToWatchFinished_di" bpmnElement="Flow_ToWatchFinished">
+        <di:waypoint x="450" y="120" />
+        <di:waypoint x="512" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
