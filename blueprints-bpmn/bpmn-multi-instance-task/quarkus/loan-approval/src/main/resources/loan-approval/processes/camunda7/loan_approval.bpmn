@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToRetrieveCreditRating</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRetrieveCreditRating" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_RetrieveCreditRating" />
+    <!--
+      Rates the request and puts the partners to ask onto the workflow aggregate. The
+      collection the multi-instance task iterates over has to exist before the task is
+      reached, and the business code is what fills it.
+    -->
+    <bpmn:serviceTask id="ServiceTask_RetrieveCreditRating" name="Retrieve credit rating" camunda:expression="${retrieveCreditRating}">
+      <bpmn:incoming>Flow_ToRetrieveCreditRating</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToRequestPartnerOffer</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToRequestPartnerOffer" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="ServiceTask_RequestPartnerOffer" />
+    <!--
+      The multi-instance task: one instance per partner, all of them at the same time
+      ('isSequential="false"').
+
+      'camunda:collection' names what is iterated over. It is an expression the engine
+      evaluates against the workflow aggregate, so 'partnerIds' is the getter
+      'getPartnerIds()' - there is no process variable holding a copy of it. Keep such a
+      collection to identifiers, not to objects: the engine has to be able to hand one
+      element to each instance, and an identifier is the smallest thing which does that.
+
+      'camunda:elementVariable' names what each instance is given. Its name does not matter
+      to the Java code, which addresses the multi-instance context by the ID of THIS element
+      ('@MultiInstanceElement("ServiceTask_RequestPartnerOffer")').
+
+      Each instance is a token of its own writing the same workflow aggregate, so the
+      business code adds a row per offer rather than changing an attribute all of them share.
+    -->
+    <bpmn:serviceTask id="ServiceTask_RequestPartnerOffer" name="Request partner offer" camunda:expression="${requestPartnerOffer}">
+      <bpmn:incoming>Flow_ToRequestPartnerOffer</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToChooseBestOffer</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="${partnerIds}" camunda:elementVariable="partnerId" />
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToChooseBestOffer" sourceRef="ServiceTask_RequestPartnerOffer" targetRef="ServiceTask_ChooseBestOffer" />
+    <!--
+      Runs once, after the last instance has finished. This is where a result over all
+      iterations is computed - never in the multi-instance task itself, which sees one
+      element at a time and runs next to its siblings.
+    -->
+    <bpmn:serviceTask id="ServiceTask_ChooseBestOffer" name="Choose best offer" camunda:expression="${chooseBestOffer}">
+      <bpmn:incoming>Flow_ToChooseBestOffer</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanDecided</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanDecided" sourceRef="ServiceTask_ChooseBestOffer" targetRef="EndEvent_LoanDecided" />
+    <bpmn:endEvent id="EndEvent_LoanDecided" name="Loan decided">
+      <bpmn:incoming>Flow_ToLoanDecided</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="145" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RetrieveCreditRating_di" bpmnElement="ServiceTask_RetrieveCreditRating">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RequestPartnerOffer_di" bpmnElement="ServiceTask_RequestPartnerOffer">
+        <dc:Bounds x="400" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ChooseBestOffer_di" bpmnElement="ServiceTask_ChooseBestOffer">
+        <dc:Bounds x="560" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanDecided_di" bpmnElement="EndEvent_LoanDecided">
+        <dc:Bounds x="722" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="708" y="145" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRequestPartnerOffer_di" bpmnElement="Flow_ToRequestPartnerOffer">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="400" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToChooseBestOffer_di" bpmnElement="Flow_ToChooseBestOffer">
+        <di:waypoint x="500" y="120" />
+        <di:waypoint x="560" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanDecided_di" bpmnElement="Flow_ToLoanDecided">
+        <di:waypoint x="660" y="120" />
+        <di:waypoint x="722" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
