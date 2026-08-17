@@ -1,0 +1,15 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is
+# in its own configuration file (loan-approval/loan-approval.yaml inside the module JAR).
+#
+# What is NOT here is the point of this blueprint: no data source, no database, no
+# persistence property of any kind. The three stores VanillaBP needs are beans of the
+# workflow module, and the only thing left to configure is where the BPMS is.
+vanillabp:
+  adapters:
+    camunda8:
+      # Camunda 8 is the only engine of this blueprint, so its address belongs here rather
+      # than into a section a reader has to add first. Point it at your cluster.
+      rest-address: http://localhost:8080
+logging:
+  level:
+    blueprint.workflowmodule: INFO

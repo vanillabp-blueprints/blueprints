@@ -43,6 +43,8 @@
     <module>blueprints-persistence/persistence-active-record/quarkus</module>
     <module>blueprints-persistence/persistence-mongodb/springboot</module>
     <module>blueprints-persistence/persistence-mongodb/quarkus</module>
+    <module>blueprints-persistence/persistence-custom/springboot</module>
+    <module>blueprints-persistence/persistence-custom/quarkus</module>
     <module>blueprints-bpmn/bpmn-service-task/springboot</module>
     <module>blueprints-bpmn/bpmn-service-task/quarkus</module>
     <module>blueprints-bpmn/bpmn-user-task/springboot</module>

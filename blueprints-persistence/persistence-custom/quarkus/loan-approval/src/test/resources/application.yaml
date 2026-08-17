@@ -1,0 +1,12 @@
+# The configuration of the module's own test: the address of the Camunda 8 cluster, and
+# nothing else. There is no database to configure, which is what this blueprint is about.
+# CI overrides the address through the environment.
+quarkus:
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO
+vanillabp:
+  adapters:
+    camunda8:
+      rest-address: http://localhost:8080

@@ -817,3 +817,34 @@ questions, and the second is the one that matters:
    per BPMS. It belongs on the BPMS adapter pages of the wiki, next to what a task delivery
    guarantees, rather than in a blueprint.
 
+## G18: the startup line about a transaction names the bean's proxy on one platform
+
+**Status:** open, story `80` (2026-08-17), found the same day while building
+`persistence-custom`. Cosmetic, and it is the line a reader is sent to.
+
+Story 70 writes one line per workflow aggregate saying which transaction VanillaBP processes it
+in, and it is the fastest check that an application-provided `TransactionRunner` is really being
+used. On Spring Boot it names the bean:
+
+```
+... is processed in the transaction of: the TransactionRunner bean 'unitOfWork' of the application
+```
+
+On Quarkus it names the proxy the bean container puts in front of that class:
+
+```
+... is processed in the transaction of: the TransactionRunner bean
+'blueprint.workflowmodule.loanapproval.persistence.UnitOfWork_ClientProxy' of the application
+```
+
+**Why it matters more than it looks.** The line exists so that a developer can see whose
+transaction is used, and both blueprints of this wave point at it. A name ending in
+`_ClientProxy` sends the reader looking for a class which is not in their sources. The
+README of `persistence-custom` explains the suffix, which is a workaround for a message.
+
+**What would fix it.** Name the class the bean was declared as, not the proxy: on Quarkus the
+bean's `beanClass` is available where the message is built, and unwrapping a proxy by name (strip
+`_ClientProxy`, or ask the container) is not needed if the declared class is used from the start.
+The Spring Boot side needs nothing.
+
+**Affects:** Quarkus, `QuarkusTransactionRunnerResolver`.
