@@ -37,19 +37,33 @@
       <bpmn:outgoing>Flow_FromPartnerApproval</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:sequenceFlow id="Flow_FromPartnerApproval" sourceRef="UserTask_AwaitPartnerApproval" targetRef="Gateway_Join" />
-    <bpmn:sequenceFlow id="Flow_ToCollectDocuments" sourceRef="Gateway_Split" targetRef="ServiceTask_CollectDocuments" />
+    <bpmn:sequenceFlow id="Flow_ToCollectDocuments" sourceRef="Gateway_Split" targetRef="SendTask_RequestDocuments" />
     <!--
-      The branch the BPMS finishes: an ordinary service task, running in the transaction
-      VanillaBP owns. While it waits for the document service, the other branch is answered.
+      The document service answers when it answers, so this branch waits at an asynchronous
+      task. Nothing of it runs before the application says the documents are there, which is
+      what makes the order of the two branches predictable.
     -->
-    <bpmn:serviceTask id="ServiceTask_CollectDocuments" name="Collect documents">
+    <bpmn:sendTask id="SendTask_RequestDocuments" name="Request documents">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="collectDocuments" />
+        <zeebe:taskDefinition type="requestDocuments" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_ToCollectDocuments</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToRecordDocuments</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:sequenceFlow id="Flow_ToRecordDocuments" sourceRef="SendTask_RequestDocuments" targetRef="ServiceTask_RecordDocuments" />
+    <!--
+      The branch the BPMS finishes: an ordinary service task, running in the transaction
+      VanillaBP owns. While it reads the documents, the other branch is answered through the
+      API, and the two transactions overlap.
+    -->
+    <bpmn:serviceTask id="ServiceTask_RecordDocuments" name="Record documents">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="recordDocuments" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToRecordDocuments</bpmn:incoming>
       <bpmn:outgoing>Flow_FromCollectDocuments</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_FromCollectDocuments" sourceRef="ServiceTask_CollectDocuments" targetRef="Gateway_Join" />
+    <bpmn:sequenceFlow id="Flow_FromCollectDocuments" sourceRef="ServiceTask_RecordDocuments" targetRef="Gateway_Join" />
     <bpmn:parallelGateway id="Gateway_Join" name="Both done">
       <bpmn:incoming>Flow_FromPartnerApproval</bpmn:incoming>
       <bpmn:incoming>Flow_FromCollectDocuments</bpmn:incoming>
@@ -88,22 +102,25 @@
       <bpmndi:BPMNShape id="UserTask_AwaitPartnerApproval_di" bpmnElement="UserTask_AwaitPartnerApproval">
         <dc:Bounds x="530" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_CollectDocuments_di" bpmnElement="ServiceTask_CollectDocuments">
-        <dc:Bounds x="530" y="240" width="100" height="80" />
+      <bpmndi:BPMNShape id="SendTask_RequestDocuments_di" bpmnElement="SendTask_RequestDocuments">
+        <dc:Bounds x="480" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RecordDocuments_di" bpmnElement="ServiceTask_RecordDocuments">
+        <dc:Bounds x="620" y="240" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_Join_di" bpmnElement="Gateway_Join">
-        <dc:Bounds x="705" y="175" width="50" height="50" />
+        <dc:Bounds x="790" y="175" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="702" y="232" width="57" height="14" />
+          <dc:Bounds x="787" y="145" width="57" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ServiceTask_InformCustomer_di" bpmnElement="ServiceTask_InformCustomer">
-        <dc:Bounds x="810" y="160" width="100" height="80" />
+        <dc:Bounds x="890" y="160" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_LoanAssessed_di" bpmnElement="EndEvent_LoanAssessed">
-        <dc:Bounds x="972" y="182" width="36" height="36" />
+        <dc:Bounds x="1052" y="182" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="953" y="225" width="75" height="14" />
+          <dc:Bounds x="1033" y="225" width="75" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
@@ -122,25 +139,29 @@
       <bpmndi:BPMNEdge id="Flow_ToCollectDocuments_di" bpmnElement="Flow_ToCollectDocuments">
         <di:waypoint x="430" y="225" />
         <di:waypoint x="430" y="280" />
-        <di:waypoint x="530" y="280" />
+        <di:waypoint x="480" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRecordDocuments_di" bpmnElement="Flow_ToRecordDocuments">
+        <di:waypoint x="580" y="280" />
+        <di:waypoint x="620" y="280" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_FromPartnerApproval_di" bpmnElement="Flow_FromPartnerApproval">
         <di:waypoint x="630" y="120" />
-        <di:waypoint x="730" y="120" />
-        <di:waypoint x="730" y="175" />
+        <di:waypoint x="815" y="120" />
+        <di:waypoint x="815" y="175" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_FromCollectDocuments_di" bpmnElement="Flow_FromCollectDocuments">
-        <di:waypoint x="630" y="280" />
-        <di:waypoint x="730" y="280" />
-        <di:waypoint x="730" y="225" />
+        <di:waypoint x="720" y="280" />
+        <di:waypoint x="815" y="280" />
+        <di:waypoint x="815" y="225" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_ToInformCustomer_di" bpmnElement="Flow_ToInformCustomer">
-        <di:waypoint x="755" y="200" />
-        <di:waypoint x="810" y="200" />
+        <di:waypoint x="840" y="200" />
+        <di:waypoint x="890" y="200" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_ToLoanAssessed_di" bpmnElement="Flow_ToLoanAssessed">
-        <di:waypoint x="910" y="200" />
-        <di:waypoint x="972" y="200" />
+        <di:waypoint x="990" y="200" />
+        <di:waypoint x="1052" y="200" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
  * expressed without a single word about processes.
  *
  * <p>
- * Two of the methods below run at the same time. {@link #collectDocuments} is called by the
+ * Two of the methods below run at the same time. {@link #recordDocuments} is called by the
  * BPMS in the transaction VanillaBP owns, {@link #approvePartnerRequest} by the API in a
  * transaction this application opens. Each of them writes the entity of its own branch and
  * touches nothing the other one writes, which is what keeps the later commit from throwing
@@ -160,26 +160,80 @@ public class Service {
   }
 
   /**
-   * Collects the documents, which is the other branch. It asks a surrounding system and
-   * writes what came back into the record of this branch, while the partner branch may be
-   * answered at the very same moment.
+   * The documents were asked for and this branch waits for them. What is stored is the
+   * branch's own record, including the id of its open task.
+   *
+   * @param loanApproval The workflow's aggregate.
+   * @param taskId       The id of the open task.
+   */
+  public void documentsRequested(
+      final Aggregate loanApproval,
+      final String taskId) {
+
+    if (loanApproval.getDocumentCheck() != null) {
+      // a remote BPMS may deliver the same task twice; the state of the aggregate decides
+      return;
+    }
+
+    loanApproval.setDocumentCheck(DocumentCheck
+        .builder()
+        .taskId(taskId)
+        .build());
+
+    log.info(
+        "Loan approval '{}' waits for the documents. They arrive with:"
+            + "\n  http://localhost:8080/api/loan-approval/{}/documents-ready",
+        loanApproval.getLoanRequestId(),
+        loanApproval.getLoanRequestId());
+
+  }
+
+  /**
+   * The document service says the documents are there, which completes the open task. The
+   * branch then reads them in the transaction VanillaBP owns.
+   *
+   * @param loanRequestId The natural id of the loan request.
+   */
+  @Transactional
+  public void documentsReady(
+      final String loanRequestId) {
+
+    final var loanApproval = loanApprovals
+        .findByIdOptional(loanRequestId)
+        .orElseThrow(() -> new IllegalArgumentException("Unknown loan request '"
+            + loanRequestId
+            + "'"));
+
+    final var documentCheck = loanApproval.getDocumentCheck();
+    if ((documentCheck == null) || (documentCheck.getTaskId() == null)) {
+      throw new IllegalStateException("Loan approval '"
+          + loanRequestId
+          + "' is not waiting for documents");
+    }
+
+    workflow.documentsDelivered(loanApproval, documentCheck.getTaskId());
+
+  }
+
+  /**
+   * Reads the documents and writes what came back into the record of this branch. This runs
+   * in the transaction VanillaBP owns, and it is the branch which may be committing while
+   * the API answers the other one.
    *
    * @param loanApproval The workflow's aggregate.
    */
-  public void collectDocuments(
+  public void recordDocuments(
       final Aggregate loanApproval) {
 
-    if (loanApproval.getDocumentCheck() != null) {
+    final var documentCheck = loanApproval.getDocumentCheck();
+    if (documentCheck.getDocumentsReceived() != null) {
       return;
     }
 
     final var received = documents.collect(loanApproval.getLoanRequestId());
 
-    loanApproval.setDocumentCheck(DocumentCheck
-        .builder()
-        .documentsReceived(received)
-        .collectedAt(OffsetDateTime.now())
-        .build());
+    documentCheck.setDocumentsReceived(received);
+    documentCheck.setCollectedAt(OffsetDateTime.now());
 
     log.info(
         "Loan approval '{}' collected {} document(s)",

@@ -772,3 +772,48 @@ of a feature switched off in silence. And the deployment service compares what t
 registered with what the engine can deliver: a `@WorkflowEnded` method no adapter will ever
 call is reported while the BPMN is deployed rather than noticed when a workflow ends in
 production.
+
+## G17: on Camunda 8 one adapter runs everything on a single thread, and nothing says so
+
+**Status:** open, found 2026-08-17 while building `persistence-parallel-branches`.
+
+**What happens.** A `@WorkflowTask` handler which takes its time holds a thread of the BPMS.
+On Camunda 8 that thread comes from the client's job worker executor, whose default size is
+one (`DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS = 1` in `CamundaClientBuilderImpl`), and every
+worker of an adapter shares it: the tasks of all workflow modules, the user task listeners,
+the events a BPMS-initiated start reports, the notification that a workflow ended.
+
+One handler waiting is therefore enough to stop everything that adapter would deliver. The
+application looks alive, the cluster looks alive, and nothing arrives.
+
+The blueprint ran into it as a test: one branch was held inside its task handler while the
+test answered the other branch, which waits at a user task. The user task never appeared,
+because the event announcing it needed the very thread the held handler was sitting on. The
+same test passed locally often enough to look fine, and failed in CI, which is what a race
+looks like from the outside.
+
+**Reproduction.** Any `@WorkflowTask` method with a `Thread.sleep` of a few seconds, plus a
+second thing to be delivered while it sleeps: a second task of another workflow, a user task
+of the same workflow, the end of a workflow. Nothing is delivered until the sleep is over.
+
+**Why the other engine does not show it.** Camunda 7 is embedded and its job executor has
+three threads by default, and the jobs of one process instance are exclusive anyway, so the
+same handler blocks that instance rather than the adapter.
+
+**What the blueprint does about it.** It does not block a handler at all. Both branches of
+`persistence-parallel-branches` wait for the application first, the document service is made
+slow rather than held, and the assertion is the timestamps of the two records. The README
+says why, because a reader copying the test into their own project would otherwise write the
+version which stalls their adapter.
+
+**To decide.** Framework story 74 (`prompts/74-camunda8-worker-threads.md`) carries it. Two
+questions, and the second is the one that matters:
+
+1. Should the number of execution threads be configurable, e.g.
+   `vanillabp.adapters.<id>.worker-threads`? The Camunda client takes it
+   (`numJobWorkerExecutionThreads`), the adapter passes nothing today.
+2. What does VanillaBP promise about the thread a handler runs on? An application must know
+   whether blocking in a handler is a local decision or a global one, and the answer differs
+   per BPMS. It belongs on the BPMS adapter pages of the wiki, next to what a task delivery
+   guarantees, rather than in a blueprint.
+

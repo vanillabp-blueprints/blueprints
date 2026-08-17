@@ -58,4 +58,19 @@ public class Workflow {
 
   }
 
+  /**
+   * The documents arrived, so the task waiting for them is completed and the branch reads
+   * them in the task which follows.
+   *
+   * @param loanApproval The workflow's aggregate.
+   * @param taskId       The id of the open task.
+   */
+  public void documentsDelivered(
+      final Aggregate loanApproval,
+      final String taskId) {
+
+    processService.completeTask(loanApproval, taskId);
+
+  }
+
 }

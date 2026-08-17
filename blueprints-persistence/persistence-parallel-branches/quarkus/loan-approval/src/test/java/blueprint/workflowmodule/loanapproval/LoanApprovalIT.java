@@ -2,6 +2,7 @@ package blueprint.workflowmodule.loanapproval;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -18,13 +19,25 @@ import jakarta.inject.Inject;
  * do: it produces the race instead of waiting for it.
  *
  * <p>
- * The document branch is held inside its transaction, the partner branch is answered while
- * it is held, and only then is the document branch let go. Both transactions therefore
- * overlap in every run, on every machine, and the assertion is that neither result is gone.
+ * The order is the trick. Both branches wait for the application first, so nothing runs
+ * before the test says so. It then lets the document branch start and makes the document
+ * service slow, which keeps that branch inside the transaction VanillaBP owns. The partner
+ * branch is answered through the API while it lasts, so the two transactions overlap in
+ * every run, on every machine.
+ * </p>
+ *
+ * <p>
+ * What the test does NOT do is block a task handler until it is released. A handler holds a
+ * thread of the BPMS, and on a remote engine one adapter shares few of them: a handler
+ * waiting for the test would keep the BPMS from delivering the very task the test is waiting
+ * for.
  * </p>
  */
 @QuarkusTest
 public class LoanApprovalIT extends WorkflowModuleTest {
+
+  /** Long enough for an API call to happen inside it, short enough not to stall a build. */
+  private static final Duration DOCUMENT_SERVICE_TAKES = Duration.ofSeconds(5);
 
   @Inject
   Service service;
@@ -42,29 +55,40 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   }
 
-  @Test
-  @DisplayName("Both branches keep their result when they run at the same time")
-  public void bothBranchesKeepTheirResult() {
-
-    documents.hold();
+  private String startedWorkflowWaitingInBothBranches() {
 
     final var loanRequestId = UUID.randomUUID().toString();
+
     service.initiateLoanApproval(loanRequestId, 5000);
 
-    // the document branch is now inside its transaction and stays there
-    documents.awaitInvocation("collect "
-        + loanRequestId);
-
-    // ... while the other branch is answered in a transaction of the application
     awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         loanApproval -> (loanApproval.getPartnerApproval() != null) && (loanApproval
             .getPartnerApproval()
-            .getTaskId() != null));
-    service.approvePartnerRequest(loanRequestId, "partner");
+            .getTaskId() != null) && (loanApproval.getDocumentCheck() != null) && (loanApproval
+                .getDocumentCheck()
+                .getTaskId() != null));
 
-    documents.letGo();
+    return loanRequestId;
+
+  }
+
+  @Test
+  @DisplayName("Both branches keep their result when they commit at the same time")
+  public void bothBranchesKeepTheirResult() {
+
+    final var loanRequestId = startedWorkflowWaitingInBothBranches();
+
+    documents.takesAtLeast(DOCUMENT_SERVICE_TAKES);
+    service.documentsReady(loanRequestId);
+
+    // the document branch is inside the transaction VanillaBP owns and stays there ...
+    documents.awaitInvocation("collect "
+        + loanRequestId);
+
+    // ... while the partner branch is answered in a transaction of the application
+    service.approvePartnerRequest(loanRequestId, "partner");
 
     final var loanApproval = awaitAggregate(
         loanApprovals::findByIdOptional,
@@ -77,6 +101,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(loanApproval.getDocumentCheck().getDocumentsReceived())
         .describedAs("what the branch of the BPMS wrote, committed after the other one")
         .isEqualTo(3);
+    assertThat(loanApproval.getPartnerApproval().getApprovedAt())
+        .describedAs("the answer was written while the other branch was still working")
+        .isBefore(loanApproval.getDocumentCheck().getCollectedAt());
     assertThat(loanApproval.getCreditRating())
         .describedAs("what was written before the split, which neither branch touches")
         .isEqualTo(50);
@@ -87,28 +114,22 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @DisplayName("The workflow ends once both branches joined")
   public void theWorkflowEndsOnceBothBranchesJoined() {
 
-    final var loanRequestId = UUID.randomUUID().toString();
-    service.initiateLoanApproval(loanRequestId, 5000);
+    final var loanRequestId = startedWorkflowWaitingInBothBranches();
 
-    // no holding this time: the branches run in whatever order the BPMS picks
-    awaitAggregate(
-        loanApprovals::findByIdOptional,
-        loanRequestId,
-        loanApproval -> (loanApproval.getPartnerApproval() != null) && (loanApproval
-            .getPartnerApproval()
-            .getTaskId() != null));
+    // no slowing down this time: the branches finish in whatever order the BPMS picks
     service.approvePartnerRequest(loanRequestId, "partner");
+    service.documentsReady(loanRequestId);
 
     final var loanApproval = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         candidate -> Boolean.TRUE.equals(candidate.getCustomerInformed()));
 
-    assertThat(loanApproval.getDocumentCheck())
+    assertThat(loanApproval.getDocumentCheck().getDocumentsReceived())
         .describedAs("the join waits for both branches, so this cannot be empty")
-        .isNotNull();
+        .isEqualTo(3);
     assertThat(documents.invocations())
-        .describedAs("the document service is asked once per workflow")
+        .describedAs("the document service is read once per workflow")
         .containsExactly("collect "
             + loanRequestId);
 

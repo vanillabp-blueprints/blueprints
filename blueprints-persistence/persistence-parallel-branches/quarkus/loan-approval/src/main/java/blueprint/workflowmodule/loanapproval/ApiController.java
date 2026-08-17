@@ -76,6 +76,25 @@ public class ApiController {
   }
 
   /**
+   * Says that the documents arrived, which lets the other branch read them.
+   *
+   * @param loanRequestId The id returned by starting the process.
+   * @return What was done, for the browser to show.
+   */
+  @GET
+  @Path("/{loanRequestId}/documents-ready")
+  public String documentsReady(
+      @PathParam("loanRequestId") final String loanRequestId) {
+
+    service.documentsReady(loanRequestId);
+
+    return "The documents of loan approval '"
+        + loanRequestId
+        + "' arrived";
+
+  }
+
+  /**
    * Shows what the process did, which is the second half of operating it in a browser.
    *
    * @param loanRequestId The id returned by starting the process.

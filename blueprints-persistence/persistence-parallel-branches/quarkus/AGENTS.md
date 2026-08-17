@@ -21,11 +21,12 @@ Replace all of these consistently; they are the same in every blueprint.
 
 Blueprint-specific names, each occurring in more than one place:
 
-|          Name          |                                     Where it occurs                                      |
-|------------------------|------------------------------------------------------------------------------------------|
-| `awaitPartnerApproval` | the `@WorkflowTask` method, the Camunda 7 delegate expression and the Camunda 8 job type |
-| `collectDocuments`     | the `@WorkflowTask` method of the other branch and its task definition                   |
-| `Gateway_Split`        | the element VanillaBP names in its startup warning about a second token                  |
+|          Name          |                                       Where it occurs                                        |
+|------------------------|----------------------------------------------------------------------------------------------|
+| `awaitPartnerApproval` | the `@WorkflowTask` method, the Camunda 7 `camunda:formKey` and the Camunda 8 form reference |
+| `requestDocuments`     | the `@WorkflowTask` method of the other branch and its task definition                       |
+| `recordDocuments`      | the task reading the documents, in the transaction VanillaBP owns                            |
+| `Gateway_Split`        | the element VanillaBP names in its startup warning about a second token                      |
 
 **The rule this blueprint is built on:** while more than one token is in the process, nothing
 writes the workflow aggregate itself. Every branch writes an entity of its own. Breaking the
@@ -33,16 +34,16 @@ rule produces no error, only lost data, which is why it is a rule and not a hint
 
 ## Core files
 
-|                                            File                                            |                                                          Why it matters                                                           |
-|--------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the parallel gateway which splits and the one which joins; between them the two branches                                          |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | carries only what a single token writes, plus one relation per branch. NOT the id of the open task                                |
-| `loan-approval/src/main/java/.../loanapproval/model/PartnerApproval.java`                  | the record of the branch the application finishes, with the id of its open task                                                   |
-| `loan-approval/src/main/java/.../loanapproval/model/DocumentCheck.java`                    | the record of the branch the BPMS finishes                                                                                        |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `collectDocuments` runs in VanillaBP's transaction, `approvePartnerRequest` in the application's; neither touches the other's row |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | one method per branch; the partner branch keeps its task open with `@TaskId`                                                      |
-| `loan-approval/src/test/java/.../DocumentsSimulator.java`                                  | holds a branch inside its transaction, which is what makes the collision reproducible                                             |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | produces the overlap and asserts that both branches kept their result                                                             |
+|                                            File                                            |                                                          Why it matters                                                          |
+|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the parallel gateway which splits and the one which joins; between them the two branches                                         |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | carries only what a single token writes, plus one relation per branch. NOT the id of the open task                               |
+| `loan-approval/src/main/java/.../loanapproval/model/PartnerApproval.java`                  | the record of the branch the application finishes, with the id of its open task                                                  |
+| `loan-approval/src/main/java/.../loanapproval/model/DocumentCheck.java`                    | the record of the branch the BPMS finishes                                                                                       |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `recordDocuments` runs in VanillaBP's transaction, `approvePartnerRequest` in the application's; neither touches the other's row |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | one method per branch; the partner branch keeps its task open with `@TaskId`                                                     |
+| `loan-approval/src/test/java/.../DocumentsSimulator.java`                                  | takes a few seconds, which keeps a branch inside its transaction while the other one is answered                                 |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | produces the overlap and asserts that both branches kept their result                                                            |
 
 ## Boilerplate files
 
@@ -52,7 +53,7 @@ rule produces no error, only lost data, which is why it is a rule and not a hint
 | `loan-approval/pom.xml`                                             | `vanillabp-quarkus-support` and the index of the module's classes, never an adapter  |
 | `application/pom.xml`                                               | `vanillabp-quarkus-integration` and the BPMS adapter, the only place a BPMS is named |
 | `application/src/main/resources/application.yaml`                   | the database, and nothing about the workflow                                         |
-| `loan-approval/src/test/resources/application.yaml`                 | the database of the module's own test                                                |
+| `loan-approval/src/test/resources/application.yaml`                 | the database of the module's own test, and where that test reads its BPMN from       |
 | `application/src/test/java/.../ApplicationSmokeTest.java`           | boots the application, which validates the BPMN-to-code wiring                       |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of the integration test: waits for workflow progress                      |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java`   | GET endpoints operating the process, including the one answering the waiting branch  |
@@ -81,8 +82,11 @@ extending `WorkflowModuleTest`, never into the base class.
 5. Never put `@Transactional` on the methods a task handler calls. The transaction of a task
    belongs to VanillaBP. The methods the API calls do need one, and that transaction is
    where a retry belongs if you choose a version attribute instead of this data model.
-6. Copy `LoanApprovalIT` together with the simulator. A test which does not hold one branch
-   does not test this at all: it passes on a fast machine and hides the defect.
+6. Copy `LoanApprovalIT` together with the simulator. A test which does not make the two
+   transactions overlap does not test this at all: it passes on a fast machine and hides the
+   defect. Order the branches through the application - both of them wait for it - and make
+   one of them slow rather than blocking a task handler until the test releases it: a handler
+   holds a thread of the BPMS, and on a remote engine one adapter shares few of them.
 
 The other three ways to deal with the collision are in
 [the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate):

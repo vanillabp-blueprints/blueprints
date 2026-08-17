@@ -23,8 +23,9 @@ a surrounding system. They run at the same time and join before the customer is 
 
 The two branches are written by two different transactions:
 
-- `collectDocuments` is an ordinary service task, so its handler runs in the transaction
-  VanillaBP owns for that task.
+- the document branch waits for the document service, and once the application says the
+  documents are there, `recordDocuments` reads them. That handler runs in the transaction
+  VanillaBP owns for its task.
 - the partner branch waits at a user task, and the answer arrives through the API. That
   transaction belongs to the application.
 
@@ -62,8 +63,8 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `model/PartnerApproval.java` | what the branch of the application writes, including the id of its open task               |
 | `model/DocumentCheck.java`   | what the branch of the BPMS writes                                                         |
 | `Service.java`               | one method per branch, each touching the entity of its own branch and nothing of the other |
-| `WorkflowTaskHandler.java`   | the two branch methods, one of them keeping the id of its user task (`@TaskId`)            |
-| `DocumentsSimulator.java`    | the surrounding system, and the latch which holds a branch inside its transaction          |
+| `WorkflowTaskHandler.java`   | the branch methods, two of them keeping the id of an open task (`@TaskId`)                 |
+| `DocumentsSimulator.java`    | the surrounding system, and the delay which keeps a branch inside its transaction          |
 | `LoanApprovalIT.java`        | produces the overlap of the two transactions in every run                                  |
 
 ## Running it
@@ -186,22 +187,30 @@ refuse to start with.
 | `.../loanapproval/model/Aggregate.java`                                                | what a single token writes, plus one relation per branch                                         |
 | `.../loanapproval/model/PartnerApproval.java`                                          | the record of the branch the application finishes, including the id of the open task             |
 | `.../loanapproval/model/DocumentCheck.java`                                            | the record of the branch the BPMS finishes                                                       |
-| `.../loanapproval/Service.java`                                                        | `collectDocuments` and `approvePartnerRequest`, the two methods which run at the same time       |
+| `.../loanapproval/Service.java`                                                        | `recordDocuments` and `approvePartnerRequest`, the two methods which run at the same time        |
 | `.../loanapproval/WorkflowTaskHandler.java`                                            | one `@WorkflowTask` method per branch; the partner one keeps its task open with `@TaskId`        |
 | `.../loanapproval/DocumentsClient.java`                                                | the port to the document service, so a test can put a simulator in its place                     |
-| `loan-approval/src/test/.../DocumentsSimulator.java`                                   | that simulator, holding the branch inside its transaction until the test lets go                 |
+| `loan-approval/src/test/.../DocumentsSimulator.java`                                   | that simulator, taking long enough for the other branch to be answered meanwhile                 |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a workflow, holds one branch, answers the other, and asserts that both results survived   |
 
-The order of events in the test is the whole demonstration. The document branch is held
-inside the transaction of its task, so it has read the aggregate and has not written it yet.
-While it waits, the API answers the partner branch: that transaction writes `PartnerApproval`
-and commits. Then the document branch is let go and commits its own write, which is the
-moment where a shared record would lose the partner's answer. The assertion is that both
-records are there, and that the credit rating written before the split is untouched.
+The order of events in the test is the whole demonstration. Both branches wait for the
+application first, so nothing runs before the test says so. The test then lets the document
+branch start, and the document service takes a few seconds: that branch has read the
+aggregate and has not written it yet. While it works, the API answers the partner branch,
+whose transaction writes `PartnerApproval` and commits. The document branch commits
+afterwards, which is the moment where a shared record would lose the partner's answer. The
+assertions are that both records are there, that the answer was written before the documents
+were, and that the credit rating from before the split is untouched.
 
 Waiting for that overlap to happen by itself is what makes such a test pass nineteen times
-out of twenty. The latch in the simulator turns it into a test which fails when the model is
-wrong, on every machine and in every run.
+out of twenty. Ordering the two branches through the application turns it into a test which
+fails when the model is wrong, on every machine and in every run.
+
+What the test deliberately does not do is block a task handler until it is released. A
+handler holds a thread of the BPMS, and on a remote engine everything one adapter does shares
+few of them - a handler waiting for the test would keep the BPMS from delivering the task the
+test is waiting for. The delay is therefore bounded, and it is the application, not a latch,
+which decides when a branch may run.
 
 What the branches must not do is write the same attribute of the same record. The blueprint
 follows the rule everywhere: while more than one token is in the process, nothing writes the

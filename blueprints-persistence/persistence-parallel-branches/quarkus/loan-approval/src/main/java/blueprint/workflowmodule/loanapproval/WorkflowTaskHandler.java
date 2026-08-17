@@ -70,16 +70,43 @@ public class WorkflowTaskHandler {
   }
 
   /**
-   * The branch the BPMS finishes, running in the transaction VanillaBP owns. It is called
-   * while the other branch may be answered, which is what this blueprint is about.
+   * The other branch asks the document service and waits for it. Nothing of this branch runs
+   * before the application says the documents are there, which is what makes the order of
+   * the two branches predictable instead of a matter of which job a worker picks first.
+   *
+   * @param loanApproval The workflow's aggregate.
+   * @param taskId       The BPMS-side id of this task.
+   * @param event        Whether the task was delivered or canceled.
+   */
+  @WorkflowTask
+  public void requestDocuments(
+      final Aggregate loanApproval,
+      @TaskId final String taskId,
+      @TaskEvent final TaskEvent.Event event) {
+
+    switch (event) {
+      case CREATED -> service.documentsRequested(loanApproval, taskId);
+      case CANCELED -> {
+        // the workflow ended or was canceled while the task was open; nothing to keep
+      }
+      default -> throw new IllegalStateException("Unexpected task event '"
+          + event
+          + "'");
+    }
+
+  }
+
+  /**
+   * Reads the documents, in the transaction VanillaBP owns. It is called while the other
+   * branch may be answered through the API, which is what this blueprint is about.
    *
    * @param loanApproval The workflow's aggregate.
    */
   @WorkflowTask
-  public void collectDocuments(
+  public void recordDocuments(
       final Aggregate loanApproval) {
 
-    service.collectDocuments(loanApproval);
+    service.recordDocuments(loanApproval);
 
   }
 

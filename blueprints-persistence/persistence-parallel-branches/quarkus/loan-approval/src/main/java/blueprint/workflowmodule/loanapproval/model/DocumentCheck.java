@@ -33,6 +33,13 @@ public class DocumentCheck {
   @GeneratedValue
   private Long id;
 
+  /**
+   * The BPMS-side id of the task waiting for the document service. It belongs here for the
+   * same reason as everything else this branch writes.
+   */
+  @Column
+  private String taskId;
+
   /** How many documents the document service handed over. */
   @Column
   private Integer documentsReceived;

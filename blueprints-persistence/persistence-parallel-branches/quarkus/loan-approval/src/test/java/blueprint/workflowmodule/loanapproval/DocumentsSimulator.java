@@ -1,7 +1,6 @@
 package blueprint.workflowmodule.loanapproval;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import blueprint.workflowmodule.Simulator;
 import jakarta.annotation.Priority;
@@ -10,13 +9,20 @@ import jakarta.enterprise.inject.Alternative;
 
 /**
  * The document service, as far as the test is concerned, plus the one thing that makes this
- * blueprint testable: it can be held.
+ * blueprint testable: it can be slow on purpose.
  *
  * <p>
- * The collision this blueprint is about needs both branches inside their transactions at
- * the same time. Waiting for that to happen by chance is a test which passes nineteen times
- * out of twenty and fails on the CI machine. So the test holds this branch here, answers the
- * other one, and only then lets go.
+ * The collision this blueprint is about needs both branches inside their transactions at the
+ * same time. Waiting for that to happen by chance is a test which passes nineteen times out
+ * of twenty and fails on the CI machine. So the test makes this call take a moment, answers
+ * the other branch while it lasts, and asserts afterwards that both results are there.
+ * </p>
+ *
+ * <p>
+ * The delay is bounded rather than a latch the test opens: a task handler holds a thread of
+ * the BPMS, and on a remote engine that thread is shared by everything the adapter does. A
+ * handler which blocks until somebody lets it go stalls the whole adapter, which is worth
+ * knowing before writing one.
  * </p>
  *
  * @see Simulator
@@ -26,25 +32,18 @@ import jakarta.enterprise.inject.Alternative;
 @ApplicationScoped
 public class DocumentsSimulator extends Simulator implements DocumentsClient {
 
-  /** How long a held branch waits before it gives up, so a broken test fails rather than hangs. */
-  private static final long TIMEOUT_SECONDS = 30;
+  private volatile Duration takesAtLeast = Duration.ZERO;
 
-  private volatile CountDownLatch held;
+  /**
+   * Makes the next call take at least this long, which is the window the test answers the
+   * other branch in.
+   *
+   * @param duration How long the document service takes.
+   */
+  public void takesAtLeast(
+      final Duration duration) {
 
-  /** Holds the next call until {@link #letGo()}. */
-  public void hold() {
-
-    held = new CountDownLatch(1);
-
-  }
-
-  /** Lets the held call finish. */
-  public void letGo() {
-
-    final var latch = held;
-    if (latch != null) {
-      latch.countDown();
-    }
+    takesAtLeast = duration;
 
   }
 
@@ -55,15 +54,10 @@ public class DocumentsSimulator extends Simulator implements DocumentsClient {
     record("collect "
         + loanRequestId);
 
-    final var latch = held;
-    if (latch != null) {
+    final var duration = takesAtLeast;
+    if (!duration.isZero()) {
       try {
-        if (!latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-          throw new IllegalStateException(
-              "The test held the document service of loan approval '"
-                  + loanRequestId
-                  + "' and never let go");
-        }
+        Thread.sleep(duration.toMillis());
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new IllegalStateException(e);
@@ -78,7 +72,7 @@ public class DocumentsSimulator extends Simulator implements DocumentsClient {
   public void reset() {
 
     super.reset();
-    held = null;
+    takesAtLeast = Duration.ZERO;
 
   }
 
