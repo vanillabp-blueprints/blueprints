@@ -16,20 +16,13 @@
       waits until it ends. No business code is called here, and none is wired to it - a call
       activity is the one task type the BPMS executes on its own.
 
-      The 'camunda:in' element is what makes the two instances one business case. VanillaBP
-      identifies a workflow by the business key, which holds the ID of the workflow
-      aggregate, and Camunda 7 does not pass it on to a called process unless the model says
-      so. Without this line the called process starts without a business key, and VanillaBP
-      cannot tell which loan approval its tasks belong to.
-
-      Nothing else is handed over, because there is nothing else to hand over: the workflow
-      aggregate is the state of the business case, and both processes read and write the
-      same one.
+      Nothing is handed over, because there is nothing to hand over: the workflow aggregate
+      is the state of the business case, and both processes read and write the same one. How
+      the called instance is tied to that aggregate is the adapter's business - on Camunda 7
+      the business key carries the aggregate's ID, and VanillaBP passes it on while deploying
+      when both processes work on the same aggregate.
     -->
     <bpmn:callActivity id="CallActivity_AssessRisk" name="Assess risk" calledElement="risk_assessment">
-      <bpmn:extensionElements>
-        <camunda:in businessKey="#{execution.processBusinessKey}" />
-      </bpmn:extensionElements>
       <bpmn:incoming>Flow_ToAssessRisk</bpmn:incoming>
       <bpmn:outgoing>Flow_ToDecideOnLoan</bpmn:outgoing>
     </bpmn:callActivity>

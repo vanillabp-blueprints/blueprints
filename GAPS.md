@@ -281,7 +281,11 @@ README and `AGENTS.md` say why, because the SPI documentation recommends the oth
 
 ## G6: Camunda 7 does not pass the business key to a called process, and nothing says so
 
-**Status:** open, found 2026-08-14 while building `bpmn-call-activity-decomposition/springboot`.
+**Status:** fixed 2026-08-17, found 2026-08-14 while building
+`bpmn-call-activity-decomposition/springboot`. The Camunda 7 adapter merged
+[PR #10](https://github.com/vanillabp/camunda7-adapter/pull/10) for framework story 61: the
+propagation is injected while the BPMN is prepared, and the blueprint's models carry no
+input mapping any more.
 
 **What happens.** A call activity starts a new process instance. On Camunda 7 that instance
 has no business key unless the model asks for one, and the business key is where the
@@ -295,24 +299,19 @@ Error while evaluating expression: ${checkCollateral}. Cause: The given id must 
 That is Spring Data speaking, through the engine, on a job which then retries and ends in an
 incident. Neither the call activity nor the business key nor VanillaBP is mentioned.
 
-**Reproduction.** In `bpmn-call-activity-decomposition/springboot`, remove
+**Reproduction, before the fix.** In `bpmn-call-activity-decomposition/springboot` with a
+`camunda7-adapter` older than the fix, `LoanApprovalIT` fails as soon as the called process
+reaches its first task.
 
-```xml
-<camunda:in businessKey="#{execution.processBusinessKey}" />
-```
+**How it was answered.** The propagation is injected where listeners are attached and called
+elements are rewritten anyway, and not blindly: only where the core says both processes work
+on the same workflow aggregate, only for a static called element, only if the model passes no
+business key already, and before name-clash avoidance rewrites the called elements. A called
+process with an aggregate of its own would otherwise be handed the caller's identity.
 
-from the call activity of `loan_approval.bpmn` and run `LoanApprovalIT`.
-
-**Where it lands.** VanillaBP already rewrites the BPMN of a workflow module while deploying
-it: it injects listeners, and the Camunda 7 adapter rewrites `calledElement` for name-clash
-avoidance. Adding the business key propagation to a call activity is the same kind of
-change, made in the same place, and it would make the difference between the two engines
-disappear for good - Camunda 8 propagates parent variables by default, so the aggregate's ID
-arrives there without anything being modelled.
-
-The fallback, if injecting is not wanted, is a check at deployment: a call activity without
-business key propagation is a defect on this engine every time, and the message can name the
-call activity and the line to add.
+**What that means for the blueprint.** The `camunda:in` element is gone from the model, and
+with it the one place where the two engines needed a different line for the same thing. What
+differs between them is what the adapter does, not what an application has to write.
 
 **Affects:** Camunda 7. Camunda 8 works out of the box; the blueprint spells
 `propagateAllParentVariables="true"` out anyway, because switching it off breaks the same

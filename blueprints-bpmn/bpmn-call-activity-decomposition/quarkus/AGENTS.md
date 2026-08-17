@@ -73,14 +73,12 @@ base class is not enough to make the test a bean.
    what starts it, so no code and no message is involved.
 3. Add the call activity to the calling process and let it address the called process by
    its ID (`calledElement` on Camunda 7, `zeebe:calledElement processId` on Camunda 8).
-4. Make the call activity pass the workflow's identity on. **This is the step that is
-   forgotten, and it fails at runtime rather than at startup.**
-   - Camunda 7: `<camunda:in businessKey="#{execution.processBusinessKey}" />` in the
-     `extensionElements` of the call activity. Without it the called process has no business
-     key, and its first task fails with `The given id must not be null` - a message which
-     does not mention the call activity.
-   - Camunda 8: leave `propagateAllParentVariables` at its default (`true`), which passes on
-     the variable holding the aggregate's ID.
+4. Hand nothing over. The workflow aggregate is the state of the business case and both
+   processes work on the same one, so the call activity needs no input mapping. How the
+   called instance finds that aggregate is the adapter's business: Camunda 7 gets the
+   business key passed on while the model is deployed, and on Camunda 8
+   `propagateAllParentVariables` stays at its default (`true`), which carries the variable
+   holding the aggregate's ID.
 5. Name the called process in `secondaryBpmnProcesses` of the existing `@WorkflowService`
    and add its `@WorkflowTask` methods to the same class. **Do not create a second class
    annotated with `@WorkflowService` for the same workflow aggregate class**: VanillaBP

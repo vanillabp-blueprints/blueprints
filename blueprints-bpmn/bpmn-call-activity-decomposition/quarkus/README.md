@@ -45,25 +45,17 @@ the same aggregate the process `startWorkflow` starts is whichever class the cla
 found first. That can be the called process, and nothing says so - the workflow runs, the
 wrong half of the model runs, and the aggregate ends up half filled.
 
-One line in the model is what keeps the two instances together. VanillaBP finds the workflow
-aggregate of a task by the handle the engine keeps on the process instance, and a called
-process instance is a new one which does not get that handle by itself. What the handle is
-depends on the engine, so this is the one place where the two models differ:
+The call activity carries no input mapping, and that is worth a sentence because it used to
+need one. VanillaBP finds the workflow aggregate of a task by the handle the engine keeps on
+the process instance, and a called instance is a new one which does not get that handle by
+itself. Which handle it is depends on the engine, so tying the two instances together is the
+adapter's business rather than the model's: on Camunda 7 the business key carries the
+aggregate's ID and VanillaBP passes it on while deploying, on Camunda 8 the ID travels as a
+process variable and `propagateAllParentVariables` is the engine's default.
 
-|   BPMS    |                                                                                     What the call activity carries                                                                                      |
-|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Camunda 7 | `<camunda:in businessKey="#{execution.processBusinessKey}" />`, because the business key holds the aggregate's ID and is not inherited                                                                  |
-| Camunda 8 | `propagateAllParentVariables="true"` on `zeebe:calledElement`, because the aggregate's ID travels as a process variable. It is the engine's default and is spelled out to say why it must stay that way |
-
-Leave it out on Camunda 7 and the called process starts without a business key. Its first
-task then fails on trying to load an aggregate with no ID:
-
-```
-Error while evaluating expression: ${checkCollateral}. Cause: The given id must not be null
-```
-
-Nothing in that message mentions the call activity, which is why it is worth knowing before
-seeing it.
+The model therefore says nothing about identity on either engine, which is the state a
+blueprint should show: what differs between the two engines is what the adapter does, not
+what you have to write.
 
 Decomposition is one of the two reasons to split a model, and the only one a call activity
 is for. A process used by several different parent processes would need a workflow aggregate
