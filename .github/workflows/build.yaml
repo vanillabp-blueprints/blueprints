@@ -84,8 +84,13 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: Build and test the blueprint on its own
         working-directory: "${{ matrix.blueprint }}"
+        # --update-snapshots because everything VanillaBP is a SNAPSHOT until 2.0.0 is
+        # released: the Maven cache of this runner holds yesterday's, and Maven would keep it
+        # for the rest of the day. A blueprint would then be built against a framework which
+        # no longer exists, which has cost a red build more than once.
         run: mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
-          --batch-mode --no-transfer-progress -P${{ matrix.bpms }} install verify
+          --batch-mode --no-transfer-progress --update-snapshots
+          -P${{ matrix.bpms }} install verify
       - name: The Camunda 8 cluster's log, if something went wrong
         if: failure() && matrix.bpms == 'camunda8'
         run: bin/camunda8_cluster.sh logs
@@ -106,7 +111,7 @@ jobs:
           cache: maven
       - name: Build every blueprint through the aggregator
         run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
-          --batch-mode --no-transfer-progress install verify
+          --batch-mode --no-transfer-progress --update-snapshots install verify
 
   # One name that never changes, so branch protection has something to require and
   # Renovate has something to wait for. The matrix above is generated from the
