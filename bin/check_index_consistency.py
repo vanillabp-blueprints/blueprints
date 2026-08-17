@@ -4,15 +4,20 @@
 Three things have to agree: the directories '<group>/<blueprint-id>/<platform>/' present
 here, the '<modules>' of the root POM, and the entries of blueprints.yaml.
 
-  monorepo directory  ->  has to be a module of the root POM
-  monorepo directory  ->  has to be an entry of the index
-  monorepo directory  ->  has to sit in the group directory of its category
-  index 'available'   ->  the directory has to exist here
+  monorepo directory     ->  has to be a module of the root POM
+  monorepo directory     ->  has to be an entry of the index
+  monorepo directory     ->  has to sit in the group directory of its category
+  index 'available'      ->  the directory has to exist here
+  index 'not-applicable' ->  the directory must NOT exist here
 
 The one thing which is deliberately NOT an error by default is a directory whose index
 entry still says 'planned': that is the state between adding a blueprint and the CI job
 having split it into its own repository, which is what flips the status. Pass --strict
 to make it an error - that is how the split job verifies its own result.
+
+'not-applicable' is different: it says the platform does not know what the blueprint is
+about, so a directory for it contradicts the index outright. A missing directory is fine
+there, --strict included, because nothing is ever going to fill it.
 
 Usage: bin/check_index_consistency.py <blueprints.yaml> [--strict]
 """
@@ -98,6 +103,12 @@ def main():
         if status is None:
             errors.append(
                 f"{blueprint_id}/{platform}: exists but has no entry in blueprints.yaml"
+            )
+        elif status == "not-applicable":
+            errors.append(
+                f"{blueprint_id}/{platform}: exists although the index says"
+                " 'not-applicable' for this platform. Either the reason given there is"
+                " wrong, or this directory is"
             )
         elif status != "available":
             message = (

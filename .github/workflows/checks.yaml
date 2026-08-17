@@ -31,6 +31,8 @@ jobs:
         run: python bin/sync_harness.py --check
       # Active since the first platform twin exists (2026-08-15). It keeps the two twins of
       # a blueprint saying the same thing: every difference between their Java sources is
-      # either the platform, and then it is approved with a reason, or a mistake.
+      # either the platform, and then it is approved with a reason, or a mistake. The index
+      # comes along because a blueprint with a single twin is a failure as well, unless the
+      # index declares the missing platform 'not-applicable'.
       - name: Compare the platform twins of every blueprint
-        run: python bin/check_twin_diff.py
+        run: python bin/check_twin_diff.py blueprints.yaml

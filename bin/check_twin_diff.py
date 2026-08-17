@@ -22,7 +22,13 @@ The hash covers the difference itself, not the file: changing both twins the sam
 it, changing one of them does not. A difference which grows therefore comes back for review
 instead of hiding behind an approval given once.
 
-Usage: bin/check_twin_diff.py            fail on every unapproved difference (CI)
+A blueprint which has only one of the two platform directories is a failure as well, and
+that needs the index: a platform is allowed to be missing only where the index says
+'not-applicable' for it, which is a statement about the platform and carries its reason.
+Without the index this stays a message rather than a failure, so a local run works offline.
+
+Usage: bin/check_twin_diff.py [blueprints.yaml]
+                                         fail on every unapproved difference (CI)
        bin/check_twin_diff.py --update   write the approvals, keeping the reasons already
                                          given; new entries get a reason to fill in
 """
@@ -197,30 +203,81 @@ def write_approvals(blueprint_directory, differences, approved):
 
 
 def blueprints(root):
-    """Every blueprint having both platform twins."""
+    """Every blueprint directory, with the platforms it actually has."""
 
-    found = []
+    found = {}
     for directory in sorted(root.glob("*/*")):
         if not directory.is_dir():
             continue
-        if all((directory / platform / "pom.xml").is_file() for platform in PLATFORMS):
-            found.append(directory)
+        platforms = tuple(
+            platform
+            for platform in PLATFORMS
+            if (directory / platform / "pom.xml").is_file())
+        if platforms:
+            found[directory] = platforms
     return found
+
+
+def inapplicable_platforms(index_file):
+    """The platforms the index declares 'not-applicable', as (blueprint id, platform).
+
+    Returns None if no index was given: a local run without it still compares the twins
+    it finds, it only cannot tell a missing twin from one which may not exist.
+    """
+
+    if index_file is None:
+        return None
+
+    import yaml
+
+    index = yaml.safe_load(index_file.read_text(encoding="utf-8"))
+    return {
+        (blueprint["id"], platform)
+        for blueprint in index["blueprints"]
+        for platform in PLATFORMS
+        if blueprint["platforms"][platform]["status"] == "not-applicable"
+    }
 
 
 def main():
 
-    update = "--update" in sys.argv[1:]
+    arguments = sys.argv[1:]
+    update = "--update" in arguments
+    given = [argument for argument in arguments if not argument.startswith("--")]
     root = Path(__file__).resolve().parent.parent
 
-    twins = blueprints(root)
-    if not twins:
-        print("no blueprint has both platform twins yet - nothing to compare")
+    index_file = Path(given[0]) if given else None
+    inapplicable = inapplicable_platforms(index_file)
+
+    directories = blueprints(root)
+    if not directories:
+        print("no blueprint yet - nothing to compare")
         return 0
 
-    failures, compared = [], 0
-    for blueprint_directory in twins:
+    failures, unpaired, compared = [], [], 0
+    for blueprint_directory, platforms in directories.items():
         display = blueprint_directory.relative_to(root)
+
+        if len(platforms) < len(PLATFORMS):
+            missing = [
+                platform for platform in PLATFORMS if platform not in platforms]
+            allowed = [
+                platform
+                for platform in missing
+                if inapplicable is not None
+                and (blueprint_directory.name, platform) in inapplicable]
+            if inapplicable is None:
+                print(
+                    f"{display}: only '{platforms[0]}' exists."
+                    " Pass blueprints.yaml to have this checked against the index")
+            elif sorted(allowed) == sorted(missing):
+                print(
+                    f"{display}: only '{platforms[0]}' exists, and the index says"
+                    f" '{', '.join(missing)}' is not applicable to this blueprint")
+            else:
+                unpaired.append((display, missing))
+            continue
+
         differences = differences_of(blueprint_directory)
         approved = approvals_of(blueprint_directory)
         compared += 1
@@ -250,18 +307,32 @@ def main():
     if update:
         return 0
 
-    if failures:
-        for display, path, kind, digest, text, why in failures:
-            print(f"\n{display}: {path} ({kind}) - {why}")
-            if text:
-                print("\n".join(f"    {line}" for line in text.splitlines()[:40]))
-            print(
-                f"  approve it by adding to {display}/{ALLOW_FILE}:\n"
-                f"    {digest}  {kind}  {path}  # <why the twins differ here>")
+    for display, path, kind, digest, text, why in failures:
+        print(f"\n{display}: {path} ({kind}) - {why}")
+        if text:
+            print("\n".join(f"    {line}" for line in text.splitlines()[:40]))
         print(
-            f"\n{len(failures)} difference(s) between platform twins are not approved."
-            f"\nRun 'bin/check_twin_diff.py --update' and write the reasons.",
+            f"  approve it by adding to {display}/{ALLOW_FILE}:\n"
+            f"    {digest}  {kind}  {path}  # <why the twins differ here>")
+
+    for display, missing in unpaired:
+        print(
+            f"\n{display}: '{', '.join(missing)}' does not exist, so there is nothing to"
+            " compare."
+            "\n  A blueprint exists for both platforms. The one exception is a platform"
+            " which does not know the subject of the blueprint at all - then blueprints.yaml"
+            f" says 'not-applicable' for it, with the reason, and the organisation page shows"
+            " that reason where the other platforms show their link.")
+
+    if failures or unpaired:
+        print(
+            f"\n{len(failures)} unapproved difference(s) and {len(unpaired)} blueprint(s)"
+            " existing for one platform only.",
             file=sys.stderr)
+        if failures:
+            print(
+                "Run 'bin/check_twin_diff.py --update' and write the reasons.",
+                file=sys.stderr)
         return 1
 
     print(f"platform twins agree: {compared} blueprint(s) compared")

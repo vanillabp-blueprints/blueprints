@@ -173,9 +173,21 @@ differs between them is the platform: its bean and injection annotations, its HT
 annotations, how configuration is bound, how a repository looks. What must not differ is the
 application: the BPMN wiring, the business methods, what the test asserts.
 
-`bin/check_twin_diff.py` keeps that honest. It compares the Java sources of the twins after
-removing package lines, imports and comments, so a different import or a Javadoc written for
-one platform is never a difference. Everything left over has to be approved in
+There is one exception, and its bar is the platform rather than the calendar: a blueprint
+whose subject a platform does not know cannot exist there, and then it exists once. The
+index says so with `status: not-applicable` and a one-sentence reason, which the
+organisation page shows where the other platform shows its link. A blueprint nobody has
+ported yet is a different thing and stays `planned` - that gap closes, this one does not.
+`persistence-active-record` is the first of the kind: the idiom exists on one platform only.
+
+`bin/check_twin_diff.py` keeps both honest: a blueprint with a single directory fails unless
+the index declares the missing platform not applicable, so leaving a twin out is a decision
+somebody writes down rather than something a guard quietly skips. Pass the index to have
+that checked; without it, a single directory is only reported.
+
+Where both twins are there, it compares their Java sources after removing package lines,
+imports and comments, so a different import or a Javadoc written for one platform is never a
+difference. Everything left over has to be approved in
 `<group>/<blueprint-id>/twin-diff-allow.txt`, one line per file:
 
 ```
@@ -183,8 +195,8 @@ one platform is never a difference. Everything left over has to be approved in
 ```
 
 ```bash
-python3 bin/check_twin_diff.py            # what CI does
-python3 bin/check_twin_diff.py --update   # write the entries, keeping the reasons given
+python3 bin/check_twin_diff.py blueprints.yaml   # what CI does
+python3 bin/check_twin_diff.py --update          # write the entries, keeping the reasons given
 ```
 
 The hash covers the difference, not the file. Changing both twins the same way keeps it, so
@@ -239,7 +251,9 @@ strokes on no background at all and an SVG of that is unreadable in GitHub's dar
    bin/render_bpmn_images.sh
    ```
 4. Add the entry to `blueprints.yaml` of the `.github` repository. CI flips
-   `platforms.<platform>.status` to `available` once the blueprint has been split out.
+   `platforms.<platform>.status` to `available` once the blueprint has been split out. A
+   platform the blueprint cannot exist for is written by hand instead, as
+   `not-applicable` plus a one-sentence `reason` (see above); no job derives that.
 5. `./mvnw install verify` for every BPMS profile the blueprint supports. Only `camunda7`
    runs without infrastructure, because it is embedded. `camunda8` needs a cluster, which
    `bin/camunda8_cluster.sh start` gives you (see below), and is therefore not part of the
@@ -332,9 +346,16 @@ first:
 
 ```bash
 bin/camunda8_cluster.sh start
-cd blueprints-bpmn/bpmn-service-task/springboot && mvn -Pcamunda8 install verify
+cd blueprints-bpmn/bpmn-service-task/springboot && mvn -Pcamunda8 clean install verify
 bin/camunda8_cluster.sh stop
 ```
+
+`clean` matters when you switch the profile in a tree you have already built. The output of
+the previous profile stays in `target/`, and the build then runs against the adapter of that
+profile while the command line names the other one. VanillaBP reports it correctly, but the
+message is about a missing address or an environment variable addressing an unknown adapter,
+and it takes a while to connect that to a directory nobody cleaned. CI never sees this - it
+starts from a fresh checkout.
 
 The address reaches the blueprint as an environment variable binding to
 `vanillabp.adapters.camunda8.rest-address`. Both spellings are set, because the platforms
