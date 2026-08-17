@@ -47,9 +47,9 @@ jobs:
           distribution: temurin
       - name: Start a Camunda 8 cluster
         if: matrix.bpms == 'camunda8'
-        # The address and the isolation mode are published here rather than in the build
-        # step: a Camunda 7 build must not see a configured camunda8 adapter, because
-        # VanillaBP then rightly refuses to boot with no such adapter on the classpath.
+        # The address is published here rather than in the build step: a Camunda 7 build
+        # must not see a configured camunda8 adapter, because VanillaBP then rightly
+        # refuses to boot with no such adapter on the classpath.
         run: |
           bin/camunda8_cluster.sh start
           {
@@ -59,11 +59,11 @@ jobs:
             # matches no property is ignored, so both are set for every blueprint.
             echo "VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS=http://localhost:8080"
             echo "VANILLABP_ADAPTERS_CAMUNDA8_REST_ADDRESS=http://localhost:8080"
-            # A stock cluster has multi-tenancy switched off and rejects the tenant the
-            # adapter deploys into by default. Prefixed identifiers keep the modules apart
-            # without tenants.
-            echo "VANILLABP_ADAPTERS_CAMUNDA8_NAMECLASHAVOIDANCE=use-prefix"
-            echo "VANILLABP_ADAPTERS_CAMUNDA8_NAME_CLASH_AVOIDANCE=use-prefix"
+            # Nothing about name clashes: the adapter's own default is 'none', which uses
+            # no tenant and therefore boots against a stock cluster with multi-tenancy
+            # switched off. Every job gets a cluster of its own, so unprefixed identifiers
+            # cannot meet those of another blueprint. Setting a mode here would test a
+            # configuration no blueprint documents.
           } >> "$GITHUB_ENV"
       - name: Build against the current snapshots
         working-directory: "${{ matrix.blueprint }}"
