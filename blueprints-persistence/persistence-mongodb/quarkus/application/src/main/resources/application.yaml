@@ -1,0 +1,28 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is
+# in its own configuration file (loan-approval/loan-approval.yaml inside the module JAR).
+#
+# What is NOT here: a data source. There is none anywhere in this blueprint, which is the
+# whole point - the workflow aggregate, the phase-two outbox and the log of processed task
+# deliveries all live in MongoDB.
+quarkus:
+  mongodb:
+    database: loan-approval
+    # Deliberately without a connection string: while developing and testing, the platform's
+    # dev services start a MongoDB and connect to it, and they run it as a replica set, which
+    # is what MongoDB transactions need. Naming an address here would switch that off.
+    #
+    # In production the address is configured, and the deployment has to be a replica set as
+    # well - a standalone MongoDB answers every transactional write with an error, and
+    # VanillaBP warns about it while starting up:
+    #
+    #   connection-string: mongodb://localhost:27017/?replicaSet=rs0
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO
+vanillabp:
+  adapters:
+    camunda8:
+      # Camunda 8 is the only engine of this blueprint, so its address belongs here rather
+      # than into a section a reader has to add first. Point it at your cluster.
+      rest-address: http://localhost:8080

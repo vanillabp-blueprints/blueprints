@@ -1,0 +1,20 @@
+# Approved differences between the platform twins of this blueprint, checked by
+# bin/check_twin_diff.py. One line per file: the hash of the difference, what kind of
+# difference it is, the file, and why it exists. Write the reason - the file is read by
+# people deciding whether a difference is the platform or a mistake.
+
+31120fb94c65de07  only-springboot  application/src/main/java/blueprint/workflowmodule/Application.java  # one platform boots from a class of the application, the other one needs none
+366cef90822fce66  differs  application/src/test/java/blueprint/workflowmodule/ApplicationSmokeTest.java  # asking the bean container whether a ProcessService exists is done in the container's own words
+7e004821a59c95ab  only-springboot  application/src/test/java/blueprint/workflowmodule/MongoDbForTests.java  # one platform starts the MongoDB of its tests itself, the other one has dev services doing it
+d8eaef3a339803ef  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/ApiController.java  # the same GET endpoints, written with the HTTP annotations of the platform
+d3e240be25066a9f  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/Service.java  # bean and injection annotations, the configuration accessor, and the transaction reading a document needs on one platform
+480889f2ad9fb1a1  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/Workflow.java  # bean and injection annotations only; both inject ProcessService here and nowhere else
+6f779c401afdd136  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/WorkflowTaskHandler.java  # bean and injection annotations only; the VanillaBP annotations are identical, which is the point
+4f6d9798ac729e02  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/config/LoanApprovalProperties.java  # configuration is bound to a class on one platform and to an interface on the other
+95fd35f1ca3187df  only-springboot  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/config/MongoTransactions.java  # only one platform needs a transaction manager to be defined; the other one binds MongoDB to the transaction it always has
+b027acf40e0a13e2  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/model/Aggregate.java  # each platform's way of mapping a document and naming its id
+05e62d4b360229a3  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/model/AggregateRepository.java  # each platform's MongoDB repository idiom
+7e004821a59c95ab  only-springboot  loan-approval/src/test/java/blueprint/workflowmodule/MongoDbForTests.java  # only one platform starts the MongoDB of its tests itself, as a replica set; the other one has dev services doing it
+7478214e70e9a2b7  only-springboot  loan-approval/src/test/java/blueprint/workflowmodule/TestApplication.java  # only one platform needs an application class to boot a workflow module for its test
+c9ced98071215c82  differs  loan-approval/src/test/java/blueprint/workflowmodule/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
+132361af6e407053  differs  loan-approval/src/test/java/blueprint/workflowmodule/loanapproval/LoanApprovalIT.java  # injection annotations, how a rollback is provoked, and how the outbox collection is counted - the assertions are the same
