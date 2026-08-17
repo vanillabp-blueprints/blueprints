@@ -16,5 +16,5 @@ b027acf40e0a13e2  differs  loan-approval/src/main/java/blueprint/workflowmodule/
 05e62d4b360229a3  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/model/AggregateRepository.java  # each platform's MongoDB repository idiom
 7e004821a59c95ab  only-springboot  loan-approval/src/test/java/blueprint/workflowmodule/MongoDbForTests.java  # only one platform starts the MongoDB of its tests itself, as a replica set; the other one has dev services doing it
 7478214e70e9a2b7  only-springboot  loan-approval/src/test/java/blueprint/workflowmodule/TestApplication.java  # only one platform needs an application class to boot a workflow module for its test
-c9ced98071215c82  differs  loan-approval/src/test/java/blueprint/workflowmodule/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
+33289af19edd6ccf  differs  loan-approval/src/test/java/blueprint/workflowmodule/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
 132361af6e407053  differs  loan-approval/src/test/java/blueprint/workflowmodule/loanapproval/LoanApprovalIT.java  # injection annotations, how a rollback is provoked, and how the outbox collection is counted - the assertions are the same
