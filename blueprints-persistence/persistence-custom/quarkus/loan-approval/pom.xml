@@ -102,7 +102,9 @@
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
-      <properties/>
+      <properties>
+        <bpms>camunda8</bpms>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>org.camunda.community.vanillabp</groupId>

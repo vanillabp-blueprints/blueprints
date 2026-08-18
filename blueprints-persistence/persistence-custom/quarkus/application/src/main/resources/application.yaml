@@ -3,15 +3,17 @@
 #
 # What is NOT here is the point of this blueprint: no data source, no database, no
 # persistence property of any kind. The three stores VanillaBP needs are beans of the
-# workflow module, and the only thing left to configure is where the BPMS is.
+# workflow module. What is left is where the BPMS is, and that lives in the profile file of
+# that engine, 'application-camunda8.yaml'.
 quarkus:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, and the profile
+  # file of that engine applies from then on - whichever profile the application itself runs
+  # in, because the BPMS profile is its PARENT. Nobody has to name the profile twice.
+  config:
+    profile:
+      parent: "@bpms@"
   log:
     category:
       "blueprint.workflowmodule":
         level: INFO
-vanillabp:
-  adapters:
-    camunda8:
-      # Camunda 8 is the only engine of this blueprint, so its address belongs here rather
-      # than into a section a reader has to add first. Point it at your cluster.
-      rest-address: http://localhost:8080

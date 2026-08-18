@@ -848,3 +848,45 @@ bean's `beanClass` is available where the message is built, and unwrapping a pro
 The Spring Boot side needs nothing.
 
 **Affects:** Quarkus, `QuarkusTransactionRunnerResolver`.
+
+## G19: an application without any BPMS adapter fails with the bean container's words, not VanillaBP's
+
+**Status:** open, story `81` (2026-08-18), found the same day while moving the BPMS-specific
+configuration of the blueprints into profiles. Asymmetric between the platforms.
+
+**What was tried.** Every blueprint chooses its BPMS with a Maven profile, so leaving the profile
+out is the fastest way to see what an application does with no adapter on the classpath - the
+mistake somebody makes on their first day.
+
+**Spring Boot.** The application does not boot, and the message is Spring's:
+
+```
+Error creating bean with name 'apiController': Unsatisfied dependency expressed through field
+'service': ... Error creating bean with name 'workflow': Unsatisfied dependency expressed through
+field 'processService': No qualifying bean of type
+'io.vanillabp.spi.process.ProcessService<blueprint.workflowmodule.loanapproval.model.Aggregate>'
+available: expected at least 1 bean which qualifies as autowire candidate
+```
+
+Nothing in it says the word adapter, names a dependency to add, or mentions VanillaBP at all. A
+developer reads it as a mistake in their own wiring, because that is what it looks like.
+
+**Quarkus.** The same situation is reported by VanillaBP:
+
+```
+java.lang.IllegalStateException: No extensions found with capabilities 'io.vanillabp.adapter.*'!
+Add Quarkus extensions providing VanillaBP adapters.
+```
+
+Right in kind, and one step short of what the configuration-validation rule asks for: it does not
+name the extensions a developer could add.
+
+**Why it matters.** This is the first message of the first attempt. The platform integration
+validates plenty at startup, so a reader of the other messages expects the same here, and the
+blueprints teach exactly that: read the startup log, it names the remedy.
+
+**What would fix it.** Spring Boot: fail the boot before the bean container gets there, with a
+message naming the artifacts of the available adapters, the way Quarkus does. Quarkus: name them
+as well. The list is known - the adapters are the platform's own artifacts.
+
+**Affects:** the Spring Boot integration primarily, the Quarkus one for the wording.

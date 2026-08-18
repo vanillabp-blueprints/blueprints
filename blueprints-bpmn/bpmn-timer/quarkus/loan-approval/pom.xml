@@ -107,6 +107,7 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
+        <bpms>camunda7</bpms>
         <!-- Read by the assertion which only holds where cancellations are delivered. -->
         <blueprint.bpms>camunda7</blueprint.bpms>
       </properties>
@@ -122,6 +123,7 @@
     <profile>
       <id>camunda8</id>
       <properties>
+        <bpms>camunda8</bpms>
         <blueprint.bpms>camunda8</blueprint.bpms>
       </properties>
       <dependencies>

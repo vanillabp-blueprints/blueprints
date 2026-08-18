@@ -67,15 +67,16 @@ its second half.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|                       File                        |                                     What is different                                     |
-|---------------------------------------------------|-------------------------------------------------------------------------------------------|
-| `.../loanapproval/model/Aggregate.java`           | a document in a collection instead of an entity in a table, and no column declarations    |
-| `.../loanapproval/model/AggregateRepository.java` | a MongoDB repository; this is what attributes the other two stores as well                |
-| `.../loanapproval/config/MongoTransactions.java`  | new: the transaction manager MongoDB needs and the platform does not define               |
-| `application/src/main/resources/application.yaml` | a MongoDB URI instead of a data source, and the address of the cluster                    |
-| `loan-approval/src/test/.../MongoDbForTests.java` | new: the MongoDB the tests talk to, started as a replica set in a container               |
-| `loan-approval/src/test/.../LoanApprovalIT.java`  | the counter-check that a rolled-back start leaves nothing behind                          |
-| `pom.xml`, `*/pom.xml`                            | `spring-boot-starter-data-mongodb` instead of JPA, no H2, and only the `camunda8` profile |
+|                            File                            |                                     What is different                                     |
+|------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| `.../loanapproval/model/Aggregate.java`                    | a document in a collection instead of an entity in a table, and no column declarations    |
+| `.../loanapproval/model/AggregateRepository.java`          | a MongoDB repository; this is what attributes the other two stores as well                |
+| `.../loanapproval/config/MongoTransactions.java`           | new: the transaction manager MongoDB needs and the platform does not define               |
+| `application/src/main/resources/application.yaml`          | a MongoDB URI instead of a data source                                                    |
+| `application/src/main/resources/application-camunda8.yaml` | new: the address of the cluster, loaded by the profile of that engine                     |
+| `loan-approval/src/test/.../MongoDbForTests.java`          | new: the MongoDB the tests talk to, started as a replica set in a container               |
+| `loan-approval/src/test/.../LoanApprovalIT.java`           | the counter-check that a rolled-back start leaves nothing behind                          |
+| `pom.xml`, `*/pom.xml`                                     | `spring-boot-starter-data-mongodb` instead of JPA, no H2, and only the `camunda8` profile |
 
 Everything else is the base blueprint, file for file: the process, the wiring classes, the API,
 the module's own configuration, the test harness.
@@ -95,7 +96,10 @@ Then, in this directory:
 mvn install verify
 ```
 
-`camunda8` is the only profile and it is active by default, so there is no `-P` to remember.
+`camunda8` is the only profile and it is active by default, so there is no `-P` to
+remember. That profile is also what loads `application-camunda8.yaml`: the Maven profile sets
+the Spring profile of the same name, so the engine is named once and the build, the tests and
+running the application all follow it.
 The tests bring their own MongoDB: a container, started as a replica set, which is why nothing
 in the test configuration says where the database is.
 
@@ -155,7 +159,8 @@ BPMS handed over.
 | `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the process: start event, service task, end event                             |
 | `loan-approval/src/test/.../MongoDbForTests.java`                                      | the MongoDB of the tests, one container per JVM, started as a replica set     |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | the happy path, and the proof that a rolled-back start leaves nothing behind  |
-| `application/src/main/resources/application.yaml`                                      | the MongoDB URI and the cluster address, and no data source                   |
+| `application/src/main/resources/application.yaml`                                      | the MongoDB URI, and no data source                                           |
+| `application/src/main/resources/application-camunda8.yaml`                             | the address of the cluster, loaded by the profile of that engine              |
 
 The order of events is the one of the base blueprint. What changed is who owns the transaction
 around it. Starting a workflow on a remote BPMS happens in two phases: the application's

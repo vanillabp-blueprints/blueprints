@@ -100,7 +100,10 @@ Then, in this directory:
 mvn install verify
 ```
 
-`camunda8` is the only profile and it is active by default, so there is no `-P` to remember.
+`camunda8` is the only profile and it is active by default, so there is no `-P` to
+remember. That profile is also what loads `application-camunda8.yaml`: the Maven profile sets
+the Spring profile of the same name, so the engine is named once and the build, the tests and
+running the application all follow it.
 There is nothing else to install: no database, no container beyond the cluster.
 
 Start the application:

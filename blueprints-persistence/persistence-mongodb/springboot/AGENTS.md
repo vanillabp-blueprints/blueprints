@@ -40,7 +40,8 @@ framework" means the persistence was only half moved.
 | `loan-approval/src/main/java/.../loanapproval/config/MongoTransactions.java`  | the `MongoTransactionManager` the platform does not define. Needs a replica set; without the bean the boot fails |
 | `loan-approval/src/test/java/.../MongoDbForTests.java`                        | the MongoDB of the tests, one container per JVM, started as a replica set                                        |
 | `loan-approval/src/test/java/.../loanapproval/LoanApprovalIT.java`            | the happy path, plus the proof that a rolled-back start leaves neither aggregate nor outbox entry behind         |
-| `application/src/main/resources/application.yaml`                             | the MongoDB URI and the cluster address. No data source, in no module                                            |
+| `application/src/main/resources/application.yaml`                             | the MongoDB URI. No data source, in no module                                                                    |
+| `application/src/main/resources/application-camunda8.yaml`                    | the address of the cluster, loaded by the profile of that engine                                                 |
 
 ## Boilerplate files
 
@@ -49,7 +50,7 @@ framework" means the persistence was only half moved.
 | `pom.xml` (blueprint root)                                              | the Spring Boot parent, the VanillaBP BOM import and the single BPMS profile                    |
 | `loan-approval/pom.xml`                                                 | `vanillabp-spring-boot-support` and `spring-boot-starter-data-mongodb`, never an adapter        |
 | `application/pom.xml`                                                   | `vanillabp-spring-boot-integration` and the BPMS adapter, the only place a BPMS is named        |
-| `loan-approval/src/test/resources/application.yaml`                     | the cluster address of the module's own test                                                    |
+| `loan-approval/src/test/resources/application-camunda8.yaml`            | the cluster address of the module's own test                                                    |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`     | the module's own configuration, loaded by its file name                                         |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`               | base class of the integration test: waits for workflow progress                                 |
 | `loan-approval/src/test/java/.../TestApplication.java`                  | the minimal application booting the module for its test                                         |

@@ -15,6 +15,13 @@
   </modules>
 
   <properties>
+    <!--
+      The name of the BPMS profile, set by every BPMS profile of the modules below. It is used
+      twice: the build filters it into 'application.yaml', so the application loads
+      'application-<bpms>.yaml', and the tests get it as a system property. That way the BPMS
+      is named ONCE, on the Maven command line.
+    -->
+    <bpms>none</bpms>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
     <quarkus.version>3.37.1</quarkus.version>
@@ -111,6 +118,11 @@
           <systemPropertyVariables>
             <!-- Quarkus brings its own log manager, and it has to be set before the JVM logs. -->
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <!--
+              The BPMS profile of the build. A test runs in the 'test' profile, so the BPMS
+              profile is its PARENT: what 'application-<bpms>.yaml' says applies as well.
+            -->
+            <quarkus.config.profile.parent>${bpms}</quarkus.config.profile.parent>
             <blueprint.bpms>${blueprint.bpms}</blueprint.bpms>
           </systemPropertyVariables>
         </configuration>
@@ -130,6 +142,7 @@
         <configuration>
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <quarkus.config.profile.parent>${bpms}</quarkus.config.profile.parent>
           </systemPropertyVariables>
         </configuration>
       </plugin>

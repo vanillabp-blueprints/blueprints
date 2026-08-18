@@ -50,8 +50,9 @@ straight into its data structure looks correct until the first rollback.
 | `pom.xml` (blueprint root)                                              | the Spring Boot parent, the VanillaBP BOM import and the single BPMS profile             |
 | `loan-approval/pom.xml`                                                 | `vanillabp-spring-boot-support` and no persistence dependency at all                     |
 | `application/pom.xml`                                                   | `vanillabp-spring-boot-integration` and the BPMS adapter, the only place a BPMS is named |
-| `application/src/main/resources/application.yaml`                       | the cluster address. Nothing about persistence, because there is nothing to configure    |
-| `loan-approval/src/test/resources/application.yaml`                     | the same for the module's own test                                                       |
+| `application/src/main/resources/application.yaml`                       | nothing about persistence, because there is nothing to configure                         |
+| `application/src/main/resources/application-camunda8.yaml`              | the cluster address, loaded by the profile of that engine                                |
+| `loan-approval/src/test/resources/application-camunda8.yaml`            | the same for the module's own test                                                       |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`     | the module's own configuration, loaded by its file name                                  |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`               | base class of the integration test: waits for workflow progress                          |
 | `loan-approval/src/test/java/.../TestApplication.java`                  | the minimal application booting the module for its test                                  |

@@ -2,8 +2,7 @@
 # string either: the platform's dev services start a MongoDB for the test and point the
 # client at it, and they run it as a replica set, which is what MongoDB transactions need.
 #
-# The address of the Camunda 8 cluster is the one thing a reader has to provide, and CI
-# overrides it through the environment.
+# Where the BPMS is lives in the profile file of that engine, 'application-camunda8.yaml'.
 quarkus:
   mongodb:
     database: loan-approval
@@ -11,7 +10,3 @@ quarkus:
     category:
       "blueprint.workflowmodule":
         level: INFO
-vanillabp:
-  adapters:
-    camunda8:
-      rest-address: http://localhost:8080

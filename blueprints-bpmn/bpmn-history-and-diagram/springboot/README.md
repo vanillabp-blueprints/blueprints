@@ -81,23 +81,23 @@ Running it on another BPMS is a Maven profile, not one line of Java changes:
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run and be pointed at. It also needs
-**secondary storage** for this blueprint: definitions and history are served by the query
-API, and a cluster without it reports no element history at all. Start one, then add its
-address to `application/src/main/resources/application.yaml` and to
-`loan-approval/src/test/resources/application.yaml`:
+Camunda 8 is a remote engine, so a cluster has to run. It also needs **secondary storage** for
+this blueprint: definitions and history are served by the query API, and a cluster without it
+reports no element history at all. Start one; its address, and everything else specific to that
+engine, lives in its profile file `application/src/main/resources/application-camunda8.yaml`,
+with a copy for the module's own test:
 
 ```yaml
 vanillabp:
   adapters:
     camunda8:
+      # Camunda 8 is a remote engine: point this at your cluster.
       rest-address: http://localhost:8080
-      # Nothing else is needed: this adapter keeps workflow modules apart by nothing at all
-      # ('name-clash-avoidance: none') unless told otherwise, because a cluster started from
-      # the stock image has multi-tenancy switched off and rejects a tenant per module. The
-      # adapter warns about it while booting - with one workflow module the identifiers are
-      # unique anyway. Set 'name-clash-avoidance: use-prefix' to have VanillaBP prefix them.
 ```
+
+That file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
+name, so the engine is chosen once, on the Maven command line, and the build, the tests and
+`spring-boot:run` all follow it.
 
 Start the application:
 
@@ -160,9 +160,11 @@ Log in with `demo` / `demo`. Cockpit shows the same thing for an operator, which
 comparing: this blueprint is about serving it to YOUR users, in your application, without
 sending them to the tooling of a BPMS they should not need to know.
 
-The Camunda 8 profile ships neither the dependency nor that file. Its tooling is part of
-the cluster, and the file names a Camunda 7 adapter id, which VanillaBP would rightly
-refuse to start with.
+The Camunda 8 profile brings neither the dependency nor those settings into effect. Its
+tooling is part of the cluster, and the file naming a Camunda 7 adapter id is simply not
+loaded there - a profile file applies to its own engine and to no other. Naming an adapter
+id whose adapter is not on the classpath is a configuration error VanillaBP refuses to
+start with, and the profiles are what keeps that from happening.
 
 ## How it works
 

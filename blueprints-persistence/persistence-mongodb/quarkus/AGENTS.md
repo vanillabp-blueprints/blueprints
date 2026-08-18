@@ -37,7 +37,8 @@ framework" means the persistence was only half moved.
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`           | `@MongoEntity` with the natural ID as `@BsonId`. No column declarations, a document database asks for none                                             |
 | `loan-approval/src/main/java/.../loanapproval/model/AggregateRepository.java` | a `PanacheMongoRepositoryBase`. It binds a MongoDB transaction to the platform's, and it attributes the outbox and the delivery log to MongoDB as well |
 | `loan-approval/src/test/java/.../loanapproval/LoanApprovalIT.java`            | the happy path, plus the proof that a rolled-back start leaves neither aggregate nor outbox entry behind                                               |
-| `application/src/main/resources/application.yaml`                             | the MongoDB database and the cluster address. No data source, in no module                                                                             |
+| `application/src/main/resources/application.yaml`                             | the MongoDB database. No data source, in no module                                                                                                     |
+| `application/src/main/resources/application-camunda8.yaml`                    | the address of the cluster, loaded by the profile of that engine                                                                                       |
 
 ## Boilerplate files
 
@@ -46,7 +47,8 @@ framework" means the persistence was only half moved.
 | `pom.xml` (blueprint root)                                              | the Quarkus BOM, the VanillaBP BOM import and the single BPMS profile                                          |
 | `loan-approval/pom.xml`                                                 | `vanillabp-quarkus-support`, `quarkus-mongodb-panache` and the index of the module's classes, never an adapter |
 | `application/pom.xml`                                                   | `vanillabp-quarkus-integration` and the BPMS adapter, the only place a BPMS is named                           |
-| `loan-approval/src/test/resources/application.yaml`                     | the database name and the cluster address of the module's own test                                             |
+| `loan-approval/src/test/resources/application.yaml`                     | the database name of the module's own test                                                                     |
+| `loan-approval/src/test/resources/application-camunda8.yaml`            | the cluster address of that test                                                                               |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`     | the module's own configuration, loaded by its file name                                                        |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`               | base class of the integration test: a fresh transaction per poll                                               |
 | `application/src/test/java/.../ApplicationSmokeTest.java`               | boots the application, which validates the BPMN-to-code wiring                                                 |

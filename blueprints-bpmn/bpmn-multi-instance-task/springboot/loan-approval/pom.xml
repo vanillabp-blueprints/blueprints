@@ -64,6 +64,9 @@
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
+      <properties>
+        <bpms>camunda7</bpms>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>org.camunda.community.vanillabp</groupId>
@@ -75,6 +78,9 @@
     </profile>
     <profile>
       <id>camunda8</id>
+      <properties>
+        <bpms>camunda8</bpms>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>org.camunda.community.vanillabp</groupId>

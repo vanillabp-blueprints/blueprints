@@ -118,6 +118,33 @@ switching the BPMS is a Maven profile, not a code change.
 
 Reference documentation is linked, never copied.
 
+### Configuration follows the same rule
+
+`application.yaml` holds what every engine needs. Everything belonging to one engine lives in
+the profile file of that engine, `application-camunda7.yaml` and `application-camunda8.yaml`,
+in the application module and, where a test needs it, in the workflow module's test resources.
+That is how projects do it, and it is what makes a blueprint a starting point for a migration:
+run with both profiles and both adapters, and the two configurations sit side by side instead
+of being edited into each other.
+
+**The profile is named once, on the Maven command line.** Every BPMS profile sets the property
+`bpms`, and that property reaches the application twice over:
+
+- the build filters it into `application.yaml`, which activates the profile of that name
+  (`spring.profiles.active` respectively `quarkus.config.profile.parent`, where the BPMS
+  profile becomes the parent of whichever profile the application runs in),
+- surefire and failsafe hand it to the tests as a system property.
+
+So `mvn -Pcamunda8 install verify` and `mvn -Pcamunda8 -pl application spring-boot:run` need
+nothing else, and nobody has to keep two flags in sync. On Quarkus the filtering is declared in
+the application module's POM, restricted to `application*.yaml` and to the `@...@` delimiters,
+because Quarkus does not filter resources by default and `${...}` is its own expression syntax.
+
+A BPMS-specific file is always shipped and only sometimes loaded: `application-camunda7.yaml`
+sits in the JAR of a Camunda 8 build as well, where it does nothing. Naming an adapter id
+whose adapter is not on the classpath is a configuration error VanillaBP refuses to start
+with, and the profiles are what keeps that from happening.
+
 ## Rule 5: the aspect is proven by a test
 
 A blueprint ships an integration test which plays through the aspect it shows, using a

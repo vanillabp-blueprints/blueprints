@@ -141,9 +141,11 @@ why a job failed. The user comes from
 blueprint can be operated without setting one up; an application with an identity provider
 of its own leaves that section out.
 
-The Camunda 8 profile ships neither the dependency nor that file. Its tooling is part of
-the cluster, and the file names a Camunda 7 adapter id, which VanillaBP would rightly
-refuse to start with.
+The Camunda 8 profile brings neither the dependency nor those settings into effect. Its
+tooling is part of the cluster, and the file naming a Camunda 7 adapter id is simply not
+loaded there - a profile file applies to its own engine and to no other. Naming an adapter
+id whose adapter is not on the classpath is a configuration error VanillaBP refuses to
+start with, and the profiles are what keeps that from happening.
 
 ## How it works
 

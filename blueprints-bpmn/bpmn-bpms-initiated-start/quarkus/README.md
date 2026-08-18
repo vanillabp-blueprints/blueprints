@@ -72,21 +72,22 @@ Running it on another BPMS is a Maven profile, not one line of Java changes:
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run and be pointed at. Start one, then
-add its address to `application/src/main/resources/application.yaml` and to
-`loan-approval/src/test/resources/application.yaml`:
+Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
+else specific to that engine, lives in its profile file
+`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
+test:
 
 ```yaml
 vanillabp:
   adapters:
     camunda8:
+      # Camunda 8 is a remote engine: point this at your cluster.
       rest-address: http://localhost:8080
-      # Nothing else is needed: this adapter keeps workflow modules apart by nothing at all
-      # ('name-clash-avoidance: none') unless told otherwise, because a cluster started from
-      # the stock image has multi-tenancy switched off and rejects a tenant per module. The
-      # adapter warns about it while booting - with one workflow module the identifiers are
-      # unique anyway. Set 'name-clash-avoidance: use-prefix' to have VanillaBP prefix them.
 ```
+
+That file is loaded because the Maven profile `camunda8` makes the config profile of the same
+name the parent of whichever profile the application runs in, so the engine is chosen once, on
+the Maven command line, and the build, the tests and `quarkus:dev` all follow it.
 
 The Process-Engine-API adapter cannot run this blueprint, and says so rather than starting
 badly: that API never reports a start the application did not ask for, so deploying such a

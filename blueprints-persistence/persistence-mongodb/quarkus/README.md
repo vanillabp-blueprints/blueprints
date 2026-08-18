@@ -90,7 +90,10 @@ Then, in this directory:
 mvn install verify
 ```
 
-`camunda8` is the only profile and it is active by default, so there is no `-P` to remember.
+`camunda8` is the only profile and it is active by default, so there is no `-P` to
+remember. That profile is also what loads `application-camunda8.yaml`: the Maven profile sets
+the config profile of the same name the parent of whichever profile the application runs in, so the engine is named once and the build, the tests and
+running the application all follow it.
 The tests need no MongoDB of their own either: the dev services start one and run it as a
 replica set, which is why nothing in the configuration says where the database is.
 
@@ -146,7 +149,8 @@ quarkus:
 | `.../loanapproval/WorkflowTaskHandler.java`                                            | what the process tells the application: `@WorkflowService`, `@WorkflowTask`   |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the process: start event, service task, end event                             |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | the happy path, and the proof that a rolled-back start leaves nothing behind  |
-| `application/src/main/resources/application.yaml`                                      | the MongoDB database and the cluster address, and no data source              |
+| `application/src/main/resources/application.yaml`                                      | the MongoDB database, and no data source                                      |
+| `application/src/main/resources/application-camunda8.yaml`                             | the address of the cluster, loaded by the profile of that engine              |
 
 The order of events is the one of the base blueprint. What changed is what the transaction
 around it covers. Starting a workflow on a remote BPMS happens in two phases: the application's

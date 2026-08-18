@@ -65,6 +65,7 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
+        <bpms>camunda7</bpms>
         <!-- Read by the test which only runs where canceling a user task is supported. -->
         <blueprint.bpms>camunda7</blueprint.bpms>
       </properties>
@@ -80,6 +81,7 @@
     <profile>
       <id>camunda8</id>
       <properties>
+        <bpms>camunda8</bpms>
         <blueprint.bpms>camunda8</blueprint.bpms>
       </properties>
       <dependencies>

@@ -3,20 +3,21 @@
 #
 # What is NOT here: a data source. There is none anywhere in this blueprint, which is the
 # whole point - the workflow aggregate, the phase-two outbox and the log of processed task
-# deliveries all live in MongoDB.
+# deliveries all live in MongoDB. Where the BPMS is lives in the profile file of that engine,
+# 'application-camunda8.yaml'.
 spring:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, so
+  # 'application-camunda8.yaml' is loaded without anybody having to name the profile twice.
+  # Tests get the same value as a system property.
+  profiles:
+    active: "@bpms@"
   data:
     mongodb:
       # A replica set, because MongoDB transactions need one. A standalone deployment
       # answers every transactional write with an error, and VanillaBP warns about it while
       # starting up.
       uri: mongodb://localhost:27017/loan-approval?replicaSet=rs0
-vanillabp:
-  adapters:
-    camunda8:
-      # Camunda 8 is the only engine of this blueprint, so its address belongs here rather
-      # than into a section a reader has to add first. Point it at your cluster.
-      rest-address: http://localhost:8080
 logging:
   level:
     blueprint.workflowmodule: INFO

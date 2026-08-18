@@ -1,11 +1,19 @@
 # Only what is truly cross-cutting belongs here. Everything the workflow module needs is
 # in its own configuration file (loan-approval/loan-approval.yaml inside the module JAR).
 #
-# Note what is NOT here: nothing about the workflow itself. One adapter dependency and one
-# workflow module are enough for VanillaBP to derive the adapter, the workflow module and
-# the location its BPMN files are read from, so this application needs no vanillabp.*
-# property at all.
+# Nothing about a BPMS is here either. That lives in a profile file per engine - here only
+# 'application-camunda8.yaml', because Camunda 8 is remote and needs an address while
+# Camunda 7 needs nothing beyond its dependency. Switching engines is therefore a profile
+# and not an edit. One adapter dependency and one workflow module are enough for VanillaBP
+# to derive the adapter, the workflow module and where its BPMN files are read from.
 quarkus:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, and the profile
+  # file of that engine applies from then on - whichever profile the application itself runs
+  # in, because the BPMS profile is its PARENT. Nobody has to name the profile twice.
+  config:
+    profile:
+      parent: "@bpms@"
   datasource:
     db-kind: h2
     username: sa
