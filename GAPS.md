@@ -234,7 +234,8 @@ nothing about it is silent any more:
 
 ## G5: which process `startWorkflow` starts depends on the order classes are scanned in
 
-**Status:** open, found 2026-08-14 while building `bpmn-call-activity-decomposition/springboot`.
+**Status:** fixed in VanillaBP 2.0.0-SNAPSHOT on 2026-08-15 (story `60`), found 2026-08-14 while
+building `bpmn-call-activity-decomposition/springboot`.
 
 **What happens.** Two classes annotated by `@WorkflowService` naming the same workflow
 aggregate class - the pattern the SPI documentation shows for a call activity used for
@@ -278,6 +279,13 @@ Silently picking one is the option to drop.
 **What the blueprint does meanwhile.** `bpmn-call-activity-decomposition` keeps the tasks of
 both processes in one class and names the called process in `secondaryBpmnProcesses`. The
 README and `AGENTS.md` say why, because the SPI documentation recommends the other way.
+
+**How it was fixed.** `ProcessServiceBeanRegistrar` no longer takes whichever class the classpath
+scan returned first: the classes declaring one aggregate are sorted, and where they name DIFFERENT
+primary BPMN processes the boot ends with a message listing every class and its process, because
+picking one would be a coin flip. A process reachable through a call activity is declared as a
+`secondaryBpmnProcesses` entry of the class owning the primary process - which is what this blueprint
+already does, so its workaround became the documented way.
 
 ## G6: Camunda 7 does not pass the business key to a called process, and nothing says so
 
@@ -398,9 +406,8 @@ engines with the same Java code; the adapter's README explains the mechanism und
 
 ## G9: an API call into a running workflow can fail with the engine's optimistic locking
 
-**Status:** open, found 2026-08-15 when `bpmn-boundary-events/springboot` failed once in CI on
-Camunda 7 and passed on the rerun. Related to G3 and G4, but a different collision: this one
-is on the BPMS' own entity, not on the workflow aggregate.
+**Status:** fixed in VanillaBP 2.0.0-SNAPSHOT on 2026-08-17 (story `63`), found 2026-08-15 when
+`bpmn-boundary-events/springboot` failed once in CI on Camunda 7 and passed on the rerun.
 
 **What happens.** The blueprint models a non-interrupting timer, so a reminder runs while the
 task it is attached to stays open. Its test then answers that task through the application's
@@ -454,6 +461,12 @@ reminder twice.
 **What it costs meanwhile.** A delivered blueprint has a test that fails roughly one run in
 twenty. Either the blueprint retries the API call and says why, or the framework does - which
 is the decision above.
+
+**How it was fixed.** Since story `63` the Camunda 7 adapter answers a running workflow through the
+same two-phase path as every remote BPMS: the engine command runs after the caller's transaction
+committed, dispatched by the phase-two outbox. An `OptimisticLockingException` there is classified as
+repeatable, so the next attempt of the outbox wins instead of the application seeing the collision -
+the same thing Camunda's own job executor does with a failed job.
 
 ## G10: the Camunda 7 viewer failed for every application using the default configuration
 
@@ -513,8 +526,8 @@ in its comment.
 
 ## G12: a shared derived getter is evaluated from a stale variable on Camunda 7
 
-**Status:** open, found 2026-08-15 while building `bpmn-aggregate-decoupling/springboot`.
-Blocks that blueprint, because it breaks exactly the pattern the wiki recommends.
+**Status:** fixed in the Camunda 7 adapter on 2026-08-18 (story `66`), found 2026-08-15 while
+building `bpmn-aggregate-decoupling/springboot`.
 
 **What the wiki asks for.** Page
 [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms)
@@ -563,6 +576,14 @@ as the Camunda 8 adapter does, or it stops writing them under names an expressio
 the operator context could carry a prefix, and expressions would always be answered live by
 the resolver. The second is closer to how this engine works (it reads the aggregate directly
 and needs no variables at all), the first keeps the two adapters symmetric.
+
+**How it was fixed.** Camunda 7 shares the workflow aggregate like every other BPMS now: the shared
+values are written at every point where the workflow can move on - the start, a task completion
+including the BPMN-error path, complete and cancel of a task, a correlation - so a gateway behind a
+task decides on what that task computed. Nested values travel as object variables in the
+serialization format the application configures, which is why the adapter now also applies engine
+plugins. The EL resolver over the aggregate stays in 2.0 as a migration fallback, with an existing
+variable winning over it and a deprecation warning per name; story `79` removes it in 2.1.
 
 ## G13: on Quarkus the phase-two dispatch reaches the application without a transaction
 
