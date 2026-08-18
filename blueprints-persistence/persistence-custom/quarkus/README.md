@@ -40,11 +40,8 @@ second, the platform's own runner last. Booting names the winner:
 Workflow aggregate 'blueprint.workflowmodule.loanapproval.model.Aggregate' (BPMN process
 'loan_approval' of workflow module 'loan-approval') is processed in the transaction of:
 the TransactionRunner bean
-'blueprint.workflowmodule.loanapproval.persistence.UnitOfWork_ClientProxy' of the application
+'blueprint.workflowmodule.loanapproval.persistence.UnitOfWork' of the application
 ```
-
-The name in that line is the proxy the bean container puts in front of `UnitOfWork`, so read it
-as the class without the suffix.
 
 **The three stores enlist in that unit of work**, and that is the part which is easy to get
 wrong. A write goes into a buffer of the running unit of work and reaches the store itself when

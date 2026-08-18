@@ -819,8 +819,9 @@ questions, and the second is the one that matters:
 
 ## G18: the startup line about a transaction names the bean's proxy on one platform
 
-**Status:** open, story `80` (2026-08-17), found the same day while building
-`persistence-custom`. Cosmetic, and it is the line a reader is sent to.
+**Status:** fixed in VanillaBP 2.0.0-SNAPSHOT on 2026-08-18 (story `80`,
+[PR #48](https://github.com/vanillabp/adapter-platform-integration/pull/48)), found 2026-08-17
+while building `persistence-custom`.
 
 Story 70 writes one line per workflow aggregate saying which transaction VanillaBP processes it
 in, and it is the fastest check that an application-provided `TransactionRunner` is really being
@@ -842,17 +843,22 @@ transaction is used, and both blueprints of this wave point at it. A name ending
 `_ClientProxy` sends the reader looking for a class which is not in their sources. The
 README of `persistence-custom` explains the suffix, which is a workaround for a message.
 
-**What would fix it.** Name the class the bean was declared as, not the proxy: on Quarkus the
-bean's `beanClass` is available where the message is built, and unwrapping a proxy by name (strip
-`_ClientProxy`, or ask the container) is not needed if the declared class is used from the start.
-The Spring Boot side needs nothing.
+**How it was fixed.** `QuarkusTransactionRunnerResolver` reads its beans through
+`Instance#handles()` and names `Handle#getBean().getBeanClass()`, the class the application wrote.
+No suffix is stripped from a runtime class name, and where no bean metadata is available the
+runtime class is still named. The two ambiguity messages of the same resolver carried the defect
+as well and follow the rule now. The Spring Boot side needed nothing, it names the bean name.
+
+The README of `persistence-custom/quarkus` lost the sentence about the suffix and quotes the real
+line again.
 
 **Affects:** Quarkus, `QuarkusTransactionRunnerResolver`.
 
 ## G19: an application without any BPMS adapter fails with the bean container's words, not VanillaBP's
 
-**Status:** open, story `81` (2026-08-18), found the same day while moving the BPMS-specific
-configuration of the blueprints into profiles. Asymmetric between the platforms.
+**Status:** fixed in VanillaBP 2.0.0-SNAPSHOT on 2026-08-18 (story `81`,
+[PR #48](https://github.com/vanillabp/adapter-platform-integration/pull/48)), found the same day
+while moving the BPMS-specific configuration of the blueprints into profiles.
 
 **What was tried.** Every blueprint chooses its BPMS with a Maven profile, so leaving the profile
 out is the fastest way to see what an application does with no adapter on the classpath - the
@@ -885,8 +891,35 @@ name the extensions a developer could add.
 validates plenty at startup, so a reader of the other messages expects the same here, and the
 blueprints teach exactly that: read the startup log, it names the remedy.
 
-**What would fix it.** Spring Boot: fail the boot before the bean container gets there, with a
-message naming the artifacts of the available adapters, the way Quarkus does. Quarkus: name them
-as well. The list is known - the adapters are the platform's own artifacts.
+**How it was fixed.** Both platforms now answer with VanillaBP's own message, and it points at
+the wiki page of the available adapters instead of naming them in compiled code - adapters are
+released independently, so a list inside a released JAR would age.
+
+On Spring Boot the check could not live in the integration: an adapter is what brings
+`vanillabp-spring-boot-integration` along, so an application without an adapter has no VanillaBP
+runtime at all. It sits in `vanillabp-spring-boot-support`, the module every workflow module
+compiles against, as an autoconfiguration registering a `BeanFactoryPostProcessor` - before the
+first bean, hence before any `ProcessService` injection point. It reports only when a
+`META-INF/workflow-module` marker is present, so an application without a workflow module still
+boots silently. The case "integration loaded, adapter missing" stays in the integration, which
+knows the adapters it found.
+
+```
+No VanillaBP BPMS adapter found in classpath! A workflow module was found (a 'META-INF/workflow-module'
+marker file), but no adapter which could run its workflows - and on Spring Boot an adapter is also what
+brings VanillaBP's Spring Boot integration, which is missing as well.
+
+Add a BPMS adapter as a dependency of your application. Which adapters exist, and the Maven coordinates
+of each one, is listed at
+  https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters
+...
+```
+
+On Quarkus the wording of the existing message was aligned and points at the same page for the
+extension names. One case is left and cannot be closed (story `82`): an application without the
+core extension `vanillabp-quarkus-integration` has no VanillaBP code in its build at all, so
+Quarkus reports an unsatisfied dependency for `ProcessService` itself. A build step of ours would
+have to live in a workflow module's dependency, and a workflow module stays free of platform
+infrastructure. Both wiki pages name that error instead.
 
 **Affects:** the Spring Boot integration primarily, the Quarkus one for the wording.
