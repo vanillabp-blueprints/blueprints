@@ -42,6 +42,13 @@ Workflow aggregate 'blueprint.workflowmodule.loanapproval.model.Aggregate' (BPMN
 the TransactionRunner bean 'unitOfWork' of the application
 ```
 
+**VanillaBP may ask the unit of work to run something right before it commits.** A remote BPMS
+is asked in phase one whether an operation still makes sense - is the task still there - and that
+answer can go stale before VanillaBP acts on it, so the adapter hands the check to the runner of
+the aggregate. `TransactionRunner#beforeCommit` has a default which runs the check immediately,
+which is what this blueprint's `UnitOfWork` uses: correct, with a window as wide as it was before.
+A unit of work with its own pre-commit hook implements the method and registers the check there.
+
 **The three stores enlist in that unit of work**, and that is the part which is easy to get
 wrong. A write goes into a buffer of the running unit of work and reaches the store itself when
 that unit of work commits. Writing straight into the map would look correct until the first
