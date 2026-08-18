@@ -112,15 +112,15 @@ that reliable rather than lucky.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                        File                        |                                        What is different                                        |
-|----------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `.../loanapproval/model/AggregateRepository.java`  | deleted. There is no repository, and nothing replaces it                                        |
-| `.../loanapproval/model/Aggregate.java`            | extends `PanacheEntityBase` and carries the one finder the application needs, `byId`            |
-| `.../loanapproval/Service.java`                    | injects no repository; the reading method calls `Aggregate.byId` inside its own transaction     |
-| `.../credithistory/`                               | the second use case, the same four classes, with an aggregate extending `PanacheMongoEntityBase` |
-| `loan-approval/pom.xml`                            | both Panache flavours, because the module has an aggregate of each                               |
-| `application/src/main/resources/application.yaml`  | a MongoDB database next to the data source, and no connection string, so the dev services run one |
-| `loan-approval/src/test/.../*IT.java`              | read through the aggregates' own finders, and assert that a workflow started remotely keeps its aggregate |
+|                       File                        |                                             What is different                                             |
+|---------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| `.../loanapproval/model/AggregateRepository.java` | deleted. There is no repository, and nothing replaces it                                                  |
+| `.../loanapproval/model/Aggregate.java`           | extends `PanacheEntityBase` and carries the one finder the application needs, `byId`                      |
+| `.../loanapproval/Service.java`                   | injects no repository; the reading method calls `Aggregate.byId` inside its own transaction               |
+| `.../credithistory/`                              | the second use case, the same four classes, with an aggregate extending `PanacheMongoEntityBase`          |
+| `loan-approval/pom.xml`                           | both Panache flavours, because the module has an aggregate of each                                        |
+| `application/src/main/resources/application.yaml` | a MongoDB database next to the data source, and no connection string, so the dev services run one         |
+| `loan-approval/src/test/.../*IT.java`             | read through the aggregates' own finders, and assert that a workflow started remotely keeps its aggregate |
 
 Everything else is the base blueprint, file for file: the wiring classes, the API, the module's
 own configuration, the test harness.
@@ -195,18 +195,18 @@ wrote. The two URLs behave identically, and the databases behind them do not.
 
 ## How it works
 
-|                                          File                                          |                                              Role                                               |
-|----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `.../loanapproval/model/Aggregate.java`                                                | the JPA entity which is also its own persistence, plus the finder `byId`                        |
-| `.../credithistory/model/Aggregate.java`                                               | the MongoDB document which is also its own persistence, plus the finder `byId`                  |
-| `.../loanapproval/Service.java`, `.../credithistory/Service.java`                      | the business code; the reading methods own the transaction the finders need                     |
-| `.../<usecase>/Workflow.java`                                                          | what the application tells the process; the only class using `ProcessService`                   |
-| `.../<usecase>/WorkflowTaskHandler.java`                                               | what the process tells the application: `@WorkflowService`, `@WorkflowTask`, calls `Service`    |
-| `.../<usecase>/ApiController.java`                                                     | the GET endpoints operating the process                                                         |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/*.bpmn`             | the two processes: start event, service task, end event                                         |
-| `loan-approval/src/test/.../LoanApprovalIT.java`, `.../CreditHistoryIT.java`           | start real workflows, read the aggregates statically, and cover the remote start                |
-| `loan-approval/src/test/.../WorkflowModuleTest.java`                                   | the base class they inherit from: a fresh transaction per poll, identical in every blueprint    |
-| `application/src/main/resources/application.yaml`                                      | the two databases, and nothing about the workflows or their persistence                         |
+|                                     File                                     |                                             Role                                             |
+|------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| `.../loanapproval/model/Aggregate.java`                                      | the JPA entity which is also its own persistence, plus the finder `byId`                     |
+| `.../credithistory/model/Aggregate.java`                                     | the MongoDB document which is also its own persistence, plus the finder `byId`               |
+| `.../loanapproval/Service.java`, `.../credithistory/Service.java`            | the business code; the reading methods own the transaction the finders need                  |
+| `.../<usecase>/Workflow.java`                                                | what the application tells the process; the only class using `ProcessService`                |
+| `.../<usecase>/WorkflowTaskHandler.java`                                     | what the process tells the application: `@WorkflowService`, `@WorkflowTask`, calls `Service` |
+| `.../<usecase>/ApiController.java`                                           | the GET endpoints operating the process                                                      |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/*.bpmn`   | the two processes: start event, service task, end event                                      |
+| `loan-approval/src/test/.../LoanApprovalIT.java`, `.../CreditHistoryIT.java` | start real workflows, read the aggregates statically, and cover the remote start             |
+| `loan-approval/src/test/.../WorkflowModuleTest.java`                         | the base class they inherit from: a fresh transaction per poll, identical in every blueprint |
+| `application/src/main/resources/application.yaml`                            | the two databases, and nothing about the workflows or their persistence                      |
 
 What happens when a loan is requested is the same as in the base blueprint, except for who
 touches the database. `Service#initiateLoanApproval` builds the aggregate and tells `Workflow`

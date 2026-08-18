@@ -46,25 +46,25 @@ application only says something about that where it brought the persistence itse
 | `loan-approval/src/main/java/.../credithistory/model/Aggregate.java`                       | extends `PanacheMongoEntityBase`, natural ID as `@BsonId`, plus `byId`. The second use case, stored in MongoDB                 |
 | `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `getLoanApproval` calls `Aggregate.byId` and carries the `@Transactional` the finder needs; the task path carries none         |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | reads through `Aggregate::byId` and asserts that a workflow started on a remote engine keeps its aggregate                     |
-| `loan-approval/src/test/java/.../CreditHistoryIT.java`                                     | the same two assertions for the aggregate MongoDB stores                                                                      |
+| `loan-approval/src/test/java/.../CreditHistoryIT.java`                                     | the same two assertions for the aggregate MongoDB stores                                                                       |
 | `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the process, one service task. Unchanged from the base blueprint                                                               |
 
 ## Boilerplate files
 
-|                                  File                                   |                                                       Purpose                                                        |
-|-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                              | the BPMS profiles, the Quarkus BOM and the VanillaBP BOM import                                                      |
-| `loan-approval/pom.xml`                                                 | `vanillabp-quarkus-support`, both Panache flavours and the index of the module's classes, never an adapter           |
-| `application/pom.xml`                                                   | `vanillabp-quarkus-integration` and the BPMS adapter, the only place a BPMS is named                                 |
-| `application/src/main/resources/application.yaml`                       | the two databases, and nothing about the workflows or their persistence                                              |
-| `loan-approval/src/test/resources/application.yaml`                     | the database of the module's own test                                                                                |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`     | the module's own configuration, loaded by its file name                                                              |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`               | base class of the integration test: a fresh transaction per poll                                                     |
-| `application/src/test/java/.../ApplicationSmokeTest.java`               | boots the application, which validates the BPMN-to-code wiring                                                       |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`            | what the application tells the process; the only class using `ProcessService`                                        |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java` | what the process tells the application; contains no business logic                                                   |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java`       | GET endpoints operating the process                                                                                  |
-| `docs/loan_approval.png`, `docs/credit_history.png`                     | the pictures of the processes the README shows, rendered from the BPMN models                                        |
+|                                  File                                   |                                                  Purpose                                                   |
+|-------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                              | the BPMS profiles, the Quarkus BOM and the VanillaBP BOM import                                            |
+| `loan-approval/pom.xml`                                                 | `vanillabp-quarkus-support`, both Panache flavours and the index of the module's classes, never an adapter |
+| `application/pom.xml`                                                   | `vanillabp-quarkus-integration` and the BPMS adapter, the only place a BPMS is named                       |
+| `application/src/main/resources/application.yaml`                       | the two databases, and nothing about the workflows or their persistence                                    |
+| `loan-approval/src/test/resources/application.yaml`                     | the database of the module's own test                                                                      |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`     | the module's own configuration, loaded by its file name                                                    |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`               | base class of the integration test: a fresh transaction per poll                                           |
+| `application/src/test/java/.../ApplicationSmokeTest.java`               | boots the application, which validates the BPMN-to-code wiring                                             |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`            | what the application tells the process; the only class using `ProcessService`                              |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java` | what the process tells the application; contains no business logic                                         |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java`       | GET endpoints operating the process                                                                        |
+| `docs/loan_approval.png`, `docs/credit_history.png`                     | the pictures of the processes the README shows, rendered from the BPMN models                              |
 
 `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint - copy them
 unchanged. Every test class carries `@QuarkusTest` itself; inheriting it from the base class is
@@ -109,10 +109,10 @@ extending `WorkflowModuleTest`, never into the base class.
    engine's state and the aggregate commit separately, even on the embedded engine, and the
    phase-two outbox is what holds them together.
 10. Copy `LoanApprovalIT` and `CreditHistoryIT`, including
-   `theStartedWorkflowKeepsItsAggregate`. Starting a workflow on a remote BPMS finishes on a
-   thread of VanillaBP, where no class of the application is on the stack; that this works
-   without a repository is the assertion which matters here, and only `-Pcamunda8` exercises
-   it.
+    `theStartedWorkflowKeepsItsAggregate`. Starting a workflow on a remote BPMS finishes on a
+    thread of VanillaBP, where no class of the application is on the stack; that this works
+    without a repository is the assertion which matters here, and only `-Pcamunda8` exercises
+    it.
 
 Two branches of one workflow writing the same aggregate is the same problem here as with a
 repository. It is
