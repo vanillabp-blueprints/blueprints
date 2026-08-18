@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  */
 @Slf4j
-@org.springframework.stereotype.Service("loanRepaymentService")
+@org.springframework.stereotype.Service
 public class Service {
 
   @Autowired

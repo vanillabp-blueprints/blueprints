@@ -31,7 +31,9 @@ Names this blueprint adds, because it has more than one of everything:
 
 1. A workflow module makes its own classes visible. The index (`jandex-maven-plugin`) is
    what a JAR needs for its beans to exist; the marker file alone only makes the module and
-   its resources known.
+   its resources known. There is nothing else to contribute: beans are resolved by type, and
+   a module which has to build an object itself writes a `@Produces` method, with
+   `@DefaultBean` where an application should be able to replace it.
 2. Everything two modules share a namespace in has to be named per module: Java package,
    resource directory, bean names, JPA entity name, REST path, and the identifiers the BPMS
    sees (`name-clash-avoidance`).

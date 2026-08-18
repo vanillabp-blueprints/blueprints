@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  */
 @Slf4j
-@RestController("loanApprovalApiController")
+@RestController
 @RequestMapping("/api/loan-approval")
 public class ApiController {
 

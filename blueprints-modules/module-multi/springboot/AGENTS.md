@@ -41,16 +41,18 @@ Names this blueprint adds, because it has more than one of everything:
 
 ## Core files
 
-|                                       File                                        |                                                    Why it matters                                                     |
-|-----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/java/.../loanapproval/LoanApprovalAutoConfiguration.java` | the recipe: `@ComponentScan`, `@EntityScan`, `@EnableJpaRepositories`, `@EnableConfigurationProperties`               |
-| `loan-approval/src/main/resources/META-INF/spring/...AutoConfiguration.imports`   | the one line which turns that class into an auto-configuration Spring Boot reads from the JAR                         |
-| `loan-repayment/...`                                                              | the same module structure a second time; the copy is the point, there is no shared base class                         |
-| `banking-commons/src/main/java/blueprint/commons/*.java`                          | the shared library and its own auto-configuration; `@ConditionalOnMissingBean` lets an application replace the client |
-| `application/src/main/java/blueprint/application/Application.java`                | empty on purpose, and in a package which does not cover the modules                                                   |
-| `application/src/main/resources/application-camunda7.yaml`                        | `name-clash-avoidance: use-prefix`, the setting that keeps two modules apart inside the engine                        |
-| `application/src/test/java/.../ApplicationSmokeTest.java`                         | counts the modules: one `ProcessService` bean per module, not "at least one"                                          |
-| `application/src/test/java/.../ModuleConfigurationPerProfileIT.java`              | proves `loan-approval-test.yaml` wins over `loan-approval.yaml` while the profile is active                           |
+|                                          File                                          |                                                                           Why it matters                                                                           |
+|----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/java/.../loanapproval/LoanApprovalAutoConfiguration.java`      | the recipe: `@ComponentScan`, `@EntityScan`, `@EnableJpaRepositories`, `@EnableConfigurationProperties`, each scan naming its beans through the module's generator |
+| `banking-commons/src/main/java/blueprint/commons/WorkflowModuleBeanNameGenerator.java` | names a module's beans `<module-id>_<SimpleName>`; each module adds the one line saying which module it is                                                         |
+| `loan-approval/src/test/java/.../ModuleTestApplication.java`                           | the module's own test boots it through its auto-configuration, without a scan, the way a consumer does                                                             |
+| `loan-approval/src/main/resources/META-INF/spring/...AutoConfiguration.imports`        | the one line which turns that class into an auto-configuration Spring Boot reads from the JAR                                                                      |
+| `loan-repayment/...`                                                                   | the same module structure a second time; the copy is the point, there is no shared base class                                                                      |
+| `banking-commons/src/main/java/blueprint/commons/*.java`                               | the shared library and its own auto-configuration; `@ConditionalOnMissingBean` lets an application replace the client                                              |
+| `application/src/main/java/blueprint/application/Application.java`                     | empty on purpose, and in a package which does not cover the modules                                                                                                |
+| `application/src/main/resources/application-camunda7.yaml`                             | `name-clash-avoidance: use-prefix`, the setting that keeps two modules apart inside the engine                                                                     |
+| `application/src/test/java/.../BeanNamesPerModuleIT.java`                              | the beans are called `loan-approval_Service` and `loan-repayment_Service`, and a fallback to the default names fails here                                          |
+| `application/src/test/java/.../ModuleConfigurationPerProfileIT.java`                   | proves `loan-approval-test.yaml` wins over `loan-approval.yaml` while the profile is active                                                                        |
 
 ## Boilerplate files
 
@@ -66,10 +68,11 @@ Names this blueprint adds, because it has more than one of everything:
 | `loan-approval/src/test/java/.../TestApplication.java`              | the minimal application a module test boots, identical in every blueprint                    |
 | `docs/loan_approval.png`, `docs/loan_repayment.png`                 | the pictures of the two processes the README shows, rendered from the BPMN models            |
 
-`WorkflowModuleTest` and `TestApplication` are identical in every blueprint - copy them
-unchanged, once per workflow module. The application's tests live next to the application
-class here, because its package is no longer above the modules and a `@SpringBootTest` finds
-its configuration by walking up from its own package.
+`WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint - copy them
+unchanged. The application's tests live next to the application class here, because its
+package is no longer above the modules and a `@SpringBootTest` finds its configuration by
+walking up from its own package. `ModuleTestApplication` replaces the shared
+`TestApplication` of the other blueprints, and the reason is in its Javadoc.
 
 ## Adding this blueprint to an existing project
 
@@ -82,14 +85,18 @@ its configuration by walking up from its own package.
    it the beans of a module are only found while the application's package happens to sit
    above it, which is exactly the accident that stops working when the module is published.
 4. Rename what collides, and expect the compiler to stay silent about all of it:
-   - bean names: `@RestController("loanApprovalApiController")` and the same for the service,
-     the workflow and the task handler. Otherwise the boot ends with *conflicts with existing,
-     non-compatible bean definition*.
-   - repositories: `@EnableJpaRepositories(nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)`
-     in the auto-configuration, or the second `AggregateRepository` ends the boot the same way.
+   - bean names: give the module a `BeanNameGenerator` producing `<module-id>_<SimpleName>`
+     and hand it to `@ComponentScan(nameGenerator = ...)` and
+     `@EnableJpaRepositories(nameGenerator = ...)`. Otherwise the boot ends with *conflicts
+     with existing, non-compatible bean definition* for the classes every use case has, and
+     with a `BeanDefinitionOverrideException` for the repositories.
    - JPA entities: `@Entity(name = "LoanRepayment")`, because one persistence unit cannot hold
      two entities called `Aggregate`.
    - REST paths, one per module.
+   - do not mix the two ways of wiring one module: a test application which scans the module
+     while its auto-configuration registers the same beans under generated names ends in an
+     ambiguous mapping. The module's own test therefore boots it through the
+     auto-configuration, which is what a consumer does anyway.
 5. Decide how the BPMS keeps the identifiers apart, in the application's configuration:
    `vanillabp.adapters.<id>.name-clash-avoidance` with `use-prefix`, `by-adapter` or `none`.
    Decide it before the first workflow runs - changing it later is a migration, because
@@ -99,8 +106,8 @@ its configuration by walking up from its own package.
 7. Give each module its configuration per environment as `<module-id>-<profile>.yaml` next to
    `<module-id>.yaml`. The profile is part of the file name;
    `spring.config.activate.on-profile` inside such a file does nothing.
-8. Extend the application's smoke test to count the modules. "At least one `ProcessService`"
-   passes with a forgotten module.
+8. Keep the shared smoke test: it holds every workflow module declaring itself on the
+   classpath against the ones VanillaBP wired, so a forgotten module fails it.
 
 ## Verifying
 

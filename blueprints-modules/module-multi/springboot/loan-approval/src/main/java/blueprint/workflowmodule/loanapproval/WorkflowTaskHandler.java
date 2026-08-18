@@ -45,7 +45,7 @@ import io.vanillabp.spi.service.WorkflowTask;
  *
  * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-task">Wire up a task</a>
  */
-@Component("loanApprovalWorkflowTaskHandler")
+@Component
 @WorkflowService(
     workflowAggregateClass = Aggregate.class,
     bpmnProcess = @BpmnProcess(bpmnProcessId = "loan_approval"))

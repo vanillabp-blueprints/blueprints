@@ -4,7 +4,6 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import blueprint.workflowmodule.loanapproval.config.LoanApprovalProperties;
@@ -21,11 +20,12 @@ import blueprint.workflowmodule.loanapproval.config.LoanApprovalProperties;
  * </p>
  *
  * <ul>
- * <li>{@code @ComponentScan} for its beans - the service, the wiring classes, the API. It
- * names them by their fully qualified class name, which is not decoration: every use case
- * of the reference structure has a class called {@code Service} and one called
- * {@code ApiController}, so two modules in one application would otherwise fight over the
- * bean name {@code apiController} and the second one to be scanned ends the boot,</li>
+ * <li>{@code @ComponentScan} for its beans - the service, the wiring classes, the API -
+ * named {@code loan-approval_<SimpleName>} by {@link LoanApprovalBeanNames}. That is not
+ * decoration: every use case of the reference structure has a class called {@code Service}
+ * and one called {@code ApiController}, so two modules in one application would otherwise
+ * fight over the bean name {@code apiController} and the second one to be registered ends
+ * the boot,</li>
  * <li>{@code @EntityScan} and {@code @EnableJpaRepositories} for its aggregate and the
  * repository reading it,</li>
  * <li>{@code @EnableConfigurationProperties} for the properties class fed from
@@ -46,11 +46,12 @@ import blueprint.workflowmodule.loanapproval.config.LoanApprovalProperties;
  * behind it is not. That is why the failure names a missing bean rather than a missing
  * module.
  * </p>
+
  */
 @AutoConfiguration
-@ComponentScan
+@ComponentScan(nameGenerator = LoanApprovalBeanNames.class)
 @EntityScan
-@EnableJpaRepositories(nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@EnableJpaRepositories(nameGenerator = LoanApprovalBeanNames.class)
 @EnableConfigurationProperties(LoanApprovalProperties.class)
 public class LoanApprovalAutoConfiguration {
 }

@@ -34,9 +34,9 @@ So each module brings an auto-configuration:
 
 ```java
 @AutoConfiguration
-@ComponentScan
+@ComponentScan(nameGenerator = LoanApprovalBeanNames.class)
 @EntityScan
-@EnableJpaRepositories(nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@EnableJpaRepositories(nameGenerator = LoanApprovalBeanNames.class)
 @EnableConfigurationProperties(LoanApprovalProperties.class)
 public class LoanApprovalAutoConfiguration {
 }
@@ -58,6 +58,12 @@ and its BPMN is deployed; the beans behind it are not. The application then fail
 wiring a task to the method implementing it, and the message names a missing bean rather
 than a missing module.
 
+**The module's own test boots it the same way.** `ModuleTestApplication` is a
+`@SpringBootConfiguration` with `@EnableAutoConfiguration` and no component scan at all: the
+module is wired by its auto-configuration, exactly as in an application which consumes it. A
+scan there would test a wiring nobody uses, and it would register every bean twice, once
+under the scanned name and once under the generated one.
+
 ### Two modules, one classpath, one engine
 
 Nothing isolates two workflow modules from each other. They share a classpath, a database, an
@@ -70,10 +76,14 @@ where that bites:
   collides in this one, which is why the rule exists before it hurts.
 - **Bean names.** Every use case of the reference structure has a class called `Service` and
   one called `ApiController`, and Spring names a bean after its class. The second module to
-  be scanned then ends the boot with *conflicts with existing, non-compatible bean
-  definition*. Each module therefore names its beans:
-  `@RestController("loanApprovalApiController")`. The repositories are the same problem,
-  solved in one place by the name generator in the auto-configuration above.
+  be registered then ends the boot with *conflicts with existing, non-compatible bean
+  definition*, a message about a name nobody wrote. Each module therefore generates its bean
+  names as `<module-id>_<SimpleName>`, so they read `loan-approval_Service` and
+  `loan-repayment_Service`. It is one class per module saying which module it is
+  (`LoanApprovalBeanNames`), it covers the repositories through the same generator, and it
+  is what a stack trace or an actuator listing shows from then on. `BeanNamesPerModuleIT`
+  keeps it that way, because falling back to the default names works until somebody adds a
+  third module.
 - **JPA entities.** Both aggregates are called `Aggregate`, and one persistence unit cannot
   hold two entities of that name: `@Entity(name = "LoanRepayment")` gives the second one a
   name of its own, and the tables differ anyway.

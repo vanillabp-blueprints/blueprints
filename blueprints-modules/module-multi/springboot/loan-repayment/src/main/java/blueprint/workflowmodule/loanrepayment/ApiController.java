@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  */
 @Slf4j
-@RestController("loanRepaymentApiController")
+@RestController
 @RequestMapping("/api/loan-repayment")
 public class ApiController {
 

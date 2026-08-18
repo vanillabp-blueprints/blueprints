@@ -47,6 +47,31 @@ so its BPMN files are deployed; the classes are not found, so the process has no
 `@WorkflowService` behind it and the build ends there. A module which is only resources
 therefore needs no index at all, and one with classes always does.
 
+**And that is all a module contributes.** There is no configuration class collecting the
+beans of a module: a bean is a class with a scope annotation, the index makes it visible, and
+injection resolves it by type, so two modules with a class called `Service` each never notice
+one another. Where a module has to build something itself rather than let the container do
+it - a client which needs a configured URL, an object from a library which carries no
+annotations - it writes a producer:
+
+```java
+@ApplicationScoped
+public class LoanApprovalProducers {
+
+  @Produces
+  @ApplicationScoped
+  public RatingClient ratingClient(final LoanApprovalProperties properties) {
+    return new RatingClient(properties.ratingProvider());
+  }
+
+}
+```
+
+Add `@DefaultBean` to such a producer and an application which brings its own bean of that
+type wins over it. Anything beyond that - contributing at build time rather than at runtime,
+adding build steps, generating classes - is what a Quarkus extension is for, and a workflow
+module is not one.
+
 ### Two modules, one classpath, one engine
 
 Nothing isolates two workflow modules from each other. They share a classpath, a database, an
