@@ -923,3 +923,34 @@ have to live in a workflow module's dependency, and a workflow module stays free
 infrastructure. Both wiki pages name that error instead.
 
 **Affects:** the Spring Boot integration primarily, the Quarkus one for the wording.
+
+## G20: how a workflow module is published for Spring Boot is nowhere written down
+
+**Status:** open, story `83` (2026-08-18), found the same day while writing the prompt for
+`module-multi`. A documentation gap, and it blocks a blueprint from following the rules.
+
+**What is missing.** On Spring Boot a workflow module which somebody else consumes has to bring
+its own wiring: an `@AutoConfiguration` class registered through
+`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`, which
+contributes the module's beans, its entities and repositories, its properties class and whatever
+else only the module can know. That is how it is done in practice, and it is the reason an
+application can compose a runtime out of modules it only gets as dependencies.
+
+The wiki does not mention it. `Workflow-modules-in-Spring-Boot` explains the marker file, the
+namespaces and the configuration files, and stops where the interesting part begins: the
+application's component scan starts at the application's package, so a module in a package of its
+own is invisible to it unless the module says otherwise.
+
+**Why it matters here.** A blueprint links the reference documentation instead of repeating it.
+For `module-multi` and `module-packaging` there is nothing to link, so either the READMEs grow an
+explanation which belongs in the wiki, or the blueprints teach less than they should. The
+counterpart on Quarkus is documented (the Jandex index, and the marker file being enough for a
+module of resources), which makes the gap look like an oversight rather than a decision.
+
+**What would fix it.** A section in `Workflow-modules-in-Spring-Boot` naming the recipe: what the
+auto-configuration contributes, where it is registered, what happens without it (the symptoms:
+beans not found, entities not mapped, repositories missing), and the fallback for a module which
+does not bring one (`@ComponentScan`, `@EntityScan`, `@EnableJpaRepositories` in the application,
+with the note that the application then knows things about a module it should not).
+
+**Affects:** the wiki of `adapter-platform-integration`, Spring Boot side.
