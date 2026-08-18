@@ -4,7 +4,7 @@
 # people deciding whether a difference is the platform or a mistake.
 
 31120fb94c65de07  only-springboot  application/src/main/java/blueprint/workflowmodule/Application.java  # one platform boots from a class of the application, the other one needs none
-366cef90822fce66  differs  application/src/test/java/blueprint/workflowmodule/ApplicationSmokeTest.java  # asking the bean container whether a ProcessService exists is done in the container's own words
+9fb1f8af132dae40  differs  application/src/test/java/blueprint/workflowmodule/ApplicationSmokeTest.java  # asking the bean container whether a ProcessService exists is done in the container's own words
 012be2cf64e3c292  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/ApiController.java  # the same GET endpoints, written with the HTTP annotations of the platform
 470b821948dcd2b2  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/LocalPartnerApprovalClient.java  # bean and injection annotations, and the configuration read the way this platform binds it
 44edc663fa68f2a6  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/Service.java  # bean and injection annotations, the configuration accessor, and the transaction reading an entity needs on Quarkus
