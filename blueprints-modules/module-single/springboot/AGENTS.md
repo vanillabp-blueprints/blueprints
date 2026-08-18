@@ -75,7 +75,8 @@ extending `WorkflowModuleTest`, never into the base class.
    module already exists, use it and skip to step 3.
 2. Add `io.vanillabp:vanillabp-spring-boot-support` to that module and one BPMS adapter to
    the application module. Import `io.vanillabp:vanillabp-bom` in the parent POM and omit
-   the version of every VanillaBP dependency.
+   the version of every VanillaBP dependency. The BPMS adapters are the exception: they
+   are released independently of the platform, so each of them names its own version.
 3. Put the BPMN file into `src/main/resources/<workflow-module-id>/processes/<adapter-id>/`.
    The adapter ID is the configured one, which defaults to the adapter type.
 4. Add the workflow aggregate as a JPA entity with the natural ID as `@Id`, plus a Spring

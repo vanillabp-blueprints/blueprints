@@ -77,7 +77,8 @@ itself; inheriting it from the base class is not enough to make the test a bean.
 2. Add `io.vanillabp:vanillabp-quarkus-support` and the `jandex-maven-plugin` to that module,
    and `io.vanillabp:vanillabp-quarkus-integration` plus one BPMS adapter to the application
    module. Import `io.vanillabp:vanillabp-bom` in the parent POM next to the Quarkus BOM and
-   omit the version of every VanillaBP dependency. Without the index the module's
+   omit the version of every VanillaBP dependency. The BPMS adapters are the exception:
+   they are released independently of the platform, so each names its own version. Without the index the module's
    `@WorkflowService` class is never found.
 3. Put the BPMN file into `src/main/resources/<workflow-module-id>/processes/<adapter-id>/`.
    The adapter ID is the configured one, which defaults to the adapter type.
