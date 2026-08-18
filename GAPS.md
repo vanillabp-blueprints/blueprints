@@ -926,8 +926,12 @@ infrastructure. Both wiki pages name that error instead.
 
 ## G20: how a workflow module is published for Spring Boot is nowhere written down
 
-**Status:** open, story `83` (2026-08-18), found the same day while writing the prompt for
-`module-multi`. A documentation gap, and it blocks a blueprint from following the rules.
+**Status:** closed 2026-08-18 by story `83`. The wiki page `Workflow-modules-in-Spring-Boot`
+has the section *Publishing a workflow module: it brings its own wiring*, written from what
+building `module-multi` actually ran into: the auto-configuration recipe, the symptoms without
+it, the four kinds of names which collide once two modules meet in one application, and the
+fallback. The other platform page and the platform-independent page point at it. Found on
+2026-08-18 while writing the prompt for `module-multi`.
 
 **What is missing.** On Spring Boot a workflow module which somebody else consumes has to bring
 its own wiring: an `@AutoConfiguration` class registered through

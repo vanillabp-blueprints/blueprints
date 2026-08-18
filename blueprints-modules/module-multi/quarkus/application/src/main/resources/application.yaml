@@ -1,0 +1,28 @@
+# Only what is truly cross-cutting belongs here: the database both workflow modules store
+# their aggregates in, and the profile choosing the BPMS. Everything a module needs is in the
+# module's own file (loan-approval/loan-approval.yaml, loan-repayment/loan-repayment.yaml
+# inside the module JARs), and this file must not know those values exist.
+#
+# What is also not here: a word about the modules themselves. Each of them carries an index
+# of its classes, which is what makes it a JAR somebody else could publish.
+quarkus:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, and the profile
+  # files 'application-camunda7.yaml' respectively 'application-camunda8.yaml' apply from
+  # then on - whichever profile the application itself runs in, because they are its PARENT.
+  # Nobody has to name the profile twice.
+  config:
+    profile:
+      parent: "@bpms@"
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:online-banking;DB_CLOSE_DELAY=-1
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  log:
+    category:
+      "blueprint":
+        level: INFO

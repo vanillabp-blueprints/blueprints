@@ -1,0 +1,7 @@
+# Everything specific to Camunda 8, loaded only while the 'camunda8' profile applies. The
+# Maven profile of the same name makes it the parent profile of the test's own profile, and
+# CI overrides the address through the environment.
+vanillabp:
+  adapters:
+    camunda8:
+      rest-address: http://localhost:8080
