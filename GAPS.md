@@ -961,8 +961,9 @@ with the note that the application then knows things about a module it should no
 
 ## G21: a Quarkus application with two persistences has to attribute the outbox itself
 
-**Status:** open, story `84` (2026-08-18), found while adding the MongoDB use case to
-`persistence-active-record`. The blueprint is the first application with two persistences in one
+**Status:** fixed in VanillaBP 2.0.0-SNAPSHOT on 2026-08-18 (story `84`,
+[PR #49](https://github.com/vanillabp/adapter-platform-integration/pull/49)), found the same day
+while adding the MongoDB use case to `persistence-active-record`. The blueprint is the first application with two persistences in one
 workflow module: the loan approval is a Hibernate ORM Panache active record, the credit history a
 MongoDB Panache active record.
 
@@ -1003,11 +1004,16 @@ platform-side knowledge of which persistence manages an aggregate". Since story 
 true for an aggregate the application wrote an `AggregatePersistenceAware` for. Where VanillaBP
 chose the idiom, it also knows which store the aggregate's transaction reaches.
 
-**What would fix it.** The store resolved for an aggregate at build time decides its default
-outbox and its default delivery log: Hibernate ORM Panache and Spring Data lead to the JDBC ones,
-MongoDB Panache to the MongoDB ones. `PhaseTwoOutboxAware` and `TaskDeliveryLogAware` keep
-overriding, and an aggregate whose persistence the application brought itself keeps today's
-message, because there VanillaBP really cannot know.
+**How it was fixed.** `QuarkusPersistenceTechnology` reads the technology off the persistence
+VanillaBP resolved for the aggregate, and both Quarkus resolvers now attribute like their Spring
+Boot counterparts have since story 70: Hibernate ORM Panache and Spring Data lead to the JDBC
+outbox and delivery log, MongoDB Panache to the MongoDB ones. A `PhaseTwoOutboxAware` or
+`TaskDeliveryLogAware` bean still wins, an aggregate whose persistence the application brought
+itself keeps the old message - there nobody but the application knows the store - and a single
+default of the other technology ends the boot rather than writing entries next to the aggregate
+instead of into its transaction.
 
-**Affects:** `adapter-platform-integration`, Quarkus side. Blocks the MongoDB use case of
-`persistence-active-record`.
+The blueprint needs no attribution bean, which is what its README now explains, and the MongoDB use
+case of `persistence-active-record` builds and runs.
+
+**Affects:** `adapter-platform-integration`, Quarkus side.
