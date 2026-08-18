@@ -83,12 +83,10 @@ Nothing changes for the `@WorkflowTask` methods. VanillaBP owns the transaction 
 loads the aggregate before the method and saves it afterwards, so a handler declaring a
 transaction is as wrong here as everywhere else, and VanillaBP still fails the boot over it.
 
-## Two databases, and what VanillaBP does with them
-
-Three things need storage: the workflow aggregate, the phase-two outbox and the log of
-delivered tasks. The aggregate is where the application put it. The other two belong into the
-transaction which persists that aggregate, otherwise a rollback leaves an outbox entry for a
-workflow whose aggregate never existed.
+**Two databases, and what VanillaBP does with them.** Three things need storage: the workflow
+aggregate, the phase-two outbox and the log of delivered tasks. The aggregate is where the
+application put it. The other two belong into the transaction which persists that aggregate,
+otherwise a rollback leaves an outbox entry for a workflow whose aggregate never existed.
 
 In an application with two databases both defaults are active, the relational one and the
 MongoDB one, and VanillaBP attributes them the same way it resolved the persistence: the loan
