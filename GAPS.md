@@ -954,3 +954,56 @@ does not bring one (`@ComponentScan`, `@EntityScan`, `@EnableJpaRepositories` in
 with the note that the application then knows things about a module it should not).
 
 **Affects:** the wiki of `adapter-platform-integration`, Spring Boot side.
+
+## G21: a Quarkus application with two persistences has to attribute the outbox itself
+
+**Status:** open, story `84` (2026-08-18), found while adding the MongoDB use case to
+`persistence-active-record`. The blueprint is the first application with two persistences in one
+workflow module: the loan approval is a Hibernate ORM Panache active record, the credit history a
+MongoDB Panache active record.
+
+**What happens.** The application does not start. Both default outboxes are registered, because
+both a datasource and a MongoDB client are configured, and the resolver cannot attribute either of
+them to an aggregate:
+
+```
+java.lang.IllegalStateException: Several PhaseTwoOutbox beans exist ([...JdbcPhaseTwoOutbox_ClientProxy,
+...MongoPhaseTwoOutbox_ClientProxy]), but none can be attributed to workflow aggregate
+'blueprint.workflowmodule.credithistory.model.Aggregate'! Outbox entries must be enlisted in the
+transaction persisting the aggregate. To solve this either
+- provide a bean implementing io.vanillabp.integration.spi.PhaseTwoOutboxAware for this aggregate
+  (returning the outbox matching its persistence), or
+- deactivate the unwanted default outbox ('vanillabp.outbox.jdbc.enabled' / 'vanillabp.outbox.mongo.enabled').
+```
+
+It fires at startup, from `MigrationProcessService#validatePhaseTwoOutboxAtStartup`, on the
+embedded engine as well: the Camunda 7 adapter starts workflows in two phases like every other
+adapter since story 63. The log of delivered tasks has the same ambiguity, one step later.
+
+Neither remedy fits. Deactivating a default takes the store away from the other aggregate, which
+then has no outbox at all. And an attribution bean has to inject `MongoPhaseTwoOutbox` or
+`JdbcPhaseTwoOutbox`, which live in `vanillabp-quarkus-integration` - an artifact a workflow module
+must not depend on, so the beans would have to exist twice, in the application and in the test
+sources of the module.
+
+**Why it is a gap rather than a decision.** VanillaBP itself picked the persistence of both
+aggregates while the application was built, and it says so:
+
+```
+Using VanillaBP's MongoDB Panache active record persistence for workflow aggregate '...credithistory.model.Aggregate'
+Using VanillaBP's Hibernate ORM Panache active record persistence for workflow aggregate '...loanapproval.model.Aggregate'
+```
+
+The Javadoc of `QuarkusPhaseTwoOutboxResolver` explains the ambiguity with "Quarkus has no
+platform-side knowledge of which persistence manages an aggregate". Since story 69 that is only
+true for an aggregate the application wrote an `AggregatePersistenceAware` for. Where VanillaBP
+chose the idiom, it also knows which store the aggregate's transaction reaches.
+
+**What would fix it.** The store resolved for an aggregate at build time decides its default
+outbox and its default delivery log: Hibernate ORM Panache and Spring Data lead to the JDBC ones,
+MongoDB Panache to the MongoDB ones. `PhaseTwoOutboxAware` and `TaskDeliveryLogAware` keep
+overriding, and an aggregate whose persistence the application brought itself keeps today's
+message, because there VanillaBP really cannot know.
+
+**Affects:** `adapter-platform-integration`, Quarkus side. Blocks the MongoDB use case of
+`persistence-active-record`.

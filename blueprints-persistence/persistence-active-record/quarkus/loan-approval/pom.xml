@@ -30,6 +30,14 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-hibernate-orm-panache</artifactId>
     </dependency>
+    <!--
+      The second use case stores its aggregate in MongoDB, so the module brings both Panache
+      flavours. Which of them owns an aggregate is decided per aggregate, by the class itself.
+    -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-mongodb-panache</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>

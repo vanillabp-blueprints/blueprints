@@ -19,6 +19,14 @@ quarkus:
     username: sa
     jdbc:
       url: jdbc:h2:mem:loan-approval;DB_CLOSE_DELAY=-1
+  mongodb:
+    # The second aggregate lives here. Deliberately without a connection string: while
+    # developing and testing, the platform's dev services start a MongoDB and connect to it,
+    # and they run it as a replica set, which is what MongoDB transactions need. Naming an
+    # address here would switch that off.
+    #
+    #   connection-string: mongodb://localhost:27017/?replicaSet=rs0
+    database: loan-approval
   hibernate-orm:
     schema-management:
       strategy: drop-and-create

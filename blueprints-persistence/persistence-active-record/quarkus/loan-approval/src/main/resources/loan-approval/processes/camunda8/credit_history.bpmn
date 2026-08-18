@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_credit_history" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="credit_history" name="Credit history" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_CreditHistoryRequested" name="History requested">
+      <bpmn:outgoing>Flow_ToCollectHistoryEntries</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToCollectHistoryEntries" sourceRef="StartEvent_CreditHistoryRequested" targetRef="ServiceTask_CollectHistoryEntries" />
+    <!-- The job type names the task definition, which defaults to the method name of the @WorkflowTask. -->
+    <bpmn:serviceTask id="ServiceTask_CollectHistoryEntries" name="Collect history entries">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="collectHistoryEntries" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToCollectHistoryEntries</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToHistoryCollected</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToHistoryCollected" sourceRef="ServiceTask_CollectHistoryEntries" targetRef="EndEvent_HistoryCollected" />
+    <bpmn:endEvent id="EndEvent_HistoryCollected" name="History collected">
+      <bpmn:incoming>Flow_ToHistoryCollected</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="credit_history">
+      <bpmndi:BPMNShape id="StartEvent_CreditHistoryRequested_di" bpmnElement="StartEvent_CreditHistoryRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="145" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_CollectHistoryEntries_di" bpmnElement="ServiceTask_CollectHistoryEntries">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_HistoryCollected_di" bpmnElement="EndEvent_HistoryCollected">
+        <dc:Bounds x="392" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="379" y="145" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToCollectHistoryEntries_di" bpmnElement="Flow_ToCollectHistoryEntries">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToHistoryCollected_di" bpmnElement="Flow_ToHistoryCollected">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="392" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

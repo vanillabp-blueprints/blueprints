@@ -1,4 +1,4 @@
-# The configuration of the module's own test: its database, and nothing else. Where the
+# The configuration of the module's own test: its two databases, and nothing else. Where the
 # BPMN files are is a convention VanillaBP knows, on both sides of the split.
 quarkus:
   datasource:
@@ -6,6 +6,10 @@ quarkus:
     username: sa
     jdbc:
       url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
+  mongodb:
+    # No connection string: the platform's dev services start a MongoDB for the test and run
+    # it as a replica set, which is what MongoDB transactions need.
+    database: loan-approval-test
   hibernate-orm:
     schema-management:
       strategy: drop-and-create
