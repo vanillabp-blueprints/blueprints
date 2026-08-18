@@ -99,7 +99,13 @@ jobs:
         run: bin/camunda8_cluster.sh stop
 
   # The aggregator adds what a single blueprint does not see: Spotless over the whole
-  # repository, and every blueprint built together.
+  # repository, and every blueprint compiled and packaged together.
+  #
+  # It does NOT run the tests. Those belong to the matrix above, which gives each blueprint the
+  # infrastructure it needs - a Camunda 8 cluster where the blueprint runs on that engine, and
+  # a MongoDB where it stores its aggregates there. Running them here as well would need every
+  # blueprint's infrastructure at once and would test a second time what the matrix already
+  # tested.
   monorepo:
     runs-on: ubuntu-latest
     steps:
@@ -111,7 +117,7 @@ jobs:
           cache: maven
       - name: Build every blueprint through the aggregator
         run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
-          --batch-mode --no-transfer-progress --update-snapshots install verify
+          --batch-mode --no-transfer-progress --update-snapshots -DskipTests install
 
   # One name that never changes, so branch protection has something to require and
   # Renovate has something to wait for. The matrix above is generated from the
