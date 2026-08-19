@@ -1,0 +1,7 @@
+# Configuration of the workflow module 'loan-approval' for the 'prod' profile.
+#
+# The environment a module runs in is the module's own business, so the values live here
+# rather than in the application. What does not belong here is anything secret: passwords
+# and tokens come from the environment, not from a JAR.
+loan-approval:
+  rating-provider: schufa

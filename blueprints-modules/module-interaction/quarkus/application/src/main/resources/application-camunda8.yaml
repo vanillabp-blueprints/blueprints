@@ -1,0 +1,14 @@
+# Everything specific to Camunda 8, loaded only while the 'camunda8' profile applies. The
+# Maven profile of the same name makes it the parent profile, so the BPMS is chosen once.
+vanillabp:
+  adapters:
+    camunda8:
+      # Camunda 8 is a remote engine: point this at your cluster.
+      rest-address: http://localhost:8080
+      # With two workflow modules the identifiers they use are no longer guaranteed to be
+      # unique: both could name a process 'loan_approval' without either of them knowing.
+      # VanillaBP prefixes them with the module id before they reach the engine and strips
+      # the prefix off again on the way back, so the BPMN files, the business code and this
+      # configuration keep using the plain names. Prefixing needs no tenant, which matters on
+      # a BPMS licensed per tenant - the other modes are in the README.
+      name-clash-avoidance: use-prefix

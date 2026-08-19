@@ -1,0 +1,12 @@
+# Everything specific to Camunda 7, loaded only while the 'camunda7' profile applies. The
+# Maven profile of the same name activates it, so the BPMS is chosen once.
+vanillabp:
+  adapters:
+    camunda7:
+      # With two workflow modules the identifiers they use are no longer guaranteed to be
+      # unique: both could name a process 'loan_approval' without either of them knowing.
+      # VanillaBP prefixes them with the module id before they reach the engine and strips
+      # the prefix off again on the way back, so the BPMN files, the business code and this
+      # configuration keep using the plain names. The other two modes, and why changing the
+      # mode later is a migration, are in the README.
+      name-clash-avoidance: use-prefix

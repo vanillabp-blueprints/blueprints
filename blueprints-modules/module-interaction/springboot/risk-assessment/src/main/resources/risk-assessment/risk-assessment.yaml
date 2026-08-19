@@ -1,0 +1,6 @@
+# Configuration of the workflow module 'risk-assessment'.
+#
+# Named after this module's ID, loaded automatically, and independent of what the other
+# module in the same application configures. Two modules, two files, no negotiation.
+risk-assessment:
+  score-limit: 100

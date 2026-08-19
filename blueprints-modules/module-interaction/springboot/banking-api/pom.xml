@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-interaction-springboot</groupId>
+    <artifactId>module-interaction</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>banking-api</artifactId>
+  <name>API 'banking-api'</name>
+  <description>What one workflow module offers another: an interface for the request, an event for the answer. No aggregate, no BPMN, no process.</description>
+
+  <dependencies>
+    <!--
+      An API shared by workflow modules knows nothing about VanillaBP and nothing about a
+      BPMS. What it needs is the ability to declare a bean name generator, nothing more.
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <!-- The logging facade, which the library uses and the application brings an implementation for. -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+</project>

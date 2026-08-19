@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-interaction-quarkus</groupId>
+    <artifactId>module-interaction</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>banking-api</artifactId>
+  <name>API 'banking-api'</name>
+  <description>What one workflow module offers another: an interface for the request, an event for the answer. No aggregate, no BPMN, no process.</description>
+
+  <dependencies>
+    <!--
+      An API shared by workflow modules knows nothing about VanillaBP and nothing about a
+      BPMS. Even the bean container is barely needed: what crosses the border is an interface
+      and a record.
+    -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-arc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        A JAR of its own is not scanned by the application's build, so its classes are
+        invisible without an index - the same reason a workflow module needs one. The event
+        travels through the bean container, which has to know its type.
+      -->
+      <plugin>
+        <groupId>io.smallrye</groupId>
+        <artifactId>jandex-maven-plugin</artifactId>
+        <version>${jandex-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>make-index</id>
+            <goals>
+              <goal>jandex</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_risk_assessment" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="risk_assessment" name="Risk assessment" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_AssessmentRequested" name="Assessment requested">
+      <bpmn:outgoing>Flow_ToEvaluateRisk</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToEvaluateRisk" sourceRef="StartEvent_AssessmentRequested" targetRef="ServiceTask_EvaluateRisk" />
+    <!-- The work this module was asked for. -->
+    <bpmn:serviceTask id="ServiceTask_EvaluateRisk" name="Evaluate risk">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="evaluateRisk" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToEvaluateRisk</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToPublishAssessment</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToPublishAssessment" sourceRef="ServiceTask_EvaluateRisk" targetRef="ServiceTask_PublishAssessment" />
+    <!-- The answer leaves this module here, and it is a task of this process so that the model shows where that happens. Who listens is not modelled: this module does not know its callers. -->
+    <bpmn:serviceTask id="ServiceTask_PublishAssessment" name="Publish assessment">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="publishAssessment" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToPublishAssessment</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToAssessmentDone</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToAssessmentDone" sourceRef="ServiceTask_PublishAssessment" targetRef="EndEvent_AssessmentDone" />
+    <bpmn:endEvent id="EndEvent_AssessmentDone" name="Assessment done">
+      <bpmn:incoming>Flow_ToAssessmentDone</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="risk_assessment">
+      <bpmndi:BPMNShape id="StartEvent_AssessmentRequested_di" bpmnElement="StartEvent_AssessmentRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="145" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_EvaluateRisk_di" bpmnElement="ServiceTask_EvaluateRisk">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_PublishAssessment_di" bpmnElement="ServiceTask_PublishAssessment">
+        <dc:Bounds x="400" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_AssessmentDone_di" bpmnElement="EndEvent_AssessmentDone">
+        <dc:Bounds x="562" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="544" y="145" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToEvaluateRisk_di" bpmnElement="Flow_ToEvaluateRisk">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToPublishAssessment_di" bpmnElement="Flow_ToPublishAssessment">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="400" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToAssessmentDone_di" bpmnElement="Flow_ToAssessmentDone">
+        <di:waypoint x="500" y="120" />
+        <di:waypoint x="562" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
