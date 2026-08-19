@@ -32,6 +32,13 @@ What is worth looking at:
   `loan-approval.yaml`. Keeping it separate is still worth it: it says what a second
   application reusing this use case would have to bring along, and what belongs to this
   deployment.
+
+  If you are certain that this use case will never be split into a Maven module of its own,
+  drop the file and move its `loan-approval:` block into `application.yaml`. Nothing else
+  changes: the properties keep their names, `LoanApprovalProperties` keeps reading them, and
+  the only thing given up is the line between what the module needs and what the deployment
+  provides.
+
 - **Nothing else changes.** Same packages, same four classes per direction of the BPMN
   wiring, same aggregate, same tests. There is not even an index to build here: the classes
   belong to the artifact the build processes anyway, which is what a workflow module in a
