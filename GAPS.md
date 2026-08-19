@@ -1080,7 +1080,16 @@ Quarkus application without MongoDB, and with it the delivery section of `module
 
 ## G23: handing VanillaBP's tables over forces an application to write gruelbox's DDL as well
 
-**Status:** open, story `95` (`prompts/ROADMAP.md`), found on 2026-08-19 while building
+**Status:** half closed on 2026-08-19 by story `95`, which took option 2 below: gruelbox stays, its
+DDL stays the application's job, and the silence is gone. The Spring Boot integration now verifies at
+startup that the outbox table exists whenever gruelbox's migrator is off (by `create-schema: false`
+or by a custom table name) and ends the boot naming the table, the property and the procedure. The
+wiki documents that procedure, and it is shorter than what this blueprint does today:
+`DefaultPersistor.writeSchema(Writer)` emits gruelbox's migrations as SQL for the configured dialect,
+so the read-back out of a migrated database can go. What stays open is option 1, an outbox of
+VanillaBP's own on Spring Boot, which is story `26i`'s question and not this one's.
+
+Found on 2026-08-19 while building
 `persistence-liquibase/springboot`, the first blueprint which takes the schema out of the runtime's
 hands. Read from the code, not guessed:
 `GruelboxPhaseTwoOutboxAutoConfiguration` calls
@@ -1127,9 +1136,13 @@ database schema itself, which is every application past its first prototype.
 
 ## G24: the wiki recommends a second Flyway instance without saying what it needs
 
-**Status:** open, story `96` (`prompts/ROADMAP.md`), found on 2026-08-19 while building
-`persistence-flyway`. A documentation gap, not a defect in the code, and it costs whoever follows the
-wiki an hour of confusion.
+**Status:** closed on 2026-08-19 by story `96`, found the same day while building
+`persistence-flyway`. A documentation gap, not a defect in the code, and it cost whoever followed the
+wiki an hour of confusion. The Spring Boot page now shows `baselineOnMigrate` and
+`baselineVersion("0")` with the reason for each and names the `FlywayMigrationInitializer` the entity
+manager factory waits for; the Quarkus page says what that platform allows and describes the one
+timeline with separated version ranges instead. Both pages point here, at `persistence-liquibase` and
+`persistence-flyway`.
 
 **What the wiki says.** Story `75` decided, correctly, that VanillaBP's SQL is applied by a Flyway
 instance of its own, with a history table of its own, so that VanillaBP's version numbers never
