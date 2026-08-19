@@ -585,6 +585,12 @@ serialization format the application configures, which is why the adapter now al
 plugins. The EL resolver over the aggregate stays in 2.0 as a migration fallback, with an existing
 variable winning over it and a deprecation warning per name; story `79` removes it in 2.1.
 
+**Proven by the blueprint it blocked.** `bpmn-aggregate-decoupling` was built on that fix on
+2026-08-19 and its integration test passes on both engines: three amounts, three risk classes, the
+branch each of them belongs to. The shape this gap was found with - a class annotated
+`@NoSyncWithBPMS` whose two `@SyncWithBPMS` getters the conditions read - is what the blueprint
+shows, so a regression fails a build instead of sending every workflow down the default flow again.
+
 ## G13: on Quarkus the phase-two dispatch reaches the application without a transaction
 
 **Status:** fixed 2026-08-16, found 2026-08-15 while building `module-single/quarkus` against

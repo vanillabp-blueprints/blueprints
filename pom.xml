@@ -91,6 +91,8 @@
     <module>blueprints-bpmn/bpmn-workflow-ended/quarkus</module>
     <module>blueprints-bpmn/bpmn-versioning/springboot</module>
     <module>blueprints-bpmn/bpmn-versioning/quarkus</module>
+    <module>blueprints-bpmn/bpmn-aggregate-decoupling/springboot</module>
+    <module>blueprints-bpmn/bpmn-aggregate-decoupling/quarkus</module>
   </modules>
 
   <scm>
