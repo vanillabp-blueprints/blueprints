@@ -20,7 +20,11 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-CAMUNDA_VERSION="${CAMUNDA_VERSION:-8.8.34}"
+# The cluster has to be at least as new as the client the Camunda 8 adapter is built
+# against, currently camunda-client-java 8.9.16. An older cluster rejects requests the newer
+# client sends: with 8.8.34 every job activation ended in "Request property [tenantFilter]
+# cannot be parsed", so a workflow started and its task was never delivered.
+CAMUNDA_VERSION="${CAMUNDA_VERSION:-8.9.16}"
 ELASTICSEARCH_VERSION="${ELASTICSEARCH_VERSION:-8.18.2}"
 REST_PORT="${REST_PORT:-8080}"
 NETWORK=vanillabp-camunda8
