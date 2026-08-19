@@ -1,0 +1,15 @@
+# Everything specific to Camunda 7, applying only while the 'camunda7' profile is the parent
+# of the profile the application runs in.
+vanillabp:
+  adapters:
+    camunda7:
+      # The engine runs embedded and needs a database. This application has two datasources -
+      # the second one exists so the workflow module's changelog gets a Liquibase of its own -
+      # and VanillaBP refuses to guess which one an embedded engine belongs in. 'default' is
+      # the reserved name of the application's default datasource.
+      data-source-name: default
+      # The engine keeps its hands off the schema: Liquibase applies the changelog Camunda
+      # ships in its engine JAR (see db/changelog-camunda7.xml). Leaving this at its default
+      # 'true' would have the engine create or upgrade its tables at boot, which is exactly
+      # what a project managing its schema does not want.
+      database-schema-update: false

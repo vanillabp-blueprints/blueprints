@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The application's changelog for a build with a REMOTE engine: everything from changelog.xml
+  and nothing else. A remote engine keeps its schema to itself, so the only tables this
+  application creates are VanillaBP's and the workflow module's.
+
+  The file exists so that the build can fill the engine's name into one setting instead of
+  the changelog carrying a condition.
+-->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <include file="db/changelog.xml" relativeToChangelogFile="false" />
+
+</databaseChangeLog>

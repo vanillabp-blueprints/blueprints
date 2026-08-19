@@ -1,0 +1,27 @@
+# Everything specific to Camunda 7, loaded only while the 'camunda7' profile is active.
+# The Maven profile of the same name activates it, so the BPMS is chosen once.
+#
+# Camunda's web applications are served at /camunda by the adapter module this profile
+# adds, and they are configured here because the settings name the adapter id.
+blueprint:
+  schema:
+    # The embedded engine brings tables along, so this build applies the changelog which
+    # includes Camunda's own.
+    changelog: classpath:db/changelog-camunda7.xml
+vanillabp:
+  adapters:
+    camunda7:
+      # The engine keeps its hands off the schema: Liquibase applies the changelog Camunda
+      # ships in its engine JAR (see db/changelog-camunda7.xml). Leaving this at its
+      # default 'true' would have the engine create or upgrade its tables at boot, which
+      # is exactly what a project managing its schema does not want.
+      database-schema-update: false
+      webapps:
+        # A demo administrator, so the blueprint can be operated without setting one up.
+        # An application with an identity provider of its own leaves this section out and
+        # the web applications use that instead.
+        admin-user:
+          id: demo
+          password: demo
+          first-name: Demo
+          last-name: User

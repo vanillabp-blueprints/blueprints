@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The application's changelog for a build with the EMBEDDED Camunda 7 engine: everything from
+  changelog.xml plus the engine's own tables.
+
+  Camunda ships its schema in the engine JAR, as a changelog with a 7.16 baseline and one
+  changeset per upgrade. It is included, never copied: the engine version on the classpath
+  decides what is correct, and its 'db.name' properties pick the statements for the database
+  in use. The engine's own version table, ACT_GE_SCHEMA_LOG, stays the engine's business.
+
+  Two things go with this. The adapter must be told to keep its hands off
+  ('vanillabp.adapters.camunda7.database-schema-update: false' in application-camunda7.yaml),
+  and a configured table prefix does not work with either of Camunda's artifacts, because
+  their statements carry fixed table names.
+-->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <include file="db/changelog.xml" relativeToChangelogFile="false" />
+
+  <include file="org/camunda/bpm/engine/db/liquibase/camunda-changelog.xml" relativeToChangelogFile="false" />
+
+</databaseChangeLog>

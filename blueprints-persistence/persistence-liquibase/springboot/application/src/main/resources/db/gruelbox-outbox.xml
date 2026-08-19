@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The outbox table of the Spring Boot integration, and the one place in this blueprint
+  where an application has to write down somebody else's schema.
+
+  On Spring Boot, VanillaBP's phase-two outbox is gruelbox
+  (com.gruelbox:transactionoutbox-core), which brings its own migrator. VanillaBP
+  deliberately ships no statements for it, because the schema belongs to gruelbox. The
+  switch 'vanillabp.outbox.create-schema' covers both, though: turning it off so that
+  Liquibase can own VanillaBP's tables also turns gruelbox's migrator off, so this
+  application has to create the table itself.
+
+  Where these statements come from: gruelbox's migrator was let loose on an empty H2
+  database once and the result was read back out of it. They are NOT hand-written from
+  gruelbox's source, where the schema is thirteen migrations, some of them in MySQL
+  syntax, several overridden per dialect. GruelboxSchemaDriftTest compares what is written
+  here against what that migrator produces, so a gruelbox upgrade which adds a column
+  fails a build instead of a deployment.
+
+  Whether the Spring Boot integration should use an outbox of VanillaBP's own, whose schema
+  would then come from 'vanillabp-schema' like everything else, is an open question of the
+  framework and not of this blueprint.
+
+  TXNO_VERSION is not created here. It is the bookkeeping of gruelbox's migrator, and the
+  migrator is off. TXNO_SEQUENCE is created, because gruelbox reads it as soon as an entry
+  is ordered within a topic.
+-->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!--
+    The column names are gruelbox's, spelled the way gruelbox spells them and not quoted,
+    so every database folds them the same way it folds them for gruelbox itself.
+  -->
+  <changeSet author="blueprint" id="gruelbox-outbox-1.0.0">
+    <comment>The outbox table of gruelbox, as its own migrator would have created it.</comment>
+    <createTable tableName="TXNO_OUTBOX">
+      <column name="id" type="VARCHAR(36)">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="invocation" type="CLOB" />
+      <column name="lastAttemptTime" type="TIMESTAMP" />
+      <column name="nextAttemptTime" type="TIMESTAMP" />
+      <column name="attempts" type="INT" />
+      <column name="blocked" type="BOOLEAN" />
+      <column name="version" type="INT" />
+      <column name="uniqueRequestId" type="VARCHAR(250)">
+        <constraints unique="true" />
+      </column>
+      <column name="processed" type="BOOLEAN" />
+      <column name="topic" type="VARCHAR(250)" defaultValue="*">
+        <constraints nullable="false" />
+      </column>
+      <column name="seq" type="BIGINT" />
+    </createTable>
+    <!-- the index the flush query needs, and the one for ordering within a topic -->
+    <createIndex tableName="TXNO_OUTBOX" indexName="IX_TXNO_OUTBOX_1">
+      <column name="processed" />
+      <column name="blocked" />
+      <column name="nextAttemptTime" />
+    </createIndex>
+    <createIndex tableName="TXNO_OUTBOX" indexName="IX_TXNO_OUTBOX_2">
+      <column name="topic" />
+      <column name="processed" />
+      <column name="seq" />
+    </createIndex>
+    <createTable tableName="TXNO_SEQUENCE">
+      <column name="topic" type="VARCHAR(250)">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="seq" type="BIGINT">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+    </createTable>
+  </changeSet>
+
+</databaseChangeLog>

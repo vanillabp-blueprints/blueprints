@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The schema the APPLICATION owns: what VanillaBP needs. The workflow module brings its own
+  changelog along and is not referenced here.
+
+  Nothing in this file describes a table twice. VanillaBP's own changelog is included from
+  the artifact 'io.vanillabp:vanillabp-schema', so an update of VanillaBP brings its new
+  changesets with it and this file stays as it is.
+
+  This file is included by one changelog per engine, 'changelog-<bpms>.xml', because the
+  engine decides whether there is anything else to create. The build fills its name in, and
+  it has to be the build rather than a profile: the extension reads the changelog while the
+  application is BUILT.
+-->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!--
+    The two tables VanillaBP needs: the phase-two outbox and the log of processed task
+    deliveries. Read from the classpath, out of the JAR, so the statements always match the
+    VanillaBP version this application depends on.
+
+    A renamed outbox table ('vanillabp.outbox.jdbc.table') would be set here as
+    <property name="vanillabp.outbox.table" value="..."/> before the include.
+  -->
+  <include file="vanillabp/schema/changelog.xml" />
+
+</databaseChangeLog>

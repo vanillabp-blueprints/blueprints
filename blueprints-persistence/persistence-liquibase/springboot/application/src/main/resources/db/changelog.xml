@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The schema the APPLICATION owns: what VanillaBP needs, and what the outbox library of
+  the Spring Boot integration needs. The workflow module brings its own changelog along
+  and is not referenced here.
+
+  Nothing in this file describes a table twice. VanillaBP's own changelog is included from
+  the artifact 'io.vanillabp:vanillabp-schema', so an update of VanillaBP brings its new
+  changesets with it and this file stays as it is.
+
+  The engine's tables are NOT here, because there are none for a remote engine. The
+  Camunda 7 build points its Liquibase at 'changelog-camunda7.xml', which includes this
+  file plus the changelog Camunda ships in its engine JAR. Which changelog is used is
+  therefore a matter of the engine profile, like every other engine specific setting.
+-->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!--
+    The two tables VanillaBP needs: the phase-two outbox and the log of processed task
+    deliveries. Read from the classpath, out of the JAR, so the statements always match
+    the VanillaBP version this application depends on.
+
+    A renamed outbox table ('vanillabp.outbox.jdbc.table') would be set here as
+    <property name="vanillabp.outbox.table" value="..."/> before the include.
+  -->
+  <include file="vanillabp/schema/changelog.xml" />
+
+  <!--
+    The outbox of the Spring Boot integration is gruelbox, and its schema belongs to
+    gruelbox. See gruelbox-outbox.xml for why this application has to create it anyway.
+  -->
+  <include file="db/gruelbox-outbox.xml" relativeToChangelogFile="false" />
+
+</databaseChangeLog>

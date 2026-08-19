@@ -1,0 +1,26 @@
+# The configuration of the module's own test: its database and its own migration. What
+# VanillaBP needs is not part of it - those tables belong to the application, and here
+# VanillaBP creates them itself, as it does in every other blueprint. The application's test
+# is where the handover of ALL tables is shown.
+quarkus:
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
+  liquibase:
+    # The module's own changelog, applied into bookkeeping tables named after the module. In
+    # the module's test there is only one owner of schema, so the default datasource is where
+    # it runs; an application has more owners and gives each of them its own.
+    change-log: loan-approval/db/changelog.xml
+    migrate-at-start: true
+    database-change-log-table-name: DATABASECHANGELOG_LOAN_APPROVAL
+    database-change-log-lock-table-name: DATABASECHANGELOGLOCK_LOAN_APPROVAL
+  hibernate-orm:
+    schema-management:
+      # The module's own changelog creates its table, Hibernate only checks the result.
+      strategy: validate
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO

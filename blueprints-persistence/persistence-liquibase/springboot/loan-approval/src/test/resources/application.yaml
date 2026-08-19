@@ -1,0 +1,16 @@
+# The module's test runs the module, so it runs the module's migration. What VanillaBP
+# needs is not part of it: those tables belong to the application, and here VanillaBP
+# creates them itself, as it does in every other blueprint. The application's test is
+# where the handover of ALL tables is shown.
+spring:
+  datasource:
+    url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      # The module's own changelog creates its table, Hibernate only checks the result.
+      ddl-auto: validate
+logging:
+  level:
+    blueprint.workflowmodule: INFO
