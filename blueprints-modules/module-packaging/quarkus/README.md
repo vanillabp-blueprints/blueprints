@@ -19,8 +19,8 @@ version, their own package, and no relationship to this project other than a dep
 
 ![The loan repayment process](docs/loan_repayment.png)
 
-Two use cases, two JARs, published by their teams as `com.acme.lending:loan-approval:1.4.0`
-and `com.acme.lending:loan-repayment:2.1.0`. This project has neither their sources nor a say
+Two use cases, two JARs, published by their teams as `com.acme.lending:loan-approval:1.5.0`
+and `com.acme.lending:loan-repayment:2.2.0`. This project has neither their sources nor a say
 in their versions; it collects them, configures the environment they run in, and ships the
 result.
 
@@ -51,7 +51,7 @@ Every module carries its own version, and the application pins them in one place
   <dependency>
     <groupId>com.acme.lending</groupId>
     <artifactId>loan-approval</artifactId>
-    <version>1.4.0</version>
+    <version>1.5.0</version>
   </dependency>
   ...
 ```

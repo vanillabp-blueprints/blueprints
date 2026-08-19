@@ -8,7 +8,7 @@
   -->
   <groupId>com.acme.lending</groupId>
   <artifactId>loan-repayment</artifactId>
-  <version>2.1.0</version>
+  <version>2.2.0</version>
   <name>ACME loan repayment</name>
   <description>The loan repayment use case as a workflow module JAR, published by the team owning it and versioned independently of the loan approval.</description>
 
@@ -82,7 +82,7 @@
     <dependency>
       <groupId>com.acme.banking</groupId>
       <artifactId>banking-commons</artifactId>
-      <version>3.2.0</version>
+      <version>3.3.0</version>
     </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>

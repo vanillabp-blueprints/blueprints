@@ -9,7 +9,7 @@
   -->
   <groupId>com.acme.banking</groupId>
   <artifactId>banking-commons</artifactId>
-  <version>3.2.0</version>
+  <version>3.3.0</version>
   <name>ACME banking commons</name>
   <description>Code the ACME workflow modules share: a value object and a client for a system next door.</description>
 
