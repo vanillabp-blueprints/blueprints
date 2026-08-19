@@ -1,0 +1,49 @@
+# Only what is truly cross-cutting belongs here: the database both workflow modules store
+# their aggregates in, and the profile choosing the BPMS. Everything a module needs is in the
+# module's own file (loan-approval/loan-approval.yaml, loan-repayment/loan-repayment.yaml
+# inside the module JARs), and this file must not know those values exist.
+#
+# What is also not here: a word about the modules themselves. Each of them carries an index
+# of its classes, which is what makes it a JAR somebody else could publish.
+quarkus:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, and the profile
+  # files 'application-camunda7.yaml' respectively 'application-camunda8.yaml' apply from
+  # then on - whichever profile the application itself runs in, because they are its PARENT.
+  # Nobody has to name the profile twice.
+  config:
+    profile:
+      parent: "@bpms@"
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:online-banking;DB_CLOSE_DELAY=-1
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  # The image this runtime ships as. Building it is a flag on the build, not part of it:
+  # 'mvn install -Dquarkus.container-image.build=true'.
+  container-image:
+    name: online-banking
+  log:
+    category:
+      "com.acme":
+        level: INFO
+      "blueprint":
+        level: INFO
+# What the application says about a module it only has as a dependency. Both lines below are
+# attempts to override a value the module ships, and reading which of them arrives is the
+# point of 'ConfigurationLevelsIT':
+#
+#   - a workflow module's own file wins over application.yaml. The module knows its defaults
+#     better than the runtime assembling it does, so 'rating-scale' stays at what the module
+#     says and the 42 below never arrives.
+#   - what comes from outside - an environment variable, a system property - wins over both.
+#     That is where a deployment overrides a module, and 'rating-provider' shows it.
+#
+# Worth knowing before writing the first line here: a value a deployment has to change
+# belongs into the environment, not into this file.
+loan-approval:
+  rating-scale: 42
+  rating-provider: from-the-application

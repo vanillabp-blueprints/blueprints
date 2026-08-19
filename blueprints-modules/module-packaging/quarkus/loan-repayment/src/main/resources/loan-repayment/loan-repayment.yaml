@@ -1,0 +1,6 @@
+# Configuration of the workflow module 'loan-repayment'.
+#
+# Named after this module's ID, loaded automatically, and independent of what the other
+# module in the same application configures. Two modules, two files, no negotiation.
+loan-repayment:
+  max-installments: 12

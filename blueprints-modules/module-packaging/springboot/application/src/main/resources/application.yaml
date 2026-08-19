@@ -1,0 +1,41 @@
+# Only what is truly cross-cutting belongs here: the database both workflow modules store
+# their aggregates in, and the profile which chooses the BPMS. Everything a module needs is
+# in the module's own file (loan-approval/loan-approval.yaml, loan-repayment/loan-repayment.yaml
+# inside the module JARs), and this file must not know those values exist.
+#
+# What is also not here: a word about the modules themselves. No component scan, no entity
+# scan, no repository configuration - each module brings an auto-configuration and wires
+# itself, which is what makes it a JAR somebody else could publish.
+spring:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, so
+  # 'application-camunda7.yaml' respectively 'application-camunda8.yaml' is loaded without
+  # anybody having to name the profile twice. Tests get the same value as a system property.
+  profiles:
+    active: "@bpms@"
+  datasource:
+    url: jdbc:h2:mem:online-banking;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+# What the application says about a module it only has as a dependency. Both lines below are
+# attempts to override a value the module ships, and reading which of them arrives is the
+# point of 'ConfigurationLevelsIT':
+#
+#   - a workflow module's own file wins over application.yaml. The module knows its defaults
+#     better than the runtime assembling it does, so 'rating-scale' stays at what the module
+#     says and the 42 below never arrives.
+#   - what comes from outside - an environment variable, a system property - wins over both.
+#     That is where a deployment overrides a module, and 'rating-provider' shows it.
+#
+# Worth knowing before writing the first line here: a value a deployment has to change
+# belongs into the environment, not into this file.
+loan-approval:
+  rating-scale: 42
+  rating-provider: from-the-application
+logging:
+  level:
+    com.acme: INFO
+    blueprint: INFO

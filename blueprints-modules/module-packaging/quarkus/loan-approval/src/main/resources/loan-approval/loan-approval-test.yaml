@@ -1,0 +1,7 @@
+# Configuration of the workflow module 'loan-approval' for the 'test' profile.
+#
+# The profile is part of the file NAME: VanillaBP loads 'loan-approval-<profile>.yaml' for
+# every active profile, on top of the values in 'loan-approval.yaml'. A test runs in the
+# profile 'test', so this file is what a test sees.
+loan-approval:
+  rating-provider: sandbox

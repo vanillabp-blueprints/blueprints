@@ -1038,3 +1038,42 @@ The blueprint needs no attribution bean, which is what its README now explains, 
 case of `persistence-active-record` builds and runs.
 
 **Affects:** `adapter-platform-integration`, Quarkus side.
+
+## G22: a Quarkus application without MongoDB does not build natively
+
+**Status:** open, story `85` (2026-08-19), found while building the delivery part of the
+blueprint `module-packaging`. The blueprint's application has a relational database and no
+MongoDB anywhere.
+
+**What happens.** `mvn install -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true`
+ends in the image builder:
+
+```
+Error: Discovered unresolved method during parsing:
+io.vanillabp.integration.runtime.processservice.QuarkusMongoDeployment.isReplicaSet().
+This error is reported at image build time because class
+io.vanillabp.integration.runtime.processservice.QuarkusTransactionRunnerResolver is
+registered for linking at image build time by command line and command line.
+Caused by: java.lang.NoClassDefFoundError: org/bson/conversions/Bson
+```
+
+`QuarkusTransactionRunnerResolver#coverageOf` calls `QuarkusMongoDeployment.isReplicaSet()`,
+and that class imports `com.mongodb.client.MongoClient` and `org.bson.Document`. On the JVM
+that is harmless: the method is only reached for an aggregate MongoDB manages, and a class is
+loaded when it is first used. A native image resolves every referenced method while it is
+built, so the missing MongoDB driver ends the build of an application which never wanted one.
+
+**Why it is a gap rather than a decision.** The same code base already knows the rule and
+follows it elsewhere: MongoDB Panache is optional, so the persistence implementations are
+recognized BY NAME (`QuarkusPersistenceTechnology`, `AggregateWrite#causedByOptimisticLocking`).
+The replica-set probe is the one place where a MongoDB type is referenced directly, and the
+build of a native image is where that shows.
+
+**What would fix it.** Reach the probe the way the rest of the class reaches optional types:
+by name and by reflection, or behind a bean which only exists when the MongoDB client
+extension is present, so that nothing links `org.bson` into an application without MongoDB.
+Whatever the shape, the acceptance is a native build of an application with a relational
+database only.
+
+**Affects:** `adapter-platform-integration`, Quarkus side. Blocks the native build of every
+Quarkus application without MongoDB, and with it the delivery section of `module-packaging`.

@@ -1,0 +1,8 @@
+# Configuration of the workflow module 'loan-approval' for the 'test' profile.
+#
+# The profile is part of the file NAME, and that is the whole mechanism: VanillaBP loads
+# 'loan-approval-<profile>.yaml' for every active profile, on top of the values in
+# 'loan-approval.yaml'. Inside a workflow module's file 'spring.config.activate.on-profile'
+# does NOT work, so a multi-document YAML would silently do nothing.
+loan-approval:
+  rating-provider: sandbox

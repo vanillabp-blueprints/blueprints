@@ -1,0 +1,33 @@
+# Approved differences between the platform twins of this blueprint, checked by
+# bin/check_twin_diff.py. One line per file: the hash of the difference, what kind of
+# difference it is, the file, and why it exists. Write the reason - the file is read by
+# people deciding whether a difference is the platform or a mistake.
+
+31120fb94c65de07  only-springboot  application/src/main/java/blueprint/application/Application.java  # one platform boots from a class of the application, the other one needs none
+9fb1f8af132dae40  differs  application/src/test/java/blueprint/application/ApplicationSmokeTest.java  # test harness: the beans are asked for in the bean container's own words
+6b2226f18dd88888  differs  application/src/test/java/blueprint/application/ConfigurationLevelsIT.java  # injection annotations and the configuration accessor; what is asserted is the same order on both platforms
+21918a3a70cda340  only-springboot  banking-commons/src/main/java/com/acme/banking/BankingCommonsAutoConfiguration.java  # a library JAR contributes its bean through an auto-configuration on one platform and through its index on the other
+7897f95a192e6547  differs  banking-commons/src/main/java/com/acme/banking/CustomerDirectory.java  # the same client, declared a bean the way each platform declares one
+c7a3077692278339  only-springboot  banking-commons/src/main/java/com/acme/banking/WorkflowModuleBeanNameGenerator.java  # naming beans after their module is needed where beans are found by name rather than by type
+7ae81afabb633ff7  differs  loan-approval/src/main/java/com/acme/loanapproval/ApiController.java  # the same GET endpoints, written with the HTTP annotations of the platform
+0d5a642a0a2d0250  only-springboot  loan-approval/src/main/java/com/acme/loanapproval/LoanApprovalAutoConfiguration.java  # a module contributes its beans through an auto-configuration on one platform; on the other its index does it
+f29632e27fbab194  only-springboot  loan-approval/src/main/java/com/acme/loanapproval/LoanApprovalBeanNames.java  # the one line per module saying which module its beans belong to, needed on one platform only
+a19f9a87636b4cfb  differs  loan-approval/src/main/java/com/acme/loanapproval/Service.java  # bean and injection annotations, the configuration accessor, and the transaction reading an entity needs on one platform
+480889f2ad9fb1a1  differs  loan-approval/src/main/java/com/acme/loanapproval/Workflow.java  # bean and injection annotations only; both inject ProcessService here and nowhere else
+6f779c401afdd136  differs  loan-approval/src/main/java/com/acme/loanapproval/WorkflowTaskHandler.java  # bean and injection annotations only; the VanillaBP annotations are identical, which is the point
+ffd5af58cb78f4f0  differs  loan-approval/src/main/java/com/acme/loanapproval/config/LoanApprovalProperties.java  # configuration is bound to a class on one platform and to an interface on the other
+6dcdfbe2838c4f44  differs  loan-approval/src/main/java/com/acme/loanapproval/model/AggregateRepository.java  # each platform's repository idiom
+95841c7f80d2b443  only-springboot  loan-approval/src/test/java/com/acme/ModuleTestApplication.java  # only one platform needs an application class to boot a workflow module for its test
+33289af19edd6ccf  differs  loan-approval/src/test/java/com/acme/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
+0dab76bdffcefe7c  differs  loan-approval/src/test/java/com/acme/loanapproval/LoanApprovalIT.java  # injection annotations, the test class carries @QuarkusTest itself, and the aggregate is read through the repository idiom of the platform
+b07c63d46ce85bd9  differs  loan-repayment/src/main/java/com/acme/loanrepayment/ApiController.java  # the same GET endpoints, written with the HTTP annotations of the platform
+390373b8420587a9  only-springboot  loan-repayment/src/main/java/com/acme/loanrepayment/LoanRepaymentAutoConfiguration.java  # a module contributes its beans through an auto-configuration on one platform; on the other its index does it
+9b3822e927b09de0  only-springboot  loan-repayment/src/main/java/com/acme/loanrepayment/LoanRepaymentBeanNames.java  # the one line per module saying which module its beans belong to, needed on one platform only
+31735a9a6eccca48  differs  loan-repayment/src/main/java/com/acme/loanrepayment/Service.java  # bean and injection annotations, the configuration accessor, and the transaction reading an entity needs on one platform
+5759fabc0f379006  differs  loan-repayment/src/main/java/com/acme/loanrepayment/Workflow.java  # bean and injection annotations only; both inject ProcessService here and nowhere else
+6f779c401afdd136  differs  loan-repayment/src/main/java/com/acme/loanrepayment/WorkflowTaskHandler.java  # bean and injection annotations only; the VanillaBP annotations are identical, which is the point
+ba6785db231fbf83  differs  loan-repayment/src/main/java/com/acme/loanrepayment/config/LoanRepaymentProperties.java  # configuration is bound to a class on one platform and to an interface on the other
+6dcdfbe2838c4f44  differs  loan-repayment/src/main/java/com/acme/loanrepayment/model/AggregateRepository.java  # each platform's repository idiom
+95841c7f80d2b443  only-springboot  loan-repayment/src/test/java/com/acme/ModuleTestApplication.java  # only one platform needs an application class to boot a workflow module for its test
+33289af19edd6ccf  differs  loan-repayment/src/test/java/com/acme/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
+faac88edf0aad90f  differs  loan-repayment/src/test/java/com/acme/loanrepayment/LoanRepaymentIT.java  # injection annotations, the test class carries @QuarkusTest itself, and the aggregate is read through the repository idiom of the platform

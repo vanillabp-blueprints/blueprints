@@ -43,6 +43,8 @@
     <module>blueprints-modules/module-standalone/quarkus</module>
     <module>blueprints-modules/module-interaction/springboot</module>
     <module>blueprints-modules/module-interaction/quarkus</module>
+    <module>blueprints-modules/module-packaging/springboot</module>
+    <module>blueprints-modules/module-packaging/quarkus</module>
     <module>blueprints-persistence/persistence-parallel-branches/springboot</module>
     <module>blueprints-persistence/persistence-parallel-branches/quarkus</module>
     <!-- Only one platform: the other one has no active record idiom, see blueprints.yaml. -->
