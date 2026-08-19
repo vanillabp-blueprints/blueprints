@@ -23,8 +23,9 @@ import org.springframework.util.ClassUtils;
  * </p>
  *
  * <p>
- * The test plays it by pointing the application's Liquibase at an empty changelog. The
- * engine is left to create its own tables here, because a missing engine schema would end
+ * The test plays it by pointing Liquibase at a changelog which applies everything except
+ * VanillaBP's part, which is the realistic mistake: a changelog that forgot one include line.
+ * The engine is left to create its own tables here, because a missing engine schema would end
  * the boot earlier and with the engine's message, and what is under test is VanillaBP's.
  * </p>
  */
@@ -36,7 +37,7 @@ public class MissingTableIT {
     // Command line arguments, not SpringApplicationBuilder#properties: those are default
     // properties and rank BELOW the profile file, which names the changelog of the engine.
     final var arguments = new ArrayList<String>();
-    arguments.add("--blueprint.schema.changelog=classpath:db/changelog-empty.xml");
+    arguments.add("--blueprint.schema.changelog=classpath:db/changelog-without-vanillabp.xml");
     // a database of its own, so nothing another test left behind can be found here
     arguments.add("--spring.datasource.url=jdbc:h2:mem:missing-table;DB_CLOSE_DELAY=-1");
     arguments.add("--server.port=0");

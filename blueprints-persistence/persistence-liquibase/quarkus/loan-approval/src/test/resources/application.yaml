@@ -9,13 +9,11 @@ quarkus:
     jdbc:
       url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
   liquibase:
-    # The module's own changelog, applied into bookkeeping tables named after the module. In
-    # the module's test there is only one owner of schema, so the default datasource is where
-    # it runs; an application has more owners and gives each of them its own.
+    # The module's own changelog, applied by the extension. An application names this file in
+    # ITS changelog instead, with one include line, and the module's changesets stay the
+    # module's either way: they carry their own logical path.
     change-log: loan-approval/db/changelog.xml
     migrate-at-start: true
-    database-change-log-table-name: DATABASECHANGELOG_LOAN_APPROVAL
-    database-change-log-lock-table-name: DATABASECHANGELOGLOCK_LOAN_APPROVAL
   hibernate-orm:
     schema-management:
       # The module's own changelog creates its table, Hibernate only checks the result.

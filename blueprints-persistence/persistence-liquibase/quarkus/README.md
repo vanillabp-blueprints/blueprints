@@ -23,49 +23,44 @@ which of them.
 | `VANILLABP_PHASE_TWO_OUTBOX`, `VANILLABP_TASK_DELIVERY` | the application's Liquibase     | `vanillabp/schema/changelog.xml`, out of `io.vanillabp:vanillabp-schema` |
 | `ACT_*`                                                 | the application's Liquibase     | the changelog Camunda ships inside its engine JAR                        |
 | `LOAN_APPROVAL`                                         | the workflow module's Liquibase | `loan-approval/.../loan-approval/db/changelog.xml`                       |
-| `DATABASECHANGELOG`                                     | Liquibase                       | the application's bookkeeping                                            |
-| `DATABASECHANGELOG_LOAN_APPROVAL`                       | Liquibase                       | the workflow module's bookkeeping                                        |
+| `DATABASECHANGELOG`                                     | Liquibase                       | the bookkeeping, one row per changeset and owner                         |
 
 Three settings are what make this real, and all three are in the configuration rather than
 in code: the schema management strategy `validate` has Hibernate check the result instead of
 building it, `vanillabp.outbox.create-schema: false` takes VanillaBP's tables out of its own
 hands, and `database-schema-update: false` does the same for the engine.
 
-### Two owners, two histories, and why that needs a second datasource
+### Two owners, one history
 
 A workflow module is a JAR which several applications may use, and it owns the tables of its
-workflow aggregate. So it brings its changelog along, and that changelog is applied into
-bookkeeping tables of its own, `DATABASECHANGELOG_LOAN_APPROVAL`. Everything else belongs to
-the application: what VanillaBP needs and what the engine needs.
+workflow aggregate. So it brings its changelog along, in its own resource directory, and the
+application applies it with one line:
 
-Sharing one history would tie the two together. The application could no longer take a new
-version of the module without having its own changelog at hand, and two modules in one
-application would write into the same rows. With a table per owner, each side is upgraded on
-its own.
-
-The extension runs one changelog per datasource, so two owners need two datasources. The
-second one, `loan-approval-schema`, points at the same database with a pool of a single
-connection: it exists to give the module's changelog a Liquibase of its own, and it is used
-once, while the application starts.
-
-A second datasource is not free, and VanillaBP says so rather than guessing. An embedded
-Camunda 7 engine needs a database, and with more than one datasource around it asks which:
-
-```
-Camunda 7 adapter 'camunda7' runs embedded and needs a database, but the application
-declares SEVERAL datasources: [loan-approval-schema, <default>]. Name the one this
-adapter id runs on:
-  vanillabp.adapters.camunda7.data-source-name: <datasource name>
-Use the reserved value 'default' for the application's default datasource.
+```xml
+<include file="loan-approval/db/changelog.xml" />
 ```
 
-That is one property in the engine's profile file, and the message names it.
+Ownership is not a matter of who runs Liquibase, it is a matter of identity. Liquibase records
+a changeset under the `logicalFilePath` its changelog declares, plus its id and author, never
+under the file which included it. The module's changelog declares `logicalFilePath="loan-approval"`,
+so its rows in `DATABASECHANGELOG` are its own and a later version of the module finds its own
+history:
 
-That configuration lives in the application, not in the module's own configuration file, and
-that is a platform property rather than a preference: the changelog to apply is read while
-the application is BUILT, and a module's configuration file is read when it runs. So the
-module ships its changelog and the application says where it runs. Everything else the module
-owns stays in the module.
+```
+FILENAME          | ID
+vanillabp/schema  | vanillabp-task-delivery-2.0.0
+loan-approval     | loan-approval-aggregate-1.0.0
+```
+
+That is why one migration run and one bookkeeping table are enough, and it is what VanillaBP's
+own changelog does as well. `SchemaIT` asserts both owners are recognizable in that history,
+because a module whose changelog forgot its logical path would be recorded under the
+application's file name, and nothing else would notice.
+
+It also keeps the application simple. The extension applies one changelog per datasource, so
+giving the module a Liquibase of its own would mean a second datasource on the same database,
+and an embedded engine would then ask which of the two it belongs in. None of that is needed:
+one datasource, one changelog, one include line per module.
 
 ### The tables VanillaBP needs
 
@@ -146,19 +141,19 @@ include out of `db/changelog.xml` and start the application.
 Everything about the process, the aggregate and the wiring is `module-single`. What was added
 or changed:
 
-|                            File                            |                                          Change                                          |
-|------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| `loan-approval/.../loan-approval/db/changelog.xml`         | new: the module's own changelog, its aggregate table                                     |
-| `application/src/main/resources/db/changelog.xml`          | new: what the application owns, VanillaBP's changelog from the artifact                  |
-| `application/src/main/resources/db/changelog-camunda7.xml` | new: the same plus the engine's changelog                                                |
-| `application/src/main/resources/db/changelog-camunda8.xml` | new: the same alone, since a remote engine has no tables here                            |
-| `application/src/main/resources/application.yaml`          | the second datasource, both Liquibase configurations, `validate`, `create-schema: false` |
-| `application/src/main/resources/application-camunda7.yaml` | new: `database-schema-update: false` and the datasource the engine runs on               |
-| `loan-approval/.../model/Aggregate.java`                   | every column named explicitly, so the entity and the migration cannot drift apart        |
-| `loan-approval/src/test/resources/application.yaml`        | the module's changelog and `validate`: its test builds its table from it                 |
-| `application/src/test/.../SchemaIT.java`                   | new: every table is there, one bookkeeping table per owner                               |
-| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | new: a workflow runs through on the migrated schema, across both datasources             |
-| both POMs                                                  | `quarkus-liquibase`; the application also `vanillabp-schema`                             |
+|                            File                            |                                      Change                                       |
+|------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| `loan-approval/.../loan-approval/db/changelog.xml`         | new: the module's own changelog, its aggregate table                              |
+| `application/src/main/resources/db/changelog.xml`          | new: what the application owns, VanillaBP's changelog from the artifact           |
+| `application/src/main/resources/db/changelog-camunda7.xml` | new: the same plus the engine's changelog                                         |
+| `application/src/main/resources/db/changelog-camunda8.xml` | new: the same alone, since a remote engine has no tables here                     |
+| `application/src/main/resources/application.yaml`          | the changelog to apply, `validate`, `create-schema: false`                        |
+| `application/src/main/resources/application-camunda7.yaml` | new: `database-schema-update: false` and the datasource the engine runs on        |
+| `loan-approval/.../model/Aggregate.java`                   | every column named explicitly, so the entity and the migration cannot drift apart |
+| `loan-approval/src/test/resources/application.yaml`        | the module's changelog and `validate`: its test builds its table from it          |
+| `application/src/test/.../SchemaIT.java`                   | new: every table is there, one bookkeeping table per owner                        |
+| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | new: a workflow runs through on the migrated schema, across both datasources      |
+| both POMs                                                  | `quarkus-liquibase`; the application also `vanillabp-schema`                      |
 
 The entity naming its columns is worth a word: as long as a runtime creates the tables, a
 naming strategy decides what they are called, and it is right by definition. Once a migration
@@ -182,12 +177,12 @@ Start the application:
 mvn -pl application quarkus:dev
 ```
 
-The log shows the migrations running before anything else, one per owner:
+The log shows the migration running before anything else, one changeset per owner:
 
 ```
-Running Changeset: loan-approval/db/changelog.xml::loan-approval-aggregate-1.0.0::blueprint
 Running Changeset: vanillabp/schema::vanillabp-phase-two-outbox-2.0.0::VanillaBP
 Running Changeset: vanillabp/schema::vanillabp-task-delivery-2.0.0::VanillaBP
+Running Changeset: loan-approval::loan-approval-aggregate-1.0.0::blueprint
 Running Changeset: org/camunda/bpm/engine/db/liquibase/camunda-changelog.xml::7.16.0-baseline::Camunda
 ```
 
@@ -207,20 +202,20 @@ Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 
 ## How it works
 
-The order at startup is what matters here, and the extension takes care of it: both
-migrations run while the application starts, before the first bean touches a table, and
-VanillaBP checks its tables in a startup observer afterwards. Nothing in this blueprint
-arranges that order by hand.
+The order at startup is what matters here, and the extension takes care of it: the migration
+runs while the application starts, before the first bean touches a table, and VanillaBP checks
+its tables in a startup observer afterwards. Nothing in this blueprint arranges that order by
+hand.
 
-|                            File                            |                                      Role                                      |
-|------------------------------------------------------------|--------------------------------------------------------------------------------|
-| `application/src/main/resources/application.yaml`          | both Liquibase configurations, the second datasource, and what is switched off |
-| `application/src/main/resources/db/changelog.xml`          | includes VanillaBP's changelog                                                 |
-| `application/src/main/resources/db/changelog-camunda7.xml` | includes the above plus Camunda's own changelog                                |
-| `application/src/main/resources/db/changelog-camunda8.xml` | includes the above alone                                                       |
-| `loan-approval/.../loan-approval/db/changelog.xml`         | the aggregate table of this workflow module                                    |
-| `application/src/test/.../SchemaIT.java`                   | which tables the migration was supposed to bring, and one history per owner    |
-| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | a process runs through where nothing created a table at runtime                |
+|                            File                            |                                    Role                                     |
+|------------------------------------------------------------|-----------------------------------------------------------------------------|
+| `application/src/main/resources/application.yaml`          | the changelog to apply, and what is switched off                            |
+| `application/src/main/resources/db/changelog.xml`          | includes VanillaBP's changelog                                              |
+| `application/src/main/resources/db/changelog-camunda7.xml` | includes the above plus Camunda's own changelog                             |
+| `application/src/main/resources/db/changelog-camunda8.xml` | includes the above alone                                                    |
+| `loan-approval/.../loan-approval/db/changelog.xml`         | the aggregate table of this workflow module                                 |
+| `application/src/test/.../SchemaIT.java`                   | which tables the migration was supposed to bring, and one history per owner |
+| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | a process runs through where nothing created a table at runtime             |
 
 Everything else, from `ApiController` through `Service`, `Workflow` and
 `WorkflowTaskHandler` to the aggregate, is the base blueprint unchanged.

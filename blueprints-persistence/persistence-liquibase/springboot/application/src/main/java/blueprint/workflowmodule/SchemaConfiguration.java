@@ -9,9 +9,10 @@ import org.springframework.context.annotation.Configuration;
 import liquibase.integration.spring.SpringLiquibase;
 
 /**
- * The application applies the changelog of everything which is not a workflow module: the
- * tables VanillaBP needs, the outbox table of the Spring Boot integration and, with an
- * embedded engine, the engine's own tables.
+ * The application applies one changelog while it starts, and that changelog includes
+ * everything the schema consists of: the tables VanillaBP needs, the outbox table of the
+ * Spring Boot integration, the changelog of the workflow module and, with an embedded engine,
+ * the engine's own.
  *
  * <p>
  * Which changelog that is depends on the engine, so the file is named in the profile of
@@ -20,22 +21,31 @@ import liquibase.integration.spring.SpringLiquibase;
  * </p>
  *
  * <p>
- * This instance keeps Liquibase's default bookkeeping tables, {@code DATABASECHANGELOG}
- * and {@code DATABASECHANGELOGLOCK}. They are the application's, and the workflow module
- * has its own next to them.
+ * One run, one bookkeeping table. A workflow module still owns its tables, because Liquibase
+ * records a changeset under the logical path its changelog declares rather than under the file
+ * which included it. So the module's rows in {@code DATABASECHANGELOG} stay recognizable and a
+ * later version of the module finds its own history, without a second Liquibase instance and
+ * without tables of its own.
+ * </p>
+ *
+ * <p>
+ * A bean of type {@link SpringLiquibase} makes Spring Boot's own Liquibase auto-configuration
+ * step aside, so {@code spring.liquibase.*} has no effect here. The entity manager factory
+ * still waits for it, because Spring Boot's Liquibase module lets it depend on every bean of
+ * this type.
  * </p>
  */
 @Configuration
 public class SchemaConfiguration {
 
   /**
-   * The application's changelog, applied at startup and before anything reads a table:
-   * Hibernate waits for every {@link SpringLiquibase} bean, and VanillaBP checks for its
-   * tables once all beans exist.
+   * The changelog, applied at startup and before anything reads a table: Hibernate waits for
+   * every {@link SpringLiquibase} bean, and VanillaBP checks for its tables once all beans
+   * exist.
    *
    * @param dataSource The data source of the application
    * @param changeLog The changelog to apply, named by the engine's profile
-   * @return The Liquibase instance of the application
+   * @return The Liquibase instance applying the schema
    */
   @Bean
   public SpringLiquibase applicationLiquibase(

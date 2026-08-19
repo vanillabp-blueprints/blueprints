@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The changelog of a deployment which applied everything except VanillaBP's part: the workflow
+  module's tables are there, VanillaBP's are not. That is the realistic mistake - a changelog
+  which forgot one include line - and MissingTableIT uses it to show what VanillaBP says about
+  it while starting.
+
+  It lives in the test sources because an application has no use for it.
+-->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <include file="loan-approval/db/changelog.xml" relativeToChangelogFile="false" />
+
+</databaseChangeLog>

@@ -30,23 +30,6 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
-    <!--
-      The module owns the tables of its aggregate, so it brings its own changelog and the
-      bean which applies it. Two artifacts, both version managed by Spring Boot: Liquibase
-      itself, and Spring Boot 4's Liquibase module. The latter is what makes the entity
-      manager factory wait for every SpringLiquibase bean, so Hibernate never looks at a
-      table before the migration ran. Since Spring Boot 4 that integration is a module of
-      its own instead of part of the starter, and without it a changelog runs too late or,
-      as here, not at all.
-    -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-liquibase</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.liquibase</groupId>
-      <artifactId>liquibase-core</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
@@ -66,6 +49,24 @@
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!--
+      The module ships its changelog in its main resources; applying it is the job of whoever
+      builds an application. Its own test IS such an application, so Liquibase is a test
+      dependency here. Two artifacts, both version managed by Spring Boot: Liquibase itself,
+      and Spring Boot 4's Liquibase module, which is what makes the entity manager factory
+      wait for the migration. Since Spring Boot 4 that integration is a module of its own
+      instead of part of the starter, and without it a changelog runs too late or not at all.
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-liquibase</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.liquibase</groupId>
+      <artifactId>liquibase-core</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

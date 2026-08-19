@@ -24,10 +24,11 @@ import org.springframework.boot.test.context.SpringBootTest;
  * </p>
  *
  * <p>
- * The bookkeeping tables are part of the assertion. Two owners, two histories: the
- * application's default {@code DATABASECHANGELOG} and the workflow module's own. Were the
- * module writing into the application's table, the two could no longer be upgraded
- * independently, and nothing but this assertion would notice.
+ * Who owns what is part of the assertion. One history holds them all, and every changeset is
+ * recorded under the logical path of the changelog which declared it, so the rows of the
+ * workflow module stay the module's however the application included them. Were that path
+ * missing, a module's changesets would be recorded under the application's file name and a
+ * later version of the module could no longer recognize its own history.
  * </p>
  */
 @SpringBootTest
@@ -54,8 +55,21 @@ public class SchemaIT {
         .contains("LOAN_APPROVAL");
 
     assertThat(tables)
-        .describedAs("One bookkeeping table per owner: the application's and the module's")
-        .contains("DATABASECHANGELOG", "DATABASECHANGELOG_LOAN_APPROVAL");
+        .describedAs("Liquibase keeps its own bookkeeping")
+        .contains("DATABASECHANGELOG");
+
+  }
+
+  @Test
+  public void everyOwnerIsRecognizableInTheOneHistory() throws Exception {
+
+    assertThat(ownersInTheChangelogHistory())
+        .describedAs(
+            "One history holds the rows of every owner, each under the logical path its"
+                + " changelog declares. That is what keeps a workflow module's changesets the"
+                + " module's, whichever changelog included them, and it is why no bookkeeping"
+                + " table of its own is needed.")
+        .contains("vanillabp/schema", "loan-approval");
 
   }
 
@@ -72,6 +86,24 @@ public class SchemaIT {
             "The embedded engine's tables come from the changelog Camunda ships in its"
                 + " engine JAR, included by db/changelog-camunda7.xml")
         .contains("ACT_RU_EXECUTION", "ACT_RE_PROCDEF", "ACT_GE_SCHEMA_LOG");
+
+  }
+
+  /**
+   * @return The logical paths the applied changesets were recorded under, which is who owns
+   *         them.
+   * @throws Exception If the history cannot be read.
+   */
+  private Set<String> ownersInTheChangelogHistory() throws Exception {
+
+    final var owners = new LinkedHashSet<String>();
+    try (var connection = dataSource.getConnection(); var statement = connection
+        .createStatement(); var resultSet = statement.executeQuery("SELECT FILENAME FROM DATABASECHANGELOG")) {
+      while (resultSet.next()) {
+        owners.add(resultSet.getString(1));
+      }
+    }
+    return owners;
 
   }
 

@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  The schema the APPLICATION owns: what VanillaBP needs. The workflow module brings its own
-  changelog along and is not referenced here.
+  The changelog the application applies: what VanillaBP needs. It also includes the changelog of every
+  workflow module, one line each: a module ships its migrations, the application decides that
+  they are applied. That the module stays the OWNER of those tables is not a matter of who
+  runs Liquibase but of identity - its changelog declares its own 'logicalFilePath', so its
+  rows in DATABASECHANGELOG belong to it and stay independent of this file.
 
   Nothing in this file describes a table twice. VanillaBP's own changelog is included from
   the artifact 'io.vanillabp:vanillabp-schema', so an update of VanillaBP brings its new
@@ -25,5 +28,11 @@
     <property name="vanillabp.outbox.table" value="..."/> before the include.
   -->
   <include file="vanillabp/schema/changelog.xml" />
+
+  <!--
+    The workflow module's own tables, out of its JAR. A second workflow module adds a second
+    line here and nothing else.
+  -->
+  <include file="loan-approval/db/changelog.xml" relativeToChangelogFile="false" />
 
 </databaseChangeLog>

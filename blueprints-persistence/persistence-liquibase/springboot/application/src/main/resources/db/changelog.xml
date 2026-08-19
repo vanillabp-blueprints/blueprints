@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  The schema the APPLICATION owns: what VanillaBP needs, and what the outbox library of
+  The changelog the application applies: what VanillaBP needs, and what the outbox library of
   the Spring Boot integration needs. The workflow module brings its own changelog along
   and is not referenced here.
 
@@ -26,6 +26,12 @@
     <property name="vanillabp.outbox.table" value="..."/> before the include.
   -->
   <include file="vanillabp/schema/changelog.xml" />
+
+  <!--
+    The workflow module's own tables, out of its JAR. A second workflow module adds a second
+    line here and nothing else.
+  -->
+  <include file="loan-approval/db/changelog.xml" relativeToChangelogFile="false" />
 
   <!--
     The outbox of the Spring Boot integration is gruelbox, and its schema belongs to

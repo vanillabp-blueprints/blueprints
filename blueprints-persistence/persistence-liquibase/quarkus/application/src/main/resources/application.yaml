@@ -4,8 +4,10 @@
 # Nothing about a BPMS is here either. That lives in a profile file per engine, so switching
 # engines is a profile and not an edit. The one exception is the changelog to apply: the
 # extension reads it while the application is BUILT, so the build fills the engine's name in
-# below rather than a profile file naming the file at runtime. One adapter dependency and one workflow module are enough for VanillaBP
-# to derive the adapter, the workflow module and where its BPMN files are read from.
+# below rather than a profile file naming it at runtime.
+#
+# One adapter dependency and one workflow module are enough for VanillaBP to derive the
+# adapter, the workflow module and where its BPMN files are read from.
 quarkus:
   # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
   # application: the build replaces the placeholder with the profile's name, and the profile
@@ -20,30 +22,14 @@ quarkus:
     username: sa
     jdbc:
       url: jdbc:h2:mem:loan-approval;DB_CLOSE_DELAY=-1
-    # A second datasource on the SAME database, existing for one reason: the extension runs
-    # one changelog per datasource, and this application has two owners of schema. The
-    # workflow module's changelog runs against this one, with a history of its own, and the
-    # pool needs a single connection because it is used once, while starting.
-    loan-approval-schema:
-      db-kind: h2
-      username: sa
-      jdbc:
-        url: jdbc:h2:mem:loan-approval;DB_CLOSE_DELAY=-1
-        max-size: 1
   liquibase:
-    # What the application owns. The name of the changelog is filled in by the build, because
-    # the engine decides whether it has tables of its own and the extension reads the
-    # changelog while the application is built - later than a profile file could say so.
+    # One changelog, applied while the application starts: it includes what VanillaBP needs,
+    # the changelog of the workflow module and, with an embedded engine, the engine's own. The
+    # name is filled in by the build, because the engine decides which of them applies and the
+    # extension reads the changelog while the application is built - later than a profile file
+    # could say so.
     change-log: db/changelog-@bpms@.xml
     migrate-at-start: true
-    # What the workflow module owns, against the second datasource and into bookkeeping tables
-    # named after the module. Two owners, two histories: otherwise the application could no
-    # longer take a new version of the module without having its own changelog at hand.
-    "loan-approval-schema":
-      change-log: loan-approval/db/changelog.xml
-      migrate-at-start: true
-      database-change-log-table-name: DATABASECHANGELOG_LOAN_APPROVAL
-      database-change-log-lock-table-name: DATABASECHANGELOGLOCK_LOAN_APPROVAL
   hibernate-orm:
     schema-management:
       # Hibernate creates nothing and only checks that what the migrations built matches the

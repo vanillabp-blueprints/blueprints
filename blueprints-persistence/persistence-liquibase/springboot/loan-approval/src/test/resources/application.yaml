@@ -7,6 +7,11 @@ spring:
     url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
     username: sa
     password: ""
+  liquibase:
+    # The module's own changelog, applied by Spring Boot's Liquibase auto-configuration. An
+    # application names this file in ITS changelog instead, with one include line, and the
+    # module's changesets stay the module's either way: they carry their own logical path.
+    change-log: classpath:loan-approval/db/changelog.xml
   jpa:
     hibernate:
       # The module's own changelog creates its table, Hibernate only checks the result.

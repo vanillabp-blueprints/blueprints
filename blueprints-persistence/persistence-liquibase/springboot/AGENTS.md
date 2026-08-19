@@ -2,8 +2,8 @@
 
 `module-single` with the database schema taken out of the runtime's hands: Liquibase creates
 every table, including the ones VanillaBP and an embedded engine would create themselves. Two
-owners apply changelogs, the workflow module and the application, each into bookkeeping tables
-of its own.
+owners bring changelogs, the workflow module and the application, and one Liquibase run applies
+them; who owns which changeset is decided by the `logicalFilePath` its changelog declares.
 
 Build `module-single` first and apply this delta; nothing about the process, the aggregate or
 the BPMN wiring differs.
@@ -29,25 +29,25 @@ Two names are not placeholders and must not be renamed: `VANILLABP_PHASE_TWO_OUT
 outbox library's. The delivery table's name is not configurable at all, so a renamed one is a
 table nobody reads.
 
-The bookkeeping tables of the module (`DATABASECHANGELOG_LOAN_APPROVAL` and its lock table)
-are named after the module and follow the `loan-approval` placeholder.
+`loan-approval` is also the `logicalFilePath` of the module's changelog. Renaming the module
+means renaming that path, and a changelog already applied somewhere must not have its path
+changed: Liquibase would no longer recognize its rows and would run every changeset again.
 
 ## Core files
 
-|                                            File                                            |                                                        Why it matters                                                         |
-|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/db/changelog.xml`                          | the module's schema: its aggregate table. Inside the module's resource directory, because modules share one classpath         |
-| `loan-approval/src/main/java/.../loanapproval/config/LoanApprovalSchemaConfiguration.java` | the module's `SpringLiquibase` bean, with bookkeeping tables of its own. Named after the module to avoid a bean name clash    |
-| `application/src/main/resources/db/changelog.xml`                                          | what the application owns: `<include>` of `vanillabp/schema/changelog.xml` from the artifact, plus the outbox library's table |
-| `application/src/main/resources/db/changelog-camunda7.xml`                                 | the same plus `<include>` of Camunda's changelog from the engine JAR. Applied by the Camunda 7 build only                     |
-| `application/src/main/resources/db/gruelbox-outbox.xml`                                    | the outbox table of the outbox library, read out of a database its own migrator had created                                   |
-| `application/src/main/java/.../SchemaConfiguration.java`                                   | the application's `SpringLiquibase` bean; the changelog to apply is a property the engine profile sets                        |
-| `application/src/main/resources/application.yaml`                                          | `ddl-auto: validate`, `vanillabp.outbox.create-schema: false`, `blueprint.schema.changelog`                                   |
-| `application/src/main/resources/application-camunda7.yaml`                                 | `database-schema-update: false` and the changelog which includes the engine's                                                 |
-| `application/src/test/java/.../SchemaIT.java`                                              | asserts every table exists and that there is one bookkeeping table per owner                                                  |
-| `application/src/test/java/.../MissingTableIT.java`                                        | asserts a forgotten migration ends the boot with VanillaBP's message                                                          |
-| `application/src/test/java/.../WorkflowOnTheOwnSchemaIT.java`                              | runs a workflow on the migrated schema: a table described wrongly comes out here instead of in production                     |
-| `application/src/test/java/.../GruelboxSchemaDriftTest.java`                               | lets the outbox library migrate an empty database and compares, so a library upgrade cannot rot the copied statements         |
+|                               File                                |                                                        Why it matters                                                         |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/db/changelog.xml` | the module's schema: its aggregate table. Inside the module's resource directory, because modules share one classpath         |
+| `application/src/main/resources/db/changelog.xml`                 | what the application owns: `<include>` of `vanillabp/schema/changelog.xml` from the artifact, plus the outbox library's table |
+| `application/src/main/resources/db/changelog-camunda7.xml`        | the same plus `<include>` of Camunda's changelog from the engine JAR. Applied by the Camunda 7 build only                     |
+| `application/src/main/resources/db/gruelbox-outbox.xml`           | the outbox table of the outbox library, read out of a database its own migrator had created                                   |
+| `application/src/main/java/.../SchemaConfiguration.java`          | the application's `SpringLiquibase` bean; the changelog to apply is a property the engine profile sets                        |
+| `application/src/main/resources/application.yaml`                 | `ddl-auto: validate`, `vanillabp.outbox.create-schema: false`, `blueprint.schema.changelog`                                   |
+| `application/src/main/resources/application-camunda7.yaml`        | `database-schema-update: false` and the changelog which includes the engine's                                                 |
+| `application/src/test/java/.../SchemaIT.java`                     | asserts every table exists and that there is one bookkeeping table per owner                                                  |
+| `application/src/test/java/.../MissingTableIT.java`               | asserts a forgotten migration ends the boot with VanillaBP's message                                                          |
+| `application/src/test/java/.../WorkflowOnTheOwnSchemaIT.java`     | runs a workflow on the migrated schema: a table described wrongly comes out here instead of in production                     |
+| `application/src/test/java/.../GruelboxSchemaDriftTest.java`      | lets the outbox library migrate an empty database and compares, so a library upgrade cannot rot the copied statements         |
 
 Rules which hold beyond this blueprint:
 
@@ -57,28 +57,33 @@ Rules which hold beyond this blueprint:
 - Never copy VanillaBP's or the engine's statements into the application. Both ship them, and
   both decide by their version what is correct. `<include>` reaches into a JAR on the
   classpath.
-- One owner, one history. A workflow module writing into the application's
-  `DATABASECHANGELOG` cannot be upgraded independently of it.
+- Ownership is identity, not a table. A changelog declares its own `logicalFilePath`, and
+  Liquibase records its changesets under that path rather than under the file which included
+  them. One history therefore holds every owner, and a module stays upgradable on its own. A
+  changelog without that attribute is recorded under whatever file included it, which is the
+  mistake this rule exists for.
 
 ## Boilerplate files
 
-|                               File                                |                                     Purpose                                     |
-|-------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                        | the BPMS profiles and the VanillaBP BOM import                                  |
-| `loan-approval/pom.xml`                                           | `vanillabp-spring-boot-support`, `spring-boot-liquibase`, `liquibase-core`      |
-| `application/pom.xml`                                             | the BPMS adapter, `spring-boot-liquibase`, `liquibase-core`, `vanillabp-schema` |
-| `application/src/main/java/.../Application.java`                  | the Spring Boot application, in the parent package of the module                |
-| `application/src/test/resources/db/changelog-empty.xml`           | the changelog which does nothing, used by `MissingTableIT`                      |
-| `loan-approval/src/test/java/.../TestApplication.java`            | the minimal application the module's test boots                                 |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                 |
-| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                  |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                             |
-| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model       |
+|                                File                                 |                                     Purpose                                     |
+|---------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                          | the BPMS profiles and the VanillaBP BOM import                                  |
+| `loan-approval/pom.xml`                                             | `vanillabp-spring-boot-support`, `spring-boot-liquibase`, `liquibase-core`      |
+| `application/pom.xml`                                               | the BPMS adapter, `spring-boot-liquibase`, `liquibase-core`, `vanillabp-schema` |
+| `application/src/main/java/.../Application.java`                    | the Spring Boot application, in the parent package of the module                |
+| `application/src/test/resources/db/changelog-without-vanillabp.xml` | everything but VanillaBP's part, used by `MissingTableIT`                       |
+| `loan-approval/src/test/java/.../TestApplication.java`              | the minimal application the module's test boots                                 |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of the integration test: waits for workflow progress                 |
+| `application/src/test/java/.../ApplicationSmokeTest.java`           | boots the application, which validates the BPMN-to-code wiring                  |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java`   | GET endpoints operating the process                                             |
+| `docs/loan_approval.png`                                            | the picture of the process the README shows, rendered from the BPMN model       |
 
 `spring-boot-liquibase` is not optional: since Spring Boot 4 the Liquibase integration is a
-module of its own, and it is what makes the entity manager factory wait for every
+module of its own, and it is what makes the entity manager factory wait for a
 `SpringLiquibase` bean. With `liquibase-core` alone the migration runs too late or not at all,
-and the symptom is Hibernate reporting a missing table.
+and the symptom is Hibernate reporting a missing table. In the module's test that
+auto-configuration is what applies the module's changelog, named by
+`spring.liquibase.change-log`.
 
 ## Adding this blueprint to an existing project
 
@@ -88,13 +93,13 @@ and the symptom is Hibernate reporting a missing table.
    application. The latter contains no class, only the changelog and the SQL generated from
    it.
 3. Give the workflow module a changelog below its own resource directory,
-   `<workflow-module-id>/db/changelog.xml`, describing the tables of its aggregates, and a
-   `@Configuration` declaring a `SpringLiquibase` for it with `databaseChangeLogTable` and
-   `databaseChangeLogLockTable` named after the module. Name the class after the module too.
+   `<workflow-module-id>/db/changelog.xml`, describing the tables of its aggregates and
+   declaring `logicalFilePath="<workflow-module-id>"`.
 4. Give the application a changelog which includes `vanillabp/schema/changelog.xml` from the
-   classpath, and a `SpringLiquibase` bean for it keeping Liquibase's default bookkeeping
-   tables. A renamed outbox table (`vanillabp.outbox.jdbc.table`) is set as the changelog
-   property `vanillabp.outbox.table` before the include.
+   classpath plus one line per workflow module, and a `SpringLiquibase` bean for it keeping
+   Liquibase's default bookkeeping tables. A renamed outbox table
+   (`vanillabp.outbox.jdbc.table`) is set as the changelog property `vanillabp.outbox.table`
+   before the include.
 5. Switch the runtime creators off: `spring.jpa.hibernate.ddl-auto: validate` and
    `vanillabp.outbox.create-schema: false`. With an embedded Camunda 7 engine also
    `vanillabp.adapters.<adapter-id>.database-schema-update: false`, and include

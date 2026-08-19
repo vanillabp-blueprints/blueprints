@@ -1,20 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  The schema of THIS workflow module: the table of its workflow aggregate and nothing
-  else. It travels in the module's JAR, so whoever adds the module to an application gets
-  its migrations with it.
+  The schema of THIS workflow module: the table of its workflow aggregate and nothing else.
+  It travels in the module's JAR, so whoever adds the module to an application gets its
+  migrations with it, and the application applies them by including this file once.
 
   The file lives below 'loan-approval/', the directory named after the workflow module ID,
   for the same reason the BPMN files do: all modules share one classpath, and two modules
   called 'db/changelog.xml' would overwrite each other.
 
-  Applied by the module's own Liquibase bean into its own bookkeeping tables, see
-  SchemaConfiguration. What VanillaBP and the engine need is not here - that belongs to
-  the application.
+  'logicalFilePath' is what keeps this module's changesets ITS changesets. Liquibase
+  identifies a changeset by that path plus its id and author, never by the file which
+  included it, so the rows of this module stay recognizable and independent of the
+  application's changelog - the same way VanillaBP's own changelog does it. That is also why
+  no bookkeeping table of its own is needed: one DATABASECHANGELOG holds the rows of every
+  owner, each under its own logical path.
 -->
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+    logicalFilePath="loan-approval">
 
   <!--
     The id carries the module and the version which introduced the change. A changeset

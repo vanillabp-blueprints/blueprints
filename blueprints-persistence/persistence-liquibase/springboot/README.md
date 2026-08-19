@@ -24,26 +24,39 @@ which of them.
 | `TXNO_OUTBOX`, `TXNO_SEQUENCE`                          | the application's Liquibase     | `application/.../db/gruelbox-outbox.xml`                                 |
 | `ACT_*`                                                 | the application's Liquibase     | the changelog Camunda ships inside its engine JAR                        |
 | `LOAN_APPROVAL`                                         | the workflow module's Liquibase | `loan-approval/.../loan-approval/db/changelog.xml`                       |
-| `DATABASECHANGELOG`                                     | Liquibase                       | the application's bookkeeping                                            |
-| `DATABASECHANGELOG_LOAN_APPROVAL`                       | Liquibase                       | the workflow module's bookkeeping                                        |
+| `DATABASECHANGELOG`                                     | Liquibase                       | the bookkeeping, one row per changeset and owner                         |
 
 Three settings are what make this real, and all three are in the configuration rather than
 in code: `ddl-auto: validate` has Hibernate check the result instead of building it,
 `vanillabp.outbox.create-schema: false` takes VanillaBP's tables out of its own hands, and
 `database-schema-update: false` does the same for the engine.
 
-### Two owners, two histories
+### Two owners, one history
 
 A workflow module is a JAR which several applications may use, and it owns the tables of its
-workflow aggregate. So it brings its changelog along and applies it into bookkeeping tables
-of its own, `DATABASECHANGELOG_LOAN_APPROVAL`. Everything else belongs to the application:
-what VanillaBP needs, what the outbox library needs and what the engine needs.
+workflow aggregate. So it brings its changelog along, in its own resource directory, and the
+application applies it with one line:
 
-Sharing one history would tie the two together. The application could no longer take a new
-version of the module without having its own changelog at hand, and two modules in one
-application would write into the same rows. With a table per owner, each side is upgraded on
-its own. `SchemaIT` asserts that both tables exist, because nothing else would notice if the
-module started writing into the application's.
+```xml
+<include file="loan-approval/db/changelog.xml" />
+```
+
+Ownership is not a matter of who runs Liquibase, it is a matter of identity. Liquibase records
+a changeset under the `logicalFilePath` its changelog declares, plus its id and author, never
+under the file which included it. The module's changelog declares `logicalFilePath="loan-approval"`,
+so its rows in `DATABASECHANGELOG` are its own and a later version of the module finds its own
+history:
+
+```
+FILENAME          | ID
+vanillabp/schema  | vanillabp-task-delivery-2.0.0
+loan-approval     | loan-approval-aggregate-1.0.0
+```
+
+That is why one Liquibase run and one bookkeeping table are enough, and it is what VanillaBP's
+own changelog does as well. `SchemaIT` asserts both owners are recognizable in that history,
+because a module whose changelog forgot its logical path would be recorded under the
+application's file name, and nothing else would notice.
 
 ### The tables VanillaBP needs
 
@@ -123,7 +136,7 @@ it instead of running the handler twice. Either
   (the default).
 ```
 
-`MissingTableIT` pins it by starting the application with an empty changelog. There is one
+`MissingTableIT` pins it by starting the application with a changelog which forgot VanillaBP's include line. There is one
 gap to know about: the outbox table of the outbox library is not checked this way, so a
 missing `TXNO_OUTBOX` still shows up at the first workflow which is started.
 
@@ -154,12 +167,13 @@ The entity naming its columns is worth a word: as long as a runtime creates the 
 naming strategy decides what they are called, and it is right by definition. Once a migration
 creates them, the two have to agree, and a name written down beats a default nobody looked up.
 
-Two more details are worth a sentence. `spring-boot-liquibase` is a module of its own since Spring
-Boot 4, and it is what makes the entity manager factory wait for every `SpringLiquibase`
-bean, so `liquibase-core` alone leaves the migration running too late or not at all. And
-declaring `SpringLiquibase` beans makes Spring Boot's Liquibase auto-configuration step
-aside, so `spring.liquibase.*` has no effect here: every changelog is wired explicitly, which
-is what having two of them requires.
+Two more details are worth a sentence. `spring-boot-liquibase` is a module of its own since
+Spring Boot 4, and it is what makes the entity manager factory wait for the `SpringLiquibase`
+bean, so `liquibase-core` alone leaves the migration running too late or not at all. And a
+bean of that type makes Spring Boot's Liquibase auto-configuration step aside, so
+`spring.liquibase.*` has no effect in the application: the changelog is wired explicitly,
+because the engine decides which one it is. In the module's own test that auto-configuration
+is exactly what applies its changelog, which is why Liquibase is a test dependency there.
 
 ## Running it
 
@@ -179,13 +193,12 @@ Start the application:
 mvn -pl application spring-boot:run
 ```
 
-The log shows the migrations running before anything else, first the module's changelog and
-then the application's:
+The log shows the migration running before anything else, one changeset per owner:
 
 ```
-Running Changeset: loan-approval/db/changelog.xml::loan-approval-aggregate-1.0.0::blueprint
 Running Changeset: vanillabp/schema::vanillabp-phase-two-outbox-2.0.0::VanillaBP
 Running Changeset: vanillabp/schema::vanillabp-task-delivery-2.0.0::VanillaBP
+Running Changeset: loan-approval::loan-approval-aggregate-1.0.0::blueprint
 Running Changeset: db/gruelbox-outbox.xml::gruelbox-outbox-1.0.0::blueprint
 Running Changeset: org/camunda/bpm/engine/db/liquibase/camunda-changelog.xml::7.16.0-baseline::Camunda
 ```
@@ -211,10 +224,9 @@ created its tables itself.
 
 ## How it works
 
-The order at startup is what matters here, and it is not left to chance. Both
-`SpringLiquibase` beans run while the context is being built, and Hibernate waits for them
-because Spring Boot's Liquibase module lets the entity manager factory depend on every bean
-of that type. The engine reaches its schema through the transaction manager, which is built
+The order at startup is what matters here, and it is not left to chance. Liquibase runs while
+the context is being built, and Hibernate waits for it because Spring Boot's Liquibase module
+lets the entity manager factory depend on every bean of that type. The engine reaches its schema through the transaction manager, which is built
 on top of that same entity manager factory. VanillaBP checks its tables once all beans exist,
 in a `SmartInitializingSingleton`, which is after every migration ran.
 
