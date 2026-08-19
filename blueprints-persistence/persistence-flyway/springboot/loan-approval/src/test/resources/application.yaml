@@ -1,0 +1,21 @@
+# The module's test runs the module, so it runs the module's migrations. What VanillaBP needs is
+# not part of it: those tables belong to the application, and here VanillaBP creates them itself,
+# as it does in every other blueprint. The application's test is where the handover of ALL tables
+# is shown.
+spring:
+  datasource:
+    url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  flyway:
+    # The module's own migrations, applied by Spring Boot's Flyway auto-configuration. An
+    # application gives them a Flyway instance and a history table of their own instead, because
+    # Flyway keeps one timeline per history table and the module's versions are its own.
+    locations: classpath:loan-approval/db/migration
+  jpa:
+    hibernate:
+      # The module's own migration creates its table, Hibernate only checks the result.
+      ddl-auto: validate
+logging:
+  level:
+    blueprint.workflowmodule: INFO

@@ -1,0 +1,10 @@
+# Everything specific to Camunda 7, applying only while the 'camunda7' profile is the parent
+# of the profile the application runs in.
+vanillabp:
+  adapters:
+    camunda7:
+      # The engine keeps its hands off the schema: Flyway applies the scripts Camunda ships in
+      # its engine JAR, named by the build (see the camunda7 profile of application/pom.xml).
+      # Leaving this at its default 'true' would have the engine create or upgrade its tables at
+      # boot, which is exactly what a project managing its schema does not want.
+      database-schema-update: false

@@ -55,6 +55,8 @@
     <module>blueprints-persistence/persistence-custom/quarkus</module>
     <module>blueprints-persistence/persistence-liquibase/springboot</module>
     <module>blueprints-persistence/persistence-liquibase/quarkus</module>
+    <module>blueprints-persistence/persistence-flyway/springboot</module>
+    <module>blueprints-persistence/persistence-flyway/quarkus</module>
     <module>blueprints-bpmn/bpmn-service-task/springboot</module>
     <module>blueprints-bpmn/bpmn-service-task/quarkus</module>
     <module>blueprints-bpmn/bpmn-user-task/springboot</module>

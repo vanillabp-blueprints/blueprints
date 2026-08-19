@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.persistence-flyway-quarkus</groupId>
+    <artifactId>persistence-flyway</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>application</artifactId>
+  <name>The application</name>
+  <description>The Quarkus application: it pulls in the workflow module, decides which BPMS is used and owns the schema of everything which is not the workflow module's own.</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.persistence-flyway-quarkus</groupId>
+      <artifactId>loan-approval</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!--
+      The VanillaBP extension. It belongs into the module which builds the application: it
+      wires the business code of every workflow module to the BPMS APIs while the
+      application is built.
+    -->
+    <dependency>
+      <groupId>io.vanillabp</groupId>
+      <artifactId>vanillabp-quarkus-integration</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest</artifactId>
+    </dependency>
+    <!-- The database is the application's decision, the entity is the module's. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jdbc-h2</artifactId>
+    </dependency>
+    <!--
+      The tool which creates the schema. The extension runs a changelog per datasource while
+      the application starts, and it collects the changelog and everything it includes while
+      the application is BUILT - which is why the changelog to apply is a build time setting.
+    -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-flyway</artifactId>
+    </dependency>
+    <!--
+      The tables VanillaBP needs, as a Liquibase changelog. A resource-only artifact: no
+      class, no runtime dependency, just 'vanillabp/schema/changelog.xml' and the SQL
+      generated from it for Flyway. Version managed by the VanillaBP BOM.
+    -->
+    <dependency>
+      <groupId>io.vanillabp</groupId>
+      <artifactId>vanillabp-schema</artifactId>
+    </dependency>
+    <!-- Configuration in YAML, for application.yaml and for the workflow module's own file. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-config-yaml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <!--
+    The one line of build machinery this blueprint needs: 'application.yaml' names the BPMS
+    profile of the build, and only Maven knows it. Filtering is restricted to that file, and
+    to the '@...@' delimiters, so nothing else in the resources is touched and Quarkus' own
+    '${...}' expressions keep working.
+  -->
+  <build>
+    <resources>
+      <resource>
+        <filtering>true</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>application*.yaml</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>application*.yaml</exclude>
+        </excludes>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <configuration>
+          <delimiters>
+            <delimiter>@</delimiter>
+          </delimiters>
+          <useDefaultDelimiters>false</useDefaultDelimiters>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <goals>
+              <goal>build</goal>
+              <goal>generate-code</goal>
+              <goal>generate-code-tests</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!--
+    This is the only place a BPMS is named: the application decides which adapter is
+    loaded. The workflow module does not know and does not care.
+  -->
+  <profiles>
+    <profile>
+      <id>camunda7</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <bpms>camunda7</bpms>
+        <!--
+          The engine whose schema is applied. Flyway needs a version and a file name, Camunda's
+          scripts have neither, so the build takes them out of the engine JAR of exactly this
+          version and names them. Nothing is copied into this repository: raising this property
+          raises the schema with it.
+        -->
+        <camunda7-engine.version>7.24.0</camunda7-engine.version>
+        <!-- Camunda ships one set of scripts per database, and this is the one this blueprint runs. -->
+        <camunda7-engine.database>h2</camunda7-engine.database>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>org.camunda.community.vanillabp</groupId>
+          <artifactId>camunda7-adapter-quarkus</artifactId>
+          <version>${camunda7-adapter.version}</version>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>3.9.0</version>
+            <executions>
+              <execution>
+                <id>unpack-engine-schema</id>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <phase>generate-resources</phase>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.camunda.bpm</groupId>
+                      <artifactId>camunda-engine</artifactId>
+                      <version>${camunda7-engine.version}</version>
+                      <includes>org/camunda/bpm/engine/db/create/activiti.${camunda7-engine.database}.create.*.sql</includes>
+                      <outputDirectory>${project.build.directory}/engine-schema</outputDirectory>
+                    </artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.1.0</version>
+            <executions>
+              <execution>
+                <id>name-engine-schema-for-flyway</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>generate-resources</phase>
+                <configuration>
+                  <target>
+                    <!--
+                      Flyway applies files in the order of their version, so the parts are numbered
+                      the way Camunda's own installation applies them: the engine first, then
+                      identity, history, CMMN and DMN.
+                    -->
+                    <property name="engine.scripts" value="${project.build.directory}/engine-schema/org/camunda/bpm/engine/db/create"/>
+                    <property name="flyway.engine" value="${project.build.outputDirectory}/db/migration-engine"/>
+                    <mkdir dir="${flyway.engine}"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.engine.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.1__camunda_engine.sql"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.identity.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.2__camunda_identity.sql"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.history.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.3__camunda_history.sql"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.case.engine.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.4__camunda_case_engine.sql"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.case.history.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.5__camunda_case_history.sql"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.decision.engine.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.6__camunda_decision_engine.sql"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.decision.history.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.7__camunda_decision_history.sql"/>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>camunda8</id>
+      <properties>
+        <bpms>camunda8</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>org.camunda.community.vanillabp</groupId>
+          <artifactId>camunda8-adapter-quarkus</artifactId>
+          <version>${camunda8-adapter.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>

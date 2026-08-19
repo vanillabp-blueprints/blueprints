@@ -1123,3 +1123,51 @@ own and its table is both shipped and checked.
 
 **Affects:** `adapter-platform-integration`, Spring Boot side. Anything which manages its
 database schema itself, which is every application past its first prototype.
+
+## G24: the wiki recommends a second Flyway instance without saying what it needs
+
+**Status:** open (2026-08-19), found while building `persistence-flyway`. A documentation gap, not a
+defect in the code, and it costs whoever follows the wiki an hour of confusion.
+
+**What the wiki says.** Story `75` decided, correctly, that VanillaBP's SQL is applied by a Flyway
+instance of its own, with a history table of its own, so that VanillaBP's version numbers never
+collide with an application's. The wiki pages of both platforms say so and name
+`flyway_schema_history_vanillabp`.
+
+**What happens when you do that.** The second instance refuses to work:
+
+```
+org.flywaydb.core.api.FlywayException: Found non-empty schema(s) "PUBLIC" but no schema
+history table. Use baseline() or set baselineOnMigrate to true to initialize the schema
+history table.
+```
+
+Any instance which is not the first one finds a schema that already holds tables and no history of
+its own, which is exactly the situation Flyway treats as "somebody else's database". It needs
+`baselineOnMigrate = true`. And with that comes a second setting nobody thinks of:
+`baselineVersion` defaults to 1, so every migration numbered `1.0.0` is marked as already applied
+and silently skipped. Without `baselineVersion = 0` the tables of such a migration are simply never
+created, and Flyway reports success.
+
+**What would fix it.** Two sentences in the Flyway section of both platform pages: a history table
+of its own needs `baselineOnMigrate`, and `baselineVersion` has to be `0` unless every migration is
+numbered above 1. The blueprint shows both settings and says why, but the wiki is where somebody
+looks first.
+
+**And on Quarkus the recommendation does not hold at all.** A history table of its own needs a Flyway
+instance of its own, and there is no way to have one without paying for it:
+
+- the extension applies ONE configuration per datasource, and a named configuration without a
+  datasource of the same name is ignored, even with a `jdbc-url` of its own (measured: the
+  configuration is silently skipped, and the first table Hibernate looks for is missing),
+- a migration run of the application's own comes too late, because Hibernate builds its session
+  factory - and with `schema-management.strategy: validate` compares it against the schema - before
+  any `StartupEvent` observer runs (measured the same way).
+
+So a history per owner costs either a datasource per history, whose pool exists for one migration, or
+the startup validation. `persistence-flyway/quarkus` therefore applies every owner's migrations in
+one timeline and keeps the version ranges apart, which the blueprint explains. What the wiki should
+say is what the platform allows, per platform, rather than one recommendation for both.
+
+**Affects:** the wiki of `adapter-platform-integration`, both platform pages. Anything which follows
+the recommendation of story `75` and manages its schema with Flyway.

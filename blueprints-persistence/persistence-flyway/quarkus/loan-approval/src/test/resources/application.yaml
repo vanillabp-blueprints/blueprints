@@ -1,0 +1,24 @@
+# The configuration of the module's own test: its database and its own migration. What
+# VanillaBP needs is not part of it - those tables belong to the application, and here
+# VanillaBP creates them itself, as it does in every other blueprint. The application's test
+# is where the handover of ALL tables is shown.
+quarkus:
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
+  flyway:
+    # The module's own migrations, applied by the extension. An application gives them a Flyway
+    # run and a history table of their own instead, because Flyway keeps one timeline per history
+    # table and the module's versions are its own.
+    locations: classpath:loan-approval/db/migration
+    migrate-at-start: true
+  hibernate-orm:
+    schema-management:
+      # The module's own migration creates its table, Hibernate only checks the result.
+      strategy: validate
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO

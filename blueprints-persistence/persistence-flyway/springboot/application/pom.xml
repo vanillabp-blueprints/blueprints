@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.persistence-flyway-springboot</groupId>
+    <artifactId>persistence-flyway</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>application</artifactId>
+  <name>The application</name>
+  <description>The Spring Boot application: it pulls in the workflow module, decides which BPMS is used and owns the schema of everything which is not the workflow module's own.</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.persistence-flyway-springboot</groupId>
+      <artifactId>loan-approval</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <!--
+      The tool which creates the schema, and Spring Boot 4's Flyway module which integrates it.
+      The module is what makes the entity manager factory wait for a migration, so Flyway alone
+      would leave it running too late or not at all. Its auto-configuration steps aside as soon
+      as an application declares Flyway beans of its own, which this one does in
+      SchemaConfiguration.
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-flyway</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
+    <!--
+      The SQL VanillaBP needs, one file per database. A resource-only artifact: no class, no
+      runtime dependency, just the statements plus the changelog they were generated from.
+      Version managed by the VanillaBP BOM.
+    -->
+    <dependency>
+      <groupId>io.vanillabp</groupId>
+      <artifactId>vanillabp-schema</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>loan-approval</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+            </exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!--
+    This is the only place a BPMS is named: the application decides which adapter is
+    loaded. The workflow module does not know and does not care.
+  -->
+  <profiles>
+    <profile>
+      <id>camunda7</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <bpms>camunda7</bpms>
+        <!--
+          The engine whose schema is applied. Flyway needs a version and a file name, Camunda's
+          scripts have neither, so the build takes them out of the engine JAR of exactly this
+          version and names them. Nothing is copied into this repository: raising this property
+          raises the schema with it.
+        -->
+        <camunda7-engine.version>7.24.0</camunda7-engine.version>
+        <!-- Camunda ships one set of scripts per database, and this is the one this blueprint runs. -->
+        <camunda7-engine.database>h2</camunda7-engine.database>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>org.camunda.community.vanillabp</groupId>
+          <artifactId>camunda7-adapter-spring-boot</artifactId>
+          <version>${camunda7-adapter.version}</version>
+        </dependency>
+        <!--
+          Camunda's Cockpit, Tasklist and Admin at /camunda. Optional in every sense: the
+          adapter works without it, and an application which does not want the web
+          applications leaves the dependency out.
+        -->
+        <dependency>
+          <groupId>org.camunda.community.vanillabp</groupId>
+          <artifactId>camunda7-adapter-spring-boot-webapps</artifactId>
+          <version>${camunda7-adapter.version}</version>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>3.9.0</version>
+            <executions>
+              <execution>
+                <id>unpack-engine-schema</id>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <phase>generate-resources</phase>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.camunda.bpm</groupId>
+                      <artifactId>camunda-engine</artifactId>
+                      <version>${camunda7-engine.version}</version>
+                      <includes>org/camunda/bpm/engine/db/create/activiti.${camunda7-engine.database}.create.*.sql</includes>
+                      <outputDirectory>${project.build.directory}/engine-schema</outputDirectory>
+                    </artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.1.0</version>
+            <executions>
+              <execution>
+                <id>name-engine-schema-for-flyway</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>generate-resources</phase>
+                <configuration>
+                  <target>
+                    <!--
+                      Flyway applies files in the order of their version, so the parts are numbered
+                      the way Camunda's own installation applies them: the engine first, then
+                      identity, history, CMMN and DMN.
+                    -->
+                    <property name="engine.scripts" value="${project.build.directory}/engine-schema/org/camunda/bpm/engine/db/create"/>
+                    <property name="flyway.engine" value="${project.build.outputDirectory}/db/migration-camunda7"/>
+                    <mkdir dir="${flyway.engine}"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.engine.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.1__camunda_engine.sql"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.identity.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.2__camunda_identity.sql"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.history.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.3__camunda_history.sql"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.case.engine.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.4__camunda_case_engine.sql"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.case.history.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.5__camunda_case_history.sql"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.decision.engine.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.6__camunda_decision_engine.sql"/>
+                    <copy file="${engine.scripts}/activiti.${camunda7-engine.database}.create.decision.history.sql" tofile="${flyway.engine}/V${camunda7-engine.version}.7__camunda_decision_history.sql"/>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>camunda8</id>
+      <properties>
+        <bpms>camunda8</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>org.camunda.community.vanillabp</groupId>
+          <artifactId>camunda8-adapter-spring-boot</artifactId>
+          <version>${camunda8-adapter.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>
