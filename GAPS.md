@@ -1080,8 +1080,9 @@ Quarkus application without MongoDB, and with it the delivery section of `module
 
 ## G23: handing VanillaBP's tables over forces an application to write gruelbox's DDL as well
 
-**Status:** open (2026-08-19), found while building `persistence-liquibase/springboot`, the first
-blueprint which takes the schema out of the runtime's hands. Read from the code, not guessed:
+**Status:** open, story `95` (`prompts/ROADMAP.md`), found on 2026-08-19 while building
+`persistence-liquibase/springboot`, the first blueprint which takes the schema out of the runtime's
+hands. Read from the code, not guessed:
 `GruelboxPhaseTwoOutboxAutoConfiguration` calls
 `DefaultPersistor.builder()...migrate(properties.isCreateSchema() && (customTable == null))`.
 
@@ -1126,8 +1127,9 @@ database schema itself, which is every application past its first prototype.
 
 ## G24: the wiki recommends a second Flyway instance without saying what it needs
 
-**Status:** open (2026-08-19), found while building `persistence-flyway`. A documentation gap, not a
-defect in the code, and it costs whoever follows the wiki an hour of confusion.
+**Status:** open, story `96` (`prompts/ROADMAP.md`), found on 2026-08-19 while building
+`persistence-flyway`. A documentation gap, not a defect in the code, and it costs whoever follows the
+wiki an hour of confusion.
 
 **What the wiki says.** Story `75` decided, correctly, that VanillaBP's SQL is applied by a Flyway
 instance of its own, with a history table of its own, so that VanillaBP's version numbers never
