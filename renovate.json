@@ -1,6 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":dependencyDashboard"],
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    "github>vanillabp/camunda8-adapter//renovate/camunda8-lines.json"
+  ],
   "timezone": "Europe/Vienna",
   "prConcurrentLimit": 5,
   "labels": ["dependencies"],
@@ -10,8 +14,8 @@
   "automergeStrategy": "squash",
   "packageRules": [
     {
-      "description": "VanillaBP and the BPMS adapters follow the framework, not Renovate. Their versions are bumped when a release is cut, and while they are snapshots there is nothing to look up.",
-      "matchPackagePatterns": ["^io\\.vanillabp", "^org\\.camunda\\.community\\.vanillabp"],
+      "description": "VanillaBP and the BPMS adapters follow the framework, not Renovate. Their versions are bumped when a release is cut, and while they are snapshots there is nothing to look up. Once the adapters are released the Camunda 8 preset extended above takes over, and it keeps a blueprint inside the release line it was written for: the version suffix (2.1.0-8.9) is the lowest cluster version the adapter accepts, and Renovate never proposes an update that changes it.",
+      "matchPackageNames": ["/^io\\.vanillabp/", "/^org\\.camunda\\.community\\.vanillabp/"],
       "enabled": false
     },
     {

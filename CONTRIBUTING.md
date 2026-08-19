@@ -348,6 +348,16 @@ table is the place to look up what is current.
 VanillaBP artifacts are version-managed by `io.vanillabp:vanillabp-bom`; BPMS adapters are
 released independently and carry their own version.
 
+The Camunda 8 adapter is released once per Camunda 8 minor, and the minor is part of its
+version, `2.1.0-8.9` for a cluster on 8.9. Blueprints build against the current GA line, and
+the snapshot they use today has no suffix yet. With the first release the version in the
+table gets one, and moving it to another line means moving the cluster the CI starts as well,
+which is why `bin/camunda8_cluster.sh` pins a version at all. Renovate cannot cross that
+boundary on its own: `renovate.json` extends the preset the adapter ships, which reads the
+suffix as a compatibility value.
+[Release lines](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter#release-lines)
+explains why the suffix exists.
+
 ## What CI builds
 
 Three workflows, and they answer three different questions.
@@ -410,7 +420,8 @@ touching all of them, never one PR per blueprint.
 Two exceptions are deliberate:
 
 - VanillaBP and the BPMS adapters are excluded. Their versions follow the framework and are
-  bumped when a release is cut.
+  bumped when a release is cut. Once the Camunda 8 adapter is released, the preset it ships
+  keeps an update inside the release line the blueprints build against.
 - Spring Boot and Quarkus are not merged automatically. Their versions are also written in
   the table below, and a bot cannot carry them there.
 
