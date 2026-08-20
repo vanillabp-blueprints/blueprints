@@ -61,6 +61,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # Without a limit all of them start at once, and about a hundred jobs asking Maven
+      # Central for the same artifacts in the same second get answered with 429 and 403. The
+      # Maven cache of the runners does not help on the first run of a branch, which is
+      # exactly when it hurts. Twenty at a time costs a few minutes of wall clock, and the
+      # runners rarely grant more than that anyway.
+      max-parallel: 20
       matrix:
         include: "${{ fromJSON(needs.discover.outputs.combinations) }}"
     steps:

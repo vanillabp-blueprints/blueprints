@@ -32,8 +32,40 @@ ELASTICSEARCH=vanillabp-elasticsearch
 CAMUNDA=vanillabp-camunda8-cluster
 # Booting Elasticsearch and Camunda takes a while on a cold CI runner.
 READY_TIMEOUT_SECONDS="${READY_TIMEOUT_SECONDS:-300}"
+# How often a cluster whose exporter did not open is thrown away and started again.
+START_ATTEMPTS="${START_ATTEMPTS:-2}"
 
 start() {
+  local attempt=1
+
+  while true; do
+    start_containers
+
+    if exporter_opened; then
+      echo "Camunda 8 is listening on http://localhost:${REST_PORT}"
+      return 0
+    fi
+
+    # A broker whose exporter did not open hands no work out: a workflow starts, the cluster
+    # confirms it, and no job is ever delivered. From the outside that looks like a defect of
+    # whichever blueprint runs into it, and on 2026-08-20 it cost four jobs of one CI run and
+    # an hour of reading test logs. Better to say it here, where the cause is one grep away.
+    echo "Camunda 8 came up without a working exporter (attempt ${attempt})." >&2
+    docker logs "${CAMUNDA}" 2>&1 | grep -E "Failed to open exporter|Elasticsearch cluster is not accessible" | tail -3 >&2
+
+    if [ "${attempt}" -ge "${START_ATTEMPTS}" ]; then
+      echo "Its secondary storage is broken, so every test against it would wait for nothing." >&2
+      logs
+      exit 1
+    fi
+
+    attempt=$((attempt + 1))
+    echo "Starting over." >&2
+    stop
+  done
+}
+
+start_containers() {
   docker network create "${NETWORK}" >/dev/null 2>&1 || true
 
   docker run --detach \
@@ -44,7 +76,10 @@ start() {
     --env "ES_JAVA_OPTS=-Xms1g -Xmx1g" \
     "docker.elastic.co/elasticsearch/elasticsearch:${ELASTICSEARCH_VERSION}" >/dev/null
 
-  await "Elasticsearch" "docker exec ${ELASTICSEARCH} curl --silent --fail http://localhost:9200/_cluster/health"
+  # 'wait_for_status=yellow' rather than the bare health endpoint: that one answers while the
+  # cluster is still red, and a broker connecting to a red Elasticsearch is exactly the state
+  # this script used to hand over.
+  await "Elasticsearch" "docker exec ${ELASTICSEARCH} curl --silent --fail http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s"
 
   docker run --detach \
     --name "${CAMUNDA}" \
@@ -58,8 +93,13 @@ start() {
     "camunda/camunda:${CAMUNDA_VERSION}" >/dev/null
 
   await "Camunda 8" "curl --silent --fail http://localhost:${REST_PORT}/v2/topology"
+}
 
-  echo "Camunda 8 is listening on http://localhost:${REST_PORT}"
+# Whether the broker got its exporter open. The log is the only place which says so, and the
+# two lines it writes when it did not are the ones grepped for here.
+exporter_opened() {
+  ! docker logs "${CAMUNDA}" 2>&1 \
+    | grep -qE "Failed to open exporter|Elasticsearch cluster is not accessible"
 }
 
 # Polls until the check succeeds, and says what it was waiting for when it does not.
