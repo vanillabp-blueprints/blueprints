@@ -32,8 +32,10 @@ ELASTICSEARCH=vanillabp-elasticsearch
 CAMUNDA=vanillabp-camunda8-cluster
 # Booting Elasticsearch and Camunda takes a while on a cold CI runner.
 READY_TIMEOUT_SECONDS="${READY_TIMEOUT_SECONDS:-300}"
-# How often a cluster whose exporter did not open is thrown away and started again.
+# How often a cluster whose exporter never starts working is thrown away and started again.
 START_ATTEMPTS="${START_ATTEMPTS:-2}"
+# How long the exporter gets to write its first index before the cluster counts as broken.
+EXPORTER_TIMEOUT_SECONDS="${EXPORTER_TIMEOUT_SECONDS:-120}"
 
 start() {
   local attempt=1
@@ -41,20 +43,20 @@ start() {
   while true; do
     start_containers
 
-    if exporter_opened; then
+    if exporting; then
       echo "Camunda 8 is listening on http://localhost:${REST_PORT}"
       return 0
     fi
 
-    # A broker whose exporter did not open hands no work out: a workflow starts, the cluster
-    # confirms it, and no job is ever delivered. From the outside that looks like a defect of
-    # whichever blueprint runs into it, and on 2026-08-20 it cost four jobs of one CI run and
-    # an hour of reading test logs. Better to say it here, where the cause is one grep away.
-    echo "Camunda 8 came up without a working exporter (attempt ${attempt})." >&2
-    docker logs "${CAMUNDA}" 2>&1 | grep -E "Failed to open exporter|Elasticsearch cluster is not accessible" | tail -3 >&2
+    # A broker whose exporter never starts working hands no work out: a workflow starts, the
+    # cluster confirms it, and no job is ever delivered. From the outside that looks like a
+    # defect of whichever blueprint runs into it, and on 2026-08-20 it cost four jobs of one
+    # CI run and an hour of reading test logs. Better to say it here.
+    echo "The exporter of Camunda 8 wrote no index to Elasticsearch (attempt ${attempt})." >&2
 
     if [ "${attempt}" -ge "${START_ATTEMPTS}" ]; then
-      echo "Its secondary storage is broken, so every test against it would wait for nothing." >&2
+      echo "Its secondary storage is not working, so every test against it would wait for" >&2
+      echo "deliveries which never happen." >&2
       logs
       exit 1
     fi
@@ -95,11 +97,31 @@ start_containers() {
   await "Camunda 8" "curl --silent --fail http://localhost:${REST_PORT}/v2/topology"
 }
 
-# Whether the broker got its exporter open. The log is the only place which says so, and the
-# two lines it writes when it did not are the ones grepped for here.
-exporter_opened() {
-  ! docker logs "${CAMUNDA}" 2>&1 \
-    | grep -qE "Failed to open exporter|Elasticsearch cluster is not accessible"
+# Whether the exporter is doing its work, asked of Elasticsearch rather than of the broker's
+# log. The log is no use for this question: it warns 'Failed to open exporter' while
+# Elasticsearch is still starting and succeeds on a later attempt, so a cluster which then runs
+# a whole build carries those lines too (measured on 2026-08-20, twice, on a cluster which was
+# fine). What separates a working exporter from a broken one is whether Camunda's indices
+# exist, and only Elasticsearch can be asked that.
+exporting() {
+  local waited=0
+
+  while ! indices_exist; do
+    if [ "${waited}" -ge "${EXPORTER_TIMEOUT_SECONDS}" ]; then
+      return 1
+    fi
+    sleep 5
+    waited=$((waited + 5))
+  done
+
+  echo "The exporter of Camunda 8 writes to Elasticsearch after ${waited}s"
+
+}
+
+indices_exist() {
+  docker exec "${ELASTICSEARCH}" \
+      curl --silent --fail "http://localhost:9200/_cat/indices?h=index" 2>/dev/null \
+    | grep -q "^camunda-"
 }
 
 # Polls until the check succeeds, and says what it was waiting for when it does not.
