@@ -857,6 +857,18 @@ questions, and the second is the one that matters:
    per BPMS. It belongs on the BPMS adapter pages of the wiki, next to what a task delivery
    guarantees, rather than in a blueprint.
 
+**Measured again on 2026-08-20, and it is not only a blueprint's test.** Two blueprints failed on
+Camunda 8 in BOTH runs of the same commit, which rules out an unlucky moment:
+`persistence-parallel-branches` in both twins (`bothBranchesKeepTheirResult`, thirty seconds waiting
+for the second branch) and `persistence-flyway/quarkus` (`theProcessRunsThrough`, TWO MINUTES waiting
+for a single service task, which is the harness timeout of that test). Both wait for a delivery which
+does not arrive; neither blocks a handler. The runs were loaded, 234 jobs of two full matrices at
+once, so this is what the single execution thread of the Camunda 8 client looks like when the machine
+around it is busy: the delivery is not lost, it is behind something. Story `74` decides whether that
+thread count becomes configurable and what VanillaBP promises about the thread a handler runs on.
+Until then a test on this engine which waits thirty seconds is a test which will go red on a busy
+machine.
+
 ## G18: the startup line about a transaction names the bean's proxy on one platform
 
 **Status:** fixed in VanillaBP 2.0.0-SNAPSHOT on 2026-08-18 (story `80`,

@@ -20,8 +20,8 @@ import blueprint.workflowmodule.loanapproval.model.Aggregate;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
 /**
- * The migration itself: the application is stopped, its configuration changes, and it starts
- * again with a second BPMS in front of the first one.
+ * The migration itself: the application is stopped, its configuration changes, and from then
+ * on new workflows start in the other BPMS.
  *
  * <p>
  * Two workflows exist before that happens and two after, and every one of them is driven to
@@ -67,9 +67,14 @@ public class MigrationRestartIT {
     final String firstOfTheOld;
     final String secondOfTheOld;
 
-    // BEFORE the migration: the old BPMS alone, named as the only priority
-    try (var application = boot("--vanillabp.prioritized-adapters="
-        + OLD_BPMS)) {
+    // BEFORE the migration: loan approvals still start in the old BPMS, said by the priority
+    // list of that workflow. The adapter list stays as it is on purpose. Taking the new
+    // adapter out of the configuration would be the other way to write this, but then an
+    // environment variable addressing that adapter id ends the boot, and handing the address
+    // of a cluster in through the environment is exactly what the CI does.
+    try (var application = boot(
+        "--vanillabp.workflow-modules.loan-approval.workflows.loan_approval.prioritized-adapters="
+            + OLD_BPMS)) {
 
       final var service = application.getBean(Service.class);
       final var aggregates = application.getBean(AggregateRepository.class);
@@ -91,7 +96,8 @@ public class MigrationRestartIT {
       assertThat(service.bpmsHolding(firstOfTheOld)).contains(OLD_BPMS);
     }
 
-    // AFTER the migration: both adapters, the new BPMS first. Nothing else changes.
+    // AFTER the migration: the priority list of the workflow is gone, so the adapter list
+    // applies, and that one names the new BPMS first. Nothing else changes.
     try (var application = boot()) {
 
       final var service = application.getBean(Service.class);
