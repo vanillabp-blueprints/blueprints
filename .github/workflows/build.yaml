@@ -1,11 +1,19 @@
 name: Build
 "on":
   push:
-    branches-ignore:
-      # Renovate branches are built through their pull request, once instead of twice.
-      - renovate/**
+    # Only 'main'. Every other branch is built through its pull request, once instead of
+    # twice: a push to a branch with an open pull request used to start this workflow a
+    # second time, and two full matrices at once starve each other on Maven Central and on
+    # GitHub Packages. What that produces looks like defects of random blueprints.
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
+concurrency:
+  # One run per branch: a second push supersedes the run of the first instead of queueing
+  # behind it. 'head_ref' is the branch of a pull request and 'ref' the branch of a push.
+  group: build-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 env:

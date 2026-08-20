@@ -1,10 +1,18 @@
 name: Checks
 "on":
   push:
-    branches-ignore:
-      - renovate/**
+    # Only 'main'. Every other branch is built through its pull request, once instead of
+    # twice: a push to a branch with an open pull request used to start this workflow a
+    # second time, and two full matrices at once starve each other on Maven Central and on
+    # GitHub Packages. What that produces looks like defects of random blueprints.
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
+concurrency:
+  # One run per branch: a second push supersedes the run of the first.
+  group: checks-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 env:
