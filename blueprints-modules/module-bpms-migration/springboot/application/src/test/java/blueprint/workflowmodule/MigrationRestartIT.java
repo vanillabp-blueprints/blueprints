@@ -48,7 +48,13 @@ public class MigrationRestartIT {
 
   private static final String OLD_BPMS = "camunda7";
 
-  private static final Duration TIMEOUT = Duration.ofSeconds(30);
+  /**
+   * Longer than the thirty seconds of the test harness, on purpose. This test drives five
+   * workflows through two wait states across two boots, and the client of a remote BPMS
+   * delivers them on one execution thread (`GAPS.md` G17), so the last of them waits behind
+   * the others. Two minutes is what `persistence-flyway` uses for the same reason.
+   */
+  private static final Duration TIMEOUT = Duration.ofMinutes(2);
 
   private static final Path DATABASE = Path.of("target", "database", "migration-restart");
 
