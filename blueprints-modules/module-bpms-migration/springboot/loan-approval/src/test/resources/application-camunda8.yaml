@@ -1,0 +1,19 @@
+# Everything specific to Camunda 8, loaded only while the 'camunda8' profile applies. The
+# Maven profile of the same name activates it for the test as well, and CI overrides the
+# address through the environment.
+#
+# This is the migration state: both adapters are configured, Camunda 8 first, and the
+# repayment workflow stays in Camunda 7.
+vanillabp:
+  prioritized-adapters:
+    - camunda8
+    - camunda7
+  adapters:
+    camunda8:
+      rest-address: http://localhost:8080
+  workflow-modules:
+    loan-approval:
+      workflows:
+        loan_repayment:
+          prioritized-adapters:
+            - camunda7

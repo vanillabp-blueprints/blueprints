@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <!--
+    The process of this blueprint waits twice: at a user task and behind it at a message.
+    Both are operations which have to find the BPMS holding the workflow, which is what a
+    migration is about - the model itself says nothing about any of it.
+  -->
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToRetrieveCreditRating</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRetrieveCreditRating" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_RetrieveCreditRating" />
+    <bpmn:serviceTask id="ServiceTask_RetrieveCreditRating" name="Retrieve credit rating" camunda:expression="${retrieveCreditRating}">
+      <bpmn:incoming>Flow_ToRetrieveCreditRating</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToAssessRisk</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToAssessRisk" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="UserTask_AssessRisk" />
+    <!-- The first wait state: a person has to look at the request. -->
+    <bpmn:userTask id="UserTask_AssessRisk" name="Assess risk" camunda:formKey="assessRisk">
+      <bpmn:incoming>Flow_ToAssessRisk</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToAwaitSignedContract</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_ToAwaitSignedContract" sourceRef="UserTask_AssessRisk" targetRef="CatchEvent_ContractSigned" />
+    <!--
+      The second wait state. Nothing about the correlation is modelled: VanillaBP finds the
+      workflow by the aggregate's id, so the model stays free of a correlation key.
+    -->
+    <bpmn:intermediateCatchEvent id="CatchEvent_ContractSigned" name="Contract signed">
+      <bpmn:incoming>Flow_ToAwaitSignedContract</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToPayOut</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_ContractSigned" messageRef="Message_ContractSigned" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ToPayOut" sourceRef="CatchEvent_ContractSigned" targetRef="ServiceTask_PayOut" />
+    <bpmn:serviceTask id="ServiceTask_PayOut" name="Pay out" camunda:expression="${payOut}">
+      <bpmn:incoming>Flow_ToPayOut</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanPaidOut</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanPaidOut" sourceRef="ServiceTask_PayOut" targetRef="EndEvent_LoanPaidOut" />
+    <bpmn:endEvent id="EndEvent_LoanPaidOut" name="Loan paid out">
+      <bpmn:incoming>Flow_ToLoanPaidOut</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <!-- The message name is the string the business code passes to 'correlateMessage'. -->
+  <bpmn:message id="Message_ContractSigned" name="ContractSigned" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="145" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RetrieveCreditRating_di" bpmnElement="ServiceTask_RetrieveCreditRating">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_AssessRisk_di" bpmnElement="UserTask_AssessRisk">
+        <dc:Bounds x="400" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CatchEvent_ContractSigned_di" bpmnElement="CatchEvent_ContractSigned">
+        <dc:Bounds x="562" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="543" y="145" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_PayOut_di" bpmnElement="ServiceTask_PayOut">
+        <dc:Bounds x="650" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanPaidOut_di" bpmnElement="EndEvent_LoanPaidOut">
+        <dc:Bounds x="812" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="795" y="145" width="71" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToAssessRisk_di" bpmnElement="Flow_ToAssessRisk">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="400" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToAwaitSignedContract_di" bpmnElement="Flow_ToAwaitSignedContract">
+        <di:waypoint x="500" y="120" />
+        <di:waypoint x="562" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToPayOut_di" bpmnElement="Flow_ToPayOut">
+        <di:waypoint x="598" y="120" />
+        <di:waypoint x="650" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanPaidOut_di" bpmnElement="Flow_ToLoanPaidOut">
+        <di:waypoint x="750" y="120" />
+        <di:waypoint x="812" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

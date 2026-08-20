@@ -1,0 +1,34 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is
+# in its own configuration file (loan-approval/loan-approval.yaml inside the module JAR).
+#
+# Nothing about a BPMS is here either. That lives in a profile file per engine - here only
+# 'application-camunda8.yaml', because Camunda 8 is remote and needs an address while
+# Camunda 7 needs nothing beyond its dependency. Switching engines is therefore a profile
+# and not an edit. One adapter dependency and one workflow module are enough for VanillaBP
+# to derive the adapter, the workflow module and where its BPMN files are read from.
+quarkus:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, and the profile
+  # file of that engine applies from then on - whichever profile the application itself runs
+  # in, because the BPMS profile is its PARENT. Nobody has to name the profile twice.
+  config:
+    profile:
+      parent: "@bpms@"
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      # A FILE database, and the one place where this blueprint differs from every other
+      # one: the scenario stops the application, changes which BPMS are configured and
+      # starts it again, so the workflow aggregates and the tables of the embedded engine
+      # have to survive that. 'mvn clean' throws the database away, which is how you start
+      # over.
+      url: jdbc:h2:file:./target/database/loan-approval;AUTO_SERVER=TRUE
+  hibernate-orm:
+    schema-management:
+      # 'update' rather than 'drop-and-create': a restart keeps what the run before wrote.
+      strategy: update
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO
