@@ -40,7 +40,7 @@ changed: Liquibase would no longer recognize its rows and would run every change
 | `loan-approval/src/main/resources/loan-approval/db/changelog.xml` | the module's schema: its aggregate table. Inside the module's resource directory, because modules share one classpath         |
 | `application/src/main/resources/db/changelog.xml`                 | what the application owns: `<include>` of `vanillabp/schema/changelog.xml` from the artifact, plus the outbox library's table |
 | `application/src/main/resources/db/changelog-camunda7.xml`        | the same plus `<include>` of Camunda's changelog from the engine JAR. Applied by the Camunda 7 build only                     |
-| `application/src/main/resources/db/gruelbox-outbox.xml`           | the outbox table of the outbox library, read out of a database its own migrator had created                                   |
+| `application/src/main/resources/db/gruelbox-outbox.xml`           | the outbox table of the outbox library, in the statements that library writes for itself                                      |
 | `application/src/main/java/.../SchemaConfiguration.java`          | the application's `SpringLiquibase` bean; the changelog to apply is a property the engine profile sets                        |
 | `application/src/main/resources/application.yaml`                 | `ddl-auto: validate`, `vanillabp.outbox.create-schema: false`, `blueprint.schema.changelog`                                   |
 | `application/src/main/resources/application-camunda7.yaml`        | `database-schema-update: false` and the changelog which includes the engine's                                                 |
@@ -108,9 +108,11 @@ auto-configuration is what applies the module's changelog, named by
    is: name the changelog in a property the engine's profile file sets.
 6. On this platform the phase-two outbox is `com.gruelbox:transactionoutbox-core`, whose
    migrator is switched off by the same property. Create `TXNO_OUTBOX` and `TXNO_SEQUENCE`
-   with your own migration. Do not write those statements from the library's source: let its
-   migrator run against an empty database once, read the schema back out and copy that, then
-   add a test comparing the two so an upgrade of the library fails the build.
+   with your own migration, and take the statements from the library rather than from its
+   source: `DefaultPersistor.builder().dialect(<dialect>).build().writeSchema(writer)` emits
+   every migration it has as SQL for that dialect. Then add a test which asks for that output
+   again and compares, so an upgrade of the library fails the build. `TXNO_VERSION` is the
+   bookkeeping of the migrator you just switched off, and `writeSchema` does not emit it.
 7. If the project's database is not H2, nothing changes: the changelogs describe columns
    database independently, and Liquibase writes the statements for the database in use.
 

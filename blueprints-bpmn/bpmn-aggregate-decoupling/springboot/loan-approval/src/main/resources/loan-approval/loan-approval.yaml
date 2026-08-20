@@ -1,0 +1,13 @@
+# Configuration of the workflow module 'loan-approval'.
+#
+# The file is named after the workflow module ID and is loaded automatically, with a
+# higher priority than application.yaml. Everything only this module needs belongs here -
+# that is what keeps a workflow module a self-contained application inside the
+# application.
+loan-approval:
+  rating-scale: 100
+  # Where a rating turns into a risk class. The BPMN sees none of these numbers and not
+  # even the risk class: it asks the two questions the workflow aggregate answers, so a
+  # threshold moved here changes what the process decides without the model being touched.
+  low-risk-rating: 30
+  medium-risk-rating: 10

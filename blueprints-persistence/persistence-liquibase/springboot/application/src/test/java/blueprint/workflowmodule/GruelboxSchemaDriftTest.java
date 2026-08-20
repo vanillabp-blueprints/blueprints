@@ -2,168 +2,144 @@ package blueprint.workflowmodule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.sql.Connection;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
 
-import javax.sql.DataSource;
+import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.Element;
 
 import com.gruelbox.transactionoutbox.DefaultPersistor;
 import com.gruelbox.transactionoutbox.Dialect;
-import com.gruelbox.transactionoutbox.Instantiator;
-import com.gruelbox.transactionoutbox.TransactionManager;
-import com.gruelbox.transactionoutbox.TransactionOutbox;
-
-import liquibase.Contexts;
-import liquibase.LabelExpression;
-import liquibase.Liquibase;
-import liquibase.database.DatabaseFactory;
-import liquibase.database.jvm.JdbcConnection;
-import liquibase.resource.ClassLoaderResourceAccessor;
 
 /**
  * The guard on the one piece of somebody else's schema this application carries.
  *
  * <p>
- * {@code db/gruelbox-outbox.xml} describes the outbox table of gruelbox, because switching
- * VanillaBP's table creation off switches gruelbox's migrator off with it. Those statements
- * were read out of a database gruelbox had migrated, and they are only right until gruelbox
- * changes its schema. This test lets gruelbox migrate an empty database again and compares:
- * a version which adds or renames a column fails the build instead of a deployment.
+ * {@code db/gruelbox-outbox.xml} creates the outbox table of gruelbox, because switching
+ * VanillaBP's table creation off switches gruelbox's migrator off with it. The statements in
+ * that file are not hand-written: gruelbox emits them itself, through
+ * {@code DefaultPersistor#writeSchema(Writer)}, and this test asks for them again and
+ * compares. A version of the library which adds a migration, changes one or renames a column
+ * fails the build instead of a deployment.
  * </p>
  *
  * <p>
- * Compared are table and column names, not types. The types are gruelbox's business and
- * differ per database anyway; a column which appears, disappears or is renamed is what
- * would actually break, and that is what names show.
+ * Compared are the statements, not the schema they produce, and no database is started for
+ * it. Two statements which differ produce two schemas which may or may not differ, and the
+ * cheaper question is the stricter one.
  * </p>
  *
  * <p>
- * {@code TXNO_VERSION} is left out on purpose: it is the bookkeeping of the migrator, and
- * an application which creates the schema itself never runs the migrator.
+ * H2 is the dialect this blueprint runs on, so it is the dialect asked for here. An
+ * application on another database changes both places, and the comparison keeps holding.
  * </p>
  */
 public class GruelboxSchemaDriftTest {
 
-  private static final String MIGRATOR_BOOKKEEPING = "TXNO_VERSION";
+  private static final String CHANGELOG = "db/gruelbox-outbox.xml";
+
+  /** A migration which does nothing on a dialect is a comment and no statement. */
+  private static final Pattern COMMENT = Pattern.compile("(?m)^\\s*--.*$");
+
+  private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
   @Test
-  public void theChangelogSaysWhatGruelboxWouldHaveCreated() throws Exception {
+  public void theChangelogSaysWhatGruelboxWritesItself() throws Exception {
 
-    final var byGruelbox = schemaAfter("drift-gruelbox", GruelboxSchemaDriftTest::letGruelboxMigrate);
-    final var byChangelog = schemaAfter("drift-changelog", GruelboxSchemaDriftTest::applyTheChangelog);
-
-    assertThat(byChangelog)
+    assertThat(statementsOfTheChangelog())
         .describedAs(
-            "db/gruelbox-outbox.xml has to describe what gruelbox's own migrator creates."
-                + " If this fails after a gruelbox upgrade, read the schema out of a"
-                + " migrated database again and correct the changelog with a NEW changeset.")
-        .isEqualTo(byGruelbox);
+            "db/gruelbox-outbox.xml carries the statements of gruelbox's own writeSchema. If"
+                + " this fails after an upgrade of transactionoutbox-core, ask writeSchema"
+                + " again and add what is new as a NEW changeset - the applied ones stay as"
+                + " they are.")
+        .isEqualTo(statementsOfGruelbox());
+
+  }
+
+  @Test
+  public void theMigratorsOwnBookkeepingIsNotPartOfIt() throws Exception {
+
+    // TXNO_VERSION is how the migrator remembers where it got to, and the migrator is off
+    // here. gruelbox does not emit it, which is why the changelog does not create it.
+    assertThat(statementsOfGruelbox())
+        .describedAs("writeSchema emits the schema of the outbox, not of its migrator")
+        .noneMatch(statement -> statement.contains("TXNO_VERSION"));
 
   }
 
   /**
-   * @param database The name of the in-memory database to build
-   * @param schemaCreation What creates the schema in it
-   * @return Table name to column names, of gruelbox's tables only
-   * @throws Exception If the schema cannot be created or read
+   * @return Every statement gruelbox writes for this dialect, in its order
    */
-  private static Map<String, Set<String>> schemaAfter(
-      final String database,
-      final SchemaCreation schemaCreation) throws Exception {
+  private static List<String> statementsOfGruelbox() {
 
-    final var dataSource = new JdbcDataSource();
-    dataSource.setURL("jdbc:h2:mem:"
-        + database
-        + ";DB_CLOSE_DELAY=-1");
-    dataSource.setUser("sa");
-    dataSource.setPassword("");
-
-    schemaCreation.createIn(dataSource);
-
-    final var schema = new LinkedHashMap<String, Set<String>>();
-    try (var connection = dataSource.getConnection()) {
-      final var metaData = connection.getMetaData();
-      try (var tables = metaData.getTables(null, null, "TXNO%", new String[]{
-          "TABLE"
-      })) {
-        while (tables.next()) {
-          final var table = tables
-              .getString("TABLE_NAME")
-              .toUpperCase();
-          if (MIGRATOR_BOOKKEEPING.equals(table)) {
-            continue;
-          }
-          schema.put(table, columnsOf(connection, table));
-        }
-      }
-    }
-    return schema;
-
-  }
-
-  private static Set<String> columnsOf(
-      final Connection connection,
-      final String table) throws Exception {
-
-    final var columns = new LinkedHashSet<String>();
-    try (var resultSet = connection
-        .getMetaData()
-        .getColumns(null, null, table, "%")) {
-      while (resultSet.next()) {
-        columns.add(
-            resultSet
-                .getString("COLUMN_NAME")
-                .toUpperCase());
-      }
-    }
-    return columns;
-
-  }
-
-  private static void letGruelboxMigrate(
-      final DataSource dataSource) {
-
-    // building the outbox runs gruelbox's migrator, which is all this needs
-    TransactionOutbox
+    final var writer = new StringWriter();
+    DefaultPersistor
         .builder()
-        .transactionManager(TransactionManager.fromDataSource(dataSource))
-        .instantiator(Instantiator.usingReflection())
-        .persistor(
-            DefaultPersistor
-                .builder()
-                .dialect(Dialect.H2)
-                .migrate(true)
-                .build())
-        .build();
+        .dialect(Dialect.H2)
+        .build()
+        .writeSchema(writer);
+
+    final var statements = new ArrayList<String>();
+    for (final var block : writer
+        .toString()
+        .split("\\n\\s*\\n")) {
+      final var statement = normalized(block);
+      if (!statement.isEmpty()) {
+        statements.add(statement);
+      }
+    }
+    return statements;
 
   }
 
-  private static void applyTheChangelog(
-      final DataSource dataSource) throws Exception {
+  /**
+   * @return The statement of every changeset of the changelog, in document order
+   * @throws Exception If the changelog cannot be read
+   */
+  private static List<String> statementsOfTheChangelog() throws Exception {
 
-    try (var connection = dataSource.getConnection()) {
-      final var database = DatabaseFactory
-          .getInstance()
-          .findCorrectDatabaseImplementation(new JdbcConnection(connection));
-      try (var liquibase = new Liquibase(
-          "db/gruelbox-outbox.xml", new ClassLoaderResourceAccessor(), database)) {
-        liquibase.update(new Contexts(), new LabelExpression());
+    final var factory = DocumentBuilderFactory.newInstance();
+    factory.setNamespaceAware(true);
+    try (var changelog = GruelboxSchemaDriftTest.class
+        .getClassLoader()
+        .getResourceAsStream(CHANGELOG)) {
+      final var document = factory
+          .newDocumentBuilder()
+          .parse(changelog);
+      final var elements = document.getElementsByTagNameNS("*", "sql");
+      final var statements = new ArrayList<String>();
+      for (var index = 0; index < elements.getLength(); index++) {
+        statements.add(normalized(((Element) elements.item(index)).getTextContent()));
       }
+      return statements;
     }
 
   }
 
-  /** What fills an empty database, either of the two ways under comparison. */
-  private interface SchemaCreation {
+  /**
+   * @param sql One statement, as written in a file
+   * @return The statement without comments, without a trailing semicolon and with its
+   *         whitespace collapsed, which is what makes two spellings of one statement equal
+   */
+  private static String normalized(
+      final String sql) {
 
-    void createIn(
-        DataSource dataSource) throws Exception;
+    final var withoutComments = COMMENT
+        .matcher(sql)
+        .replaceAll("");
+    final var collapsed = WHITESPACE
+        .matcher(withoutComments)
+        .replaceAll(" ")
+        .trim();
+    return collapsed.endsWith(";")
+        ? collapsed
+            .substring(0, collapsed.length() - 1)
+            .trim()
+        : collapsed;
 
   }
 

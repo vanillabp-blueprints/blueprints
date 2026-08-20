@@ -10,69 +10,115 @@
   Liquibase can own VanillaBP's tables also turns gruelbox's migrator off, so this
   application has to create the table itself.
 
-  Where these statements come from: gruelbox's migrator was let loose on an empty H2
-  database once and the result was read back out of it. They are NOT hand-written from
-  gruelbox's source, where the schema is thirteen migrations, some of them in MySQL
-  syntax, several overridden per dialect. GruelboxSchemaDriftTest compares what is written
-  here against what that migrator produces, so a gruelbox upgrade which adds a column
-  fails a build instead of a deployment.
+  Where these statements come from: gruelbox writes them itself.
 
-  Whether the Spring Boot integration should use an outbox of VanillaBP's own, whose schema
-  would then come from 'vanillabp-schema' like everything else, is an open question of the
-  framework and not of this blueprint.
+    DefaultPersistor.builder().dialect(Dialect.H2).build().writeSchema(writer)
+
+  emits every migration of the library as SQL for the dialect it is given, which is what
+  the statements below are, one changeset per migration and in gruelbox's own order. The
+  two migrations which do nothing on H2 are left out, and they are numbered 8 and 13 in
+  gruelbox rather than renumbered here, so the numbers stay comparable to the library.
+  GruelboxSchemaDriftTest asks gruelbox for the same output on every build and compares,
+  so an upgrade which adds or changes a migration fails a build instead of a deployment.
+
+  The statements are gruelbox's, spelled the way gruelbox spells them: unquoted column
+  names, and a rename of 'blacklisted' to 'blocked' where the library renamed it. Reading
+  them replays how the schema of that library grew, which is more than a single CREATE
+  TABLE would say and exactly as much as the library guarantees.
+
+  H2 is the dialect this blueprint runs on. An application on another database asks
+  writeSchema for that dialect and gets its statements, which is why nothing here is
+  hand-written.
 
   TXNO_VERSION is not created here. It is the bookkeeping of gruelbox's migrator, and the
-  migrator is off. TXNO_SEQUENCE is created, because gruelbox reads it as soon as an entry
-  is ordered within a topic.
+  migrator is off. writeSchema does not emit it either.
 -->
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-  <!--
-    The column names are gruelbox's, spelled the way gruelbox spells them and not quoted,
-    so every database folds them the same way it folds them for gruelbox itself.
-  -->
-  <changeSet author="blueprint" id="gruelbox-outbox-1.0.0">
-    <comment>The outbox table of gruelbox, as its own migrator would have created it.</comment>
-    <createTable tableName="TXNO_OUTBOX">
-      <column name="id" type="VARCHAR(36)">
-        <constraints primaryKey="true" nullable="false" />
-      </column>
-      <column name="invocation" type="CLOB" />
-      <column name="lastAttemptTime" type="TIMESTAMP" />
-      <column name="nextAttemptTime" type="TIMESTAMP" />
-      <column name="attempts" type="INT" />
-      <column name="blocked" type="BOOLEAN" />
-      <column name="version" type="INT" />
-      <column name="uniqueRequestId" type="VARCHAR(250)">
-        <constraints unique="true" />
-      </column>
-      <column name="processed" type="BOOLEAN" />
-      <column name="topic" type="VARCHAR(250)" defaultValue="*">
-        <constraints nullable="false" />
-      </column>
-      <column name="seq" type="BIGINT" />
-    </createTable>
-    <!-- the index the flush query needs, and the one for ordering within a topic -->
-    <createIndex tableName="TXNO_OUTBOX" indexName="IX_TXNO_OUTBOX_1">
-      <column name="processed" />
-      <column name="blocked" />
-      <column name="nextAttemptTime" />
-    </createIndex>
-    <createIndex tableName="TXNO_OUTBOX" indexName="IX_TXNO_OUTBOX_2">
-      <column name="topic" />
-      <column name="processed" />
-      <column name="seq" />
-    </createIndex>
-    <createTable tableName="TXNO_SEQUENCE">
-      <column name="topic" type="VARCHAR(250)">
-        <constraints primaryKey="true" nullable="false" />
-      </column>
-      <column name="seq" type="BIGINT">
-        <constraints primaryKey="true" nullable="false" />
-      </column>
-    </createTable>
+  <changeSet author="gruelbox" id="gruelbox-outbox-1">
+    <comment>Create outbox table</comment>
+    <sql splitStatements="false">
+      CREATE TABLE TXNO_OUTBOX (
+          id VARCHAR(36) PRIMARY KEY,
+          invocation TEXT,
+          nextAttemptTime TIMESTAMP(6),
+          attempts INT,
+          blacklisted BOOLEAN,
+          version INT
+      )
+    </sql>
+  </changeSet>
+
+  <changeSet author="gruelbox" id="gruelbox-outbox-2">
+    <comment>Add unique request id</comment>
+    <sql splitStatements="false">
+      ALTER TABLE TXNO_OUTBOX ADD COLUMN uniqueRequestId VARCHAR(100) NULL UNIQUE
+    </sql>
+  </changeSet>
+
+  <changeSet author="gruelbox" id="gruelbox-outbox-3">
+    <comment>Add processed flag</comment>
+    <sql splitStatements="false">
+      ALTER TABLE TXNO_OUTBOX ADD COLUMN processed BOOLEAN
+    </sql>
+  </changeSet>
+
+  <changeSet author="gruelbox" id="gruelbox-outbox-4">
+    <comment>Add flush index</comment>
+    <sql splitStatements="false">
+      CREATE INDEX IX_TXNO_OUTBOX_1 ON TXNO_OUTBOX (processed, blacklisted, nextAttemptTime)
+    </sql>
+  </changeSet>
+
+  <changeSet author="gruelbox" id="gruelbox-outbox-5">
+    <comment>Increase size of uniqueRequestId</comment>
+    <sql splitStatements="false">
+      ALTER TABLE TXNO_OUTBOX ALTER COLUMN uniqueRequestId VARCHAR(250)
+    </sql>
+  </changeSet>
+
+  <changeSet author="gruelbox" id="gruelbox-outbox-6">
+    <comment>Rename column blacklisted to blocked</comment>
+    <sql splitStatements="false">
+      ALTER TABLE TXNO_OUTBOX RENAME COLUMN blacklisted TO blocked
+    </sql>
+  </changeSet>
+
+  <changeSet author="gruelbox" id="gruelbox-outbox-7">
+    <comment>Add lastAttemptTime column to outbox</comment>
+    <sql splitStatements="false">
+      ALTER TABLE TXNO_OUTBOX ADD COLUMN lastAttemptTime TIMESTAMP(6) NULL AFTER invocation
+    </sql>
+  </changeSet>
+
+  <changeSet author="gruelbox" id="gruelbox-outbox-9">
+    <comment>Add topic</comment>
+    <sql splitStatements="false">
+      ALTER TABLE TXNO_OUTBOX ADD COLUMN topic VARCHAR(250) NOT NULL DEFAULT '*'
+    </sql>
+  </changeSet>
+
+  <changeSet author="gruelbox" id="gruelbox-outbox-10">
+    <comment>Add sequence</comment>
+    <sql splitStatements="false">
+      ALTER TABLE TXNO_OUTBOX ADD COLUMN seq BIGINT NULL
+    </sql>
+  </changeSet>
+
+  <changeSet author="gruelbox" id="gruelbox-outbox-11">
+    <comment>Add sequence table</comment>
+    <sql splitStatements="false">
+      CREATE TABLE TXNO_SEQUENCE (topic VARCHAR(250) NOT NULL, seq BIGINT NOT NULL, PRIMARY KEY (topic, seq))
+    </sql>
+  </changeSet>
+
+  <changeSet author="gruelbox" id="gruelbox-outbox-12">
+    <comment>Add flush index to support ordering</comment>
+    <sql splitStatements="false">
+      CREATE INDEX IX_TXNO_OUTBOX_2 ON TXNO_OUTBOX (topic, processed, seq)
+    </sql>
   </changeSet>
 
 </databaseChangeLog>

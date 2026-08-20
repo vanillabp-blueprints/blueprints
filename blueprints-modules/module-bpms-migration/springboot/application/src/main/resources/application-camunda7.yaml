@@ -1,0 +1,21 @@
+# The state BEFORE the migration: one BPMS, configured as one adapter instance. Loaded only
+# while the 'camunda7' profile is active, which the Maven profile of the same name activates.
+#
+# Nothing here says "first priority": with a single adapter there is nothing to prioritize.
+# That is what makes the migration a configuration change rather than a rewrite - see
+# 'application-camunda8.yaml', which is the state AFTER.
+#
+# Camunda's web applications are served at /camunda by the adapter module this profile adds,
+# and they are configured here because the settings name the adapter id.
+vanillabp:
+  adapters:
+    camunda7:
+      webapps:
+        # A demo administrator, so the blueprint can be operated without setting one up.
+        # An application with an identity provider of its own leaves this section out and
+        # the web applications use that instead.
+        admin-user:
+          id: demo
+          password: demo
+          first-name: Demo
+          last-name: User

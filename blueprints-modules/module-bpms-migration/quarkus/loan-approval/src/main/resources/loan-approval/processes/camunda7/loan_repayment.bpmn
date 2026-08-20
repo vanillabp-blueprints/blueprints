@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_repayment" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <!--
+    The second workflow of this module, and the one which stays behind: its priority list
+    names the old BPMS alone, so it keeps starting there while approvals already start in the
+    new one. The model knows nothing about that - it is one line of configuration.
+  -->
+  <bpmn:process id="loan_repayment" name="Loan repayment" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="StartEvent_RepaymentDue" name="Repayment due">
+      <bpmn:outgoing>Flow_ToBookInstalment</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToBookInstalment" sourceRef="StartEvent_RepaymentDue" targetRef="ServiceTask_BookInstalment" />
+    <bpmn:serviceTask id="ServiceTask_BookInstalment" name="Book instalment" camunda:expression="${bookInstalment}">
+      <bpmn:incoming>Flow_ToBookInstalment</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToInstalmentBooked</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToInstalmentBooked" sourceRef="ServiceTask_BookInstalment" targetRef="EndEvent_InstalmentBooked" />
+    <bpmn:endEvent id="EndEvent_InstalmentBooked" name="Instalment booked">
+      <bpmn:incoming>Flow_ToInstalmentBooked</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_repayment">
+      <bpmndi:BPMNShape id="StartEvent_RepaymentDue_di" bpmnElement="StartEvent_RepaymentDue">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="135" y="145" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_BookInstalment_di" bpmnElement="ServiceTask_BookInstalment">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_InstalmentBooked_di" bpmnElement="EndEvent_InstalmentBooked">
+        <dc:Bounds x="392" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="370" y="145" width="86" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToBookInstalment_di" bpmnElement="Flow_ToBookInstalment">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToInstalmentBooked_di" bpmnElement="Flow_ToInstalmentBooked">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="392" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

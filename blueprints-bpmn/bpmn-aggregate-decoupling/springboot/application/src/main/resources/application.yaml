@@ -1,0 +1,25 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is
+# in its own configuration file (loan-approval/loan-approval.yaml inside the module JAR).
+#
+# Nothing about a BPMS is here either. That lives in a profile file per engine,
+# 'application-camunda7.yaml' and 'application-camunda8.yaml', so switching engines is a
+# profile and not an edit. One adapter dependency and one workflow module are enough for
+# VanillaBP to derive the adapter, the workflow module and where its BPMN files are read
+# from.
+spring:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, so
+  # 'application-camunda7.yaml' respectively 'application-camunda8.yaml' is loaded without
+  # anybody having to name the profile twice. Tests get the same value as a system property.
+  profiles:
+    active: "@bpms@"
+  datasource:
+    url: jdbc:h2:mem:aggregate-decoupling;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+logging:
+  level:
+    blueprint.workflowmodule: INFO

@@ -111,12 +111,27 @@ which brings its own migrator, and VanillaBP deliberately ships no statements fo
 Liquibase can own VanillaBP's tables switches gruelbox's migrator off as well, so the
 application has to create that table too.
 
-Where the statements in `db/gruelbox-outbox.xml` come from matters: gruelbox's migrator was
-let loose on an empty database once and the result was read back out of it. They were not
-written by hand from gruelbox's source, where the schema is thirteen migrations, some in
-MySQL syntax, several overridden per dialect. `GruelboxSchemaDriftTest` repeats that
-migration on every build and compares, so a gruelbox version which adds or renames a column
-fails a build instead of a deployment.
+Where the statements in `db/gruelbox-outbox.xml` come from matters, and the answer is that
+nobody wrote them: gruelbox writes them itself.
+
+```java
+DefaultPersistor.builder().dialect(Dialect.H2).build().writeSchema(writer);
+```
+
+That emits every migration of the library as SQL for the dialect it is given, which is what
+the changelog carries, one changeset per migration and in gruelbox's own order.
+`GruelboxSchemaDriftTest` asks for the same output on every build and compares the statements,
+so a version of the library which adds or changes a migration fails a build instead of a
+deployment. No database is started for that comparison, and nothing has to be read out of a
+migrated one.
+
+`TXNO_VERSION` is not created here. It is how the migrator remembers where it got to, and the
+migrator is off. `writeSchema` does not emit it either.
+
+What a handover of the tables involves, on both platforms and for both migration tools, is
+documented in
+[Creating the tables with Liquibase or Flyway](https://github.com/vanillabp/adapter-platform-integration/wiki/Spring-Boot-integration#creating-the-tables-with-liquibase-or-flyway).
+This blueprint shows it running rather than explaining it a second time.
 
 ### When the migration was not applied
 
@@ -136,9 +151,18 @@ it instead of running the handler twice. Either
   (the default).
 ```
 
-`MissingTableIT` pins it by starting the application with a changelog which forgot VanillaBP's include line. There is one
-gap to know about: the outbox table of the outbox library is not checked this way, so a
-missing `TXNO_OUTBOX` still shows up at the first workflow which is started.
+`TXNO_OUTBOX` is checked the same way, and its message says what the table is: gruelbox's own,
+not part of `vanillabp-schema`, and its statements come from `writeSchema`.
+
+```
+The phase-two outbox table 'TXNO_OUTBOX' does not exist! Starting a workflow on a remote
+BPMS writes an entry into it inside the caller's transaction, so without the table nothing
+can be started. This table is gruelbox's own, not VanillaBP's: it is NOT part of
+'io.vanillabp:vanillabp-schema' and gruelbox's schema migration is switched off here.
+```
+
+`MissingTableIT` pins both, by starting the application with a changelog which forgot one
+include line: VanillaBP's in the first case, gruelbox's in the second.
 
 ## Delta to the base blueprint
 
@@ -199,7 +223,7 @@ The log shows the migration running before anything else, one changeset per owne
 Running Changeset: vanillabp/schema::vanillabp-phase-two-outbox-2.0.0::VanillaBP
 Running Changeset: vanillabp/schema::vanillabp-task-delivery-2.0.0::VanillaBP
 Running Changeset: loan-approval::loan-approval-aggregate-1.0.0::blueprint
-Running Changeset: db/gruelbox-outbox.xml::gruelbox-outbox-1.0.0::blueprint
+Running Changeset: db/gruelbox-outbox.xml::gruelbox-outbox-1::gruelbox
 Running Changeset: org/camunda/bpm/engine/db/liquibase/camunda-changelog.xml::7.16.0-baseline::Camunda
 ```
 
@@ -235,7 +259,7 @@ in a `SmartInitializingSingleton`, which is after every migration ran.
 | `application/.../SchemaConfiguration.java`                      | the application's Liquibase: default bookkeeping tables, changelog per engine |
 | `application/src/main/resources/db/changelog.xml`               | includes VanillaBP's changelog and the outbox library's table                 |
 | `application/src/main/resources/db/changelog-camunda7.xml`      | includes the above plus Camunda's own changelog                               |
-| `application/src/main/resources/db/gruelbox-outbox.xml`         | the outbox table, as the library's migrator would have created it             |
+| `application/src/main/resources/db/gruelbox-outbox.xml`         | the outbox table, in the statements the library writes for itself             |
 | `loan-approval/.../config/LoanApprovalSchemaConfiguration.java` | the module's Liquibase: its own changelog, its own bookkeeping tables         |
 | `loan-approval/.../loan-approval/db/changelog.xml`              | the aggregate table of this workflow module                                   |
 | `application/src/test/.../SchemaIT.java`                        | which tables the migration was supposed to bring, and one history per owner   |

@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   The changelog of a deployment which applied everything except VanillaBP's part: the workflow
-  module's tables are there, VanillaBP's are not. That is the realistic mistake - a changelog
-  which forgot one include line - and MissingTableIT uses it to show what VanillaBP says about
-  it while starting.
+  module's tables are there, the outbox table of the outbox library is there, VanillaBP's own
+  two are not. That is the realistic mistake - a changelog which forgot one include line - and
+  MissingTableIT uses it to show what VanillaBP says about it while starting.
+
+  The gruelbox include is here on purpose. Its table is checked at startup as well, and a
+  changelog missing both would end the boot with that message instead, which is what
+  changelog-without-gruelbox.xml is for.
 
   It lives in the test sources because an application has no use for it.
 -->
@@ -12,5 +16,7 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
   <include file="loan-approval/db/changelog.xml" relativeToChangelogFile="false" />
+
+  <include file="db/gruelbox-outbox.xml" relativeToChangelogFile="false" />
 
 </databaseChangeLog>

@@ -6,8 +6,8 @@
 31120fb94c65de07  only-springboot  application/src/main/java/blueprint/workflowmodule/Application.java  # one platform boots from a class of the application, the other one needs none
 72486f42fc40b46f  only-springboot  application/src/main/java/blueprint/workflowmodule/SchemaConfiguration.java  # wiring a changelog is a bean on one platform and configuration of an extension on the other
 9fb1f8af132dae40  differs  application/src/test/java/blueprint/workflowmodule/ApplicationSmokeTest.java  # asking the bean container whether a ProcessService exists is done in the container's own words
-849084a50e3278dc  only-springboot  application/src/test/java/blueprint/workflowmodule/GruelboxSchemaDriftTest.java  # only one platform's outbox is a third-party library whose schema the application has to write down
-12195d76e0025d66  only-springboot  application/src/test/java/blueprint/workflowmodule/MissingTableIT.java  # only one platform lets a test start an application and assert why it did not come up
+120fa9df66bbb967  only-springboot  application/src/test/java/blueprint/workflowmodule/GruelboxSchemaDriftTest.java  # only one platform's outbox is a third-party library whose schema the application has to write down
+ab092f4d8183c119  only-springboot  application/src/test/java/blueprint/workflowmodule/MissingTableIT.java  # only one platform lets a test start an application and assert why it did not come up
 6904c6b7f76f9346  differs  application/src/test/java/blueprint/workflowmodule/SchemaIT.java  # injection annotations, plus the outbox table which only one platform's outbox library brings
 a28c55ee9ef24b4a  differs  application/src/test/java/blueprint/workflowmodule/WorkflowOnTheOwnSchemaIT.java  # injection annotations, and the test class carries the platform's own way of booting the application
 d8eaef3a339803ef  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/ApiController.java  # the same GET endpoints, written with the HTTP annotations of the platform

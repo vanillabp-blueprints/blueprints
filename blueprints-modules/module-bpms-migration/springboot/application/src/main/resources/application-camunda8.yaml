@@ -1,0 +1,31 @@
+# The state DURING the migration: both BPMS configured at once. Loaded while the 'camunda8'
+# profile applies, and that profile brings BOTH adapters along, because a migration always
+# has the old BPMS still in it.
+vanillabp:
+  # The order is the whole configuration. New workflows start in the first adapter of this
+  # list; every operation on a workflow which already exists is routed to the adapter
+  # holding it, which VanillaBP finds by asking the adapters in this order.
+  prioritized-adapters:
+    - camunda8
+    - camunda7
+  adapters:
+    camunda8:
+      # Camunda 8 is a remote engine: point this at your cluster.
+      rest-address: http://localhost:8080
+    camunda7:
+      webapps:
+        admin-user:
+          id: demo
+          password: demo
+          first-name: Demo
+          last-name: User
+  workflow-modules:
+    loan-approval:
+      workflows:
+        # The workflow which stays behind: repayments keep starting in the old BPMS while
+        # approvals already start in the new one. The list is the same key one level deeper,
+        # and the most specific non-empty list wins - that is how a migration can be done
+        # one workflow at a time instead of all at once.
+        loan_repayment:
+          prioritized-adapters:
+            - camunda7

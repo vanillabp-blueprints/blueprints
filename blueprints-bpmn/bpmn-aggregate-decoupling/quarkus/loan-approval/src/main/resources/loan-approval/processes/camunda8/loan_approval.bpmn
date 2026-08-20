@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <!--
+    Everything this model knows about the loan is in three questions. It does not know that
+    there is a risk class, what values it has, or that a rating exists at all - and that is
+    what lets the data model change without touching this file or migrating the workflows
+    running on it.
+
+    The conditions read process variables, so the two answers are what VanillaBP shares
+    with the cluster. Nothing else is, because the aggregate is annotated
+    '@NoSyncWithBPMS' and only those two getters carry '@SyncWithBPMS'.
+  -->
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToAssessRisk</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToAssessRisk" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_AssessRisk" />
+    <bpmn:serviceTask id="ServiceTask_AssessRisk" name="Assess risk">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="assessRisk" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToAssessRisk</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToDecision</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToDecision" sourceRef="ServiceTask_AssessRisk" targetRef="Gateway_Decision" />
+    <bpmn:exclusiveGateway id="Gateway_Decision" name="How does the risk look?" default="Flow_ToRejectLoan">
+      <bpmn:incoming>Flow_ToDecision</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToApproveLoan</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToRequestManualReview</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToRejectLoan</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <!--
+      The conditions name GETTERS of the workflow aggregate, never its attributes. Each of
+      them is a question the process asks and the aggregate answers, which is the technique
+      the wiki recommends: the day the data behind the answer changes, this file stays as it
+      is and so do the workflows already running.
+    -->
+    <bpmn:sequenceFlow id="Flow_ToApproveLoan" name="acceptable" sourceRef="Gateway_Decision" targetRef="ServiceTask_ApproveLoan">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=approvableWithoutReview</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToRequestManualReview" name="worth a look" sourceRef="Gateway_Decision" targetRef="ServiceTask_RequestManualReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=worthAManualReview</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToRejectLoan" name="too risky" sourceRef="Gateway_Decision" targetRef="ServiceTask_RejectLoan" />
+    <bpmn:serviceTask id="ServiceTask_ApproveLoan" name="Approve loan">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="approveLoan" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToApproveLoan</bpmn:incoming>
+      <bpmn:outgoing>Flow_ApprovedToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="ServiceTask_RequestManualReview" name="Request manual review">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="requestManualReview" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToRequestManualReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReviewToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="ServiceTask_RejectLoan" name="Reject loan">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="rejectLoan" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToRejectLoan</bpmn:incoming>
+      <bpmn:outgoing>Flow_RejectedToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ApprovedToEnd" sourceRef="ServiceTask_ApproveLoan" targetRef="EndEvent_LoanDecided" />
+    <bpmn:sequenceFlow id="Flow_ReviewToEnd" sourceRef="ServiceTask_RequestManualReview" targetRef="EndEvent_LoanDecided" />
+    <bpmn:sequenceFlow id="Flow_RejectedToEnd" sourceRef="ServiceTask_RejectLoan" targetRef="EndEvent_LoanDecided" />
+    <bpmn:endEvent id="EndEvent_LoanDecided" name="Loan decided">
+      <bpmn:incoming>Flow_ApprovedToEnd</bpmn:incoming>
+      <bpmn:incoming>Flow_ReviewToEnd</bpmn:incoming>
+      <bpmn:incoming>Flow_RejectedToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="265" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_AssessRisk_di" bpmnElement="ServiceTask_AssessRisk">
+        <dc:Bounds x="240" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Decision_di" bpmnElement="Gateway_Decision" isMarkerVisible="true">
+        <dc:Bounds x="405" y="215" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="393" y="185" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ApproveLoan_di" bpmnElement="ServiceTask_ApproveLoan">
+        <dc:Bounds x="530" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RequestManualReview_di" bpmnElement="ServiceTask_RequestManualReview">
+        <dc:Bounds x="530" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RejectLoan_di" bpmnElement="ServiceTask_RejectLoan">
+        <dc:Bounds x="530" y="320" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanDecided_di" bpmnElement="EndEvent_LoanDecided">
+        <dc:Bounds x="742" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="728" y="265" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToAssessRisk_di" bpmnElement="Flow_ToAssessRisk">
+        <di:waypoint x="188" y="240" />
+        <di:waypoint x="240" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToDecision_di" bpmnElement="Flow_ToDecision">
+        <di:waypoint x="340" y="240" />
+        <di:waypoint x="405" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToApproveLoan_di" bpmnElement="Flow_ToApproveLoan">
+        <di:waypoint x="430" y="215" />
+        <di:waypoint x="430" y="120" />
+        <di:waypoint x="530" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="432" y="133" width="55" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRequestManualReview_di" bpmnElement="Flow_ToRequestManualReview">
+        <di:waypoint x="455" y="240" />
+        <di:waypoint x="530" y="240" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="459" y="222" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRejectLoan_di" bpmnElement="Flow_ToRejectLoan">
+        <di:waypoint x="430" y="265" />
+        <di:waypoint x="430" y="360" />
+        <di:waypoint x="530" y="360" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="437" y="343" width="47" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ApprovedToEnd_di" bpmnElement="Flow_ApprovedToEnd">
+        <di:waypoint x="630" y="120" />
+        <di:waypoint x="760" y="120" />
+        <di:waypoint x="760" y="222" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReviewToEnd_di" bpmnElement="Flow_ReviewToEnd">
+        <di:waypoint x="630" y="240" />
+        <di:waypoint x="742" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RejectedToEnd_di" bpmnElement="Flow_RejectedToEnd">
+        <di:waypoint x="630" y="360" />
+        <di:waypoint x="760" y="360" />
+        <di:waypoint x="760" y="258" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
