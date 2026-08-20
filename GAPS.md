@@ -175,6 +175,19 @@ that no side branch is in flight.
 rarely overlap long enough to lose a write, which is the worst kind of difference between
 development and production.
 
+**It happened again, 2026-08-20.** `bpmn-error-escalation` had the same situation and not the
+annotation, in both twins: a non-interrupting escalation boundary event, so the branch behind it
+and the task after the throw event run at the same time and both save the aggregate. The nightly
+had been green until the Camunda 8 cluster of the CI moved from 8.8.34 to 8.9.16, which only
+changed the timing enough to make it happen every run. What it looks like from the outside is
+worth knowing: both handlers log their work, two milliseconds apart and on two threads, and the
+test still times out waiting for both attributes, because one of the two writes is gone. Which one
+survives differs per run - the CI lost the contract, the same build locally lost the supervisor.
+`@DynamicUpdate` on the aggregate fixed it on both platforms. Every blueprint whose model creates
+a second token was checked: `bpmn-boundary-events` had the annotation already,
+`persistence-parallel-branches` and both multi-instance blueprints avoid the problem by keeping a
+branch's result in an entity of its own, which is the better answer where it fits.
+
 ## G4: nothing says what happens when the aggregate cannot be saved because of a version conflict
 
 **Status:** answered in VanillaBP 2.0.0-SNAPSHOT on 2026-08-15 (story 59), found 2026-08-14

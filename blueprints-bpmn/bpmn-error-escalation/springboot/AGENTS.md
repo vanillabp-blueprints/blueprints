@@ -109,6 +109,13 @@ model it: a throw event where the process wants to report, and a boundary event 
 non-interrupting - where it wants to react. Do not look for an API to raise an escalation;
 there is none, and a task in a subprocess is wired exactly like one outside it.
 
+**Put `@DynamicUpdate` on the aggregate of a workflow with a non-interrupting boundary event.**
+That event adds a token, so two branches save the aggregate at the same time, and without the
+annotation each save writes every column: the transaction committing second puts back what it
+read at its start and the other branch's write is gone, with no exception and no log line. Two
+branches writing the SAME attribute needs a `@Version` column instead, or a model which keeps a
+branch's result in an entity of its own.
+
 ## Verifying
 
 ```bash

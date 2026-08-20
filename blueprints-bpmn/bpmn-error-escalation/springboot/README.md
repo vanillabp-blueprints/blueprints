@@ -46,7 +46,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `loan_approval.bpmn`       | an error boundary event on the first task, and a subprocess throwing an escalation caught non-interruptingly |
 | `Service.java`             | throws `TaskException` for the error; one method per branch                                                  |
 | `WorkflowTaskHandler.java` | a `@WorkflowTask` method per task, inside and outside the subprocess                                         |
-| `Aggregate.java`           | what each branch wrote, which is how the tests tell the two ways out apart                                   |
+| `Aggregate.java`           | what each branch wrote, which is how the tests tell the two ways out apart, plus `@DynamicUpdate`            |
 | `loan-approval.yaml`       | the amount below which the documents count as incomplete                                                     |
 | `LoanApprovalIT.java`      | one test per way out                                                                                         |
 
@@ -202,6 +202,19 @@ while it runs, so this is a rule VanillaBP enforces rather than one to remember.
 That the test waits instead of asserting immediately is not accidental: a BPMS runs tasks in
 its own transactions, and a remote one does so eventually. A test assuming otherwise passes
 on one engine and fails on the next.
+
+The escalation adds a token, and that has a consequence for the data rather than for the
+model. The branch behind the boundary event and the task after the throw event run at the same
+time and both save the aggregate, so `Aggregate` carries `@DynamicUpdate`. Without it every save
+writes the whole row, the transaction committing second puts back the values it read at its
+start, and the other branch's write is gone. No exception, no log line: the process behaves
+exactly as modelled while the data does not. It cost a red CI job here before it was understood,
+and it is recorded as G3 in the monorepo's `GAPS.md`.
+
+Two branches writing the SAME attribute is a different problem, and one no annotation solves.
+That needs a `@Version` column, or a model which keeps a branch's result in an entity of its own,
+which is what [`persistence-parallel-branches`](https://github.com/vanillabp-blueprints/persistence-parallel-branches-springboot)
+shows.
 
 ## Documentation
 
