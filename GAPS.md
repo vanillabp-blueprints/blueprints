@@ -1060,9 +1060,16 @@ case of `persistence-active-record` builds and runs.
 
 ## G22: a Quarkus application without MongoDB does not build natively
 
-**Status:** open, story `85` (2026-08-19), found while building the delivery part of the
-blueprint `module-packaging`. The blueprint's application has a relational database and no
-MongoDB anywhere.
+**Status:** closed on 2026-08-20 by story `85` (adapter-platform-integration#66), found on
+2026-08-19 while building the delivery part of the blueprint `module-packaging`. The blueprint's
+application has a relational database and no MongoDB anywhere.
+
+The replica-set probe now goes through an interface without MongoDB types, implemented by a bean the
+extension only registers with `Capability.MONGODB_CLIENT`. Two things beyond this gap came out of it:
+the same direct reference sat in two more resolvers, and the native binary additionally lacked the
+BPMN resources and the reflection registration of the workflow services, so it reported every process
+as incompletely wired. The platform's pipeline now builds a native image of an application without
+MongoDB and runs it, which is where this belongs rather than in a blueprint.
 
 **What happens.** `mvn install -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true`
 ends in the image builder:
