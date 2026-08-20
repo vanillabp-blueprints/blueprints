@@ -2,160 +2,160 @@ package blueprint.workflowmodule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.sql.Connection;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.regex.Pattern;
 
-import javax.sql.DataSource;
-
-import org.flywaydb.core.Flyway;
-import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import com.gruelbox.transactionoutbox.DefaultPersistor;
 import com.gruelbox.transactionoutbox.Dialect;
-import com.gruelbox.transactionoutbox.Instantiator;
-import com.gruelbox.transactionoutbox.TransactionManager;
-import com.gruelbox.transactionoutbox.TransactionOutbox;
 
 /**
  * The guard on the one piece of somebody else's schema this application carries.
  *
  * <p>
- * The migration {@code db/migration/V1.0.0__outbox_of_the_outbox_library.sql} describes the outbox
- * table of gruelbox, because switching VanillaBP's table creation off switches gruelbox's migrator
- * off with it. Those statements were read out of a database gruelbox had migrated, and they are
- * only right until gruelbox changes its schema. This test lets gruelbox migrate an empty database
- * again and compares: a version which adds or renames a column fails the build instead of a
- * deployment.
+ * The migrations named {@code *__outbox_of_the_outbox_library.sql} create the outbox table of
+ * gruelbox, because switching VanillaBP's table creation off switches gruelbox's migrator off
+ * with it. Their statements are not hand-written: gruelbox emits them itself, through
+ * {@code DefaultPersistor#writeSchema(Writer)}, and this test asks for them again and
+ * compares. A version of the library which adds a migration, changes one or renames a column
+ * fails the build instead of a deployment.
  * </p>
  *
  * <p>
- * Compared are table and column names, not types. The types are gruelbox's business and
- * differ per database anyway; a column which appears, disappears or is renamed is what
- * would actually break, and that is what names show.
+ * Every migration of that name is read, in the order Flyway would apply them, so the answer
+ * to a gruelbox upgrade stays what Flyway demands: a new migration rather than an edit of one
+ * already applied.
  * </p>
  *
  * <p>
- * {@code TXNO_VERSION} is left out on purpose: it is the bookkeeping of the migrator, and
- * an application which creates the schema itself never runs the migrator.
+ * Compared are the statements, not the schema they produce, and no database is started for
+ * it. Two statements which differ produce two schemas which may or may not differ, and the
+ * cheaper question is the stricter one.
+ * </p>
+ *
+ * <p>
+ * H2 is the dialect this blueprint runs on, so it is the dialect asked for here. An
+ * application on another database changes both places, and the comparison keeps holding.
  * </p>
  */
 public class GruelboxSchemaDriftTest {
 
-  private static final String MIGRATOR_BOOKKEEPING = "TXNO_VERSION";
+  private static final String MIGRATIONS = "classpath*:db/migration/V*__outbox_of_the_outbox_library.sql";
+
+  /** A migration which does nothing on a dialect is a comment and no statement. */
+  private static final Pattern COMMENT = Pattern.compile("(?m)^\\s*--.*$");
+
+  private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
   @Test
-  public void theMigrationSaysWhatGruelboxWouldHaveCreated() throws Exception {
+  public void theMigrationSaysWhatGruelboxWritesItself() throws Exception {
 
-    final var byGruelbox = schemaAfter("drift-gruelbox", GruelboxSchemaDriftTest::letGruelboxMigrate);
-    final var byMigration = schemaAfter("drift-migration", GruelboxSchemaDriftTest::applyTheMigration);
-
-    assertThat(byMigration)
+    assertThat(statementsOfTheMigrations())
         .describedAs(
-            "The migration has to describe what gruelbox's own migrator creates. If this fails"
-                + " after a gruelbox upgrade, read the schema out of a migrated database again"
-                + " and correct it with a NEW migration - never by editing the applied one.")
-        .isEqualTo(byGruelbox);
+            "The migrations carry the statements of gruelbox's own writeSchema. If this fails"
+                + " after an upgrade of transactionoutbox-core, ask writeSchema again and add"
+                + " what is new as a NEW migration - an applied one is never edited.")
+        .isEqualTo(statementsOfGruelbox());
+
+  }
+
+  @Test
+  public void theMigratorsOwnBookkeepingIsNotPartOfIt() {
+
+    // TXNO_VERSION is how the migrator remembers where it got to, and the migrator is off
+    // here. gruelbox does not emit it, which is why no migration creates it.
+    assertThat(statementsOfGruelbox())
+        .describedAs("writeSchema emits the schema of the outbox, not of its migrator")
+        .noneMatch(statement -> statement.contains("TXNO_VERSION"));
 
   }
 
   /**
-   * @param database The name of the in-memory database to build
-   * @param schemaCreation What creates the schema in it
-   * @return Table name to column names, of gruelbox's tables only
-   * @throws Exception If the schema cannot be created or read
+   * @return Every statement gruelbox writes for this dialect, in its order
    */
-  private static Map<String, Set<String>> schemaAfter(
-      final String database,
-      final SchemaCreation schemaCreation) throws Exception {
+  private static List<String> statementsOfGruelbox() {
 
-    final var dataSource = new JdbcDataSource();
-    dataSource.setURL("jdbc:h2:mem:"
-        + database
-        + ";DB_CLOSE_DELAY=-1");
-    dataSource.setUser("sa");
-    dataSource.setPassword("");
-
-    schemaCreation.createIn(dataSource);
-
-    final var schema = new LinkedHashMap<String, Set<String>>();
-    try (var connection = dataSource.getConnection()) {
-      final var metaData = connection.getMetaData();
-      try (var tables = metaData.getTables(null, null, "TXNO%", new String[]{
-          "TABLE"
-      })) {
-        while (tables.next()) {
-          final var table = tables
-              .getString("TABLE_NAME")
-              .toUpperCase();
-          if (MIGRATOR_BOOKKEEPING.equals(table)) {
-            continue;
-          }
-          schema.put(table, columnsOf(connection, table));
-        }
-      }
-    }
-    return schema;
-
-  }
-
-  private static Set<String> columnsOf(
-      final Connection connection,
-      final String table) throws Exception {
-
-    final var columns = new LinkedHashSet<String>();
-    try (var resultSet = connection
-        .getMetaData()
-        .getColumns(null, null, table, "%")) {
-      while (resultSet.next()) {
-        columns.add(
-            resultSet
-                .getString("COLUMN_NAME")
-                .toUpperCase());
-      }
-    }
-    return columns;
-
-  }
-
-  private static void letGruelboxMigrate(
-      final DataSource dataSource) {
-
-    // building the outbox runs gruelbox's migrator, which is all this needs
-    TransactionOutbox
+    final var writer = new StringWriter();
+    DefaultPersistor
         .builder()
-        .transactionManager(TransactionManager.fromDataSource(dataSource))
-        .instantiator(Instantiator.usingReflection())
-        .persistor(
-            DefaultPersistor
-                .builder()
-                .dialect(Dialect.H2)
-                .migrate(true)
-                .build())
-        .build();
+        .dialect(Dialect.H2)
+        .build()
+        .writeSchema(writer);
+
+    return statementsOf(writer.toString());
 
   }
 
-  private static void applyTheMigration(
-      final DataSource dataSource) {
+  /**
+   * @return The statements of every gruelbox migration, in the order Flyway applies them
+   * @throws Exception If a migration cannot be read
+   */
+  private static List<String> statementsOfTheMigrations() throws Exception {
 
-    Flyway
-        .configure()
-        .dataSource(dataSource)
-        .locations("classpath:db/migration")
-        .load()
-        .migrate();
+    final var resources = new PathMatchingResourcePatternResolver()
+        .getResources(MIGRATIONS);
+    assertThat(resources)
+        .describedAs("the migration creating gruelbox's tables has to be on the classpath")
+        .isNotEmpty();
+
+    final var statements = new ArrayList<String>();
+    for (final var resource : sortedByVersion(resources)) {
+      statements.addAll(statementsOf(contentOf(resource)));
+    }
+    return statements;
 
   }
 
-  /** What fills an empty database, either of the two ways under comparison. */
-  private interface SchemaCreation {
+  private static List<Resource> sortedByVersion(
+      final Resource[] resources) {
 
-    void createIn(
-        DataSource dataSource) throws Exception;
+    return List
+        .of(resources)
+        .stream()
+        .sorted(Comparator.comparing(Resource::getFilename))
+        .toList();
+
+  }
+
+  private static String contentOf(
+      final Resource resource) throws Exception {
+
+    try (var content = resource.getInputStream()) {
+      return new String(content.readAllBytes(), StandardCharsets.UTF_8);
+    }
+
+  }
+
+  /**
+   * @param sql One or more statements, separated by a blank line respectively a semicolon
+   * @return One entry per statement, comments removed and whitespace collapsed, which is
+   *         what makes two spellings of one statement equal
+   */
+  private static List<String> statementsOf(
+      final String sql) {
+
+    final var withoutComments = COMMENT
+        .matcher(sql)
+        .replaceAll("");
+
+    final var statements = new ArrayList<String>();
+    for (final var part : withoutComments.split(";|\\n\\s*\\n")) {
+      final var statement = WHITESPACE
+          .matcher(part)
+          .replaceAll(" ")
+          .trim();
+      if (!statement.isEmpty()) {
+        statements.add(statement);
+      }
+    }
+    return statements;
 
   }
 

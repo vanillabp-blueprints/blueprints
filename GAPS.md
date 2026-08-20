@@ -1086,9 +1086,9 @@ Quarkus application without MongoDB, and with it the delivery section of `module
 
 ## G23: handing VanillaBP's tables over forces an application to write gruelbox's DDL as well
 
-**Status:** open, story `95` (`prompts/ROADMAP.md`), found on 2026-08-19 while building
-`persistence-liquibase/springboot`, the first blueprint which takes the schema out of the runtime's
-hands. Read from the code, not guessed:
+**Status:** closed on 2026-08-20 by story `95` (`adapter-platform-integration` PR #57) and the two
+blueprints which found it, `persistence-liquibase/springboot` and `persistence-flyway/springboot`,
+the first ones to take the schema out of the runtime's hands. Read from the code, not guessed:
 `GruelboxPhaseTwoOutboxAutoConfiguration` calls
 `DefaultPersistor.builder()...migrate(properties.isCreateSchema() && (customTable == null))`.
 
@@ -1097,36 +1097,48 @@ which wants Liquibase or Flyway to own `VANILLABP_PHASE_TWO_OUTBOX` and
 `VANILLABP_TASK_DELIVERY` has to set it to `false`, and that switches off the migrator of
 gruelbox, which owns `TXNO_OUTBOX` on Spring Boot. Story `75` decided, for good reasons, that
 VanillaBP ships no statements for a schema belonging to a third party. So the application is left
-to write them: three tables in gruelbox's case (`TXNO_OUTBOX`, `TXNO_SEQUENCE`, and
-`TXNO_VERSION` for its migrator), whose shape is thirteen migrations in the library's source,
-some in MySQL syntax, several overridden per dialect.
+to write them.
 
-The blueprint solves it the only honest way available: gruelbox's migrator was let loose on an
-empty H2 database, the result was read back out of it into `db/gruelbox-outbox.xml`, and
-`GruelboxSchemaDriftTest` repeats that migration on every build and compares, so a version of
-the library which adds or renames a column fails a build instead of a deployment. That works,
-but it is a procedure no application should have to invent, and every application on this
-platform which manages its schema needs it.
+**The DDL is not a procedure any more.** gruelbox writes its own statements:
+`DefaultPersistor.builder().dialect(<dialect>).build().writeSchema(writer)` emits every migration
+of the library as SQL for that dialect. Verified against `transactionoutbox-core` 7.0.707: eleven
+statements for H2 out of thirteen migrations, two of which do nothing on this dialect. They create
+`TXNO_OUTBOX` and `TXNO_SEQUENCE` and not `TXNO_VERSION`, which is the bookkeeping of the migrator
+just switched off. `persistence-liquibase/springboot` and `persistence-flyway/springboot` carry
+exactly that output, and their `GruelboxSchemaDriftTest` asks for it again on every build and
+compares the statements, so an upgrade of the library fails a build instead of a deployment. No
+database is started for the comparison. Before that the statements had been read out of a migrated
+H2 database, which worked and was a procedure no application should have to invent.
 
-**The second half: nothing says so.** VanillaBP checks its own tables at startup since story
-`75` and ends the boot naming the table and the artifact. `TXNO_OUTBOX` is not checked. An
-application which switched the creation off and forgot that table boots cleanly, serves
-requests, and fails at the first workflow it starts, which is exactly the 3 a.m. failure story
-`75` set out to remove. On Quarkus the question does not arise: there the outbox is VanillaBP's
-own and its table is both shipped and checked.
+**The decision.** Option 2 below: gruelbox stays, its DDL stays the application's job, and the
+silence goes. Option 3 was rejected again, for the reason story `75` rejected it, and option 1
+remains the open question of story `26i`.
 
-**What would fix it.** Three options, in the order we would prefer them:
+**The silence is gone too.** `TXNO_OUTBOX` used to be the one table nobody verified, so an
+application which switched the creation off and forgot it booted cleanly, served requests, and
+failed at the first workflow it started, which is exactly the 3 a.m. failure story `75` set out to
+remove. The Spring Boot integration now checks that table wherever gruelbox's migration is off and
+ends the boot naming the table, the property, `writeSchema` and the wiki section. Both blueprints
+cover it: `MissingTableIT` starts the application once without VanillaBP's part of the schema and
+once without gruelbox's, and each boot ends with the message about the table that is missing. On
+Quarkus the question never arose: there the outbox is VanillaBP's own and its table is both shipped
+and checked.
+
+**Left over, and not this gap.** Whether Spring Boot should get VanillaBP's own JDBC outbox, the one
+Quarkus uses, so that no application writes a foreign schema at all. That is option 1 below and the
+question story `26i` carries.
+
+**The three options, for the record.**
 
 1. Give the Spring Boot integration VanillaBP's own JDBC outbox, the one Quarkus already uses.
    Then every table VanillaBP needs is described in `vanillabp-schema`, checked at startup, and
    the two platforms are symmetric. This is the open question story `75` names in its decision 3
    and `26i` carries.
 2. Keep gruelbox and check its table at startup like the others, with a message naming the
-   table, the property and where the library documents its schema. Cheap, and it removes the
-   silent failure even if the DDL stays the application's job.
+   table, the property and where the library documents its schema. **Chosen.**
 3. Ship gruelbox's DDL after all, generated from its own migrator by a build of the framework
    rather than copied by hand. That pins a foreign schema in VanillaBP's artifacts, which is
-   what decision 3 of story `75` rejected, but it beats every application copying it.
+   what decision 3 of story `75` rejected.
 
 **Affects:** `adapter-platform-integration`, Spring Boot side. Anything which manages its
 database schema itself, which is every application past its first prototype.

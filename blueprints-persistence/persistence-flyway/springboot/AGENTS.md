@@ -39,7 +39,7 @@ find no history and try to apply every migration again.
 |                                    File                                     |                                                           Why it matters                                                            |
 |-----------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/resources/loan-approval/db/migration/V1.0.0__*.sql` | the module's schema: its aggregate table. Inside the module's resource directory, because modules share one classpath               |
-| `application/src/main/resources/db/migration/V1.0.0__*.sql`                 | the outbox table of the outbox library, read out of a database its own migrator had created                                         |
+| `application/src/main/resources/db/migration/V1.0.0__*.sql`                 | the outbox table of the outbox library, in the statements that library writes for itself                                            |
 | `application/src/main/java/.../SchemaConfiguration.java`                    | one `Flyway` plus one `FlywayMigrationInitializer` per owner, each with a history table of its own                                  |
 | `application/pom.xml`, profile `camunda7`                                   | takes Camunda's scripts out of the engine JAR and names them for Flyway; the engine version is a property and the migration version |
 | `application/src/main/resources/application.yaml`                           | `ddl-auto: validate`, `vanillabp.outbox.create-schema: false`, the locations per owner                                              |
@@ -110,9 +110,11 @@ migration. A `Flyway` bean alone migrates whenever its bean happens to be create
    not carry it.
 6. On this platform the phase-two outbox is `com.gruelbox:transactionoutbox-core`, whose migrator
    is switched off by the same property. Create `TXNO_OUTBOX` and `TXNO_SEQUENCE` with your own
-   migration. Do not write those statements from the library's source: let its migrator run against
-   an empty database once, read the schema back out and copy that, then add a test comparing the two
-   so an upgrade of the library fails the build.
+   migration, and take the statements from the library rather than from its source:
+   `DefaultPersistor.builder().dialect(<dialect>).build().writeSchema(writer)` emits every migration
+   it has as SQL for that dialect. Then add a test which asks for that output again and compares, so
+   an upgrade of the library fails the build. `TXNO_VERSION` is the bookkeeping of the migrator you
+   just switched off, and `writeSchema` does not emit it.
 7. If the project's database is not H2, every location changes with it: VanillaBP's SQL directory,
    the engine's script names, and any statement written by hand. Flyway has no abstraction over
    dialects, which is the price of its simplicity.

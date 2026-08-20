@@ -111,11 +111,27 @@ But `vanillabp.outbox.create-schema` covers both: switching it off so that Flywa
 VanillaBP's tables switches that migrator off as well, so the application has to create the table
 too.
 
-Where the statements come from matters: gruelbox's migrator was let loose on an empty database once
-and the result was read back out of it. They were not written by hand from gruelbox's source, where
-the schema is thirteen migrations, some in MySQL syntax, several overridden per dialect.
-`GruelboxSchemaDriftTest` repeats that migration on every build and compares, so a gruelbox version
-which adds or renames a column fails a build instead of a deployment.
+Where the statements come from matters, and the answer is that nobody wrote them: gruelbox writes
+them itself.
+
+```java
+DefaultPersistor.builder().dialect(Dialect.H2).build().writeSchema(writer);
+```
+
+That emits every migration of the library as SQL for the dialect it is given, which is what
+`V1.0.0__outbox_of_the_outbox_library.sql` carries, in gruelbox's own order and with its own
+numbering. `GruelboxSchemaDriftTest` asks for the same output on every build and compares the
+statements, so a version of the library which adds or changes a migration fails a build instead of a
+deployment. No database is started for that comparison, and nothing has to be read out of a migrated
+one.
+
+`TXNO_VERSION` is not created here. It is how the migrator remembers where it got to, and the
+migrator is off. `writeSchema` does not emit it either.
+
+What a handover of the tables involves, on both platforms and for both migration tools, is documented
+in
+[Creating the tables with Liquibase or Flyway](https://github.com/vanillabp/adapter-platform-integration/wiki/Spring-Boot-integration#creating-the-tables-with-liquibase-or-flyway).
+This blueprint shows it running rather than explaining it a second time.
 
 ### When the migration was not applied
 
@@ -135,9 +151,19 @@ it instead of running the handler twice. Either
   (the default).
 ```
 
-`MissingTableIT` pins it by pointing VanillaBP's Flyway instance at a location without migrations.
-There is one gap to know about: the outbox table of the outbox library is not checked this way, so
-a missing `TXNO_OUTBOX` still shows up at the first workflow which is started.
+`TXNO_OUTBOX` is checked the same way, and its message says what the table is: gruelbox's own, not
+part of `vanillabp-schema`, and its statements come from `writeSchema`.
+
+```
+The phase-two outbox table 'TXNO_OUTBOX' does not exist! Starting a workflow on a remote
+BPMS writes an entry into it inside the caller's transaction, so without the table nothing
+can be started. This table is gruelbox's own, not VanillaBP's: it is NOT part of
+'io.vanillabp:vanillabp-schema' and gruelbox's schema migration is switched off here.
+```
+
+`MissingTableIT` pins both, by pointing one Flyway instance at a location without migrations:
+VanillaBP's in the first case, the application's own in the second, which is the one carrying
+gruelbox's migration.
 
 ## Delta to the base blueprint
 
