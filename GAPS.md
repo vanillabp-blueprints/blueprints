@@ -857,6 +857,30 @@ questions, and the second is the one that matters:
    per BPMS. It belongs on the BPMS adapter pages of the wiki, next to what a task delivery
    guarantees, rather than in a blueprint.
 
+**Measured again on 2026-08-20, and it is not only a blueprint's test.** Two blueprints failed on
+Camunda 8 in BOTH runs of the same commit, which rules out an unlucky moment:
+`persistence-parallel-branches` in both twins (`bothBranchesKeepTheirResult`, thirty seconds waiting
+for the second branch) and `persistence-flyway/quarkus` (`theProcessRunsThrough`, TWO MINUTES waiting
+for a single service task, which is the harness timeout of that test). Both wait for a delivery which
+does not arrive; neither blocks a handler.
+
+Load is not the explanation, which the next run settled: `persistence-parallel-branches/quarkus`
+failed the same way in a run of ONE matrix, where every job has a runner and a cluster of its own.
+What the aggregate looked like there says which half arrived:
+
+```
+Last seen: Aggregate(..., creditRating=50,
+  partnerApproval=PartnerApproval(id=2, taskId=2251799813685395, approvedBy=null, approvedAt=null),
+  documentCheck=null, customerInformed=null)
+```
+
+One branch of the parallel split was delivered, the other was not, within thirty seconds. The
+Camunda 8 client hands both to one execution thread, so two branches of one workflow are two
+deliveries competing for it. Story `74` decides whether that thread count becomes configurable and
+what VanillaBP promises about the thread a handler runs on. Until then a test on this engine which
+waits thirty seconds for the second of two parallel branches is a test which goes red often enough
+to be noticed, and a busy machine makes it worse rather than causing it.
+
 ## G18: the startup line about a transaction names the bean's proxy on one platform
 
 **Status:** fixed in VanillaBP 2.0.0-SNAPSHOT on 2026-08-18 (story `80`,
