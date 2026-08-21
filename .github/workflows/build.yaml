@@ -124,8 +124,11 @@ jobs:
       - uses: actions/cache/restore@v5
         with:
           path: ~/.m2/repository
-          key: maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: maven-
+          # the newest cache of this POM set, which the aggregator of this run wrote
+          key: maven-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            maven-${{ hashFiles('**/pom.xml') }}-
+            maven-
       - name: Start a Camunda 8 cluster
         if: matrix.bpms == 'camunda8'
         # The address is published here rather than in the build step: a Camunda 7 build
@@ -187,8 +190,15 @@ jobs:
       - uses: actions/cache@v5
         with:
           path: ~/.m2/repository
-          key: maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: maven-
+          # The run id is part of the key so that this job ALWAYS writes. Without it the key
+          # exists after the first run and GitHub never writes it again: whatever was missing
+          # in that first save stays missing, and every job which needs it goes to Maven
+          # Central and is answered with 429. That is what a key of POMs alone did, and it is
+          # the same trap 'cache: maven' of setup-java falls into.
+          key: maven-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            maven-${{ hashFiles('**/pom.xml') }}-
+            maven-
       - name: Build every blueprint through the aggregator
         run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots -DskipTests install
