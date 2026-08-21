@@ -1281,6 +1281,17 @@ The alternative would have been a test which waits six minutes, and a demo in wh
 for five. The number is a legitimate setting rather than a workaround: the handlers of this blueprint
 finish in milliseconds.
 
+**A second sighting, weaker, without a restart (2026-08-21).** `persistence-flyway/quarkus` fails on
+Camunda 8 with `did not fill the aggregate within PT2M` on a cluster whose exporter is verified as
+working, and Quarkus boots one application per test run, so nothing there closes a client. With
+`job-timeout: PT20S` that job was green. That is consistent with the lock being the wait, and it is
+not proof: unlike `module-bpms-migration`, which failed nine runs out of nine, this job fails
+intermittently, so one green run does not separate the fix from luck. It matters anyway, because if
+the effect exists without a client being closed, then "after a restart" is where it is easiest to
+see rather than what causes it. Repetition belongs on the platform side, where the same scenario can
+be run twenty times per lock duration; story `102` carries it. The blueprint was left unchanged: its
+subject is schema management, and a job timeout nobody can justify there would be noise.
+
 **Affects:** every Camunda 8 application which restarts and starts a workflow immediately
 afterwards. Long-running applications never notice, which is why this took a blueprint whose subject
 is a restart to find.
