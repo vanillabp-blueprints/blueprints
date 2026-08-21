@@ -16,9 +16,15 @@ import com.acme.loanapproval.config.LoanApprovalProperties;
  *
  * <p>
  * The order, highest first: what comes from outside - environment variables, system
- * properties - then the module's own file, then {@code application.yaml}. That the module
- * wins over the application is the surprising one, and it is deliberate: a module knows its
- * own defaults better than the runtime collecting it does.
+ * properties - then {@code application.yaml} of the assembling application, then the module's
+ * own file. A module's file is a set of DEFAULTS, and the application which collects the
+ * module may overrule them; only the module's profile-specific file beats its plain one.
+ * </p>
+ *
+ * <p>
+ * It was the other way round until 2026-08-21, when the framework turned it around
+ * (`adapter-platform-integration`, story 101). Worth knowing when reading older projects: an
+ * application which could not talk a module out of a value can do so now.
  * </p>
  */
 @SpringBootTest
@@ -28,13 +34,14 @@ public class ConfigurationLevelsIT {
   private LoanApprovalProperties properties;
 
   @Test
-  public void theModulesOwnFileWinsOverTheApplication() {
+  public void theApplicationWinsOverTheModulesOwnFile() {
 
     assertThat(properties.getRatingScale())
         .describedAs(
-            "'application.yaml' says 42, the module's own file says 100."
-                + " A module's file wins - the application cannot talk a module out of its defaults.")
-        .isEqualTo(100);
+            "the module's own file says 100, 'application.yaml' of this application says 42."
+                + " The application wins: a module's file carries defaults, and whoever"
+                + " assembles the module decides what its environment needs.")
+        .isEqualTo(42);
 
   }
 

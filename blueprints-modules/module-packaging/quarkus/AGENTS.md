@@ -34,8 +34,11 @@ Names this blueprint adds, because it has more than one of everything:
    If something else is needed, that is a finding, not a workaround.
 2. A module is a released artifact: own group, own version, own build, own tests. It is
    updated by changing a version, and nothing in the application moves with it.
-3. Configuration has three levels and this order: what comes from outside beats the module's
-   own file, and the module's own file beats the `application.yaml` of the assembling project.
+3. Configuration has three levels and this order: what comes from outside beats the
+   `application.yaml` of the assembling project, and that beats the file a module brings
+   along, which carries its defaults. A module's profile-specific file still beats its plain
+   one. (Turned around on 2026-08-21 by story 101 of the framework; older projects may assume
+   the opposite.)
 4. Everything about having two modules at all comes from `module-multi` and is not repeated
    here.
 
@@ -78,9 +81,10 @@ module's own package, the application's smoke test next to the application.
 4. Keep the smoke test which counts the modules. In a project assembling foreign JARs it is
    the test of the discovery, and a forgotten dependency looks exactly like a working
    application without it.
-5. Configure with the order in mind: what the environment must decide belongs into the
-   environment, because the `application.yaml` of the assembling project loses against a
-   module's own file. Values a module should not decide belong into the module - ask its team.
+5. Configure with the order in mind: a module's file carries defaults, so the assembling
+   project sets what its environment needs and does not have to ask the module's team for a
+   release. What genuinely varies per deployment still belongs outside, in an environment
+   variable, because that beats both.
 6. Ship what the platform ships: the runnable application from the normal build, the image
    through Jib, and the native executable where it is wanted. None of them belongs into
    `verify`: they take minutes, and a test starting a container tests the container runtime.
