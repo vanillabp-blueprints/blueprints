@@ -12,6 +12,10 @@ vanillabp:
     camunda8:
       # Camunda 8 is a remote engine: point this at your cluster.
       rest-address: http://localhost:8080
+      # EXPERIMENT, not to be merged: twenty seconds instead of the default PT5M. If the
+      # delivery of the first job after a restart then waits twenty seconds instead of five
+      # minutes, the wait IS the job's lock and nothing else.
+      job-timeout: PT20S
     camunda7:
       webapps:
         admin-user:
