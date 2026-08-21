@@ -1228,3 +1228,42 @@ say is what the platform allows, per platform, rather than one recommendation fo
 
 **Affects:** the wiki of `adapter-platform-integration`, both platform pages. Anything which follows
 the recommendation of story `75` and manages its schema with Flyway.
+
+## G25: a workflow started right after a restart waits for the lock of a job nobody holds
+
+**Status:** open, reported to Camunda through Stephan's support access (report:
+`prompts/report-c8-job-after-client-close.md`), found on 2026-08-20 while building
+`module-bpms-migration`, whose test restarts the application. Camunda 8 only.
+
+**What happens.** One JVM closes an application and starts the next one seven seconds later, which
+is what a restart with changed configuration looks like. The second application opens its job
+workers, then starts a workflow. The cluster confirms the start, the workers are open, and the first
+job reaches its handler five minutes later.
+
+**It is the job's lock, measured twice.** The delay follows `job-timeout`:
+
+| `vanillabp.adapters.camunda8.job-timeout` | delivery of the first job after the restart |
+|-------------------------------------------|---------------------------------------------|
+| `PT5M` (default)                          | 300888 ms                                   |
+| `PT20S`                                   | 20556 ms                                    |
+
+Everything else identical, every later delivery of the same workflows in milliseconds. So a consumer
+takes the job and never answers, and the worker which is actually there gets it when the lock
+expires. Nine CI runs in a row, never reproducible on a developer machine.
+
+**Which consumer is open.** Two readings fit: a job stream of the closed client which the gateway
+still has, or the new application's own worker activating the job and losing it. The first would be
+a cleanup question on the cluster side, the second a defect in the client or in our adapter. Our own
+log carries a hint that it might be ours: `Camunda8Drain: drained after 0 ms (workers closed: false)`
+on that shutdown path, although the adapter is supposed to close a module's workers before draining
+(story `90`). That is the first thing to rule out.
+
+**What the blueprint does about it.** It configures `job-timeout: PT20S` and says why in the file.
+The alternative would have been a test which waits six minutes, and a demo in which nothing happens
+for five. The number is a legitimate setting rather than a workaround: the handlers of this blueprint
+finish in milliseconds.
+
+**Affects:** every Camunda 8 application which restarts and starts a workflow immediately
+afterwards. Long-running applications never notice, which is why this took a blueprint whose subject
+is a restart to find.
+
