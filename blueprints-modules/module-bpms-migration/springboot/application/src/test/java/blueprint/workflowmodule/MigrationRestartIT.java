@@ -208,8 +208,11 @@ public class MigrationRestartIT {
           .orElse(null);
       if ((last != null) && condition.test(last)) {
         // EXPERIMENT: the number is what this run is about
-        System.out.println("EXPERIMENT: '" + loanRequestId + "' reached the expected state after "
-            + java.time.Duration.ofNanos(System.nanoTime() - started).toMillis() + " ms");
+        System.out.println("EXPERIMENT: '"
+            + loanRequestId
+            + "' reached the expected state after "
+            + java.time.Duration.ofNanos(System.nanoTime() - started).toMillis()
+            + " ms");
         return last;
       }
       try {
