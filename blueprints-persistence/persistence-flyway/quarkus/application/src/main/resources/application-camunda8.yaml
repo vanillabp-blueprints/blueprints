@@ -5,3 +5,10 @@ vanillabp:
     camunda8:
       # Camunda 8 is a remote engine: point this at your cluster.
       rest-address: http://localhost:8080
+      # EXPERIMENT, not to be merged: twenty seconds instead of the default PT5M. This
+      # blueprint's WorkflowOnTheOwnSchemaIT waits two minutes for a service task and does not
+      # get it, on a cluster whose exporter is demonstrably working. If twenty seconds is
+      # enough afterwards, the wait is the job's lock (GAPS.md G25) even though nothing here
+      # restarts a client. If it still fails, the cause is elsewhere and this blueprint needs
+      # its own investigation.
+      job-timeout: PT20S
