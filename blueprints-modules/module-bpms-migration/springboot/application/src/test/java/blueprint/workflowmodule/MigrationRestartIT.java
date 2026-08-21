@@ -54,7 +54,12 @@ public class MigrationRestartIT {
    * delivers them on one execution thread (`GAPS.md` G17), so the last of them waits behind
    * the others. Two minutes is what `persistence-flyway` uses for the same reason.
    */
-  private static final Duration TIMEOUT = Duration.ofMinutes(2);
+  // EXPERIMENT, not to be merged: eight minutes instead of two, to find out whether the
+  // delivery which never arrives within two is late or absent. The job timeout of the adapter
+  // is PT5M, so an arrival at about five minutes means a consumer took the job and never
+  // answered; an arrival within seconds means the wait was simply too short; no arrival at all
+  // means the job was never handed out.
+  private static final Duration TIMEOUT = Duration.ofMinutes(8);
 
   private static final Path DATABASE = Path.of("target", "database", "migration-restart");
 
@@ -194,13 +199,17 @@ public class MigrationRestartIT {
       final String loanRequestId,
       final Predicate<Aggregate> condition) {
 
-    final var deadline = System.nanoTime() + TIMEOUT.toNanos();
+    final var started = System.nanoTime();
+    final var deadline = started + TIMEOUT.toNanos();
     Aggregate last = null;
     while (System.nanoTime() < deadline) {
       last = aggregates
           .findById(loanRequestId)
           .orElse(null);
       if ((last != null) && condition.test(last)) {
+        // EXPERIMENT: the number is what this run is about
+        System.out.println("EXPERIMENT: '" + loanRequestId + "' reached the expected state after "
+            + java.time.Duration.ofNanos(System.nanoTime() - started).toMillis() + " ms");
         return last;
       }
       try {
