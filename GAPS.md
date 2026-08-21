@@ -188,6 +188,24 @@ a second token was checked: `bpmn-boundary-events` had the annotation already,
 `persistence-parallel-branches` and both multi-instance blueprints avoid the problem by keeping a
 branch's result in an entity of its own, which is the better answer where it fits.
 
+**And a third time, 2026-08-21, in the blueprint whose subject this is.**
+`persistence-parallel-branches` keeps each branch's result in an entity of its own, which its own
+comment called the way to avoid this gap. It is necessary and not sufficient: the two
+`@OneToOne` attributes are two foreign-key columns ON the aggregate, so a branch which creates its
+child still writes the aggregate's row to point at it. Both twins failed on Camunda 8 in nine CI runs,
+and this one finally reproduced locally, twice per run and mirrored:
+
+```
+Last seen: … partnerApproval=PartnerApproval(id=1, taskId=2251799813685343, …), documentCheck=null
+Last seen: … partnerApproval=null, documentCheck=DocumentCheck(id=2, taskId=2251799813685381, …)
+```
+
+Both handlers logged their work six milliseconds apart on two threads, both child rows exist, and one
+of the two references is gone: the row is orphaned rather than missing. `@DynamicUpdate` fixes it, and
+both twins are green with it. The cleaner model, which the aggregate now names, is to let each child
+own the foreign key so that a branch never writes the aggregate's row at all. Camunda 7 never showed
+any of it, because an embedded engine serializes the jobs of one instance.
+
 ## G4: nothing says what happens when the aggregate cannot be saved because of a version conflict
 
 **Status:** answered in VanillaBP 2.0.0-SNAPSHOT on 2026-08-15 (story 59), found 2026-08-14
