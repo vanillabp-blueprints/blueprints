@@ -97,15 +97,16 @@ jobs:
   # and without the aggregator, the wrapper or the root POM of this repository. This is
   # the job that has to be green before a blueprint is delivered.
   blueprint:
-    needs: discover
+    # The aggregator job is what fills the Maven cache, so the matrix waits for it and reads
+    # a cache which already holds what every blueprint needs.
+    needs: [discover, monorepo]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       # Without a limit all of them start at once, and about a hundred jobs asking Maven
-      # Central for the same artifacts in the same second get answered with 429 and 403. The
-      # Maven cache of the runners does not help on the first run of a branch, which is
-      # exactly when it hurts. Twenty at a time costs a few minutes of wall clock, and the
-      # runners rarely grant more than that anyway.
+      # Central for the same artifacts in the same second get answered with 429 and 403.
+      # Twenty at a time costs a few minutes of wall clock, and the runners rarely grant
+      # more than that anyway.
       max-parallel: 20
       matrix:
         include: "${{ fromJSON(needs.discover.outputs.combinations) }}"
@@ -115,7 +116,16 @@ jobs:
         with:
           java-version: 21
           distribution: temurin
-          cache: maven
+      # Read-only on purpose: the cache is written by the aggregator job, which downloaded
+      # everything once. 'cache: maven' of setup-java cannot do this - it keys on the hash of
+      # all POMs, so all jobs share ONE cache whose content is whatever the job that saved it
+      # first happened to need, and nobody ever adds to it (a key which exists is never
+      # written again). That is why a hundred jobs went to Central despite a cache hit.
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-
       - name: Start a Camunda 8 cluster
         if: matrix.bpms == 'camunda8'
         # The address is published here rather than in the build step: a Camunda 7 build
@@ -160,6 +170,9 @@ jobs:
   # a MongoDB where it stores its aggregates there. Running them here as well would need every
   # blueprint's infrastructure at once and would test a second time what the matrix already
   # tested.
+  # Two jobs in one: it proves that every module still compiles together, and it is the only
+  # job which WRITES the Maven cache. Everything the matrix needs is downloaded here, once,
+  # instead of by a hundred jobs at the same second.
   monorepo:
     runs-on: ubuntu-latest
     steps:
@@ -168,10 +181,20 @@ jobs:
         with:
           java-version: 21
           distribution: temurin
-          cache: maven
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-
       - name: Build every blueprint through the aggregator
         run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots -DskipTests install
+      - name: Resolve what the other engine needs, so the cache holds that too
+        # The build above runs the default profile, so the artifacts of the other engine
+        # would be missing and every job of that engine would fetch them itself.
+        run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
+          --batch-mode --no-transfer-progress -Pcamunda8 -DskipTests
+          dependency:go-offline
 
   # One name that never changes, so branch protection has something to require and
   # Renovate has something to wait for. The matrix above is generated from the
