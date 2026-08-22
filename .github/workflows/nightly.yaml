@@ -77,11 +77,13 @@ jobs:
             # cannot meet those of another blueprint. Setting a mode here would test a
             # configuration no blueprint documents.
           } >> "$GITHUB_ENV"
+      # 'install' alone, not 'install verify': install already runs every phase verify
+      # has, and naming both compiled every module twice (story 111)
       - name: Build against the current snapshots
         working-directory: "${{ matrix.blueprint }}"
         run: mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
-          -P${{ matrix.bpms }} install verify
+          -P${{ matrix.bpms }} install
       - name: The Camunda 8 cluster's log, if something went wrong
         if: failure() && matrix.bpms == 'camunda8'
         run: bin/camunda8_cluster.sh logs
