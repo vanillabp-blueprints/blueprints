@@ -65,22 +65,26 @@ treats instances of an older version is
 ### Configuration: three places, and which one wins
 
 The same value can be set by the module, by this application and by the environment, and the
-order is not the one most people expect:
+order is the one an assembling project needs:
 
-|            Set in            |                    Wins over                     |
-|------------------------------|--------------------------------------------------|
-| environment, system property | everything                                       |
-| the module's own file        | `application.yaml` of the assembling application |
-| `application.yaml`           | nothing a module has an opinion about            |
+|                 Set in                 |                 Wins over                 |
+|----------------------------------------|-------------------------------------------|
+| environment, system property           | everything                                |
+| `application.yaml` of this application | the file a module brings along            |
+| the module's own file                  | nothing, it carries the module's defaults |
 
 `application.yaml` of this blueprint sets both values a module ships, and `ConfigurationLevelsIT`
-reads what arrived: `rating-scale` stays at the module's 100 and ignores the 42 here, while
+reads what arrived: `rating-scale` becomes the 42 set here rather than the module's 100, and
 `rating-provider` takes the value the build passes in from outside.
 
-That is worth knowing before the first deployment: **a value an environment has to change
-belongs into the environment**, not into the `application.yaml` of the assembling project. The
-module's file is not a default the application may talk it out of; it is the module's answer,
-and only the outside overrules it.
+What that means for assembling modules you do not own: **their configuration is yours to
+decide**. A module's file says what it needs to run at all, and the project which collects it
+says what its environment needs. The one exception is a module's profile-specific file, which
+beats its plain one, because that is still the module talking about itself.
+
+The order was the other way round until 2026-08-21, when the framework turned it around
+(`adapter-platform-integration`, story 101). A project written before that may rely on a module
+winning; it does not any more.
 
 ### Shipping it
 

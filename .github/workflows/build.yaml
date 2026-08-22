@@ -30,7 +30,7 @@ jobs:
       combinations: "${{ steps.list.outputs.combinations }}"
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Install dependencies
@@ -84,13 +84,16 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: Build and test the blueprint on its own
         working-directory: "${{ matrix.blueprint }}"
+        # 'install' alone, not 'install verify': install runs every phase verify has, so
+        # naming both walked two lifecycles per module. The tests skipped their second
+        # run, the compiler did not, and every warning was reported twice (story 111).
         # --update-snapshots because everything VanillaBP is a SNAPSHOT until 2.0.0 is
         # released: the Maven cache of this runner holds yesterday's, and Maven would keep it
         # for the rest of the day. A blueprint would then be built against a framework which
         # no longer exists, which has cost a red build more than once.
         run: mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
-          -P${{ matrix.bpms }} install verify
+          -P${{ matrix.bpms }} install
       - name: The Camunda 8 cluster's log, if something went wrong
         if: failure() && matrix.bpms == 'camunda8'
         run: bin/camunda8_cluster.sh logs

@@ -188,6 +188,24 @@ a second token was checked: `bpmn-boundary-events` had the annotation already,
 `persistence-parallel-branches` and both multi-instance blueprints avoid the problem by keeping a
 branch's result in an entity of its own, which is the better answer where it fits.
 
+**And a third time, 2026-08-21, in the blueprint whose subject this is.**
+`persistence-parallel-branches` keeps each branch's result in an entity of its own, which its own
+comment called the way to avoid this gap. It is necessary and not sufficient: the two
+`@OneToOne` attributes are two foreign-key columns ON the aggregate, so a branch which creates its
+child still writes the aggregate's row to point at it. Both twins failed on Camunda 8 in nine CI runs,
+and this one finally reproduced locally, twice per run and mirrored:
+
+```
+Last seen: … partnerApproval=PartnerApproval(id=1, taskId=2251799813685343, …), documentCheck=null
+Last seen: … partnerApproval=null, documentCheck=DocumentCheck(id=2, taskId=2251799813685381, …)
+```
+
+Both handlers logged their work six milliseconds apart on two threads, both child rows exist, and one
+of the two references is gone: the row is orphaned rather than missing. `@DynamicUpdate` fixes it, and
+both twins are green with it. The cleaner model, which the aggregate now names, is to let each child
+own the foreign key so that a branch never writes the aggregate's row at all. Camunda 7 never showed
+any of it, because an embedded engine serializes the jobs of one instance.
+
 ## G4: nothing says what happens when the aggregate cannot be saved because of a version conflict
 
 **Status:** answered in VanillaBP 2.0.0-SNAPSHOT on 2026-08-15 (story 59), found 2026-08-14
@@ -857,6 +875,30 @@ questions, and the second is the one that matters:
    per BPMS. It belongs on the BPMS adapter pages of the wiki, next to what a task delivery
    guarantees, rather than in a blueprint.
 
+**A false trail from 2026-08-20, kept because it cost time.** Several Camunda 8 jobs of the CI
+failed that day waiting for a delivery which never arrived: `persistence-parallel-branches` in both
+twins (thirty seconds for the second of two parallel branches), `persistence-flyway/quarkus` (two
+minutes for a single service task) and `module-bpms-migration/springboot` (two minutes for the first
+task of a workflow whose start had demonstrably reached the cluster). It looked like this gap, and
+that reading was wrong.
+
+The cluster of each job says what it was. In the failing jobs:
+
+```
+WARN io.camunda.zeebe.broker.exporter - Failed to open exporter 'camundaexporter'
+WARN io.camunda.tasklist.connect.ElasticsearchConnector - Elasticsearch cluster is not accessible
+```
+
+In a Camunda 8 job of the same run which passed, neither line appears at all. So the broker of a
+failing job could not open its exporter because Elasticsearch was not reachable, and a broker in that
+state stops handing work out. That is the CI cluster, not the thread count of the client, and
+`bin/camunda8_cluster.sh` waiting once for `/_cluster/health` is apparently not enough to keep it
+reachable for the length of a build.
+
+What stays true about this gap is what story `74` measured directly: a handler which takes its time
+holds the one execution thread of the client, and everything that adapter would deliver waits behind
+it. That measurement, not a red CI job, is its evidence.
+
 ## G18: the startup line about a transaction names the bean's proxy on one platform
 
 **Status:** fixed in VanillaBP 2.0.0-SNAPSHOT on 2026-08-18 (story `80`,
@@ -1216,3 +1258,53 @@ say is what the platform allows, per platform, rather than one recommendation fo
 
 **Affects:** the wiki of `adapter-platform-integration`, both platform pages. Anything which follows
 the recommendation of story `75` and manages its schema with Flyway.
+
+## G25: a workflow started right after a restart waits for the lock of a job nobody holds
+
+**Status:** open, reported to Camunda through Stephan's support access (report:
+`prompts/report-c8-job-after-client-close.md`), found on 2026-08-20 while building
+`module-bpms-migration`, whose test restarts the application. Camunda 8 only.
+
+**What happens.** One JVM closes an application and starts the next one seven seconds later, which
+is what a restart with changed configuration looks like. The second application opens its job
+workers, then starts a workflow. The cluster confirms the start, the workers are open, and the first
+job reaches its handler five minutes later.
+
+**It is the job's lock, measured twice.** The delay follows `job-timeout`:
+
+| `vanillabp.adapters.camunda8.job-timeout` | delivery of the first job after the restart |
+|-------------------------------------------|---------------------------------------------|
+| `PT5M` (default)                          | 300888 ms                                   |
+| `PT20S`                                   | 20556 ms                                    |
+
+Everything else identical, every later delivery of the same workflows in milliseconds. So a consumer
+takes the job and never answers, and the worker which is actually there gets it when the lock
+expires. Nine CI runs in a row, never reproducible on a developer machine.
+
+**Which consumer is open.** Two readings fit: a job stream of the closed client which the gateway
+still has, or the new application's own worker activating the job and losing it. The first would be
+a cleanup question on the cluster side, the second a defect in the client or in our adapter. Our own
+log carries a hint that it might be ours: `Camunda8Drain: drained after 0 ms (workers closed: false)`
+on that shutdown path, although the adapter is supposed to close a module's workers before draining
+(story `90`). That is the first thing to rule out.
+
+**What the blueprint does about it.** It configures `job-timeout: PT20S` and says why in the file.
+The alternative would have been a test which waits six minutes, and a demo in which nothing happens
+for five. The number is a legitimate setting rather than a workaround: the handlers of this blueprint
+finish in milliseconds.
+
+**A second sighting, weaker, without a restart (2026-08-21).** `persistence-flyway/quarkus` fails on
+Camunda 8 with `did not fill the aggregate within PT2M` on a cluster whose exporter is verified as
+working, and Quarkus boots one application per test run, so nothing there closes a client. With
+`job-timeout: PT20S` that job was green. That is consistent with the lock being the wait, and it is
+not proof: unlike `module-bpms-migration`, which failed nine runs out of nine, this job fails
+intermittently, so one green run does not separate the fix from luck. It matters anyway, because if
+the effect exists without a client being closed, then "after a restart" is where it is easiest to
+see rather than what causes it. Repetition belongs on the platform side, where the same scenario can
+be run twenty times per lock duration; story `102` carries it. The blueprint was left unchanged: its
+subject is schema management, and a job timeout nobody can justify there would be noise.
+
+**Affects:** every Camunda 8 application which restarts and starts a workflow immediately
+afterwards. Long-running applications never notice, which is why this took a blueprint whose subject
+is a restart to find.
+

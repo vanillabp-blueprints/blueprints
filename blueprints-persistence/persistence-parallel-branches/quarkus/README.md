@@ -32,8 +32,25 @@ The two branches are written by two different transactions:
 What keeps them apart is the data model. The aggregate itself carries only what is written
 while a single token exists: the request, the credit rating, and after the join the note
 that the customer was informed. Everything a branch produces lives in an entity of that
-branch, `PartnerApproval` and `DocumentCheck`. Both branches still save the aggregate's row,
-which is harmless as long as neither of them changes a value in it.
+branch, `PartnerApproval` and `DocumentCheck`.
+
+That was not enough, and it is the part worth reading before copying this model. The two
+`@OneToOne` attributes are two foreign-key columns ON the aggregate, so a branch which
+creates its own entity still writes the aggregate's row to point at it. Without
+`@DynamicUpdate` that write covers every column of the row, the transaction committing second
+puts back the foreign key it read at its start, and the other branch's result is orphaned:
+its row is there and nothing refers to it any more. That is why the aggregate carries
+`@DynamicUpdate`, and it is recorded as G3 in the monorepo's `GAPS.md`, where the same
+mistake appears for the third time.
+
+It only shows on a remote engine, because only there are both branches really delivered at
+the same moment. An embedded engine serializes the jobs of one instance and hides it, which
+is the worst kind of difference between a development machine and production.
+
+The cleaner model, for a project rather than a blueprint: let each branch's entity own the
+foreign key (`@OneToOne(mappedBy = ...)` on the aggregate), so a branch never writes the
+aggregate's row at all. It costs a change in both entities and in the business code, and it
+needs no annotation to be remembered.
 
 The id of the open task follows the same rule. It sits on `PartnerApproval` rather than on
 the aggregate, because the document branch reads the aggregate's row before that id exists

@@ -5,7 +5,7 @@
 
 31120fb94c65de07  only-springboot  application/src/main/java/blueprint/application/Application.java  # one platform boots from a class of the application, the other one needs none
 9fb1f8af132dae40  differs  application/src/test/java/blueprint/application/ApplicationSmokeTest.java  # test harness: the beans are asked for in the bean container's own words
-6b2226f18dd88888  differs  application/src/test/java/blueprint/application/ConfigurationLevelsIT.java  # injection annotations and the configuration accessor; what is asserted is the same order on both platforms
+2c16e6f92c6478cf  differs  application/src/test/java/blueprint/application/ConfigurationLevelsIT.java  # injection annotations and the configuration accessor; what is asserted is the same order on both platforms
 21918a3a70cda340  only-springboot  banking-commons/src/main/java/com/acme/banking/BankingCommonsAutoConfiguration.java  # a library JAR contributes its bean through an auto-configuration on one platform and through its index on the other
 7897f95a192e6547  differs  banking-commons/src/main/java/com/acme/banking/CustomerDirectory.java  # the same client, declared a bean the way each platform declares one
 c7a3077692278339  only-springboot  banking-commons/src/main/java/com/acme/banking/WorkflowModuleBeanNameGenerator.java  # naming beans after their module is needed where beans are found by name rather than by type

@@ -209,6 +209,14 @@ What VanillaBP does with the priority list, in the order it happens:
    is bounded and expiring, needs no configuration, and a lost record costs one extra round
    of asking rather than a wrong answer.
 
+One setting of this blueprint is not a default and has a reason: `job-timeout: PT20S` on the
+Camunda 8 adapter. A workflow started right after the application restarted waits for the lock of
+its first job, because something took that job and never answered, and only the redelivery after the
+lock expires reaches the worker which is open. The delay is exactly the lock, measured at both five
+minutes and twenty seconds, and it is recorded as G25 in the monorepo's `GAPS.md`. Twenty seconds is
+a lock the handlers of this blueprint can live with; five minutes would be five minutes of watching
+nothing.
+
 Two things are worth knowing before doing this against a real cluster. A remote BPMS may
 answer from an eventually consistent read model, so a workflow started moments ago can be
 unknown to it for a few seconds; VanillaBP keeps asking the adapter it recorded for as long
