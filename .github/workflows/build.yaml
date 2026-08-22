@@ -1,11 +1,19 @@
 name: Build
 "on":
   push:
-    branches-ignore:
-      # Renovate branches are built through their pull request, once instead of twice.
-      - renovate/**
+    # Only 'main'. Every other branch is built through its pull request, once instead of
+    # twice: a push to a branch with an open pull request used to start this workflow a
+    # second time, and two full matrices at once starve each other on Maven Central and on
+    # GitHub Packages. What that produces looks like defects of random blueprints.
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
+concurrency:
+  # One run per branch: a second push supersedes the run of the first instead of queueing
+  # behind it. 'head_ref' is the branch of a pull request and 'ref' the branch of a push.
+  group: build-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 env:
@@ -20,6 +28,14 @@ jobs:
   # The list of blueprints is not maintained anywhere: it is the directories that exist.
   # The same rule the split job follows, so the matrix cannot fall behind the repository.
   #
+  # A change narrows it: a file inside a blueprint builds that blueprint, a Markdown file at
+  # the top level builds nothing, and anything shared - bin/, templates/, the root POM, a
+  # workflow - builds everything. The reason is not build minutes but Maven Central: a
+  # hundred jobs asking for the same artifacts in the same second are answered with 429 and
+  # 403, and those failures read as defects of whichever blueprint they hit. What still
+  # covers every blueprint is the aggregator job below, which compiles all modules on every
+  # run, and the nightly workflow, which builds each of them with its tests.
+  #
   # Which BPMS a blueprint is built against is not maintained here either: it is the
   # 'bpms' list of its entry in the index. A blueprint which cannot run on an engine
   # therefore says so where it declares everything else, and a reader of the index sees
@@ -30,6 +46,9 @@ jobs:
       combinations: "${{ steps.list.outputs.combinations }}"
     steps:
       - uses: actions/checkout@v5
+        with:
+          # the matrix is narrowed to what a change touches, and comparing needs history
+          fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -38,10 +57,39 @@ jobs:
       - name: Download the blueprints index
         run: curl -fsSL -o blueprints.yaml
           "https://raw.githubusercontent.com/vanillabp-blueprints/.github/${INDEX_REF}/blueprints.yaml"
+      - id: changed
+        name: Which paths this change touches
+        run: |
+          case "${{ github.event_name }}" in
+            pull_request)
+              git diff --name-only \
+                "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" > changed.txt
+              ;;
+            push)
+              before="${{ github.event.before }}"
+              # a branch pushed for the first time has nothing to compare against
+              if [ -z "${before}" ] || [ "${before}" = "0000000000000000000000000000000000000000" ]; then
+                : > changed.txt
+              else
+                git diff --name-only "${before}" "${{ github.sha }}" > changed.txt
+              fi
+              ;;
+            *)
+              # started by hand: no comparison, build everything
+              : > changed.txt
+              ;;
+          esac
+          echo "Changed paths:"
+          cat changed.txt
       - id: list
         name: Collect blueprint and BPMS combinations
         run: |
-          list=$(python bin/build_matrix.py blueprints.yaml)
+          # an empty list means no comparison was possible, and then everything is built
+          if [ -s changed.txt ]; then
+            list=$(python bin/build_matrix.py blueprints.yaml changed.txt)
+          else
+            list=$(python bin/build_matrix.py blueprints.yaml)
+          fi
           echo "combinations=${list}" >> "$GITHUB_OUTPUT"
           echo "Building: ${list}"
 
@@ -49,10 +97,17 @@ jobs:
   # and without the aggregator, the wrapper or the root POM of this repository. This is
   # the job that has to be green before a blueprint is delivered.
   blueprint:
-    needs: discover
+    # The aggregator job is what fills the Maven cache, so the matrix waits for it and reads
+    # a cache which already holds what every blueprint needs.
+    needs: [discover, monorepo]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # Without a limit all of them start at once, and about a hundred jobs asking Maven
+      # Central for the same artifacts in the same second get answered with 429 and 403.
+      # Twenty at a time costs a few minutes of wall clock, and the runners rarely grant
+      # more than that anyway.
+      max-parallel: 20
       matrix:
         include: "${{ fromJSON(needs.discover.outputs.combinations) }}"
     steps:
@@ -61,7 +116,19 @@ jobs:
         with:
           java-version: 21
           distribution: temurin
-          cache: maven
+      # Read-only on purpose: the cache is written by the aggregator job, which downloaded
+      # everything once. 'cache: maven' of setup-java cannot do this - it keys on the hash of
+      # all POMs, so all jobs share ONE cache whose content is whatever the job that saved it
+      # first happened to need, and nobody ever adds to it (a key which exists is never
+      # written again). That is why a hundred jobs went to Central despite a cache hit.
+      - uses: actions/cache/restore@v5
+        with:
+          path: ~/.m2/repository
+          # the newest cache of this POM set, which the aggregator of this run wrote
+          key: maven-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            maven-${{ hashFiles('**/pom.xml') }}-
+            maven-
       - name: Start a Camunda 8 cluster
         if: matrix.bpms == 'camunda8'
         # The address is published here rather than in the build step: a Camunda 7 build
@@ -109,6 +176,9 @@ jobs:
   # a MongoDB where it stores its aggregates there. Running them here as well would need every
   # blueprint's infrastructure at once and would test a second time what the matrix already
   # tested.
+  # Two jobs in one: it proves that every module still compiles together, and it is the only
+  # job which WRITES the Maven cache. Everything the matrix needs is downloaded here, once,
+  # instead of by a hundred jobs at the same second.
   monorepo:
     runs-on: ubuntu-latest
     steps:
@@ -117,10 +187,27 @@ jobs:
         with:
           java-version: 21
           distribution: temurin
-          cache: maven
+      - uses: actions/cache@v5
+        with:
+          path: ~/.m2/repository
+          # The run id is part of the key so that this job ALWAYS writes. Without it the key
+          # exists after the first run and GitHub never writes it again: whatever was missing
+          # in that first save stays missing, and every job which needs it goes to Maven
+          # Central and is answered with 429. That is what a key of POMs alone did, and it is
+          # the same trap 'cache: maven' of setup-java falls into.
+          key: maven-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            maven-${{ hashFiles('**/pom.xml') }}-
+            maven-
       - name: Build every blueprint through the aggregator
         run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots -DskipTests install
+      - name: Resolve what the other engine needs, so the cache holds that too
+        # The build above runs the default profile, so the artifacts of the other engine
+        # would be missing and every job of that engine would fetch them itself.
+        run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
+          --batch-mode --no-transfer-progress -Pcamunda8 -DskipTests
+          dependency:go-offline
 
   # One name that never changes, so branch protection has something to require and
   # Renovate has something to wait for. The matrix above is generated from the
@@ -134,5 +221,10 @@ jobs:
         run: |
           echo "blueprints: ${{ needs.blueprint.result }}"
           echo "monorepo:   ${{ needs.monorepo.result }}"
-          [ "${{ needs.blueprint.result }}" = "success" ] \
-            && [ "${{ needs.monorepo.result }}" = "success" ]
+          # 'skipped' is a pass: a change which touches no blueprint has no matrix to run,
+          # and the aggregator below still built every module
+          case "${{ needs.blueprint.result }}" in
+            success|skipped) ;;
+            *) exit 1 ;;
+          esac
+          [ "${{ needs.monorepo.result }}" = "success" ]
