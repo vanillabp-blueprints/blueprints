@@ -1102,9 +1102,16 @@ case of `persistence-active-record` builds and runs.
 
 ## G22: a Quarkus application without MongoDB does not build natively
 
-**Status:** open, story `85` (2026-08-19), found while building the delivery part of the
-blueprint `module-packaging`. The blueprint's application has a relational database and no
-MongoDB anywhere.
+**Status:** closed on 2026-08-20 by story `85` (adapter-platform-integration#66), found on
+2026-08-19 while building the delivery part of the blueprint `module-packaging`. The blueprint's
+application has a relational database and no MongoDB anywhere.
+
+The replica-set probe now goes through an interface without MongoDB types, implemented by a bean the
+extension only registers with `Capability.MONGODB_CLIENT`. Two things beyond this gap came out of it:
+the same direct reference sat in two more resolvers, and the native binary additionally lacked the
+BPMN resources and the reflection registration of the workflow services, so it reported every process
+as incompletely wired. The platform's pipeline now builds a native image of an application without
+MongoDB and runs it, which is where this belongs rather than in a blueprint.
 
 **What happens.** `mvn install -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true`
 ends in the image builder:
@@ -1150,9 +1157,10 @@ the first ones to take the schema out of the runtime's hands. Read from the code
 **What happens.** `vanillabp.outbox.create-schema` is one switch for two things. An application
 which wants Liquibase or Flyway to own `VANILLABP_PHASE_TWO_OUTBOX` and
 `VANILLABP_TASK_DELIVERY` has to set it to `false`, and that switches off the migrator of
-gruelbox, which owns `TXNO_OUTBOX` on Spring Boot. Story `75` decided, for good reasons, that
-VanillaBP ships no statements for a schema belonging to a third party. So the application is left
-to write them.
+gruelbox, which owns `TXNO_OUTBOX` on Spring Boot. A configured `vanillabp.outbox.jdbc.table`
+switches it off as well, and that one is silent: gruelbox's migration only ever targets the
+default name. Story `75` decided, for good reasons, that VanillaBP ships no statements for a
+schema belonging to a third party, so the application is left to write them.
 
 **The DDL is not a procedure any more.** gruelbox writes its own statements:
 `DefaultPersistor.builder().dialect(<dialect>).build().writeSchema(writer)` emits every migration
@@ -1200,9 +1208,13 @@ database schema itself, which is every application past its first prototype.
 
 ## G24: the wiki recommends a second Flyway instance without saying what it needs
 
-**Status:** open, story `96` (`prompts/ROADMAP.md`), found on 2026-08-19 while building
-`persistence-flyway`. A documentation gap, not a defect in the code, and it costs whoever follows the
-wiki an hour of confusion.
+**Status:** closed on 2026-08-19 by story `96`, found the same day while building
+`persistence-flyway`. A documentation gap, not a defect in the code, and it cost whoever followed the
+wiki an hour of confusion. The Spring Boot page now shows `baselineOnMigrate` and
+`baselineVersion("0")` with the reason for each and names the `FlywayMigrationInitializer` the entity
+manager factory waits for; the Quarkus page says what that platform allows and describes the one
+timeline with separated version ranges instead. Both pages point here, at `persistence-liquibase` and
+`persistence-flyway`.
 
 **What the wiki says.** Story `75` decided, correctly, that VanillaBP's SQL is applied by a Flyway
 instance of its own, with a history table of its own, so that VanillaBP's version numbers never
