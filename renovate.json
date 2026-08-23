@@ -6,7 +6,11 @@
     "github>vanillabp/camunda8-adapter//renovate/camunda8-lines.json"
   ],
   "timezone": "Europe/Vienna",
-  "prConcurrentLimit": 5,
+  "description": [
+    "One open pull request at a time. Every update touches the POM of every blueprint, because the versions are repeated on purpose, so the matrix builds all of them for each one. Four at once occupy the twenty concurrent jobs a free plan gets and leave nothing for the branch somebody is working on. Serialized they cost the same runner time in total and block nobody."
+  ],
+  "prConcurrentLimit": 1,
+  "schedule": ["before 7am on Monday"],
   "labels": ["dependencies"],
   "minimumReleaseAge": "3 days",
   "automerge": true,
@@ -19,8 +23,15 @@
       "enabled": false
     },
     {
-      "description": "One PR per dependency across all blueprints. The same version is repeated in every blueprint POM on purpose, so an upgrade has to touch all of them at once or they drift apart.",
-      "matchManagers": ["maven"],
+      "description": "One pull request for everything Maven, minor and patch. The same version is repeated in every blueprint POM on purpose, so an upgrade touches all of them at once and the matrix builds every blueprint for it. Per dependency that was one full run each; grouped it is one run for all of them, and the property that matters is kept: no blueprint stays behind on a version its neighbour already moved.",
+      "matchManagers": ["maven", "maven-wrapper"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "blueprint dependencies"
+    },
+    {
+      "description": "Majors stay one pull request per dependency. A green build proves the least there, so they are read rather than counted, and grouping them would hide which one broke what.",
+      "matchManagers": ["maven", "maven-wrapper"],
+      "matchUpdateTypes": ["major"],
       "groupName": "{{{depName}}}"
     },
     {
