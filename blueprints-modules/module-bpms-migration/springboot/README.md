@@ -225,6 +225,15 @@ two engines, which must not share one set of engine tables: that needs a table p
 data source of its own. This blueprint configures one instance per engine, so neither
 applies here.
 
+### Keeping identifiers apart in the BPMS
+
+The BPMS profiles of this blueprint set `name-clash-avoidance: use-prefix`, so VanillaBP puts
+the workflow module ID in front of every identifier before it reaches the engine and takes it
+off again on the way back. The BPMN files, the business code and the rest of the configuration
+keep the plain names, which is why nothing here mentions the prefix twice. What the modes are
+and what each of them costs is explained on the wiki page
+[Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+
 ## Documentation
 
 - [BPMS migration](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-migration): the priority list, the election, the cache, and migrating between tenant setups
