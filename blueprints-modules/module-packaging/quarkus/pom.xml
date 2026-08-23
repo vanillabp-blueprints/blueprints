@@ -32,7 +32,7 @@
     <bpms>none</bpms>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
-    <quarkus.version>3.37.1</quarkus.version>
+    <quarkus.version>3.39.0</quarkus.version>
     <jandex-maven-plugin.version>3.6.0</jandex-maven-plugin.version>
     <!--
       Without a parent POM nothing manages the versions of the build plugins, and an
