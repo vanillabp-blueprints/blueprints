@@ -123,23 +123,12 @@ Start the application:
 mvn -pl application spring-boot:run
 ```
 
-Booting logs a warning per workflow module, and it is meant to be read rather than filtered
-away. Both Camunda adapters start out with `name-clash-avoidance: none`, so the identifiers
-of this module reach the engine as they are, and the adapter names what it could do instead
-and asks for a decision. With one workflow module nothing can collide, which is why this
-blueprint leaves the setting alone and keeps its configuration free of `vanillabp.*`. An
-application that wants the question answered answers it once:
-
-```yaml
-vanillabp:
-  adapters:
-    camunda7:
-      accept-unscoped-identifiers: true
-```
-
-That is a promise that the identifiers are unique across all workflow modules, and it turns
-the warning into a debug line. Which modes a BPMS offers, and why switching the mode later is
-a migration rather than a configuration change, is in
+Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
+the business code and the rest of the configuration keep the plain names, and no tenant is
+involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
+costs is in
 [the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
 
 Start a loan approval. This is the only URL you need:
