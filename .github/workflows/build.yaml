@@ -51,7 +51,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       - name: Install dependencies
         run: pip install --quiet pyyaml
       - name: Download the blueprints index
