@@ -121,7 +121,7 @@ jobs:
       # all POMs, so all jobs share ONE cache whose content is whatever the job that saved it
       # first happened to need, and nobody ever adds to it (a key which exists is never
       # written again). That is why a hundred jobs went to Central despite a cache hit.
-      - uses: actions/cache/restore@v5
+      - uses: actions/cache/restore@v6
         with:
           path: ~/.m2/repository
           # the newest cache of this POM set, which the aggregator of this run wrote
@@ -187,7 +187,7 @@ jobs:
         with:
           java-version: 21
           distribution: temurin
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: ~/.m2/repository
           # The run id is part of the key so that this job ALWAYS writes. Without it the key
