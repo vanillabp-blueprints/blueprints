@@ -143,11 +143,11 @@ jobs:
             # matches no property is ignored, so both are set for every blueprint.
             echo "VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS=http://localhost:8080"
             echo "VANILLABP_ADAPTERS_CAMUNDA8_REST_ADDRESS=http://localhost:8080"
-            # Nothing about name clashes: the adapter's own default is 'none', which uses
-            # no tenant and therefore boots against a stock cluster with multi-tenancy
-            # switched off. Every job gets a cluster of its own, so unprefixed identifiers
-            # cannot meet those of another blueprint. Setting a mode here would test a
-            # configuration no blueprint documents.
+            # Nothing about name clashes: every blueprint configures its own mode,
+            # 'use-prefix', in its BPMS profiles. That runs on a cluster from the stock
+            # image, which has multi-tenancy switched off and rejects the tenant the
+            # adapter default 'by-adapter' would ask for. A VANILLABP_* entry here would
+            # override what the blueprint documents, which is the thing being tested.
           } >> "$GITHUB_ENV"
       - name: Build and test the blueprint on its own
         working-directory: "${{ matrix.blueprint }}"
