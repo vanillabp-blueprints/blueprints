@@ -49,6 +49,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # Same limit as the build workflow, for the same reason: this run has no cache on
+      # purpose, so every job resolves everything, and a hundred of them starting together
+      # are answered by Maven Central with 429 and 403. Nothing here is in a hurry at two in
+      # the morning.
+      max-parallel: 20
       matrix:
         include: "${{ fromJSON(needs.discover.outputs.combinations) }}"
     steps:
