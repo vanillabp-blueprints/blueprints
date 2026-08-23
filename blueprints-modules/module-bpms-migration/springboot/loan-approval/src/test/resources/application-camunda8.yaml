@@ -16,6 +16,12 @@ vanillabp:
       # the mode of a running application is a migration rather than a setting.
       name-clash-avoidance: use-prefix
       rest-address: http://localhost:8080
+    camunda7:
+      type: camunda7
+      # The old BPMS of this migration. Its section says nothing but its name, and that is
+      # the point: an adapter id which appears in 'prioritized-adapters' has to be a
+      # configured adapter, otherwise the election finds nothing serving it.
+      name-clash-avoidance: use-prefix
   workflow-modules:
     loan-approval:
       workflows:
