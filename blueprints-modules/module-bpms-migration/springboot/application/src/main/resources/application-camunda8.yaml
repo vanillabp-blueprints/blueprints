@@ -25,7 +25,6 @@ vanillabp:
       # nothing, so the demo and its test use a lock a handler of this size can live with.
       job-timeout: PT20S
     camunda7:
-      type: camunda7
       webapps:
         admin-user:
           id: demo
