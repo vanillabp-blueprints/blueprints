@@ -270,6 +270,15 @@ in a `SmartInitializingSingleton`, which is after every migration ran.
 Everything else, from `ApiController` through `Service`, `Workflow` and
 `WorkflowTaskHandler` to the aggregate, is the base blueprint unchanged.
 
+### Keeping identifiers apart in the BPMS
+
+The BPMS profiles of this blueprint set `name-clash-avoidance: use-prefix`, so VanillaBP puts
+the workflow module ID in front of every identifier before it reaches the engine and takes it
+off again on the way back. The BPMN files, the business code and the rest of the configuration
+keep the plain names, which is why nothing here mentions the prefix twice. What the modes are
+and what each of them costs is explained on the wiki page
+[Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+
 ## Documentation
 
 - [Creating the tables with Liquibase or Flyway](https://github.com/vanillabp/adapter-platform-integration/wiki/Spring-Boot-integration#creating-the-tables-with-liquibase-or-flyway): which tables VanillaBP needs, what to apply, which databases are tested
