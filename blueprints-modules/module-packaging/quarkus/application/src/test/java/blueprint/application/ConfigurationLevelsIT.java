@@ -23,10 +23,16 @@ import jakarta.inject.Inject;
  * </p>
  *
  * <p>
- * It was the other way round until 2026-08-21, when the framework turned it around
- * (`adapter-platform-integration`, story 101). Worth knowing when reading older projects: an
- * application which could not talk a module out of a value can do so now.
+ * Early VanillaBP 2 snapshots had it the other way round, which is worth knowing when reading
+ * an older project: one which could not talk a module out of a value can do so now.
  * </p>
+ *
+ * @see <a href=
+ *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules-in-Quarkus#configuration">Configuration
+ *      of workflow modules in Quarkus</a>
+ * @see <a href=
+ *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Migrating-from-version-1#a-workflow-modules-own-files-are-still-defaults">A
+ *      workflow module's own files are still defaults</a>
  */
 @QuarkusTest
 public class ConfigurationLevelsIT {

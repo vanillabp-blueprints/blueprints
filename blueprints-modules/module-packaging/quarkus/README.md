@@ -82,9 +82,12 @@ decide**. A module's file says what it needs to run at all, and the project whic
 says what its environment needs. The one exception is a module's profile-specific file, which
 beats its plain one, because that is still the module talking about itself.
 
-The order was the other way round until 2026-08-21, when the framework turned it around
-(`adapter-platform-integration`, story 101). A project written before that may rely on a module
-winning; it does not any more.
+Early snapshots of VanillaBP 2 had it the other way round, so a project written against one of
+them may rely on a module winning; it does not any more. The framework documents the order and that
+correction in
+[Workflow modules in Quarkus](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules-in-Quarkus#configuration)
+and in
+[Migrating from Version 1](https://github.com/vanillabp/adapter-platform-integration/wiki/Migrating-from-version-1#a-workflow-modules-own-files-are-still-defaults).
 
 ### Shipping it
 

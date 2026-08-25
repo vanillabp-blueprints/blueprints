@@ -22,8 +22,9 @@ import lombok.NoArgsConstructor;
  * finders to the document, exactly as {@code PanacheEntityBase} does for the JPA entity of the
  * loan approval. Neither aggregate has a repository, and the two are stored in different
  * databases - which is the point of having both in one workflow module: VanillaBP resolves the
- * idiom per aggregate, so an application may mix them, and the resolution order of story 69
- * applies to each aggregate rather than to the application.
+ * idiom per aggregate, so an application may mix them. A repository would win over the aggregate
+ * being an active record, and Spring Data answers last, and that order is decided per aggregate
+ * rather than once for the application.
  * </p>
  *
  * <p>
@@ -47,6 +48,9 @@ import lombok.NoArgsConstructor;
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
+ * @see <a href=
+ *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Quarkus-integration#persisting-workflow-aggregates">Persisting
+ *      workflow aggregates</a>
  */
 @MongoEntity(collection = "CREDIT_HISTORY")
 @Data

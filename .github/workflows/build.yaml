@@ -153,7 +153,7 @@ jobs:
         working-directory: "${{ matrix.blueprint }}"
         # 'install' alone, not 'install verify': install runs every phase verify has, so
         # naming both walked two lifecycles per module. The tests skipped their second
-        # run, the compiler did not, and every warning was reported twice (story 111).
+        # run, the compiler did not, and every warning was reported twice.
         # --update-snapshots because everything VanillaBP is a SNAPSHOT until 2.0.0 is
         # released: the Maven cache of this runner holds yesterday's, and Maven would keep it
         # for the rest of the day. A blueprint would then be built against a framework which

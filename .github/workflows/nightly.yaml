@@ -83,7 +83,7 @@ jobs:
             # override what the blueprint documents, which is the thing being tested.
           } >> "$GITHUB_ENV"
       # 'install' alone, not 'install verify': install already runs every phase verify
-      # has, and naming both compiled every module twice (story 111)
+      # has, and naming both compiled every module twice
       - name: Build against the current snapshots
         working-directory: "${{ matrix.blueprint }}"
         run: mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"

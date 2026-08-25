@@ -441,6 +441,24 @@ groups of three for the sake of rhythm, no phrases about how significant somethi
 what a thing is rather than what it "serves as", and drop hedging and filler. The same
 applies to Javadoc, code comments and log messages, which are documentation as well.
 
+### What a blueprint may point at
+
+A blueprint explains framework behaviour by linking the
+[wiki](https://github.com/vanillabp/adapter-platform-integration/wiki), which is the user-facing
+documentation of that behaviour and is corrected when the behaviour changes. Nothing here cites a
+framework story number, an issue or a pull request. Those record a conversation at a point in time
+and the reader of a blueprint has no way to reach them, so a citation into one is a dead end which
+nothing in any build notices.
+
+Where the wiki does not say it, the blueprint says it in its own words, completely enough to stand
+on its own, and the gap goes into `GAPS.md`. That file is the exception to the rule: it is a
+register of findings and of what closed each one, so naming the story or the pull request there is
+the record rather than a citation.
+
+The framework's own repositories keep a `DECISIONS.md` next to their code. A blueprint does not
+cite it either: it belongs to that repository and speaks to whoever changes it, while a blueprint
+speaks to somebody writing an application.
+
 ## Formatting
 
 Spotless runs during `process-sources` and fails the build on violations:
