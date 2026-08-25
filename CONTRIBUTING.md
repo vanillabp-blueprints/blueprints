@@ -451,9 +451,11 @@ and the reader of a blueprint has no way to reach them, so a citation into one i
 nothing in any build notices.
 
 Where the wiki does not say it, the blueprint says it in its own words, completely enough to stand
-on its own, and the gap goes into `GAPS.md`. That file is the exception to the rule: it is a
-register of findings and of what closed each one, so naming the story or the pull request there is
-the record rather than a citation.
+on its own, and the missing sentence becomes a change to the wiki. A blueprint which runs into
+something the framework does not cover at all is a finding for the framework: it goes into the
+framework's roadmap as a story, not into a register here. A register is what this repository had
+until every one of its entries was closed, and keeping it after that only invited citations into
+it.
 
 The framework's own repositories keep a `DECISIONS.md` next to their code. A blueprint does not
 cite it either: it belongs to that repository and speaks to whoever changes it, while a blueprint

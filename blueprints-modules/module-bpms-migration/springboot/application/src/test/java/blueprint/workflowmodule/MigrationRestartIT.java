@@ -50,9 +50,17 @@ public class MigrationRestartIT {
 
   /**
    * Longer than the thirty seconds of the test harness, on purpose. This test drives five
-   * workflows through two wait states across two boots, and the client of a remote BPMS
-   * delivers them on one execution thread (`GAPS.md` G17), so the last of them waits behind
-   * the others. Two minutes is what `persistence-flyway` uses for the same reason.
+   * workflows through two wait states across two boots, and a remote BPMS delivers them
+   * through a handful of execution slots, so the last of them waits behind the others. The
+   * restart in the middle costs the rest of a pending activation window on top. Two minutes
+   * is what {@code persistence-flyway} uses for the same reason.
+   *
+   * @see <a href=
+   *      "https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#how-many-handlers-run-at-once">How
+   *      many handlers run at once</a>
+   * @see <a href=
+   *      "https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next">What
+   *      a restart costs the application which starts next</a>
    */
   private static final Duration TIMEOUT = Duration.ofMinutes(2);
 

@@ -40,8 +40,8 @@ creates its own entity still writes the aggregate's row to point at it. Without
 `@DynamicUpdate` that write covers every column of the row, the transaction committing second
 puts back the foreign key it read at its start, and the other branch's result is orphaned:
 its row is there and nothing refers to it any more. That is why the aggregate carries
-`@DynamicUpdate`, and it is recorded as G3 in the monorepo's `GAPS.md`, where the same
-mistake appears for the third time.
+`@DynamicUpdate`. It is the same mistake as the one two branches make when they write the same
+attribute, one step further out: the row of the aggregate is shared even where the data is not.
 
 It only shows on a remote engine, because only there are both branches really delivered at
 the same moment. An embedded engine serializes the jobs of one instance and hides it, which
