@@ -17,7 +17,7 @@
     <maven.compiler.release>21</maven.compiler.release>
     <!-- The BPMS profile of the build, named once on the Maven command line. -->
     <bpms>none</bpms>
-    <spring-boot.version>4.1.0</spring-boot.version>
+    <spring-boot.version>4.1.1</spring-boot.version>
     <vanillabp.version>2.0.0-SNAPSHOT</vanillabp.version>
     <camunda7-adapter.version>2.0.0-SNAPSHOT</camunda7-adapter.version>
     <camunda8-adapter.version>2.0.0-SNAPSHOT</camunda8-adapter.version>
