@@ -80,7 +80,7 @@ def wanted(directories, changed):
             touched.add(directory)
             continue
         if path.count("/") == 0 and path.endswith(".md"):
-            # documentation at the top level: GAPS.md and its kind build nothing
+            # documentation at the top level, README.md and its kind, builds nothing
             continue
         # bin/, templates/, the root POM, a workflow: anything of this reaches every blueprint
         return list(directories)

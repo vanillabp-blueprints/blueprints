@@ -37,8 +37,8 @@ Names this blueprint adds, because it has more than one of everything:
 3. Configuration has three levels and this order: what comes from outside beats the
    `application.yaml` of the assembling project, and that beats the file a module brings
    along, which carries its defaults. A module's profile-specific file still beats its plain
-   one. (Turned around on 2026-08-21 by story 101 of the framework; older projects may assume
-   the opposite.)
+   one. Early VanillaBP 2 snapshots had it the opposite way, so older projects may assume that;
+   the order is [documented here](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules-in-Spring-Boot#configuration).
 4. Everything about having two modules at all comes from `module-multi` and is not repeated
    here.
 

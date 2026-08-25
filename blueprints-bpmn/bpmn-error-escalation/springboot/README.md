@@ -198,7 +198,7 @@ time and both save the aggregate, so `Aggregate` carries `@DynamicUpdate`. Witho
 writes the whole row, the transaction committing second puts back the values it read at its
 start, and the other branch's write is gone. No exception, no log line: the process behaves
 exactly as modelled while the data does not. It cost a red CI job here before it was understood,
-and it is recorded as G3 in the monorepo's `GAPS.md`.
+and the framework describes the second writer and the ways of dealing with it under [Two writers on one aggregate](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate).
 
 Two branches writing the SAME attribute is a different problem, and one no annotation solves.
 That needs a `@Version` column, or a model which keeps a branch's result in an entity of its own,

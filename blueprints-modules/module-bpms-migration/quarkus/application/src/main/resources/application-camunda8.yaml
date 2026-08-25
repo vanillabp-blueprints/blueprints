@@ -21,11 +21,12 @@ vanillabp:
       # Camunda 8 is a remote engine: point this at your cluster.
       rest-address: http://localhost:8080
       # Twenty seconds instead of the default of five minutes, and this blueprint is the one
-      # which needs to say why. A workflow started right after the application restarted waits
-      # for the lock of its first job: something took that job and never answered, and only the
-      # redelivery after the lock expires reaches the worker which is open. Measured twice,
-      # once per lock duration (GAPS.md G25). Five minutes would be five minutes of watching
-      # nothing, so the demo and its test use a lock a handler of this size can live with.
+      # which needs to say why. The lock is how long a job stays reserved for a worker which
+      # does not answer, so it is also how long anything waits which ends up behind such a
+      # job. Five minutes of that would be five minutes of watching nothing, and the handlers
+      # here finish in milliseconds. The adapter itself keeps a restart from producing that
+      # case, by waiting for the cluster to release its workers before it closes the client:
+      # https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next
       job-timeout: PT20S
   workflow-modules:
     loan-approval:
