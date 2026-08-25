@@ -32,7 +32,8 @@
       "description": "Majors stay one pull request per dependency. A green build proves the least there, so they are read rather than counted, and grouping them would hide which one broke what.",
       "matchManagers": ["maven", "maven-wrapper"],
       "matchUpdateTypes": ["major"],
-      "groupName": "{{{depName}}}"
+      "groupName": "{{{depName}}}",
+      "automerge": false
     },
     {
       "description": "The WRAPPER is bumped by hand, the Maven distribution is not. Both live in this manager: 'maven-wrapper' names the wrapper, whose bump requires running the wrapper plugin to rewrite 'mvnw' and 'mvnw.cmd' - the hosted Renovate app cannot do that, its artifact update fails, and what is left replaces version strings while the scripts keep the old logic. 'maven' names the distribution in 'distributionUrl' and is a single line, so those updates work and stay automatic.",
@@ -46,11 +47,23 @@
       "enabled": false
     },
     {
-      "description": "The versions table of CONTRIBUTING.md names Spring Boot and Quarkus. A bump of either has to be carried into that table by hand, so it gets a PR to look at rather than an automerge.",
+      "description": "Spring Boot and Quarkus are proposed as a patch and as a minor separately, rather than only as the newest version there is. Without this a waiting minor would hide the patch below it, and the patch is the one which merges itself.",
       "matchPackageNames": [
         "org.springframework.boot:spring-boot-starter-parent",
+        "org.springframework.boot:spring-boot-dependencies",
         "io.quarkus.platform:quarkus-bom"
       ],
+      "separateMinorPatch": true
+    },
+    {
+      "description": "A minor of Spring Boot or Quarkus moves the line the blueprints are written for, and the versions table of CONTRIBUTING.md names that line, so it has to be carried there by hand. It leaves the group above and gets a pull request per platform, because a group is only as fast as the slowest thing in it and this one waits for a person.",
+      "matchPackageNames": [
+        "org.springframework.boot:spring-boot-starter-parent",
+        "org.springframework.boot:spring-boot-dependencies",
+        "io.quarkus.platform:quarkus-bom"
+      ],
+      "matchUpdateTypes": ["minor", "major"],
+      "groupName": "{{{depName}}}",
       "automerge": false,
       "addLabels": ["needs-doc-update"]
     }

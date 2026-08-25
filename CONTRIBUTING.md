@@ -335,11 +335,17 @@ neither create the mirrors nor push into them.
 Blueprints target the versions below. Since they are repeated in every blueprint POM, this
 table is the place to look up what is current.
 
+The two platforms name a line rather than an exact version, because the patch inside the line
+moves on its own: a Spring Boot or Quarkus patch merges itself once the build is green, and a
+table which had to be edited for it would be wrong more often than right. The exact version is
+in the POMs. Moving the line itself is a pull request somebody reads, and that one carries the
+new line into this table.
+
 |                                                               |    Version     |
 |---------------------------------------------------------------|----------------|
 | Java                                                          | 21             |
-| Spring Boot                                                   | 4.1.0          |
-| Quarkus                                                       | 3.37.1         |
+| Spring Boot                                                   | 4.1.x          |
+| Quarkus                                                       | 3.37.x         |
 | `io.vanillabp:vanillabp-bom`                                  | 2.0.0-SNAPSHOT |
 | `org.camunda.community.vanillabp:camunda7-adapter-<platform>` | 2.0.0-SNAPSHOT |
 | `org.camunda.community.vanillabp:camunda8-adapter-<platform>` | 2.0.0-SNAPSHOT |
