@@ -126,6 +126,21 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .describedAs("units of work rolled back")
         .isPositive();
 
+    // And the aborted attempt may be made again: the entry took the idempotency key of
+    // the start with it, so nothing deduplicates against an operation which never
+    // happened. A store which kept that key would swallow this second attempt without a
+    // word, and the loan approval would wait for a workflow nobody ever started.
+    service.initiateLoanApproval(loanRequestId, 5000);
+
+    final var loanApproval = awaitAggregate(
+        loanApprovals::find,
+        loanRequestId,
+        aggregate -> aggregate.getCreditRating() != null);
+
+    assertThat(loanApproval.getCreditRating())
+        .describedAs("the credit rating of the retried loan approval")
+        .isEqualTo(50);
+
   }
 
 }

@@ -77,8 +77,9 @@ correlation reaches no waiting event and the call fails at runtime, not at start
    continue, one for a repeat.
 
 If several occurrences of the same message may wait at once - one per ordered item, say -
-pass a correlation id as the third argument. That variant also deduplicates, and what the
-model needs for it is BPMS-specific.
+pass a correlation id as the third argument. That variant deduplicates the correlations still
+waiting for their dispatch, so a repeating scope has to vary the id per round or element, and what
+the model needs for it is BPMS-specific.
 
 ## Verifying
 

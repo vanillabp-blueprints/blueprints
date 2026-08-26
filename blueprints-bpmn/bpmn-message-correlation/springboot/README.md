@@ -32,7 +32,10 @@ Two things this blueprint deliberately does not show, and where to find them:
 
 - **Correlation ids.** `correlateMessage(aggregate, messageName, correlationId)` tells
   several waiting occurrences of the same message apart, one per ordered item for example,
-  and it deduplicates. One catch event needs none, and
+  and it deduplicates the correlations which have not reached the BPMS yet: the same id again
+  after the first one was dispatched is a new correlation, while a repeating scope planning two of
+  them in one unit of work loses the second one and is warned about it. One catch event needs none,
+  and
   [the wiki explains the rest](https://github.com/vanillabp/adapter-platform-integration/wiki/Message-correlation#correlation-ids-several-occurrences-of-the-same-message).
 - **Starting a workflow by message**, which is `bpmn-message-start`.
 

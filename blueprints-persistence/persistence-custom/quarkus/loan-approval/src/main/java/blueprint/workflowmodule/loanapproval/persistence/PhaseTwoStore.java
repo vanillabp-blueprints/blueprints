@@ -2,6 +2,8 @@ package blueprint.workflowmodule.loanapproval.persistence;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import io.vanillabp.integration.spi.PhaseTwoCall;
@@ -30,9 +32,11 @@ import jakarta.inject.Inject;
  * <li><strong>The entry rides the unit of work.</strong> It becomes visible if and only if that
  * unit of work commits, which is why the entries are collected per unit of work and handed over
  * in {@code afterCommit}.</li>
- * <li><strong>The idempotency key is unique.</strong> Scheduling the same operation twice is a
- * no-op answered with {@code false}, which is what makes one workflow per aggregate rather than
- * one per attempt.</li>
+ * <li><strong>The idempotency key is unique among the entries still waiting.</strong> Scheduling
+ * the same operation again before the first one reached the BPMS is a no-op answered with
+ * {@code false}, which is what makes one workflow per aggregate rather than one per attempt. Once
+ * an entry was dispatched its key stops deduplicating: a second round of a loop correlating the
+ * same message with the same correlation id again is a new operation, not a duplicate.</li>
  * <li><strong>Dispatch happens after the commit</strong>, by handing the call back to VanillaBP.
  * The store keeps the name of the operation and never interprets it.</li>
  * </ul>
@@ -40,9 +44,9 @@ import jakarta.inject.Inject;
  * <p>
  * What a durable store adds, and what a list cannot show: retrying a failed dispatch with a
  * backoff, dispatching entries again after a restart, marking dispatched entries as done rather
- * than deleting them so the deduplication window outlives the dispatch, and blocking an entry
- * which keeps failing so somebody looks at it. The wiki names all of them, and VanillaBP's own
- * stores implement them.
+ * than deleting them so somebody can still read them during support, and blocking an entry which
+ * keeps failing so somebody looks at it. The wiki names all of them, and VanillaBP's own stores
+ * implement them.
  * </p>
  *
  * @see <a href=
@@ -65,6 +69,14 @@ public class PhaseTwoStore implements PhaseTwoOutbox {
   private final ThreadLocal<List<PhaseTwoCall>> uncommitted = ThreadLocal.withInitial(ArrayList::new);
 
   /**
+   * The keys of the operations which are planned and have not reached the BPMS yet. This is what
+   * deduplicates, and the reason it is not simply {@link #scheduled}: a key which kept
+   * deduplicating after the dispatch would swallow the next round of a loop asking the same
+   * partner again.
+   */
+  private final Set<String> planned = ConcurrentHashMap.newKeySet();
+
+  /**
    * @return Everything scheduled so far, which the test looks at to see that a rolled-back start
    *         left nothing behind.
    */
@@ -81,7 +93,7 @@ public class PhaseTwoStore implements PhaseTwoOutbox {
     final var idempotencyKey = call
         .idempotencyKey()
         .orElse(null);
-    if ((idempotencyKey != null) && isAlreadyScheduled(idempotencyKey)) {
+    if ((idempotencyKey != null) && !planned.add(idempotencyKey)) {
       return false;
     }
 
@@ -97,29 +109,6 @@ public class PhaseTwoStore implements PhaseTwoOutbox {
 
   }
 
-  private boolean isAlreadyScheduled(
-      final String idempotencyKey) {
-
-    return scheduled
-        .stream()
-        .anyMatch(entry -> hasKey(entry, idempotencyKey)) || uncommitted
-            .get()
-            .stream()
-            .anyMatch(entry -> hasKey(entry, idempotencyKey));
-
-  }
-
-  private static boolean hasKey(
-      final PhaseTwoCall call,
-      final String idempotencyKey) {
-
-    return idempotencyKey.equals(
-        call
-            .idempotencyKey()
-            .orElse(null));
-
-  }
-
   /**
    * Keeps the entries of this unit of work and dispatches them when it commits, and forgets them
    * when it does not.
@@ -132,12 +121,35 @@ public class PhaseTwoStore implements PhaseTwoOutbox {
           .get()
           .clear();
       scheduled.addAll(entries);
-      entries.forEach(this::dispatch);
+      entries.forEach(this::dispatchAndRelease);
     });
-    unitOfWork.afterRollback(
-        () -> uncommitted
-            .get()
-            .clear());
+    unitOfWork.afterRollback(() -> {
+      // nothing was planned after all, so the keys have to become free again - the
+      // application will retry the whole unit of work
+      uncommitted
+          .get()
+          .forEach(entry -> entry.idempotencyKey().ifPresent(planned::remove));
+      uncommitted
+          .get()
+          .clear();
+    });
+
+  }
+
+  /**
+   * Dispatches one entry and frees its key afterwards: from that moment the same operation may be
+   * planned again. A dispatch which throws leaves the key taken, which is right - the operation is
+   * still owed to the BPMS, and a durable store would retry it.
+   *
+   * @param call The call as it was scheduled.
+   */
+  private void dispatchAndRelease(
+      final PhaseTwoCall call) {
+
+    dispatch(call);
+    call
+        .idempotencyKey()
+        .ifPresent(planned::remove);
 
   }
 
