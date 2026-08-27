@@ -419,9 +419,10 @@ needs, and after the release that is Maven Central.
 
 ## Dependency updates
 
-Renovate opens the pull requests (`renovate.json`) and merges them itself once the checks
-above are green. Since every blueprint POM repeats the same versions, an upgrade is one PR
-touching all of them, never one PR per blueprint.
+Renovate opens the pull requests (`renovate.json`) at night and merges them itself once the
+checks above are green. Since every blueprint POM repeats the same versions, an upgrade is one
+PR touching all of them, never one PR per blueprint, and only one is open at a time so the
+matrix is not competing with the branch somebody is working on.
 
 Two exceptions are deliberate:
 
