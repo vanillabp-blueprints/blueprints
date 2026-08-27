@@ -7,12 +7,16 @@
   ],
   "timezone": "Europe/Vienna",
   "description": [
-    "One open pull request at a time. Every update touches the POM of every blueprint, because the versions are repeated on purpose, so the matrix builds all of them for each one. Four at once occupy the twenty concurrent jobs a free plan gets and leave nothing for the branch somebody is working on. Serialized they cost the same runner time in total and block nobody."
+    "One open pull request at a time. Every update touches the POM of every blueprint, because the versions are repeated on purpose, so the matrix builds all of them for each one. Four at once occupy the twenty concurrent jobs a free plan gets and leave nothing for the branch somebody is working on. Serialized they cost the same runner time in total and block nobody.",
+    "The window is every night between ten in the evening and six in the morning, weekends included. It used to be a Monday morning, and one pull request at a time inside a weekly window means one update a week at best: Renovate picks its own moment to look at a repository, and a look which lands outside those seven hours costs another week on top. Nightly the same queue drains a night per update, and the framework versions a reader copies out of a blueprint stay close to what they would pick themselves.",
+    "Merging keeps no window of its own. The matrix builds every blueprint for every update and takes its time, so a pull request opened at three merges whenever it turns green, breakfast included.",
+    "'minimumReleaseAgeBehaviour' is loosened because the strict default blocks silently. A release whose datasource reports no publication date can never become three days old, so Renovate parks it as pending and lists it on the dashboard under a heading which reads like a build is running."
   ],
   "prConcurrentLimit": 1,
-  "schedule": ["before 7am on Monday"],
+  "schedule": ["* 22-23,0-5 * * *"],
   "labels": ["dependencies"],
   "minimumReleaseAge": "3 days",
+  "minimumReleaseAgeBehaviour": "timestamp-optional",
   "automerge": true,
   "platformAutomerge": true,
   "automergeStrategy": "squash",
