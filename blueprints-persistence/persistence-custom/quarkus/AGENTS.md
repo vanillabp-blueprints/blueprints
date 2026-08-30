@@ -84,7 +84,7 @@ which is what the base class takes anyway.
    process variable the id is stored in. Return copies rather than the stored instances.
 5. Write `PhaseTwoOutbox` and `TaskDeliveryLog`. Both are required for a remote BPMS: without the
    outbox the boot fails naming it, without the delivery log a repeated delivery runs the handler
-   twice. Dispatch an entry by asking `PhaseTwoOperationRegistry` for the operation of its name -
+   twice. Dispatch an entry by asking `PhaseOperationRegistry` for the operation of its name -
    never interpret an entry.
 6. Enlist every store in the unit of work: collect what a unit of work writes, apply it in
    `afterCommit`, throw it away in `afterRollback`. In a real store this is whatever its

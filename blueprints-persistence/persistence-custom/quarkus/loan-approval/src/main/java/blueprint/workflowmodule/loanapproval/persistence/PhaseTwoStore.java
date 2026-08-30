@@ -6,8 +6,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import io.vanillabp.integration.spi.PhaseOperationRegistry;
 import io.vanillabp.integration.spi.PhaseTwoCall;
-import io.vanillabp.integration.spi.PhaseTwoOperationRegistry;
 import io.vanillabp.integration.spi.PhaseTwoOutbox;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -57,7 +57,7 @@ import jakarta.inject.Inject;
 public class PhaseTwoStore implements PhaseTwoOutbox {
 
   @Inject
-  PhaseTwoOperationRegistry operations;
+  PhaseOperationRegistry operations;
 
   @Inject
   UnitOfWork unitOfWork;
