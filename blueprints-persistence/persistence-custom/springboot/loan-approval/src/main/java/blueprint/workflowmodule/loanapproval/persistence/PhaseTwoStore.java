@@ -9,8 +9,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import io.vanillabp.integration.spi.PhaseOperationRegistry;
 import io.vanillabp.integration.spi.PhaseTwoCall;
-import io.vanillabp.integration.spi.PhaseTwoOperationRegistry;
 import io.vanillabp.integration.spi.PhaseTwoOutbox;
 
 /**
@@ -58,7 +58,7 @@ import io.vanillabp.integration.spi.PhaseTwoOutbox;
 public class PhaseTwoStore implements PhaseTwoOutbox {
 
   @Autowired
-  private PhaseTwoOperationRegistry operations;
+  private PhaseOperationRegistry operations;
 
   @Autowired
   private UnitOfWork unitOfWork;
