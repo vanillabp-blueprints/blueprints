@@ -47,6 +47,11 @@ jobs:
   freshness:
     needs: discover
     runs-on: ubuntu-latest
+    # The longest job of a green run takes six minutes and the median two, so anything
+    # near this limit is stuck rather than slow. Without it a job would inherit the six
+    # hours GitHub gives by default, which is how a nightly ends up still running when
+    # somebody starts working.
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       # Same limit as the build workflow, for the same reason: this run has no cache on
@@ -84,9 +89,14 @@ jobs:
           } >> "$GITHUB_ENV"
       # 'install' alone, not 'install verify': install already runs every phase verify
       # has, and naming both compiled every module twice
+      # Through bin/mvn_with_retry.sh, because this run resolves everything from scratch
+      # and Maven Central answers that with 403 or 429 often enough to be the most common
+      # red build here. The script repeats only what the log proves to be a transfer: a
+      # failed test is reported the first time, as it has to be.
       - name: Build against the current snapshots
         working-directory: "${{ matrix.blueprint }}"
-        run: mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
+        run: "$GITHUB_WORKSPACE/bin/mvn_with_retry.sh"
+          -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
           -P${{ matrix.bpms }} install
       - name: The Camunda 8 cluster's log, if something went wrong
