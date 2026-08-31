@@ -9,6 +9,11 @@
 # Repeating a failed test is not, it hides the very thing the build is for, so this only
 # repeats what the log proves to be a transfer.
 #
+# It tries twice and no more. The failure it is built for is gone by the second attempt or
+# it is not a hiccup, and a nightly which keeps trying stops being a nightly: the longest
+# job of a green run takes six minutes, so two attempts stay well inside the job's own
+# limit while three could put a run into the morning.
+#
 # Usage: bin/mvn_with_retry.sh <maven arguments...>
 #        ATTEMPTS and PAUSE_SECONDS can be overridden.
 
@@ -16,7 +21,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-ATTEMPTS="${ATTEMPTS:-3}"
+ATTEMPTS="${ATTEMPTS:-2}"
 PAUSE_SECONDS="${PAUSE_SECONDS:-30}"
 
 # What a repository refusing to answer looks like in the log. Every one of these is about

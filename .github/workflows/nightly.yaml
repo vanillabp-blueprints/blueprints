@@ -47,6 +47,11 @@ jobs:
   freshness:
     needs: discover
     runs-on: ubuntu-latest
+    # The longest job of a green run takes six minutes and the median two, so anything
+    # near this limit is stuck rather than slow. Without it a job would inherit the six
+    # hours GitHub gives by default, which is how a nightly ends up still running when
+    # somebody starts working.
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       # Same limit as the build workflow, for the same reason: this run has no cache on
