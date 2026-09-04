@@ -71,6 +71,25 @@ The application configures no `vanillabp.*` property at all: with one adapter on
 classpath and one workflow module, VanillaBP derives the adapter, the module and the
 location of the BPMN files by convention.
 
+## Delta to the base blueprint
+
+Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
+
+|                File                 |                                           What is different                                            |
+|-------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `loan_approval.dmn`                 | new: the decision table, one per adapter id, deployed with the process by the boot                     |
+| `loan_approval.bpmn`                | a business rule task calling that decision, a gateway routing on its result, and a second end event    |
+| `Aggregate.java`                    | `approval`, what the decision decided                                                                  |
+| `Service.java`                      | keeps that result, and rates a request the other way round: the bigger the loan, the lower the rating   |
+| `WorkflowTaskHandler.java`          | a `@WorkflowTask` method reading the result through `@TaskParam`                                        |
+| `LoanApprovalIT.java`               | one test per outcome of the table, steered by the amount                                               |
+
+The decision table differs between the two BPMS in the same way the BPMN does, and for the
+same reason: how a business rule task names its decision is the engine's business
+(`camunda:decisionRef` against `zeebe:calledDecision`), and so is the language a rule is
+written in. Not one line of Java knows about either, and nothing in the blueprint deploys
+the table: the boot deploys a module's DMN files with its processes.
+
 ## Running it
 
 Requires a JDK 21. Camunda 7 is embedded, so nothing else has to run:
