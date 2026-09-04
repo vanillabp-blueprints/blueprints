@@ -65,6 +65,8 @@
     <module>blueprints-bpmn/bpmn-user-task/quarkus</module>
     <module>blueprints-bpmn/bpmn-async-task/springboot</module>
     <module>blueprints-bpmn/bpmn-async-task/quarkus</module>
+    <module>blueprints-bpmn/bpmn-business-rule-task/springboot</module>
+    <module>blueprints-bpmn/bpmn-business-rule-task/quarkus</module>
     <module>blueprints-bpmn/bpmn-gateways/springboot</module>
     <module>blueprints-bpmn/bpmn-gateways/quarkus</module>
     <module>blueprints-bpmn/bpmn-boundary-events/springboot</module>
