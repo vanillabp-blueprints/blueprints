@@ -37,7 +37,7 @@
     <maven-surefire-plugin.version>3.6.0</maven-surefire-plugin.version>
     <maven-failsafe-plugin.version>3.6.0</maven-failsafe-plugin.version>
     <!-- Not part of the Quarkus BOM, so this blueprint says which version it uses. -->
-    <lombok.version>1.18.46</lombok.version>
+    <lombok.version>1.18.48</lombok.version>
     <assertj.version>3.27.7</assertj.version>
     <!-- All VanillaBP artifacts are version managed by the VanillaBP BOM. -->
     <vanillabp.version>2.0.0-SNAPSHOT</vanillabp.version>
