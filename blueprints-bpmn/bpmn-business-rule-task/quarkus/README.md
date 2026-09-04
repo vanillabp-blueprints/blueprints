@@ -75,14 +75,14 @@ location of the BPMN files by convention.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                File                 |                                           What is different                                            |
-|-------------------------------------|--------------------------------------------------------------------------------------------------------|
-| `loan_approval.dmn`                 | new: the decision table, one per adapter id, deployed with the process by the boot                     |
-| `loan_approval.bpmn`                | a business rule task calling that decision, a gateway routing on its result, and a second end event    |
-| `Aggregate.java`                    | `approval`, what the decision decided                                                                  |
-| `Service.java`                      | keeps that result, and rates a request the other way round: the bigger the loan, the lower the rating   |
-| `WorkflowTaskHandler.java`          | a `@WorkflowTask` method reading the result through `@TaskParam`                                        |
-| `LoanApprovalIT.java`               | one test per outcome of the table, steered by the amount                                               |
+|            File            |                                           What is different                                           |
+|----------------------------|-------------------------------------------------------------------------------------------------------|
+| `loan_approval.dmn`        | new: the decision table, one per adapter id, deployed with the process by the boot                    |
+| `loan_approval.bpmn`       | a business rule task calling that decision, a gateway routing on its result, and a second end event   |
+| `Aggregate.java`           | `approval`, what the decision decided                                                                 |
+| `Service.java`             | keeps that result, and rates a request the other way round: the bigger the loan, the lower the rating |
+| `WorkflowTaskHandler.java` | a `@WorkflowTask` method reading the result through `@TaskParam`                                      |
+| `LoanApprovalIT.java`      | one test per outcome of the table, steered by the amount                                              |
 
 The decision table differs between the two BPMS in the same way the BPMN does, and for the
 same reason: how a business rule task names its decision is the engine's business
