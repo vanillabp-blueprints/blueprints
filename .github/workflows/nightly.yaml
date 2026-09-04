@@ -1,4 +1,4 @@
-name: Nightly
+name: Nightly build
 "on":
   schedule:
     # Early enough to be green or red before anybody starts working.
@@ -95,7 +95,7 @@ jobs:
       # failed test is reported the first time, as it has to be.
       - name: Build against the current snapshots
         working-directory: "${{ matrix.blueprint }}"
-        run: "$GITHUB_WORKSPACE/bin/mvn_with_retry.sh"
+        run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
           -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
           -P${{ matrix.bpms }} install
