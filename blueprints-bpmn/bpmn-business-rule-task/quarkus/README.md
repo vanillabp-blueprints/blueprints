@@ -36,7 +36,6 @@ What is worth looking at:
   declined one asserts that the aggregate stays untouched.
 - The rules themselves are where a business person can read them. Changing when a loan is
   approved is a change to `loan_approval.dmn`, not to the application.
-
 - The workflow module is a JAR of its own (`loan-approval/`) and is not deployed alone. It
   declares itself by the marker file `META-INF/workflow-module` containing its ID, and it
   builds an index of its classes (`jandex-maven-plugin`), which is how the application finds

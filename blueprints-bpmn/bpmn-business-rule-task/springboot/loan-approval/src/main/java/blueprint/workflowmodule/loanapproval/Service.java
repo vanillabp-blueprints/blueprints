@@ -89,8 +89,7 @@ public class Service {
     // this blueprint reads, together with the amount itself
     final var rating = Math.max(
         1,
-        (properties.getRatingScale() / 10)
-            - (loanApproval.getAmount() / 1000));
+        (properties.getRatingScale() / 10) - (loanApproval.getAmount() / 1000));
 
     loanApproval.setCreditRating(rating);
 
