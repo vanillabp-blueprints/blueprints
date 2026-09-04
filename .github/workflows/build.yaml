@@ -200,13 +200,19 @@ jobs:
             maven-${{ hashFiles('**/pom.xml') }}-
             maven-
       - name: Build every blueprint through the aggregator
+        # Both switches, because they belong to different plugins: Surefire reads
+        # -DskipTests, Failsafe does not and wants -DskipITs. With only the first one the
+        # integration tests of the Quarkus blueprints ran here, in a job which starts
+        # neither a Camunda 8 cluster nor anything else they need, and the build waited ten
+        # minutes for a cluster nobody had started.
         run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
-          --batch-mode --no-transfer-progress --update-snapshots -DskipTests install
+          --batch-mode --no-transfer-progress --update-snapshots -DskipTests -DskipITs
+          install
       - name: Resolve what the other engine needs, so the cache holds that too
         # The build above runs the default profile, so the artifacts of the other engine
         # would be missing and every job of that engine would fetch them itself.
         run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
-          --batch-mode --no-transfer-progress -Pcamunda8 -DskipTests
+          --batch-mode --no-transfer-progress -Pcamunda8 -DskipTests -DskipITs
           dependency:go-offline
 
   # One name that never changes, so branch protection has something to require and
