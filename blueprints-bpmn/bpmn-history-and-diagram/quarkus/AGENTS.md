@@ -86,10 +86,11 @@ call activity back into `getProcessDefinitions` to show the called model - see
 mvn install verify
 ```
 
-That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamunda8` needs a
-running cluster WITH secondary storage and `vanillabp.adapters.camunda8.rest-address`
-configured; without secondary storage that adapter reports no element history, which is
-documented behaviour and not a defect of the generated code.
+That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamunda8` needs
+`vanillabp.adapters.camunda8.rest-address` configured and a cluster the adapter can SEARCH:
+secondary storage configured, and credentials allowed to read it. On a cluster which refuses a
+search the workflow module does not deploy. That is the cluster and not a defect of the
+generated code, and the message names which of the two is missing.
 
 `LoanApprovalIT` proves the aspect and has to pass: the definitions of the workflow, the BPMN
 behind them, the element the workflow stands at while it waits, and the history of the ended

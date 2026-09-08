@@ -66,8 +66,13 @@ Running it on another BPMS is a Maven profile, not one line of Java changes:
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
+Camunda 8 is a remote engine, so a cluster has to run, and it has to be one the adapter can
+search: secondary storage configured, and credentials allowed to read it. Correlating finds the
+workflow by the process variable holding the aggregate's ID, and that is a search. On a cluster
+which refuses one the workflow module does not deploy, and the message says which of the two is
+missing.
+
+Start one; its address, and everything else specific to that engine, lives in its profile file
 `application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
 test:
 
@@ -82,12 +87,6 @@ vanillabp:
 That file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
 name, so the engine is chosen once, on the Maven command line, and the build, the tests and
 `spring-boot:run` all follow it.
-
-**On Camunda 8 the tests of this blueprint currently fail**, and not because of the
-blueprint: the adapter looks a workflow up by a variable filter the search API does not
-match, so correlating answers "no BPMS knows this workflow" although it does. It is
-reported and being fixed; on a cluster without secondary storage the same code answers
-optimistically and the blueprint runs. Camunda 7 is unaffected.
 
 Start the application:
 
