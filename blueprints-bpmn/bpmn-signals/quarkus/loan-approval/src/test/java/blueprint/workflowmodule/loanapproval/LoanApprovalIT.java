@@ -129,8 +129,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanApproval -> loanApproval.getInterestRate() != null);
 
     // what the signal could not carry, both workflows read from the application's data
-    assertThat(first.getInterestRate()).isEqualByComparingTo(RATE);
-    assertThat(second.getInterestRate()).isEqualByComparingTo(RATE);
+    assertThat(first.getInterestRate()).isEqualTo(RATE.doubleValue());
+    assertThat(second.getInterestRate()).isEqualTo(RATE.doubleValue());
 
   }
 
@@ -157,7 +157,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         aggregate -> aggregate.getInterestRate() != null);
 
-    assertThat(loanApproval.getInterestRate()).isEqualByComparingTo(RATE);
+    assertThat(loanApproval.getInterestRate()).isEqualTo(RATE.doubleValue());
 
   }
 
