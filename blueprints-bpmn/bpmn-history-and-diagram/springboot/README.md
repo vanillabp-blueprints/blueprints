@@ -42,7 +42,7 @@ Pass it back exactly as it came.
 remote engine reports with a delay because its history is fed by an exporter. The test of this
 blueprint is written accordingly: it waits for the history rather than asserting it right
 away, and it checks that the elements it drove through are in there, not that they are the
-only ones. Camunda 8 needs secondary storage for any of this, which its adapter documents.
+only ones.
 
 **Ended workflows can be shown too**, as long as the BPMS still holds them. Once its history
 retention cleaned up, `getWorkflowHistory` says so with a guiding
@@ -81,11 +81,14 @@ Running it on another BPMS is a Maven profile, not one line of Java changes:
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. It also needs **secondary storage** for
-this blueprint: definitions and history are served by the query API, and a cluster without it
-reports no element history at all. Start one; its address, and everything else specific to that
-engine, lives in its profile file `application/src/main/resources/application-camunda8.yaml`,
-with a copy for the module's own test:
+Camunda 8 is a remote engine, so a cluster has to run, and it has to be one the adapter can
+search: secondary storage configured, and credentials allowed to read it. What the three
+endpoints answer is read from the query API. On a cluster which refuses a search the workflow
+module does not deploy, and the message says which of the two is missing.
+
+Start one; its address, and everything else specific to that engine, lives in its profile file
+`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
+test:
 
 ```yaml
 vanillabp:
