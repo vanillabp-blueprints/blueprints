@@ -156,6 +156,12 @@ public class Service {
    * was broadcast after one had been stored.
    * </p>
    *
+   * <p>
+   * The published rate is a decimal and the aggregate holds a double, so the conversion
+   * happens here, where application data becomes something the workflow shares with the
+   * BPMS. {@code Aggregate#interestRate} says why.
+   * </p>
+   *
    * @param loanApproval The workflow's aggregate.
    */
   public void applyInterestRate(
@@ -168,7 +174,7 @@ public class Service {
                 + loanApproval.getLoanRequestId()
                 + "'"));
 
-    loanApproval.setInterestRate(publishedRate.getPercentage());
+    loanApproval.setInterestRate(publishedRate.getPercentage().doubleValue());
 
     log.info(
         "Loan approval '{}' is offered at {}%",

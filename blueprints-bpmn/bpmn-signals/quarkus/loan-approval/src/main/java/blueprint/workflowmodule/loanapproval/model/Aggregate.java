@@ -1,7 +1,5 @@
 package blueprint.workflowmodule.loanapproval.model;
 
-import java.math.BigDecimal;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -57,8 +55,20 @@ public class Aggregate {
    * The rate this loan is offered at, written by the service task behind the signal event.
    * A value here means the workflow passed the catch event, which is how the test tells a
    * waiting workflow from a continued one.
+   *
+   * <p>
+   * A {@code Double}, although the published rate is a {@code BigDecimal} in
+   * {@link InterestRate}. Whatever the aggregate shares is written to the BPMS, and an
+   * engine has variable types for a handful of Java types only. A double is among them, so
+   * the rate stays a number in the engine's tooling and in a BPMN expression. A decimal is
+   * not, and the engine stores it as a serialized object nobody can read until the
+   * application configures a serialization format. Percent needs no exact scale, so
+   * {@code Service#applyInterestRate} converts. Where the scale does matter, keep the value
+   * in the application's own data and let the aggregate share what the process has to
+   * decide on.
+   * </p>
    */
   @Column
-  private BigDecimal interestRate;
+  private Double interestRate;
 
 }
