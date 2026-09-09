@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="Definitions_checks_to_run" name="Checks to run" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.31.0">
+  <!-- The decision the business rule task of loan_approval.bpmn calls when nobody has to
+       look at the request. Its output is the list the ad-hoc subprocess reads, so the
+       values are BPMN element ids of that subprocess and nothing else. The hit policy is
+       COLLECT, which is what turns the matching rules into a list. -->
+  <decision id="checks_to_run" name="Checks to run">
+    <decisionTable id="DecisionTable_checks" hitPolicy="COLLECT">
+      <input id="Input_amount" label="Amount">
+        <inputExpression id="InputExpression_amount" typeRef="number">
+          <text>amount</text>
+        </inputExpression>
+      </input>
+      <output id="Output_check" label="Check" name="check" typeRef="string" />
+      <!-- The income of the applicant is looked at whatever they asked for. -->
+      <rule id="Rule_alwaysIncome">
+        <inputEntry id="InputEntry_anyAmount">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="OutputEntry_income">
+          <text>"Check_Income"</text>
+        </outputEntry>
+      </rule>
+      <!-- Above three thousand a fraud check is added, so two checks run side by side. -->
+      <rule id="Rule_fraudAboveThreeThousand">
+        <inputEntry id="InputEntry_aboveThreeThousand">
+          <text>&gt; 3000</text>
+        </inputEntry>
+        <outputEntry id="OutputEntry_fraud">
+          <text>"Check_Fraud"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

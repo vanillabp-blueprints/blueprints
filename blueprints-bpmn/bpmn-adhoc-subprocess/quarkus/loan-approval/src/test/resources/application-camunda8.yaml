@@ -1,0 +1,18 @@
+# Everything specific to Camunda 8, loaded only while the 'camunda8' profile applies. The
+# Maven profile of the same name activates it for the test as well, and CI overrides the
+# address through the environment.
+vanillabp:
+  adapters:
+    camunda8:
+      # The identifiers of this workflow module are prefixed in the BPMS, which keeps modules
+      # apart without a tenant, and a BPMS is licensed per tenant. BPMN files, business code and
+      # configuration keep the plain names, the adapter translates at every boundary. Switching
+      # the mode of a running application is a migration rather than a setting.
+      name-clash-avoidance: use-prefix
+      # Two of the checks run at the same time and both of them write the workflow
+      # aggregate. The aggregate carries a version attribute, so the transaction losing that
+      # race fails and Camunda 8 retries the task - which is the point of the attribute. The
+      # default backoff of ten seconds would make that retry look like a hanging workflow,
+      # so this blueprint asks for a shorter one.
+      retry-backoff: PT2S
+      rest-address: http://localhost:8080
