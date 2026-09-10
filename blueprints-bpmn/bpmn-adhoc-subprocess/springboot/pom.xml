@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.1</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>io.vanillabp.blueprint.bpmn-adhoc-subprocess-springboot</groupId>
+  <artifactId>bpmn-adhoc-subprocess</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Blueprint: ad-hoc subprocesses</name>
+  <description>An ad-hoc subprocess whose activities are chosen while the workflow runs: a case worker picks them, or a decision table does.</description>
+
+  <modules>
+    <module>loan-approval</module>
+    <module>application</module>
+  </modules>
+
+  <properties>
+    <!--
+      The name of the BPMS profile, set by the profile of the modules below. It is used
+      twice: the build filters it into 'application.yaml', so the application loads
+      'application-<bpms>.yaml', and the tests get it as a system property. This blueprint
+      has one BPMS, and the property still exists so it stays the same file as every other
+      blueprint.
+    -->
+    <bpms>none</bpms>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <java.version>21</java.version>
+    <!-- All VanillaBP artifacts are version managed by the VanillaBP BOM. -->
+    <vanillabp.version>2.0.0-SNAPSHOT</vanillabp.version>
+    <!-- BPMS adapters are released independently of the platform, so they carry their own version. -->
+    <camunda8-adapter.version>2.0.0-SNAPSHOT</camunda8-adapter.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.vanillabp</groupId>
+        <artifactId>vanillabp-bom</artifactId>
+        <version>${vanillabp.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <plugins>
+      <!--
+        A blueprint must never show a deprecated API - it is copied, and what is copied
+        spreads. Making the compiler say so is cheaper than noticing it years later.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <compilerArgs>
+            <arg>-Xlint:deprecation,removal</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <!-- The BPMS profile of the build, so a test loads the same configuration as the application. -->
+            <spring.profiles.active>${bpms}</spring.profiles.active>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <!-- Tests named *IT are integration tests and run in 'verify', not in 'test'. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <!-- The BPMS profile of the build, for the same reason surefire gets it: an
+                 integration test has to read the configuration the application reads,
+                 'application-<bpms>.yaml' included. Without it the profile files are never
+                 loaded and the adapter is only configured where the environment happens to
+                 provide it. -->
+            <spring.profiles.active>${bpms}</spring.profiles.active>
+          </systemPropertyVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!--
+    The BPMS is a Maven profile, and this blueprint has one: '-Pcamunda8', active by
+    default. Camunda 7 is missing on purpose, because it does not execute an ad-hoc
+    subprocess: its parser lists the element among the activity types it ignores and only
+    warns while deploying, so a Camunda 7 build would ask for handlers of activities which
+    never run.
+
+    The profile is declared by the modules which need the adapter: the application, and the
+    workflow module for the sake of its test. Declaring it here as well would only repeat
+    the choice in a place that does not act on it.
+  -->
+</project>
