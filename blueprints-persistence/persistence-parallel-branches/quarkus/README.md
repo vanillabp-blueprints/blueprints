@@ -215,6 +215,7 @@ aggregate itself.
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why there are no process variables
 - [Wire up a process / Wire up a task](https://github.com/vanillabp/spi-for-java#usage): the annotations used in `WorkflowTaskHandler.java`
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how a BPMN task has to be modelled for that engine
+- [Nested values in Camunda 7](https://github.com/vanillabp/camunda7-adapter/wiki/Configuration#nested-values-and-why-java-serialization-is-not-an-option): the two branch entities go into one object variable each, and what to configure so Cockpit shows them instead of a base64 blob
 
 This blueprint is developed in the monorepo
 [`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a

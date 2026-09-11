@@ -171,6 +171,7 @@ on a remote one.
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why the collection is an attribute rather than a variable, and what several writers do to a row
 - [Wire up a task](https://github.com/vanillabp/spi-for-java#wire-up-a-task): what a `@WorkflowTask` method may be handed
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: what that engine reports about an iteration
+- [Nested values in Camunda 7](https://github.com/vanillabp/camunda7-adapter/wiki/Configuration#nested-values-and-why-java-serialization-is-not-an-option): the partner ids and the offers each travel to that engine as an object variable, and the serialization format an application needs so a rate stays readable
 
 This blueprint is developed in the monorepo
 [`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a
