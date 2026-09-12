@@ -1,0 +1,27 @@
+# Everything specific to Camunda 7, applying while the 'camunda7' profile is the parent of
+# the profile the application runs in. The Maven profile of the same name names it, so the
+# BPMS is chosen once.
+#
+# The key this blueprint is about lives here rather than in application.yaml, because it
+# belongs to one engine: Camunda 7 runs embedded and its job executor is what polls the
+# database of this application. On a remote BPMS that polling happens in the cluster and this
+# file does not apply at all.
+vanillabp:
+  adapters:
+    camunda7:
+      # Without this key the job executor asks the database for work every 5 seconds,
+      # widening to 60 while it finds none. With it, a cycle which found nothing asks once
+      # when the next job is due and waits for that moment, and any transaction which writes
+      # a job wakes it again. That is what lets this application pass the 30 seconds of the
+      # withdrawal period without a single database command.
+      #
+      # The engine's metrics reporter would write its counters to the database every 900
+      # seconds and wake the engine four times an hour, so it stops writing them here. It
+      # keeps counting in memory, and an application which needs the numbers in its database
+      # says so with 'db-metrics-reporting: true' - which is a choice between two costs, not
+      # a setting to turn on by habit.
+      #
+      # One thing is left to the operator: the engine now acquires jobs by due date, and that
+      # order wants an index on the due date of ACT_RU_JOB. The startup message asks for it.
+      # An in-memory H2 does not care, a production database does.
+      sleep-until-something-is-due: true
