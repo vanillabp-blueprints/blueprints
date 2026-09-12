@@ -1,0 +1,52 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is
+# in its own configuration file (loan-approval/loan-approval.yaml inside the module JAR).
+#
+# Nothing about a BPMS is here either. That lives in a profile file per engine,
+# 'application-camunda7.yaml' and 'application-camunda8.yaml', so switching engines is a
+# profile and not an edit. One adapter dependency and one workflow module are enough for
+# VanillaBP to derive the adapter, the workflow module and where its BPMN files are read
+# from.
+quarkus:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, and the profile
+  # files 'application-camunda7.yaml' respectively 'application-camunda8.yaml' apply from
+  # then on - whichever profile the application itself runs in, because they are its PARENT.
+  # Nobody has to name the profile twice.
+  config:
+    profile:
+      parent: "@bpms@"
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      # A file database rather than one in memory, and a trace: H2 writes every statement it
+      # executes into 'target/loan-approval.trace.db', one line each. That file is what the
+      # endpoint /api/loan-approval/statements counts, and opening it shows what your
+      # database was actually asked. Measuring equipment of this blueprint, not something an
+      # application needs.
+      url: jdbc:h2:./target/loan-approval;TRACE_LEVEL_FILE=2
+      # A connection pool which checks its idle connections in the background asks the
+      # database something every two minutes, which is the same kind of cost this blueprint
+      # is about. Nothing here needs the check, so it is off.
+      background-validation-interval: 0
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO
+# The half of the saving which is the same on every BPMS. VanillaBP dispatches an outbox
+# entry right after the transaction which wrote it, and it polls the store as the safety net
+# for what no such notification reached. A poller now waits for the earliest entry which is
+# owed something, and this key is the longest it may wait when nothing is owed at all.
+#
+# Ten seconds is the default, and at that value a quiet application asks its database 8640
+# times a day about work nobody created. One hour is what this blueprint sets, and that is a
+# decision about one thing only: an entry another node wrote down before it went away is
+# picked up an hour late at worst, because nothing tells a resting node about another node's
+# row. A single node has nobody to wait for. Setting the key back to seconds gives the whole
+# saving away and buys nothing else.
+vanillabp:
+  outbox:
+    poll-interval: PT1H
