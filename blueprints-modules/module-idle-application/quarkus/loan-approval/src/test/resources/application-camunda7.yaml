@@ -1,0 +1,8 @@
+# Everything specific to Camunda 7 while the test runs. The Maven profile of the same name
+# makes it the parent profile of the test's own profile, so the BPMS is chosen once.
+vanillabp:
+  adapters:
+    camunda7:
+      # The embedded job executor waits for the next due job instead of asking every 5 to 60
+      # seconds. Without this key the test would see those questions in its database.
+      sleep-until-something-is-due: true

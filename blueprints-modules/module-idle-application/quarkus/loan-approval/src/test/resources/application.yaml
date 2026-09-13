@@ -1,0 +1,25 @@
+# The configuration of the module's own test: its database, and the two keys which make the
+# application quiet. The test measures what the database does while the workflow waits, so
+# these keys are part of what it proves.
+quarkus:
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      # The trace is what the test counts: H2 writes every statement it executes into
+      # 'target/loan-approval.trace.db'.
+      url: jdbc:h2:./target/loan-approval;TRACE_LEVEL_FILE=2
+      # A pool checking its idle connections in the background would be traffic of its own.
+      background-validation-interval: 0
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO
+vanillabp:
+  outbox:
+    # The longest the outbox poller may rest while it owes nothing, ten seconds by default.
+    # The test watches for 15 seconds, so the default would show up as traffic.
+    poll-interval: PT1H
