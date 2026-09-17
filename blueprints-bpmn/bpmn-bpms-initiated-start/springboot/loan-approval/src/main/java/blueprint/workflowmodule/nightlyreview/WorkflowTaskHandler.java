@@ -33,11 +33,12 @@ public class WorkflowTaskHandler {
    *
    * <p>
    * <b>The annotation is optional.</b> Leave it out and VanillaBP still builds the
-   * aggregate, assigns its ID and copies process variables of the model into attributes of
-   * the same name - this blueprint would run with an empty class here. It exists to show
-   * the hook: the aggregate VanillaBP built is handed in, together with a
-   * {@link BpmsStartTrigger} saying what fired, and whatever is written here is saved with
-   * it in the same transaction.
+   * aggregate and assigns its ID, so this blueprint would run with an empty class here. It
+   * would also copy process variables into attributes of the same name, but this aggregate
+   * shares nothing with the BPMS and the start events carry no variable, so there is
+   * nothing to copy. The annotation exists to show the hook: the aggregate VanillaBP built
+   * is handed in, together with a {@link BpmsStartTrigger} saying what fired, and whatever
+   * is written here is saved with it in the same transaction.
    * </p>
    *
    * <p>

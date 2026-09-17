@@ -2,6 +2,7 @@ package blueprint.workflowmodule.nightlyreview.model;
 
 import java.time.Instant;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -26,6 +27,15 @@ import lombok.NoArgsConstructor;
  * persistence unit would clash, and the reference structure gives every use case a class of
  * that name.
  * </p>
+ *
+ * <p>
+ * Nothing of this class reaches the BPMS either way, and the class says so:
+ * {@code @NoSyncWithBPMS} and no attribute with {@code @SyncWithBPMS}. No expression in
+ * the model reads the aggregate, and the two start events bring no variable in. What the
+ * trigger carried arrives as a {@code BpmsStartTrigger} argument of the
+ * {@code @WorkflowStartedByBpms} method, not as a process variable. So the first three
+ * attributes are written by the application, even though the start came from outside it.
+ * </p>
  */
 @Entity(name = "NightlyReview")
 @Table(name = "NIGHTLY_REVIEW")
@@ -33,6 +43,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**

@@ -152,9 +152,11 @@ http://localhost:8080/api/loan-approval/start?amount=5000
 
 The order of events: the model is deployed while the application boots, the engine
 schedules the timer, and five seconds later it fires. VanillaBP is notified, opens a
-transaction, instantiates the aggregate, assigns its ID, copies process variables of the
-model into equally named attributes, runs the `@WorkflowStartedByBpms` method and saves.
-Only then does the process continue to its service task, which is an ordinary
+transaction, instantiates the aggregate, assigns its ID, runs the `@WorkflowStartedByBpms`
+method and saves. A start bringing variables along would have them copied into equally
+named attributes first, but these start events bring none, and the aggregate is annotated
+`@NoSyncWithBPMS`: what the trigger carried is read from the method's trigger argument
+instead. Only then does the process continue to its service task, which is an ordinary
 `@WorkflowTask` - from there nothing about this workflow is special.
 
 How the two engines arrange that differs, and it is worth knowing which part is theirs.
