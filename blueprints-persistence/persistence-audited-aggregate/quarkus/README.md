@@ -279,7 +279,11 @@ The test is the proof. It starts a loan approval, answers the risk assessment as
 waits until the payout was booked, and only then looks at what the archive received. The
 notice carries the decision and no payout, while the aggregate in the database carries both,
 and the archive was asked twice because the first attempt was turned down. The second test
-reads the trail and checks that every change names its author.
+reads the trail and checks that every change names its author. The third one measures the
+early revision on its own: it asks for the revision inside a transaction, changes the loan
+approval afterwards, and reads that revision back once the transaction committed. What comes
+back is the changed state, which is what says that the number handed out before the flush is
+the number the change was recorded under.
 
 An application which keeps no auditing at all is unaffected by any of this. Both methods of
 the seam have defaults, and both defaults are what VanillaBP did before they existed: no

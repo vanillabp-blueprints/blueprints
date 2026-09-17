@@ -9,8 +9,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.loanapproval.audit.AuditedAggregatePersistence;
 import blueprint.workflowmodule.loanapproval.audit.ChangeAuthor;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 
@@ -37,6 +39,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   /** The surrounding system, replaced by a simulator the test can read. */
   @Inject
   ComplianceArchiveSimulator complianceArchive;
+
+  @Inject
+  AuditedAggregatePersistence auditedLoanApprovals;
 
   @BeforeEach
   public void forgetWhatThePreviousTestDid() {
@@ -135,6 +140,45 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(trail.get(3)).contains("by paula");
     assertThat(trail.get(4)).contains("by "
         + ChangeAuthor.THE_PROCESS);
+
+  }
+
+  @Test
+  @DisplayName("The revision asked for before the flush is the one the change is recorded under")
+  public void theRevisionNamesTheChangeOfItsOwnTransaction() {
+
+    final var loanRequestId = UUID.randomUUID().toString();
+
+    ChangeAuthor.attributeTo(
+        "the customer",
+        () -> service.initiateLoanApproval(loanRequestId, 5000, "the customer"));
+    awaitAggregate(
+        loanApprovals::findByIdOptional,
+        loanRequestId,
+        loanApproval -> loanApproval.getCreditRating() != null);
+
+    // One transaction which asks for the revision first and changes the loan approval
+    // afterwards - the order an outbox entry forces, because the entry is written before
+    // the transaction is flushed.
+    final var revision = QuarkusTransaction
+        .requiringNew()
+        .call(() -> {
+          final var loanApproval = loanApprovals.findByIdOptional(loanRequestId).orElseThrow();
+          final var auditingId = auditedLoanApprovals.getAuditingId(loanApproval);
+          loanApproval.setAmount(6000);
+          return auditingId;
+        });
+
+    final var asItWas = QuarkusTransaction
+        .requiringNew()
+        .call(() -> auditedLoanApprovals.loadByIdAndAuditingId(loanRequestId, revision));
+
+    assertThat(asItWas)
+        .describedAs("the revision handed out early exists and has a state")
+        .isNotNull();
+    assertThat(asItWas.getAmount())
+        .describedAs("the change of that transaction was recorded under the revision it was told")
+        .isEqualTo(6000);
 
   }
 

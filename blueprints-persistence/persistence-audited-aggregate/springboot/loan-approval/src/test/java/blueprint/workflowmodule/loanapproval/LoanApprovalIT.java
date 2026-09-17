@@ -11,8 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.loanapproval.audit.AuditedAggregatePersistence;
 import blueprint.workflowmodule.loanapproval.audit.ChangeAuthor;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
@@ -51,6 +53,12 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Autowired
   private ComplianceArchiveSimulator complianceArchive;
+
+  @Autowired
+  private AuditedAggregatePersistence auditedLoanApprovals;
+
+  @Autowired
+  private TransactionTemplate transactions;
 
   @BeforeEach
   public void forgetWhatThePreviousTestDid() {
@@ -149,6 +157,42 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(trail.get(3)).contains("by paula");
     assertThat(trail.get(4)).contains("by "
         + ChangeAuthor.THE_PROCESS);
+
+  }
+
+  @Test
+  @DisplayName("The revision asked for before the flush is the one the change is recorded under")
+  public void theRevisionNamesTheChangeOfItsOwnTransaction() {
+
+    final var loanRequestId = UUID.randomUUID().toString();
+
+    ChangeAuthor.attributeTo(
+        "the customer",
+        () -> service.initiateLoanApproval(loanRequestId, 5000, "the customer"));
+    awaitAggregate(
+        loanApprovals,
+        loanRequestId,
+        loanApproval -> loanApproval.getCreditRating() != null);
+
+    // One transaction which asks for the revision first and changes the loan approval
+    // afterwards - the order an outbox entry forces, because the entry is written before
+    // the transaction is flushed.
+    final var revision = transactions.execute(status -> {
+      final var loanApproval = loanApprovals.findById(loanRequestId).orElseThrow();
+      final var auditingId = auditedLoanApprovals.getAuditingId(loanApproval);
+      loanApproval.setAmount(6000);
+      return auditingId;
+    });
+
+    final var asItWas = transactions
+        .execute(status -> auditedLoanApprovals.loadByIdAndAuditingId(loanRequestId, revision));
+
+    assertThat(asItWas)
+        .describedAs("the revision handed out early exists and has a state")
+        .isNotNull();
+    assertThat(asItWas.getAmount())
+        .describedAs("the change of that transaction was recorded under the revision it was told")
+        .isEqualTo(6000);
 
   }
 
