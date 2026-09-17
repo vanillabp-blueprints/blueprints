@@ -164,14 +164,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .requiringNew()
         .call(() -> {
           final var loanApproval = loanApprovals.findByIdOptional(loanRequestId).orElseThrow();
-          final var auditingId = auditedLoanApprovals.getAuditingId(loanApproval);
+          final var id = auditedLoanApprovals.idOfTheChangeBeingMade();
           loanApproval.setAmount(6000);
-          return auditingId;
+          return id;
         });
 
     final var asItWas = QuarkusTransaction
         .requiringNew()
-        .call(() -> auditedLoanApprovals.loadByIdAndAuditingId(loanRequestId, change));
+        .call(() -> auditedLoanApprovals.loadByIdAsOfChange(loanRequestId, change));
 
     assertThat(asItWas)
         .describedAs("the id handed out early names a state which is there")

@@ -179,13 +179,13 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // written before the transaction is flushed.
     final var change = transactions.execute(status -> {
       final var loanApproval = loanApprovals.findById(loanRequestId).orElseThrow();
-      final var auditingId = auditedLoanApprovals.getAuditingId(loanApproval);
+      final var id = auditedLoanApprovals.idOfTheChangeBeingMade();
       loanApproval.setAmount(6000);
-      return auditingId;
+      return id;
     });
 
     final var asItWas = transactions
-        .execute(status -> auditedLoanApprovals.loadByIdAndAuditingId(loanRequestId, change));
+        .execute(status -> auditedLoanApprovals.loadByIdAsOfChange(loanRequestId, change));
 
     assertThat(asItWas)
         .describedAs("the id handed out early names a state which is there")

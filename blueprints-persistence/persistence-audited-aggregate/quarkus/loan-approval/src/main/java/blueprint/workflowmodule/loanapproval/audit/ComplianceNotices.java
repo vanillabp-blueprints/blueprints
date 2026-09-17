@@ -20,10 +20,11 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>
  * Between the two moments lies the wait, and the wait is what this blueprint is about.
- * The report says which state of the loan approval it means, so what the archive is
- * handed is the state of the decision and not the state of the day the archive happened
- * to be reachable. The id naming that state comes from
- * {@link AuditedAggregatePersistence#getAuditingId(Aggregate)}.
+ * The report carries the id of the change it belongs to, so what the archive is handed is
+ * the state of the decision and not the state of the day the archive happened to be
+ * reachable. The id comes from
+ * {@link AuditedAggregatePersistence#idOfTheChangeBeingMade()}, and the report is served
+ * with it again when it is sent.
  * </p>
  *
  * <p>
@@ -50,6 +51,13 @@ public class ComplianceNotices {
   public static final String RISK_ASSESSED = "risk-assessed";
 
   private static final String ARG_EVENT = "event";
+
+  /**
+   * The state the report means, named by the id of the change which produced it. It is an
+   * argument of the report like the event is: VanillaBP carries it and reads nothing in
+   * it.
+   */
+  private static final String ARG_CHANGE = "change";
 
   /**
    * One report per loan approval and event, which is what the key says: a report may be
@@ -95,8 +103,8 @@ public class ComplianceNotices {
    *
    * <p>
    * Runs in the transaction of the decision: if that transaction rolls back, the notice
-   * goes with it. The revision is asked for here, while the transaction is open, because
-   * afterwards nobody can say any more which state the decision was taken on.
+   * goes with it. The id of the change is asked for here, while the transaction is open,
+   * because afterwards nobody can say any more which state the decision was taken on.
    * </p>
    *
    * @param event        What happened.
@@ -113,8 +121,9 @@ public class ComplianceNotices {
             BPMN_PROCESS_ID,
             loanApproval.getLoanRequestId(),
             null,
-            Map.of(ARG_EVENT, event))
-        .askingForTheStateOfTheEvent(loanApprovals.getAuditingId(loanApproval));
+            Map.of(
+                ARG_EVENT, event,
+                ARG_CHANGE, loanApprovals.idOfTheChangeBeingMade()));
 
     outbox.schedule(notice);
 
@@ -124,14 +133,16 @@ public class ComplianceNotices {
    * Sends one notice. VanillaBP calls this after the commit, on a thread and in a
    * transaction of its own, and again later whenever it threw.
    *
-   * @param notice The notice as it was written down, including the state it asks for.
+   * @param notice The notice as it was written down, including the change it is about.
    */
   private void send(
       final PhaseTwoCall notice) {
 
     final var loanRequestId = notice.workflowAggregateId();
 
-    var asItWas = loanApprovals.loadByIdAndAuditingId(loanRequestId, notice.auditingId());
+    final var change = notice.args().get(ARG_CHANGE);
+
+    var asItWas = loanApprovals.loadByIdAsOfChange(loanRequestId, change);
 
     if (asItWas == null) {
       // The auditing does not have that state any more, so the archive hears about the
@@ -139,10 +150,10 @@ public class ComplianceNotices {
       // this line is what tells the two apart later on.
       asItWas = loanApprovals.loadById(loanRequestId);
       log.warn(
-          "Loan approval '{}' is not available as it was at revision {}, so the compliance "
+          "Loan approval '{}' is not available as it was at change {}, so the compliance "
               + "archive is told the state of today.",
           loanRequestId,
-          notice.auditingId());
+          change);
     }
 
     archive.store(notice.args().get(ARG_EVENT), asItWas);
