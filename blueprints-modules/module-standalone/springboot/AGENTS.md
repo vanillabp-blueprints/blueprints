@@ -44,7 +44,7 @@ places or in none.
 | `src/main/java/.../loanapproval/WorkflowTaskHandler.java`      | `@WorkflowService` binds the class to the BPMN process, `@WorkflowTask` binds a method to a task. Contains no business logic, calls `Service` |
 | `src/main/java/.../loanapproval/Workflow.java`                 | what the application tells the process, e.g. `ProcessService#startWorkflow`. The ONLY class using `ProcessService`                            |
 | `src/main/java/.../loanapproval/Service.java`                  | the business code. Calls `Workflow` naming the business event, is called by `WorkflowTaskHandler`, never touches VanillaBP                    |
-| `src/main/java/.../loanapproval/model/Aggregate.java`          | the workflow aggregate: a JPA entity with the natural ID as primary key, holding all state the process needs                                  |
+| `src/main/java/.../loanapproval/model/Aggregate.java`          | the workflow aggregate: a JPA entity with the natural ID as primary key, holding all state the process needs, shared with no BPMS             |
 | `src/main/resources/loan-approval.yaml`                        | the module's own configuration, next to `application.yaml` and taking precedence over it                                                      |
 | `src/test/java/.../LoanApprovalIT.java`                        | starts a real workflow and waits for the effect of the task                                                                                   |
 
@@ -80,7 +80,9 @@ extending `WorkflowModuleTest`, never into the base class.
    works as well and is what a project with a workflow module of its own has to use.
 4. Add the workflow aggregate as a JPA entity with the natural ID as `@Id`, plus a Spring
    Data repository for it. If the project already has an entity for this business case, use
-   it instead of adding a second one.
+   it instead of adding a second one. Annotate the class `@NoSyncWithBPMS` and annotate
+   `@SyncWithBPMS` on every attribute the model reads, which is none as long as the model
+   has no condition, timer or multi-instance collection.
 5. Add `WorkflowTaskHandler` with the `@WorkflowService` annotation and one `@WorkflowTask`
    method per BPMN task, each doing nothing but calling `Service`. Never annotate the
    handler or the service methods it calls with `@Transactional`: VanillaBP runs a task in

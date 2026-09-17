@@ -17,6 +17,11 @@ A loan approval process consisting of one service task. Starting it stores a *wo
 aggregate* and starts a workflow in the BPMS, the service task fills the aggregate, and the
 process ends.
 
+The aggregate stays in the application. It carries `@NoSyncWithBPMS`, and no element of this
+model reads an attribute, so the BPMS holds nothing but the aggregate's ID, which is how
+VanillaBP finds the workflow again. An attribute a condition, a timer or a multi-instance
+collection reads is annotated `@SyncWithBPMS` and is shared, and nothing else is.
+
 What is worth looking at:
 
 - **One file makes it a workflow module.** `src/main/resources/META-INF/workflow-module`
@@ -159,7 +164,7 @@ keeps that from happening.
 |------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
 | `src/main/resources/META-INF/workflow-module`              | contains `loan-approval` and thereby declares this application to be a workflow module                |
 | `src/main/resources/processes/camunda7/loan_approval.bpmn` | the process: start event, service task, end event. The task names the method implementing it          |
-| `.../loanapproval/model/Aggregate.java`                    | the workflow aggregate, a normal JPA entity keyed by the loan request ID                              |
+| `.../loanapproval/model/Aggregate.java`                    | the workflow aggregate, a normal JPA entity keyed by the loan request ID and shared with no BPMS      |
 | `.../loanapproval/Service.java`                            | the business code: builds the aggregate and tells `Workflow` that a loan was requested                |
 | `.../loanapproval/Workflow.java`                           | what the application tells the process; the only class using `ProcessService`                         |
 | `.../loanapproval/WorkflowTaskHandler.java`                | what the process tells the application: `@WorkflowService`, `@WorkflowTask`, calls `Service`          |
@@ -193,6 +198,7 @@ on one engine and fails on the next.
 - [Provide an index for workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules-in-Quarkus#provide-index-for-workflow-modules): why a module in a Maven module of its own needs one, and why this blueprint does not
 - [How name clashes are avoided](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided): what the warning at startup is about, and the modes keeping two workflow modules apart
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why there are no process variables
+- [Sharing workflow-aggregate data](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms): `@NoSyncWithBPMS`, `@SyncWithBPMS`, and what a BPMS gets to see
 - [Wire up a process / Wire up a task](https://github.com/vanillabp/spi-for-java#usage): the annotations used in `WorkflowTaskHandler.java`
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how a BPMN task has to be modelled for that engine
 
