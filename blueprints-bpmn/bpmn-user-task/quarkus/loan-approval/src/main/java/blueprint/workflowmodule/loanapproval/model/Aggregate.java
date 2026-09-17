@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanapproval.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -21,6 +22,16 @@ import lombok.NoArgsConstructor;
  * it is queryable, and it survives a restart.
  * </p>
  *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so none of these attributes goes to the
+ * BPMS. Nothing in the model reads them. No sequence flow carries a condition, and the
+ * user task names neither an assignee nor a due date. The task definitions look like
+ * expressions, but they name the handler method rather than data. What the BPMS holds is
+ * the workflow aggregate's ID, which VanillaBP always shares because that is how it finds
+ * the workflow again. Should you add an expression to the model, the attribute it reads
+ * needs {@code @SyncWithBPMS}.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -31,6 +42,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
@@ -56,6 +68,11 @@ public class Aggregate {
    * created. It is the handle needed to complete or cancel that task, and it is null
    * whenever no risk assessment is open - before the task exists, and again after it is
    * gone.
+   *
+   * <p>
+   * The BPMS reported this id, but it never reads it back. It is a handle the application
+   * keeps, so it is not shared either.
+   * </p>
    */
   @Column
   private String riskAssessmentTaskId;
