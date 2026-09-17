@@ -29,7 +29,10 @@ and that is the whole difference in code. What is worth understanding:
 - **Only the id travels.** As with every message in VanillaBP, no payload reaches the BPMS:
   the message carries the name it is published under and the aggregate's id, which is how
   the workflow is addressed from then on. Everything the process may need belongs onto the
-  aggregate before the call.
+  aggregate before the call. The aggregate says the same thing in code: it carries
+  `@NoSyncWithBPMS`, and no attribute takes that back, because no expression in this model
+  reads one. If a condition or a timer read an attribute, that attribute would carry
+  `@SyncWithBPMS`, and nothing else would.
 - **The model decides, not the code.** Whether a process starts by message is a modelling
   decision, and the application follows it. Using `startWorkflow` on a process modelled this
   way is what VanillaBP would have to reject, and the other way round.
