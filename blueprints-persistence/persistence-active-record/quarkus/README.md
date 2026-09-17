@@ -29,6 +29,7 @@ The loan approval extends `PanacheEntityBase` and lives in a relational database
 ```java
 @Entity
 @Table(name = "LOAN_APPROVAL")
+@NoSyncWithBPMS
 public class Aggregate extends PanacheEntityBase {
 
   @Id
@@ -41,6 +42,7 @@ The credit history extends `PanacheMongoEntityBase` and lives in MongoDB:
 
 ```java
 @MongoEntity(collection = "CREDIT_HISTORY")
+@NoSyncWithBPMS
 public class Aggregate extends PanacheMongoEntityBase {
 
   @BsonId
@@ -107,6 +109,16 @@ starts every workflow in two phases, the local transaction stores the aggregate 
 and the engine is called afterwards. So do not read "embedded" as "one commit" here. For the
 credit history the engine's state and the aggregate are two commits, and the outbox is what makes
 that reliable rather than lucky.
+
+**Where the data is stored says nothing about what leaves the application.** Both aggregates
+carry `@NoSyncWithBPMS`, so the BPMS is told only what a model reads, and both models read
+nothing: each is a start event, one service task and an end event, without a condition, a timer
+or a collection. So neither aggregate has an attribute marked `@SyncWithBPMS`, and the amount,
+the rating, the years and the entries found stay where they are stored. What the BPMS holds is
+the ID of each aggregate, which VanillaBP always shares because that is how it finds the
+workflow again. Add a gateway to one of the models and the attribute its condition reads needs
+`@SyncWithBPMS`, or the condition has nothing to read. Sharing is decided per aggregate by its
+annotations, the same as the persistence idiom, and the two databases have no part in it.
 
 ## Delta to the base blueprint
 
@@ -195,18 +207,18 @@ wrote. The two URLs behave identically, and the databases behind them do not.
 
 ## How it works
 
-|                                     File                                     |                                             Role                                             |
-|------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
-| `.../loanapproval/model/Aggregate.java`                                      | the JPA entity which is also its own persistence, plus the finder `byId`                     |
-| `.../credithistory/model/Aggregate.java`                                     | the MongoDB document which is also its own persistence, plus the finder `byId`               |
-| `.../loanapproval/Service.java`, `.../credithistory/Service.java`            | the business code; the reading methods own the transaction the finders need                  |
-| `.../<usecase>/Workflow.java`                                                | what the application tells the process; the only class using `ProcessService`                |
-| `.../<usecase>/WorkflowTaskHandler.java`                                     | what the process tells the application: `@WorkflowService`, `@WorkflowTask`, calls `Service` |
-| `.../<usecase>/ApiController.java`                                           | the GET endpoints operating the process                                                      |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/*.bpmn`   | the two processes: start event, service task, end event                                      |
-| `loan-approval/src/test/.../LoanApprovalIT.java`, `.../CreditHistoryIT.java` | start real workflows, read the aggregates statically, and cover the remote start             |
-| `loan-approval/src/test/.../WorkflowModuleTest.java`                         | the base class they inherit from: a fresh transaction per poll, identical in every blueprint |
-| `application/src/main/resources/application.yaml`                            | the two databases, and nothing about the workflows or their persistence                      |
+|                                     File                                     |                                               Role                                               |
+|------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| `.../loanapproval/model/Aggregate.java`                                      | the JPA entity which is also its own persistence, the finder `byId`, and `@NoSyncWithBPMS`       |
+| `.../credithistory/model/Aggregate.java`                                     | the MongoDB document which is also its own persistence, the finder `byId`, and `@NoSyncWithBPMS` |
+| `.../loanapproval/Service.java`, `.../credithistory/Service.java`            | the business code; the reading methods own the transaction the finders need                      |
+| `.../<usecase>/Workflow.java`                                                | what the application tells the process; the only class using `ProcessService`                    |
+| `.../<usecase>/WorkflowTaskHandler.java`                                     | what the process tells the application: `@WorkflowService`, `@WorkflowTask`, calls `Service`     |
+| `.../<usecase>/ApiController.java`                                           | the GET endpoints operating the process                                                          |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/*.bpmn`   | the two processes: start event, service task, end event                                          |
+| `loan-approval/src/test/.../LoanApprovalIT.java`, `.../CreditHistoryIT.java` | start real workflows, read the aggregates statically, and cover the remote start                 |
+| `loan-approval/src/test/.../WorkflowModuleTest.java`                         | the base class they inherit from: a fresh transaction per poll, identical in every blueprint     |
+| `application/src/main/resources/application.yaml`                            | the two databases, and nothing about the workflows or their persistence                          |
 
 What happens when a loan is requested is the same as in the base blueprint, except for who
 touches the database. `Service#initiateLoanApproval` builds the aggregate and tells `Workflow`
@@ -233,6 +245,7 @@ relational database at all, is
 
 - [Persisting workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Quarkus-integration#persisting-workflow-aggregates): the idioms recognised, the order they are resolved in, and what ends the build instead
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why there are no process variables, and what an aggregate is for
+- [Sharing workflow-aggregate data](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms): `@NoSyncWithBPMS`, `@SyncWithBPMS`, and what a BPMS gets to see
 - [Two writers on one aggregate](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate): the collision an active record has as well, and the four ways to deal with it
 - [Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules): what a workflow module is, its ID, and where its BPMN files are looked for
 - [Wire up a process / Wire up a task](https://github.com/vanillabp/spi-for-java#usage): the annotations used in `WorkflowTaskHandler.java`

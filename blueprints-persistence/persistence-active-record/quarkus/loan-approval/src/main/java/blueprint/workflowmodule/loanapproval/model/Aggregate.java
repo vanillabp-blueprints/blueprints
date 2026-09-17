@@ -3,6 +3,7 @@ package blueprint.workflowmodule.loanapproval.model;
 import java.util.Optional;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -43,6 +44,20 @@ import lombok.NoArgsConstructor;
  * aggregate later is enough to move it onto that one - the log line says which way it went.
  * </p>
  *
+ * <p>
+ * Where the data stays is a separate question from where it is stored, and this class answers
+ * it with {@code @NoSyncWithBPMS}: the aggregate belongs to the application, and the BPMS is
+ * given what a model reads. The loan approval model reads nothing. It is a start event, one
+ * service task and an end event, with no condition, no timer and no collection, so no attribute
+ * carries {@code @SyncWithBPMS} and neither the amount nor the rating leaves the application.
+ * The BPMS holds the aggregate's ID, which VanillaBP always shares because that is how it finds
+ * the workflow again. Add a gateway to the model later and the attribute its condition reads
+ * needs the annotation, otherwise the condition has nothing to read.
+ * </p>
+ *
+ * @see <a href=
+ *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms">Sharing
+ *      workflow-aggregate data</a>
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -56,6 +71,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate extends PanacheEntityBase {
 
   /**
