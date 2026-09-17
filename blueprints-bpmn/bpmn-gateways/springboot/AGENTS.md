@@ -77,10 +77,14 @@ blueprint - copy them unchanged.
 4. Add the gateway to the BPMN and one conditional sequence flow per branch, in the
    expression language of the engine: `${ratedAcceptable}` for Camunda 7, `=ratedAcceptable`
    for Camunda 8. The Java code is the same for both.
-5. Give the gateway a `default` flow. Without one a workflow whose value fits no condition
+5. Annotate the aggregate class `@NoSyncWithBPMS` and put `@SyncWithBPMS` on exactly what
+   the conditions read, which is the getters of step 2 and any raw attribute a condition
+   still names. A condition can only read what was shared, so a missing annotation shows up
+   as a workflow taking the wrong branch, not as a message at startup.
+6. Give the gateway a `default` flow. Without one a workflow whose value fits no condition
    stops at the gateway, and on some engines that is an incident nobody expects.
-6. Add a `@WorkflowTask` method per branch, each forwarding to `Service` as everywhere else.
-7. Copy `LoanApprovalIT` and write one test per branch, including the default flow. The
+7. Add a `@WorkflowTask` method per branch, each forwarding to `Service` as everywhere else.
+8. Copy `LoanApprovalIT` and write one test per branch, including the default flow. The
    default flow is the branch most likely to be wrong, because nothing names it in the code.
 
 The second gateway of this blueprint (`Gateway_Notification`, condition `${amount >= 10000}`)

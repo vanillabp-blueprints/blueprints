@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanapproval.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -14,6 +15,15 @@ import lombok.NoArgsConstructor;
  * process needs to know. There are no process variables - this is the single source of
  * truth, and it stays a normal JPA entity your application can use like any other.
  *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so none of its attributes is shared with
+ * the BPMS. The model of this process reads nothing: it has no condition, no timer and no
+ * multi-instance task, and the message it waits for is correlated by the workflow
+ * aggregate's ID, which VanillaBP always shares because it is how it finds the workflow
+ * again. The amount, the credit rating and the answer of the other module therefore stay in
+ * the application, where the score is what the border was drawn for.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -24,6 +34,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**

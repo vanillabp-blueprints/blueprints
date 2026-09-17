@@ -2,6 +2,7 @@ package blueprint.workflowmodule.loanapproval.model;
 
 import org.hibernate.annotations.DynamicUpdate;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -51,9 +52,20 @@ import lombok.NoArgsConstructor;
  * both entities and in the business code.
  * </p>
  *
+ * <p>
+ * Nothing of this entity reaches the BPMS. Both gateways are parallel and no sequence flow
+ * carries a condition, so no expression in the model reads an attribute. The class is
+ * therefore annotated {@code @NoSyncWithBPMS} and no attribute is annotated
+ * {@code @SyncWithBPMS}. The BPMS is given the aggregate's ID, which VanillaBP always
+ * shares because it is how it finds the workflow again.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate">Two
  *      writers on one aggregate</a>
+ * @see <a href=
+ *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms">Sharing
+ *      workflow-aggregate data</a>
  */
 @Entity
 @DynamicUpdate
@@ -62,6 +74,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**

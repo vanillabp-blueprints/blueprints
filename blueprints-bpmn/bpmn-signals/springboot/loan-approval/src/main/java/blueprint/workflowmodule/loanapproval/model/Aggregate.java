@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanapproval.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -21,6 +22,14 @@ import lombok.NoArgsConstructor;
  * {@link InterestRate} - and lands here.
  * </p>
  *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so none of these attributes is written to
+ * the BPMS. Nothing in the two models of this workflow module reads the aggregate: the
+ * signal name is a fixed string, and no condition or other expression looks at the data.
+ * So the BPMS holds the workflow aggregate's ID and nothing else, which is what VanillaBP
+ * needs to find the workflow again.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -31,6 +40,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
@@ -58,14 +68,16 @@ public class Aggregate {
    *
    * <p>
    * A {@code Double}, although the published rate is a {@code BigDecimal} in
-   * {@link InterestRate}. Whatever the aggregate shares is written to the BPMS, and an
-   * engine has variable types for a handful of Java types only. A double is among them, so
-   * the rate stays a number in the engine's tooling and in a BPMN expression. A decimal is
-   * not, and the engine stores it as a serialized object nobody can read until the
-   * application configures a serialization format. Percent needs no exact scale, so
-   * {@code Service#applyInterestRate} converts. Where the scale does matter, keep the value
-   * in the application's own data and let the aggregate share what the process has to
-   * decide on.
+   * {@link InterestRate}. Nothing of this aggregate is shared, so the type is the
+   * application's own choice. It would matter the day the process had to decide on the
+   * rate: the attribute would get {@code @SyncWithBPMS}, and an engine has variable types
+   * for a handful of Java types only. A double is among them and stays a number in the
+   * engine's tooling and in a BPMN expression. A decimal is not, and the engine stores it
+   * as a serialized object nobody can read until the application configures a
+   * serialization format. Percent needs no exact scale, so
+   * {@code Service#applyInterestRate} converts.
+   * Where the scale does matter, keep the value in the application's own data and let the
+   * aggregate share what the process has to decide on.
    * </p>
    */
   @Column

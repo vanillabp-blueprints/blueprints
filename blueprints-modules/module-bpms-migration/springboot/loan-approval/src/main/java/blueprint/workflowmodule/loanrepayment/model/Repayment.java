@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanrepayment.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -17,6 +18,14 @@ import lombok.NoArgsConstructor;
  * Nothing about that is visible here. Which BPMS a workflow starts in is a priority list in
  * the configuration, and this workflow has one of its own.
  * </p>
+ *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so no attribute of it reaches the BPMS.
+ * Its model runs from the start event through one service task to the end, and no
+ * expression in it reads the aggregate, so nothing here carries {@code @SyncWithBPMS}. The
+ * old BPMS keeps the aggregate's ID, which VanillaBP always shares because that is how it
+ * finds the workflow again.
+ * </p>
  */
 @Entity(name = "LoanRepayment")
 @Table(name = "LOAN_REPAYMENT")
@@ -24,6 +33,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Repayment {
 
   /**

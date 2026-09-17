@@ -38,6 +38,11 @@ instances still running on the old one. A deadline that belongs to a contract or
 is better read from the aggregate - both Camunda engines support an expression instead of a
 literal.
 
+Because both durations are literals, nothing of the aggregate has to travel. The class
+carries `@NoSyncWithBPMS` and no attribute carries `@SyncWithBPMS`, so the engine holds the
+aggregate's ID and nothing else. Read a deadline from an expression instead, and the
+attribute that expression names has to be shared.
+
 ## Delta to the base blueprint
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):

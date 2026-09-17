@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.riskassessment.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -24,6 +25,14 @@ import lombok.NoArgsConstructor;
  * class of the other module.
  * </p>
  *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so none of its attributes is shared with
+ * the BPMS. The model of this process reads nothing: it has no condition, no timer and no
+ * multi-instance task, and it waits for no message. The amount and the score stay in the
+ * application, and the BPMS holds the workflow aggregate's ID alone, which VanillaBP always
+ * shares because it is how it finds the workflow again.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -34,6 +43,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**

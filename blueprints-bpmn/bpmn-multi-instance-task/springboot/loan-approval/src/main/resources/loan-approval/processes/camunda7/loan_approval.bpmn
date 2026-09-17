@@ -19,11 +19,11 @@
       The multi-instance task: one instance per partner, all of them at the same time
       ('isSequential="false"').
 
-      'camunda:collection' names what is iterated over. It is an expression the engine
-      evaluates against the workflow aggregate, so 'partnerIds' is the getter
-      'getPartnerIds()' - there is no process variable holding a copy of it. Keep such a
-      collection to identifiers, not to objects: the engine has to be able to hand one
-      element to each instance, and an identifier is the smallest thing which does that.
+      'camunda:collection' names what is iterated over. The engine evaluates it against the
+      process variables it holds, and 'partnerIds' is among them because that attribute of
+      the workflow aggregate is annotated '@SyncWithBPMS'. Keep such a collection to
+      identifiers, not to objects: the engine has to be able to hand one element to each
+      instance, and an identifier is the smallest thing which does that.
 
       'camunda:elementVariable' names what each instance is given. Its name does not matter
       to the Java code, which addresses the multi-instance context by the ID of THIS element

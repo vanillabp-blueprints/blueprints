@@ -1,9 +1,10 @@
 # persistence-audited-aggregate
 
 Keeps every state the workflow aggregate ever had, with the person who caused it, using
-Hibernate Envers. On top of that it shows the seam VanillaBP offers for it: an outbox entry
-which reports may ask to be served the aggregate as it was when the entry was planned. A
-delta on top of `module-single`.
+Hibernate Envers. On top of that it shows what an auditing is for: a report written in the
+transaction of an event and sent later carries the id of its change, and the application
+reads the state back at that change when the report goes out. A delta on top of
+`module-single`.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
@@ -42,7 +43,7 @@ Everything else here follows from that one sentence.
 | `loan-approval/src/main/java/.../loanapproval/config/AuditedRepositories.java`             | `@EnableEnversRepositories`, without which a revision repository has no factory                              |
 | `loan-approval/src/main/java/.../loanapproval/audit/AuditedChange.java`                    | the revision entity: the number, the moment and who made the change                                          |
 | `loan-approval/src/main/java/.../loanapproval/audit/ChangeBeingMade.java`                  | the id naming the change and the person making it, and how long each of them lives                           |
-| `loan-approval/src/main/java/.../loanapproval/audit/AuditedAggregatePersistence.java`      | `getAuditingId` and `loadByIdAndAuditingId`: the two methods VanillaBP asks, and the early revision          |
+| `loan-approval/src/main/java/.../loanapproval/audit/AuditedAggregatePersistence.java`      | the persistence VanillaBP asks, plus `idOfTheChangeBeingMade` and `loadByIdAsOfChange` of the application    |
 | `loan-approval/src/main/java/.../loanapproval/audit/ComplianceNotices.java`                | the outbox operation of the application, planned in the transaction of the decision and asking for its state |
 | `loan-approval/src/main/java/.../loanapproval/ComplianceArchive.java`                      | the port to the archive; `LocalComplianceArchive` is the stand-in to replace                                 |
 | `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | three tasks, so the case has a state before and after the decision                                           |
@@ -82,22 +83,23 @@ the test extending `WorkflowModuleTest`, never into the base class.
    state be named before it exists. Neither can be injected, so both travel on the thread.
    The person is bound around the call which opens the transaction, because Envers writes
    the revision when that transaction commits and a name taken back earlier comes too late.
-4. Implement `AggregatePersistenceAware` for the aggregate. Everything but the two auditing
-   methods is the repository spelled out. `getAuditingId` answers the id of the change the
-   running transaction is making, `loadByIdAndAuditingId` looks up the revision carrying that
-   id and reads the aggregate at it, answering `null` where it is gone. Both have defaults
-   which behave like an application without an auditing, so an application which implements
-   neither keeps working.
+4. Implement `AggregatePersistenceAware` for the aggregate. What the interface asks for is
+   the repository spelled out. Two methods of your own go next to it:
+   `idOfTheChangeBeingMade` answers the id of the change the running transaction is making,
+   and `loadByIdAsOfChange` looks up the revision carrying that id and reads the aggregate at
+   it, answering `null` where it is gone. VanillaBP knows neither, so an application without
+   an auditing has neither.
 5. Name the state with an id of your own, not with the revision number. Envers numbers a
    revision while the transaction commits, which is after a report about the event was
    written down. Do not reach for `AuditReader#getCurrentRevision(..., true)` either: it is
    deprecated and what it points at runs at commit time as well. The version attribute of an
    application which uses optimistic locking is the other candidate, and it is assigned per
    write, so a transaction which writes twice names a state its audit row does not carry.
-6. Let a report say which state it is about. VanillaBP carries the id with it and hands the
-   aggregate of that state to the delivery. Everything written back into the BPMS reads the
-   state of the moment it is written instead, because that is where the case goes on.
-7. Handle the state which is gone. An auditing is cleaned up at some point and an entry may
+6. Put the id on the report, as one of its arguments. VanillaBP carries it and reads nothing
+   in it, and the handler loads the state at that change when the report goes out. Everything
+   written back into the BPMS reads the state of the moment instead, because that is where
+   the case goes on.
+7. Handle the state which is gone. An auditing is cleaned up at some point and a report may
    wait longer, so the load answers nothing and the report has to fall back to the current
    state and say so in the log.
 

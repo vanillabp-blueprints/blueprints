@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanapproval.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -19,6 +20,16 @@ import lombok.NoArgsConstructor;
  * and everything behind it may read is what the application wrote here.
  * </p>
  *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS} and no attribute of it is annotated
+ * {@code @SyncWithBPMS}, so the BPMS holds none of these values. The correlation still
+ * finds the workflow, because it reads the workflow aggregate's ID, and that one travels
+ * to every BPMS no matter what the annotations say: it is how VanillaBP gets from a
+ * process instance back to the workflow. A model which names a correlation key of its own
+ * is the other case - such a key is read by the BPMS, so the attribute behind it has to
+ * carry {@code @SyncWithBPMS}.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -29,12 +40,19 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
    * The natural id of the use case. Using a business identifier instead of a generated
    * one makes a workflow started twice for the same business case a detectable
    * duplicate.
+   *
+   * <p>
+   * It is also the value the annotations cannot keep out, and the one this blueprint
+   * depends on: correlating reads it, so a BPMS without a business key of its own is
+   * given it as a process variable.
+   * </p>
    *
    * @see <a href="https://github.com/vanillabp/spi-for-java#natural-ids">Natural ids</a>
    */

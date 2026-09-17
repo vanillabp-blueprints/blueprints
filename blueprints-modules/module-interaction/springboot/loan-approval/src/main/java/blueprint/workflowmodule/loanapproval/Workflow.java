@@ -68,7 +68,9 @@ public class Workflow {
    * <p>
    * Only the NAME of the message reaches the BPMS: the score itself is on the aggregate,
    * saved in the same transaction. The other module's answer therefore never becomes engine
-   * state, which is what keeps the two processes independent of each other.
+   * state, which is what keeps the two processes independent of each other. The aggregate
+   * makes sure of it: it is annotated {@code @NoSyncWithBPMS}, so no attribute of it is
+   * shared, and the message is correlated by the workflow aggregate's ID.
    * </p>
    *
    * @param loanApproval The workflow's aggregate.

@@ -3,6 +3,8 @@ package blueprint.workflowmodule.loanapproval.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
+import io.vanillabp.spi.service.SyncWithBPMS;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -25,10 +27,18 @@ import lombok.NoArgsConstructor;
  *
  * <p>
  * The attribute this blueprint is about is {@link #checksToRun}. It holds the ids of the
- * BPMN elements inside the ad-hoc subprocess which are supposed to run, VanillaBP shares
- * the aggregate with the BPMS on every command it sends, and a collection travels as a
- * list, so the expression of the model can read it. Nothing else is needed to drive the
- * element.
+ * BPMN elements inside the ad-hoc subprocess which are supposed to run, VanillaBP writes it
+ * to the BPMS on every command it sends, and a collection travels as a list, so the
+ * expression of the model can read it. Nothing else is needed to drive the element.
+ * </p>
+ *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so nothing reaches the BPMS unless an
+ * attribute asks for it with {@code @SyncWithBPMS}. Two attributes ask, because two
+ * expressions of the model read them: the gateway compares {@link #amount}, which the
+ * decision table behind it reads as well, and the ad-hoc subprocess reads
+ * {@link #checksToRun}. The flags the checks wrote and the id of the open selection stay
+ * here. No expression looks at them, so the BPMS has no reason to hold them.
  * </p>
  *
  * <p>
@@ -52,6 +62,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
@@ -73,7 +84,11 @@ public class Aggregate {
   @Version
   private Long version;
 
-  /** The amount requested. It decides who picks the additional checks. */
+  /**
+   * The amount requested. It decides who picks the additional checks, which is why it is
+   * shared: the gateway compares it, and the decision table takes it as its input.
+   */
+  @SyncWithBPMS
   @Column
   private Integer amount;
 
@@ -91,7 +106,7 @@ public class Aggregate {
 
   /**
    * The ids of the BPMN elements the ad-hoc subprocess is supposed to activate, read by the
-   * FEEL expression of the model.
+   * FEEL expression of the model, which is why it is shared.
    *
    * <p>
    * It is filled only where a case worker picked. The decision table writes its result
@@ -100,6 +115,7 @@ public class Aggregate {
    * Java is involved at all.
    * </p>
    */
+  @SyncWithBPMS
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "LOAN_APPROVAL_CHECKS", joinColumns = @JoinColumn(name = "LOAN_REQUEST_ID"))
   @OrderColumn(name = "POSITION")

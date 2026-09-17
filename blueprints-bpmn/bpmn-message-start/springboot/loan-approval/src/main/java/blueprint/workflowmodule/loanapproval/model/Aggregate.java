@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanapproval.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -14,6 +15,19 @@ import lombok.NoArgsConstructor;
  * process needs to know. There are no process variables - this is the single source of
  * truth, and it stays a normal JPA entity your application can use like any other.
  *
+ * <p>
+ * Nothing of this class reaches the BPMS. It is annotated {@code @NoSyncWithBPMS}, and no
+ * attribute takes that back. The message start event is modelled with a message name and
+ * nothing else. No expression anywhere in the model reads the aggregate, so the BPMS needs
+ * none of this data, and the message itself carries its name and the aggregate's ID, never
+ * a payload.
+ * </p>
+ *
+ * <p>
+ * The loan request id travels anyway. A BPMS without a business key of its own is given the
+ * aggregate's ID, because that is how VanillaBP finds the workflow again.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -24,6 +38,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**

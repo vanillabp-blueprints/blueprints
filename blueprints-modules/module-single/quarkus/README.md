@@ -47,6 +47,11 @@ What is worth looking at:
   saves it afterwards without a line of glue. The same holds for the other persistence
   patterns of this platform, and an application whose persistence fits none of them
   implements `AggregatePersistenceAware`, which always wins.
+- The aggregate decides what the BPMS gets to see. It carries `@NoSyncWithBPMS`, and no
+  attribute takes that back, because no expression in this model reads the aggregate. Only
+  the loan request id travels, because that is how VanillaBP finds the workflow again. An
+  attribute a condition or a timer reads would carry `@SyncWithBPMS`, and nothing else
+  would.
 - It is tested on its own. The integration test lives in the workflow module and runs it;
   the application only carries a smoke test.
 

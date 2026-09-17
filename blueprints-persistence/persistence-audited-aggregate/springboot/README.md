@@ -8,13 +8,13 @@ Banks and insurers have to be able to say later who changed a case, when, and wh
 like before. The workflow aggregate is the right place for that, because it carries the case.
 
 VanillaBP asks nothing of you here and hands you nothing: auditing belongs to the
-application, and it stays that way. What VanillaBP does have is the seam. An entry which
-reports something to another system is written inside the transaction of the event and sent
-afterwards, so by the time it is sent the case has moved on. Such an entry may say which
-state it means, and the application is the one which knows how to name a state and how to
-read it back.
+application, and it stays that way. What VanillaBP does have is the outbox. A report about
+an event is written inside the transaction of that event and sent afterwards, so by the time
+it goes out the case has moved on. The report therefore carries the name of the state it is
+about, and the application is the one which knows how to name a state and how to read it
+back.
 
-This blueprint fills that seam with Hibernate Envers.
+This blueprint does both with Hibernate Envers.
 
 ## What this blueprint shows
 
@@ -91,7 +91,7 @@ return ChangeBeingMade.id();
 // later, when the report is sent
 final var revisions = entityManager
     .createQuery("select change.id from AuditedChange change where change.changeId = :changeId", Integer.class)
-    .setParameter("changeId", auditingId)
+    .setParameter("changeId", changeId)
     .getResultList();
 ```
 
@@ -136,23 +136,23 @@ back takes its report with it, and it is sent once that transaction committed. I
 the state of the decision, so its delivery reads the loan approval as it was then, however
 long the delivery took.
 
-VanillaBP carries the report and the id with it. Which of the two states an entry wants is
-the entry's own business: everything VanillaBP writes back into the BPMS reads the state of
-the moment it is written, because the BPMS is where the case goes on, and a value which is
-a day old would be wrong there.
+The id rides the report as one of its arguments, and VanillaBP reads nothing in it. Loading
+the state is the application's own call, at the far end, with the two lines above. What
+VanillaBP writes back into the BPMS is a different matter and always reads the state of the
+moment, because the BPMS is where the case goes on and a value which is a day old would be
+wrong there.
 
 Limits belong to the picture as well:
 
 - The state may be gone. An auditing is cleaned up at some point, and an entry may wait
-  longer than that. The load then answers nothing, VanillaBP reads the current state instead
-  and writes a warning naming the aggregate and the state it wanted. A report with newer
-  values beats no report.
+  longer than that. The load then answers nothing, and the report goes out with the state of
+  today plus a line in the log saying so. A report with newer values beats no report.
 - Only what is in the aggregate is audited. What an adapter reads out of the BPMS while it
   dispatches, the assignee of a user task, its candidates, its due date, is the state of that
   moment. It is the data of the BPMS, and the BPMS keeps no history of it anybody could ask.
 - MongoDB has nothing of this built in. An application storing its aggregates there writes
-  the versions itself or does without them, and the two methods of the seam are the same two
-  either way.
+  the versions itself or does without them, and the two questions are the same two either
+  way: name the state, and read it back.
 
 Auditing is not free. Every change costs a second write and a row which is never deleted, so
 it is switched on where somebody has to answer for the case later and left off everywhere
@@ -170,8 +170,8 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `config/AuditedRepositories.java`        | switches on the repository factory that reads revisions                                                  |
 | `audit/AuditedChange.java`               | the revision entity, so a change knows who made it                                                       |
 | `audit/ChangeBeingMade.java`             | the id naming the change, the person making it, and how long each of them has to be there                |
-| `audit/AuditedAggregatePersistence.java` | the seam: the state of now, and the aggregate as it was                                                  |
-| `audit/ComplianceNotices.java`           | the report about the decision, which asks to be given the state of that moment                           |
+| `audit/AuditedAggregatePersistence.java` | how the aggregate is stored, and how a state it had before is read back                                  |
+| `audit/ComplianceNotices.java`           | the report about the decision, which carries the change it is about                                      |
 | `ComplianceArchive.java`                 | the port to the archive, so a test can put a simulator in its place                                      |
 | `LoanApprovalIT.java`                    | decides, waits for the payout, and asserts on what the archive was told                                  |
 
@@ -266,12 +266,12 @@ leaves that section out.
 |                                          File                                          |                                              Role                                              |
 |----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: rating, decision, payout, and therefore three states of the case                  |
-| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, audited by one annotation                                              |
+| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, audited by one annotation and sharing nothing with the BPMS            |
 | `.../loanapproval/model/AggregateRepository.java`                                      | the repository, and the revisions of Spring Data Envers                                        |
 | `.../loanapproval/config/AuditedRepositories.java`                                     | the factory a revision repository needs, declared by the module itself                         |
 | `.../loanapproval/audit/AuditedChange.java`                                            | the revision entity: number, moment, and who made the change                                   |
 | `.../loanapproval/audit/ChangeBeingMade.java`                                          | the id of the change and the person making it, and the listener writing both into the revision |
-| `.../loanapproval/audit/AuditedAggregatePersistence.java`                              | what VanillaBP asks: the state of now, and the aggregate as it was at a state                  |
+| `.../loanapproval/audit/AuditedAggregatePersistence.java`                              | what VanillaBP asks, plus naming the change being made and reading the state at one            |
 | `.../loanapproval/audit/ComplianceNotices.java`                                        | the report: written in the transaction of the decision, sent afterwards, about that state      |
 | `.../loanapproval/ComplianceArchive.java`                                              | the port to the archive; `LocalComplianceArchive` is the stand-in to replace                   |
 | `.../loanapproval/Service.java`                                                        | the business code, which knows nothing about revisions                                         |
@@ -289,9 +289,9 @@ approval afterwards, and reads that revision back once the transaction committed
 back is the changed state, which is what says that the number handed out before the flush is
 the number the change was recorded under.
 
-An application which keeps no auditing at all is unaffected by any of this. Both methods of
-the seam have defaults, and both defaults are what VanillaBP did before they existed: no
-state is named, and every load reads the current one.
+An application which keeps no auditing at all is unaffected by any of this. The two methods
+which name a state and read it back are the application's own, so a blueprint without an
+auditing simply has neither, and its reports carry the state of the moment they go out.
 
 ## Documentation
 

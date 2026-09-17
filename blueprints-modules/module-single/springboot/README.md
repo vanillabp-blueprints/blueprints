@@ -40,6 +40,11 @@ What is worth looking at:
   `Service`. Here each of them forwards a single line, which is exactly why it is worth
   seeing: the shape stays the same once a process needs messages correlated or tasks
   completed, and it is what keeps the two beans from depending on each other.
+- The aggregate decides what the BPMS gets to see. It carries `@NoSyncWithBPMS`, and no
+  attribute takes that back, because no expression in this model reads the aggregate. Only
+  the loan request id travels, because that is how VanillaBP finds the workflow again. An
+  attribute a condition or a timer reads would carry `@SyncWithBPMS`, and nothing else
+  would.
 - It is tested on its own. The integration test lives in the workflow module and brings a
   minimal application with it; the application only carries a smoke test.
 

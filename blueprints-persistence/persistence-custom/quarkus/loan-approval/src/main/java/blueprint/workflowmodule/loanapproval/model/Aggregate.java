@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanapproval.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,6 +17,19 @@ import lombok.NoArgsConstructor;
  * and the reason it can be read as the recipe for a persistence VanillaBP has never heard of.
  * </p>
  *
+ * <p>
+ * Nothing of this class reaches the BPMS. It is annotated {@code @NoSyncWithBPMS}, and no
+ * attribute takes that back: the model has one service task and no expression which reads the
+ * aggregate, so there is nothing to hand over. An attribute a model starts to read gets
+ * {@code @SyncWithBPMS} on that day and not before.
+ * </p>
+ *
+ * <p>
+ * The loan request id travels anyway. A BPMS without a business key of its own is given the
+ * aggregate's ID, because that is how VanillaBP finds the workflow again, and here
+ * {@code AggregateStore} names the attribute it is read from.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -24,6 +38,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**

@@ -6,6 +6,7 @@ import org.bson.codecs.pojo.annotations.BsonId;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntityBase;
 import io.quarkus.mongodb.panache.common.MongoEntity;
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,6 +46,19 @@ import lombok.NoArgsConstructor;
  * probes for it while starting and warns if the server it talks to is a standalone.
  * </p>
  *
+ * <p>
+ * What is shared with the BPMS is decided the same way as for the loan approval, and the answer
+ * is the same: {@code @NoSyncWithBPMS} on the class, and nothing marked {@code @SyncWithBPMS}.
+ * The credit history model is a start event, one service task and an end event, so no
+ * expression asks the aggregate anything, and the years asked for and the entries found stay in
+ * MongoDB. Only the aggregate's ID goes to the BPMS, because that is how VanillaBP finds the
+ * workflow again. The two databases change nothing about this: sharing is decided per aggregate
+ * by its annotations, not by where the aggregate is stored.
+ * </p>
+ *
+ * @see <a href=
+ *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms">Sharing
+ *      workflow-aggregate data</a>
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -60,6 +74,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate extends PanacheMongoEntityBase {
 
   /**

@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanapproval.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -21,9 +22,22 @@ import lombok.NoArgsConstructor;
  * queryable, and it survives a restart of both sides.
  * </p>
  *
+ * <p>
+ * <strong>None of this data reaches the BPMS.</strong> No expression in the model reads
+ * an attribute of the aggregate: the process names its handlers and then waits for the
+ * application to end the task. The class is therefore annotated
+ * {@code @NoSyncWithBPMS}, and no attribute needs {@code @SyncWithBPMS}. The BPMS holds
+ * the workflow aggregate's ID, which VanillaBP always shares because it is how it finds
+ * the aggregate again. Everything else, from the amount to the partner's answer, stays
+ * in the application.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
+ * @see <a href=
+ *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms">Sharing
+ *      workflow-aggregate data</a>
  */
 @Entity
 @Table(name = "LOAN_APPROVAL")
@@ -31,6 +45,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**

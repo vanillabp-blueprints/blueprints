@@ -2,6 +2,7 @@ package blueprint.workflowmodule.ratewatch.model;
 
 import java.time.LocalDateTime;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -19,6 +20,13 @@ import lombok.NoArgsConstructor;
  * persistence unit would clash, and the reference structure gives every use case a class of
  * that name - so the second one in a module says which entity it is.
  * </p>
+ *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so nothing here is written to the BPMS.
+ * The model waits for a signal name and then runs one task, and no expression in it reads
+ * the aggregate. What the BPMS holds is the workflow aggregate's ID, which VanillaBP always
+ * shares because that is how it finds the workflow again.
+ * </p>
  */
 @Entity(name = "RateWatch")
 @Table(name = "RATE_WATCH")
@@ -26,6 +34,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /** The natural id of this watch. */

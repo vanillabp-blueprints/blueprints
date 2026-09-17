@@ -45,7 +45,10 @@ What is worth knowing beyond the annotation:
   which no method serves.
 - **The old attributes stay on the aggregate.** `assessedBy` is written by no new workflow,
   and removing it would take the data of the running ones with it. The aggregate is the state
-  of the business case, not of the current release.
+  of the business case, not of the current release. Neither it nor `riskScore` reaches the
+  BPMS: the class carries `@NoSyncWithBPMS` and no attribute takes that back, because no
+  expression in the model reads one. The version a workflow runs on comes from the BPMS
+  itself, so the dispatch needs nothing shared either.
 - **A version nobody runs on any more can be declared obsolete** instead of being served
   forever:
 

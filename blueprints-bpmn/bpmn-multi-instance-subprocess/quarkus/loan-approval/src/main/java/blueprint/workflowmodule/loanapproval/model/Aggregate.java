@@ -3,6 +3,8 @@ package blueprint.workflowmodule.loanapproval.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
+import io.vanillabp.spi.service.SyncWithBPMS;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -30,6 +32,13 @@ import lombok.NoArgsConstructor;
  * </p>
  *
  * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so the application keeps its data unless an
+ * attribute says otherwise. The two collections say otherwise, because the model reads them to
+ * find out how often to repeat. Nothing else leaves the application: what the iterations write
+ * back is read by Java only, and the BPMS never sees an offer or a rate.
+ * </p>
+ *
+ * <p>
  * Everything the iterations produce is a ROW, never an attribute they share. Iterations run
  * next to each other, each of them saves this aggregate, and the one committing last would
  * put back what it read at its start.
@@ -45,6 +54,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
@@ -65,14 +75,33 @@ public class Aggregate {
   @Column
   private Integer creditRating;
 
-  /** What the multi-instance SUBPROCESS iterates over: one assessment per region. */
+  /**
+   * What the multi-instance SUBPROCESS iterates over: one assessment per region.
+   *
+   * <p>
+   * The subprocess names this attribute as its input collection, so it is annotated
+   * {@code @SyncWithBPMS}. The entire list is shared and not only its size: the engine counts the
+   * entries to know how many instances to create, and then hands each instance its own entry as
+   * the element variable {@code regionId}.
+   * </p>
+   */
+  @SyncWithBPMS
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "LOAN_APPROVAL_REGION", joinColumns = @JoinColumn(name = "LOAN_REQUEST_ID"))
   @Column(name = "REGION_ID")
   @Builder.Default
   private List<String> regionIds = new ArrayList<>();
 
-  /** What the multi-instance TASK inside the subprocess iterates over. */
+  /**
+   * What the multi-instance TASK inside the subprocess iterates over.
+   *
+   * <p>
+   * Shared for the same reason as {@link #regionIds}, and it has to be written before the
+   * subprocess starts: the task is reached inside an iteration, and the value it reads there is
+   * the one the aggregate had at the last sync point.
+   * </p>
+   */
+  @SyncWithBPMS
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "LOAN_APPROVAL_PARTNER", joinColumns = @JoinColumn(name = "LOAN_REQUEST_ID"))
   @Column(name = "PARTNER_ID")

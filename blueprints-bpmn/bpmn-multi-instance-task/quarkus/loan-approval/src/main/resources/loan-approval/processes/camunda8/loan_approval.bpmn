@@ -24,9 +24,9 @@
 
       'inputCollection' names what is iterated over, as a FEEL expression. This engine reads
       it from the process variables it holds, and the attribute 'partnerIds' of the workflow
-      aggregate is among them because VanillaBP shares the aggregate with the cluster. Keep
-      such a collection to identifiers, not to objects: it travels over the wire, and an
-      identifier is the smallest thing which identifies an iteration.
+      aggregate is among them because it is annotated '@SyncWithBPMS'. Keep such a
+      collection to identifiers, not to objects: it travels over the wire, and an identifier
+      is the smallest thing which identifies an iteration.
 
       'inputElement' names what each instance is given. Its name does not matter to the Java
       code, which addresses the multi-instance context by the ID of THIS element

@@ -3,6 +3,8 @@ package blueprint.workflowmodule.loanapproval.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
+import io.vanillabp.spi.service.SyncWithBPMS;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -31,6 +33,14 @@ import lombok.NoArgsConstructor;
  * saves this aggregate.
  * </p>
  *
+ * <p>
+ * Of those two only the first one reaches the BPMS. The class is annotated
+ * {@code @NoSyncWithBPMS}, so nothing is shared unless it says otherwise, and
+ * {@link #partnerIds} is annotated {@code @SyncWithBPMS} because the model iterates over
+ * it. The engine has to see that list to make one instance per element. The offers do not
+ * go there, and neither does anything else, because no expression in the model reads them.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -41,6 +51,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
@@ -68,11 +79,19 @@ public class Aggregate {
    * up whatever else it needs.
    *
    * <p>
-   * Loaded eagerly on purpose. On an embedded engine the model reads this collection while
-   * evaluating the multi-instance task, outside any place a lazy collection could still be
+   * Annotated {@code @SyncWithBPMS} because the model iterates over it: Camunda 7 reads it
+   * as {@code camunda:collection}, Camunda 8 as {@code inputCollection}, and both engines
+   * need the elements themselves, not their number - each instance is handed one of them.
+   * The list travels as it is, which is the second reason to keep it to identifiers.
+   * </p>
+   *
+   * <p>
+   * Loaded eagerly on purpose. VanillaBP reads this collection whenever it hands the
+   * aggregate to the BPMS, which can be outside any place a lazy collection could still be
    * initialized.
    * </p>
    */
+  @SyncWithBPMS
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "LOAN_APPROVAL_PARTNER", joinColumns = @JoinColumn(name = "LOAN_REQUEST_ID"))
   @Column(name = "PARTNER_ID")

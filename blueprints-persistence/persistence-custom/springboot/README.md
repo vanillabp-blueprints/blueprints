@@ -18,7 +18,10 @@ stays about the contract instead of about a technology.
 
 The loan approval of the base blueprint, unchanged: one service task, started through a GET
 request, and an aggregate the task fills. What changed is everything below it - and the fact
-that the aggregate class carries no annotation at all is the first thing to look at.
+that the aggregate class names no persistence at all is the first thing to look at. The one
+annotation it does carry, `@NoSyncWithBPMS`, is about the BPMS and not about storage: no
+expression in this model reads the aggregate, so nothing of it is handed over but the loan
+request id VanillaBP needs to find the workflow again.
 
 Four beans, and none of them is optional:
 

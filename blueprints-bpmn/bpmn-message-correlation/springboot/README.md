@@ -18,6 +18,10 @@ is paid out. Three things are worth looking at:
 - **Nothing about the correlation is modelled.** The catch event names a message and that
   is all. VanillaBP correlates by the workflow aggregate's id, so no correlation key, no
   business key and no expression appears in the BPMN.
+- **The aggregate shares nothing.** It carries `@NoSyncWithBPMS` and not a single
+  `@SyncWithBPMS`, because the correlation reads the aggregate's id, which every BPMS is
+  given anyway. A correlation key is a thing the BPMS must know, so a model naming a key of
+  its own is the case where the attribute behind that key has to be shared.
 - **The message's content never reaches the BPMS.** `Service#contractSigned` writes who
   signed onto the aggregate FIRST and correlates afterwards. The engine learns the name of
   the message and nothing else, so everything downstream - a gateway, a later task, a
@@ -43,14 +47,14 @@ Two things this blueprint deliberately does not show, and where to find them:
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|         File          |                                   What is different                                   |
-|-----------------------|---------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`  | a message catch event the workflow waits at, and a service task behind it             |
-| `Workflow.java`       | `correlateMessage`, plus the message name as a constant                               |
-| `Service.java`        | writes what the message carried onto the aggregate, then correlates; refuses a repeat |
-| `ApiController.java`  | the callback the message arrives at                                                   |
-| `Aggregate.java`      | `contractSignedBy`, which is where the message's content ends up, and `paidOut`       |
-| `LoanApprovalIT.java` | waiting, continuing, and a message arriving twice                                     |
+|         File          |                                         What is different                                          |
+|-----------------------|----------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`  | a message catch event the workflow waits at, and a service task behind it                          |
+| `Workflow.java`       | `correlateMessage`, plus the message name as a constant                                            |
+| `Service.java`        | writes what the message carried onto the aggregate, then correlates; refuses a repeat              |
+| `ApiController.java`  | the callback the message arrives at                                                                |
+| `Aggregate.java`      | `contractSignedBy`, which is where the message's content ends up, `paidOut`, and `@NoSyncWithBPMS` |
+| `LoanApprovalIT.java` | waiting, continuing, and a message arriving twice                                                  |
 
 ## Running it
 
@@ -179,6 +183,7 @@ workflow is there. An embedded engine answers immediately and the loop runs once
 - [Message correlation](https://github.com/vanillabp/adapter-platform-integration/wiki/Message-correlation): the API, how the workflow is found, correlation ids and idempotency
 - [Correlate an incoming message](https://github.com/vanillabp/spi-for-java#correlate-an-incoming-message): the call itself
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why the message's content belongs there and not in the BPMS
+- [Sharing workflow-aggregate data](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms): `@SyncWithBPMS`, `@NoSyncWithBPMS`, and why this blueprint shares nothing
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: what it has to arrange in the model so that correlating by the aggregate works
 
 This blueprint is developed in the monorepo

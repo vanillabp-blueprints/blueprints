@@ -2,6 +2,7 @@ package blueprint.workflowmodule.loanapproval.model;
 
 import org.hibernate.annotations.DynamicUpdate;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -28,6 +29,15 @@ import lombok.NoArgsConstructor;
  * annotation solves: that needs a {@code @Version} column, or a model that does not do it.
  * </p>
  *
+ * <p>
+ * Nothing of this entity reaches the BPMS. The class is annotated {@code @NoSyncWithBPMS}
+ * and no attribute is annotated {@code @SyncWithBPMS}, because nothing in the model reads the
+ * aggregate. The error code and the escalation code are fixed strings in the BPMN, and the
+ * service tasks name a handler rather than data. No gateway condition asks this entity
+ * anything. What the BPMS holds is the workflow aggregate's ID, which VanillaBP always shares
+ * because it is how it finds the workflow again.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -39,6 +49,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**

@@ -33,10 +33,13 @@ once, a multi-instance task within a multi-instance subprocess, and then it matt
 them a parameter asks about.
 
 What is iterated over comes from the workflow aggregate. The model reads the attribute
-`partnerIds`, the business code fills it before the task is reached, and no process variable
-holds a copy of it. Keep such a collection to identifiers: the engine hands one element to
-each instance, an identifier is the smallest thing which does that, and the business code
-looks up whatever else it needs.
+`partnerIds`, and the business code fills it before the task is reached. The class is
+annotated `@NoSyncWithBPMS` and that one attribute `@SyncWithBPMS`, so the list is the only
+thing of the aggregate which reaches the BPMS. It has to reach it, because the engine makes
+one instance per element and hands that element over. Keep such a collection to identifiers, because
+an identifier is the smallest thing which names an iteration, and the business code looks up
+whatever else it needs. The offers the iterations write stay in the application, because no
+expression in the model reads them.
 
 Every instance is a token of its own, and a remote engine really does run them next to each
 other. Each of them loads the workflow aggregate, runs the method and saves it again, so an
@@ -54,15 +57,15 @@ rows the iterations left.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|            File            |                                        What is different                                        |
-|----------------------------|-------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a multi-instance service task iterating over an attribute of the aggregate, and a task after it |
-| `Aggregate.java`           | `partnerIds`, which the model iterates over, and `offers`, one row per iteration                |
-| `PartnerOffer.java`        | new: what one iteration found                                                                   |
-| `WorkflowTaskHandler.java` | `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`                        |
-| `Service.java`             | a method taking ONE partner, and a second one choosing between the results                      |
-| `loan-approval.yaml`       | the partners, which is what decides how many iterations there are                               |
-| `LoanApprovalIT.java`      | asserts the rows of all iterations, without relying on the order they arrived in                |
+|            File            |                                                      What is different                                                       |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`       | a multi-instance service task iterating over an attribute of the aggregate, and a task after it                              |
+| `Aggregate.java`           | `partnerIds`, which the model iterates over and which is therefore shared with the BPMS, and `offers`, one row per iteration |
+| `PartnerOffer.java`        | new: what one iteration found                                                                                                |
+| `WorkflowTaskHandler.java` | `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`                                                     |
+| `Service.java`             | a method taking ONE partner, and a second one choosing between the results                                                   |
+| `loan-approval.yaml`       | the partners, which is what decides how many iterations there are                                                            |
+| `LoanApprovalIT.java`      | asserts the rows of all iterations, without relying on the order they arrived in                                             |
 
 ## Running it
 
@@ -183,7 +186,7 @@ on a remote one.
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why the collection is an attribute rather than a variable, and what several writers do to a row
 - [Wire up a task](https://github.com/vanillabp/spi-for-java#wire-up-a-task): what a `@WorkflowTask` method may be handed
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: what that engine reports about an iteration
-- [Nested values in Camunda 7](https://github.com/vanillabp/camunda7-adapter/wiki/Configuration#nested-values-and-why-java-serialization-is-not-an-option): the partner ids and the offers each travel to that engine as an object variable, and the serialization format an application needs so a rate stays readable
+- [Nested values in Camunda 7](https://github.com/vanillabp/camunda7-adapter/wiki/Configuration#nested-values-and-why-java-serialization-is-not-an-option): the partner ids travel to that engine as an object variable, and the serialization format an application needs so a list of ids stays readable
 
 This blueprint is developed in the monorepo
 [`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a

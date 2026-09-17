@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanapproval.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -17,6 +18,12 @@ import lombok.NoArgsConstructor;
  * Every column is named explicitly, which is what an application owning its schema does: the
  * migration and the entity have to agree, and a naming strategy deciding it means the names
  * depend on a default rather than on something written down.
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so no attribute goes to the BPMS. The
+ * model has no reason to get one: it runs from the start event through a single service
+ * task to the end, and no expression in it reads the aggregate. What the BPMS holds is the
+ * aggregate's ID, which VanillaBP always shares because that is how it finds the workflow
+ * again. An attribute gets {@code @SyncWithBPMS} the day a model starts reading it.
  *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
@@ -28,6 +35,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**

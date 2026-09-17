@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanapproval.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -14,9 +15,21 @@ import lombok.NoArgsConstructor;
  * process needs to know. There are no process variables - this is the single source of
  * truth, and it stays a normal JPA entity your application can use like any other.
  *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so none of this data is sent to the
+ * BPMS, and nothing here has to be: the model is a start event, a service task and an end
+ * event, and none of them reads an attribute. The BPMS holds one value, the aggregate's
+ * ID, which VanillaBP always shares because that is how it finds the workflow again. The
+ * day a condition, a timer or a multi-instance collection reads an attribute, that
+ * attribute is annotated {@code @SyncWithBPMS} and travels along.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
+ * @see <a href=
+ *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms">Sharing
+ *      workflow-aggregate data</a>
  */
 @Entity
 @Table(name = "LOAN_APPROVAL")
@@ -24,6 +37,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
