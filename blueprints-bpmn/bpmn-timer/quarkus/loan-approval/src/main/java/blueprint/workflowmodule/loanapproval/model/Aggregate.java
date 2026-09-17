@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanapproval.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -21,6 +22,15 @@ import lombok.NoArgsConstructor;
  * queryable, and it survives a restart of both sides.
  * </p>
  *
+ * <p>
+ * The class carries {@code @NoSyncWithBPMS}, so none of these attributes is shared with
+ * the BPMS. No expression in the model reads the aggregate: both timers carry a literal
+ * duration, {@code PT1S} and {@code PT3S}. That is why no attribute carries
+ * {@code @SyncWithBPMS} here. The BPMS holds the aggregate's ID and nothing else, because
+ * that is how VanillaBP finds the workflow again. A deadline read from an expression would
+ * be the other case: then the attribute behind it has to be shared.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -31,6 +41,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
