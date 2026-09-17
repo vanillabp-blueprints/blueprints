@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanrepayment.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -18,6 +19,15 @@ import lombok.NoArgsConstructor;
  * of that name - so the second module in an application says which entity it is.
  * </p>
  *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so no attribute of it reaches the BPMS.
+ * The model gives none a reason to: it runs from the start event through one service task
+ * to the end, and no expression in it reads the aggregate. What the BPMS holds is the
+ * aggregate's ID, which VanillaBP always shares because that is how it finds the workflow
+ * again. Each workflow module answers this for its own model, so the answer here is the
+ * same as in the other module by coincidence, not because they were decided together.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -28,6 +38,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
