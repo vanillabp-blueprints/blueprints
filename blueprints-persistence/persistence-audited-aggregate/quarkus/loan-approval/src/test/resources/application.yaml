@@ -1,0 +1,23 @@
+# The configuration of the module's own test: its database, and nothing else. Where the
+# BPMN files are is a convention VanillaBP knows, on both sides of the split.
+quarkus:
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO
+vanillabp:
+  outbox:
+    # The compliance archive is away when the notice first arrives, so the test waits for
+    # the second attempt. Half a minute is what VanillaBP keeps between attempts by
+    # default, which is right for a receiver which is really down and too long for a
+    # build.
+    attempt-frequency: 2s
+    poll-interval: 2s
