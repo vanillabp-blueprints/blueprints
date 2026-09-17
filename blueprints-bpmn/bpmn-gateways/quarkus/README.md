@@ -53,6 +53,14 @@ both be true, because the aggregate answers them from one value.
 The last branch of each gateway is its **default flow**, taken when no condition holds. It is
 what keeps a workflow from getting stuck at a gateway that fits nowhere.
 
+**The conditions decide what the BPMS must know.** `Aggregate` is annotated
+`@NoSyncWithBPMS`, so nothing is shared by default, and what a condition reads carries
+`@SyncWithBPMS`: the two getters of the first gateway, and `amount`, because the second
+gateway compares it in the model. The credit rating and the band behind the answers never
+leave the application. That is the other thing the second gateway costs: a raw attribute
+read by a condition has to be shared, while a question the aggregate answers keeps its data
+at home.
+
 ## Delta to the base blueprint
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
@@ -60,7 +68,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 |            File            |                                            What is different                                            |
 |----------------------------|---------------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`       | two exclusive gateways, each with a default flow: one asking the aggregate, one reading a raw attribute |
-| `Aggregate.java`           | `ratingBand` and the two getters the first gateway asks, plus what the branches write                   |
+| `Aggregate.java`           | `ratingBand`, the two getters the first gateway asks, and the annotations naming what is shared         |
 | `Service.java`             | turns the rating into a band, and one method per branch                                                 |
 | `WorkflowTaskHandler.java` | a `@WorkflowTask` method per branch                                                                     |
 | `loan-approval.yaml`       | the two thresholds the bands are derived from                                                           |
@@ -69,8 +77,8 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 The conditions differ between the two BPMS, and that is the one place where they have to:
 Camunda 7 evaluates `${ratedAcceptable}`, Camunda 8 the FEEL expression `=ratedAcceptable`.
 Both ask the same aggregate the same question, and no line of Java knows about either. On a
-remote engine the answer travels as a process variable, so the getters are shared with the
-cluster like any other attribute - the pattern costs nothing there.
+remote engine the answer travels as a process variable, which is what `@SyncWithBPMS` on the
+getters is for, and the pattern costs nothing there either.
 
 ## Running it
 
@@ -161,14 +169,14 @@ same amounts end up somewhere else, without the model being touched.
 
 ## How it works
 
-|                                          File                                          |                                              Role                                              |
-|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: two exclusive gateways, one asking the aggregate and one reading a raw attribute  |
-| `.../loanapproval/Service.java`                                                        | turns the rating into a band using the configured thresholds, and does the work of each branch |
-| `.../loanapproval/model/Aggregate.java`                                                | `ratingBand`, which the conditions read, and `outcome`, which says where the workflow ended    |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | one `@WorkflowTask` method per branch, each of them forwarding to `Service`                    |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | the thresholds, which is where a number like "30" belongs                                      |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | one test per branch, each one steered by the amount alone                                      |
+|                                          File                                          |                                                    Role                                                     |
+|----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: two exclusive gateways, one asking the aggregate and one reading a raw attribute               |
+| `.../loanapproval/Service.java`                                                        | turns the rating into a band using the configured thresholds, and does the work of each branch              |
+| `.../loanapproval/model/Aggregate.java`                                                | `ratingBand`, which the conditions read, `outcome`, which says where the workflow ended, and what is shared |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | one `@WorkflowTask` method per branch, each of them forwarding to `Service`                                 |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | the thresholds, which is where a number like "30" belongs                                                   |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | one test per branch, each one steered by the amount alone                                                   |
 
 The order of events: `Service#assessCreditRating` writes the rating and the band, VanillaBP
 saves the aggregate when the task handler returns, and the BPMS then evaluates the

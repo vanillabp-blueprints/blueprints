@@ -1,5 +1,7 @@
 package blueprint.workflowmodule.loanapproval.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
+import io.vanillabp.spi.service.SyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -20,6 +22,14 @@ import lombok.NoArgsConstructor;
  * with a type and a comment.
  * </p>
  *
+ * <p>
+ * The conditions also decide what the BPMS gets to see. This class is annotated
+ * {@code @NoSyncWithBPMS}, so nothing is shared unless it says otherwise, and what a
+ * condition reads carries {@code @SyncWithBPMS}: the two getters the first gateway asks,
+ * and {@link #amount}, which the second gateway compares itself. Everything else stays in
+ * the application, the credit rating and the band behind the answers included.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -30,6 +40,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
@@ -42,11 +53,19 @@ public class Aggregate {
   @Id
   private String loanRequestId;
 
-  /** The amount requested. */
+  /**
+   * The amount requested. It is shared with the BPMS because the second gateway compares
+   * it in the model, and that is what the shortcut costs: a raw attribute a condition
+   * reads has to travel, while the answers of the first gateway could have hidden it.
+   */
   @Column
+  @SyncWithBPMS
   private Integer amount;
 
-  /** Filled by the business code the first service task of the process triggers. */
+  /**
+   * Filled by the business code the first service task of the process triggers. No
+   * condition reads it, so it never leaves the application.
+   */
   @Column
   private Integer creditRating;
 
@@ -55,7 +74,8 @@ public class Aggregate {
    * <code>acceptable</code>, <code>review</code> or <code>too-low</code>. The BPMN asks
    * this one attribute rather than comparing numbers itself, so a threshold can move
    * without the model being touched - and because it holds exactly one of three values,
-   * no two conditions of the gateway can be true at once.
+   * no two conditions of the gateway can be true at once. The model asks the getters
+   * below, so this column stays out of the BPMS as well.
    */
   @Column
   private String ratingBand;
@@ -81,8 +101,14 @@ public class Aggregate {
    * working.
    * </p>
    *
+   * <p>
+   * Annotated {@code @SyncWithBPMS} because a BPMS evaluates the condition against what
+   * VanillaBP shared with it. The answer travels, the value behind it does not.
+   * </p>
+   *
    * @return Whether the rating is good enough.
    */
+  @SyncWithBPMS
   public boolean isRatedAcceptable() {
 
     return "acceptable".equals(ratingBand);
@@ -94,6 +120,7 @@ public class Aggregate {
    *
    * @return Whether the request goes to a manual review.
    */
+  @SyncWithBPMS
   public boolean isRatedForManualReview() {
 
     return "review".equals(ratingBand);
