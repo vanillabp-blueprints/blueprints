@@ -57,6 +57,12 @@ The model therefore says nothing about identity on either engine, which is the s
 blueprint should show: what differs between the two engines is what the adapter does, not
 what you have to write.
 
+That ID is also the only thing of the aggregate the BPMS gets to see. `Aggregate` carries
+`@NoSyncWithBPMS` and not one attribute carries `@SyncWithBPMS`, because no expression of
+either model reads an attribute: the call activity maps nothing in and nothing back, and
+none of the sequence flows has a condition. A decomposed model does not need the data, it
+needs the handle.
+
 Decomposition is one of the two reasons to split a model, and the only one a call activity
 is for. A process used by several different parent processes would need a workflow aggregate
 of its own, and VanillaBP answers that case differently: model the other process as a
@@ -74,7 +80,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `loan_approval.bpmn`       | a call activity pointing at `risk_assessment`, and a task after it using the result                                |
 | `risk_assessment.bpmn`     | new: the called process, two service tasks between a plain start and end event                                     |
 | `WorkflowTaskHandler.java` | `secondaryBpmnProcesses` names the called process; its tasks are methods like any other                            |
-| `Aggregate.java`           | what the called process writes, and the decision made from it                                                      |
+| `Aggregate.java`           | what the called process writes, the decision made from it, and `@NoSyncWithBPMS` on the class                      |
 | `Service.java`             | the two checks of the risk assessment and the decision after it                                                    |
 | `loan-approval.yaml`       | the two numbers the checks and the decision use                                                                    |
 | `LoanApprovalIT.java`      | asserts across the call activity: the calling process is started, the result of the called one is on the aggregate |
@@ -181,14 +187,14 @@ start with, and the profiles are what keeps that from happening.
 
 ## How it works
 
-|                                             File                                             |                                      Role                                       |
-|----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn`   | the calling process: the call activity and the task using its result            |
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/risk_assessment.bpmn` | the called process, started by nobody but the call activity                     |
-| `.../loanapproval/WorkflowTaskHandler.java`                                                  | the tasks of both processes, wired by one `@WorkflowService`                    |
-| `.../loanapproval/Service.java`                                                              | the business code, which does not know that two processes are involved          |
-| `.../loanapproval/model/Aggregate.java`                                                      | the one aggregate, with a comment per attribute saying which process writes it  |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                             | starts the calling process and waits for the decision, across the call activity |
+|                                             File                                             |                                                  Role                                                  |
+|----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn`   | the calling process: the call activity and the task using its result                                   |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/risk_assessment.bpmn` | the called process, started by nobody but the call activity                                            |
+| `.../loanapproval/WorkflowTaskHandler.java`                                                  | the tasks of both processes, wired by one `@WorkflowService`                                           |
+| `.../loanapproval/Service.java`                                                              | the business code, which does not know that two processes are involved                                 |
+| `.../loanapproval/model/Aggregate.java`                                                      | the one aggregate, `@NoSyncWithBPMS` on it, and a comment per attribute saying which process writes it |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                             | starts the calling process and waits for the decision, across the call activity                        |
 
 The order of events: `retrieveCreditRating` runs in the calling process, the engine starts
 `risk_assessment` and passes the aggregate's ID along, the two checks of the called process
@@ -205,6 +211,7 @@ tomorrow, and only the BPMN files change.
 - [Call activities](https://github.com/vanillabp/spi-for-java#call-activities): decomposition and reuse, and why they are modelled differently
 - [Wire up a process](https://github.com/vanillabp/spi-for-java#wire-up-a-process): `@WorkflowService`, `@BpmnProcess` and what `secondaryBpmnProcesses` is for
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): one aggregate per business case, and why there are no process variables
+- [Sharing workflow-aggregate data](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms): `@SyncWithBPMS`, `@NoSyncWithBPMS`, and what a BPMS gets to see
 - [Digging into call activities](https://github.com/vanillabp/adapter-platform-integration/wiki/Viewing-workflows#digging-into-call-activities): following a workflow across a call activity
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how that engine identifies a called process instance
 

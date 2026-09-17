@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanapproval.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -22,6 +23,16 @@ import lombok.NoArgsConstructor;
  * below say which step of which process wrote them.
  * </p>
  *
+ * <p>
+ * <strong>Nothing of it reaches the BPMS.</strong> No expression of either model reads an
+ * attribute. The call activity maps nothing into the called process and nothing back, and
+ * no sequence flow carries a condition. The {@code ${...}} in the models name task
+ * definitions, not data. So the class is annotated {@code @NoSyncWithBPMS} and no attribute
+ * is annotated {@code @SyncWithBPMS}. What the engine holds is the aggregate's ID, the one
+ * value the annotations cannot keep out, and that ID is what ties the called instance to
+ * this aggregate.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -32,6 +43,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
