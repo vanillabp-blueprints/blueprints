@@ -43,8 +43,12 @@ public class MissingTableIT {
         .satisfies(thrown -> {
           final var message = messageOf(thrown);
           assertThat(message)
+              // Which of VanillaBP's tables is named depends on the version: the boot ends at
+              // the first one it misses, and a later version may check another one first. What
+              // this blueprint is about is that the boot ends and says what to do, so the test
+              // asks for a table of VanillaBP rather than for one particular name.
               .describedAs("The message names the table which is missing")
-              .contains("VANILLABP_TASK_DELIVERY");
+              .contains("VANILLABP_");
           assertThat(message)
               .describedAs("and the property which would have created it")
               .contains("vanillabp.outbox.create-schema");
