@@ -43,8 +43,11 @@ public class MissingTableIT {
         .satisfies(thrown -> {
           final var message = messageOf(thrown);
           assertThat(message)
+              // Which of VanillaBP's tables is reported depends on the order the checks run
+              // in, and that order is VanillaBP's business. What this test is about is that
+              // the boot ends naming a table of VanillaBP rather than coming up broken.
               .describedAs("The message names the table which is missing")
-              .contains("VANILLABP_TASK_DELIVERY");
+              .containsPattern("VANILLABP_[A-Z_]+' does not exist");
           assertThat(message)
               .describedAs("and the property which would have created it")
               .contains("vanillabp.outbox.create-schema");
