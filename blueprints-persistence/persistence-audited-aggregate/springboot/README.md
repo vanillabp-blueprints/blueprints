@@ -266,7 +266,7 @@ leaves that section out.
 |                                          File                                          |                                              Role                                              |
 |----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: rating, decision, payout, and therefore three states of the case                  |
-| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, audited by one annotation                                              |
+| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, audited by one annotation and sharing nothing with the BPMS            |
 | `.../loanapproval/model/AggregateRepository.java`                                      | the repository, and the revisions of Spring Data Envers                                        |
 | `.../loanapproval/config/AuditedRepositories.java`                                     | the factory a revision repository needs, declared by the module itself                         |
 | `.../loanapproval/audit/AuditedChange.java`                                            | the revision entity: number, moment, and who made the change                                   |

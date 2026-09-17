@@ -2,6 +2,7 @@ package blueprint.workflowmodule.loanapproval.model;
 
 import org.hibernate.envers.Audited;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -30,12 +31,22 @@ import lombok.NoArgsConstructor;
  * able to say later who changed what, and it is not worth it anywhere else.
  * </p>
  *
+ * <p>
+ * The class is also annotated {@code @NoSyncWithBPMS}, so none of its attributes is
+ * written to the BPMS. The process runs in a straight line from the rating to the payout
+ * and no expression in it reads the aggregate, so the engine needs nothing from it. What
+ * still travels is the aggregate's ID, because that is how VanillaBP finds the workflow
+ * again. Who decided and whether the loan was paid out stays in the application, next to
+ * the trail of those changes.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
  */
 @Entity
 @Audited
+@NoSyncWithBPMS
 @Table(name = "LOAN_APPROVAL")
 @Data
 @NoArgsConstructor

@@ -253,7 +253,7 @@ http://localhost:8080/api/loan-approval/0f7c…/trail
 |                                          File                                          |                                              Role                                              |
 |----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: rating, decision, payout, and therefore three states of the case                  |
-| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, audited by one annotation                                              |
+| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, audited by one annotation and sharing nothing with the BPMS            |
 | `.../loanapproval/model/AggregateRepository.java`                                      | the repository, which knows nothing about revisions                                            |
 | `.../loanapproval/audit/AuditedChange.java`                                            | the revision entity: number, moment, and who made the change                                   |
 | `.../loanapproval/audit/ChangeBeingMade.java`                                          | the id of the change and the person making it, and the listener writing both into the revision |
