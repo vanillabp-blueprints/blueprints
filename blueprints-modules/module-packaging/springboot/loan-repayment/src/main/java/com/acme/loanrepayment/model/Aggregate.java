@@ -1,5 +1,6 @@
 package com.acme.loanrepayment.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -18,6 +19,15 @@ import lombok.NoArgsConstructor;
  * of that name - so the second module in an application says which entity it is.
  * </p>
  *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so none of its attributes is written to
+ * the BPMS. Nothing in the model asks for one: the process runs from its start event
+ * through a single service task to its end event, and there is no condition or timer to
+ * evaluate. That is why no attribute carries {@code @SyncWithBPMS}. The BPMS is given the
+ * aggregate's ID, which VanillaBP always shares because that is how it finds the workflow
+ * again.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -28,6 +38,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
