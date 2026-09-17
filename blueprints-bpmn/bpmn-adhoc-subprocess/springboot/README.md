@@ -20,8 +20,8 @@ somebody picked:
 
 - A big loan goes to a case worker. The user task reports its id, the application keeps it,
   and answering through the API writes the picked element ids onto the workflow aggregate.
-  VanillaBP shares the aggregate with the BPMS while completing the task, so the list is
-  there when the workflow enters the subprocess.
+  VanillaBP hands the list to the BPMS while completing the task, so it is there when the
+  workflow enters the subprocess.
 - Everything else is decided by a decision table. The cluster evaluates the DMN deployed
   next to the BPMN file and writes its result into the same variable. Not a line of Java is
   involved on that path, and that is the point of having both in one blueprint: the element
@@ -31,6 +31,11 @@ What the model reads is one attribute, `activeElementsCollection`, a FEEL expres
 the ids of the elements to activate. It is evaluated once, when the workflow enters the
 element. There is no completion condition, so the workflow leaves the subprocess when
 everything it activated is done, and the service task behind it runs.
+
+Only what the model reads leaves the application. `Aggregate.java` is annotated
+`@NoSyncWithBPMS`, and the two attributes an expression looks at carry `@SyncWithBPMS`: the
+amount, which the gateway compares and the decision table reads as its input, and the list of
+element ids. What the checks wrote stays here, because no expression asks for it.
 
 Two things are worth knowing before copying this.
 
@@ -70,7 +75,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `loan_approval.bpmn`       | an ad-hoc subprocess holding three service tasks, a user task and a business rule task ahead of it, and a gateway choosing between them |
 | `loan_approval.dmn`        | the decision table picking the checks for a request nobody has to look at                                                               |
 | `model/Check.java`         | the three checks and the BPMN element id of each of them                                                                                |
-| `model/Aggregate.java`     | `checksToRun`, the list the model reads, a version attribute, and one flag per check                                                    |
+| `model/Aggregate.java`     | `checksToRun`, the list the model reads, a version attribute, one flag per check, and the annotations saying what is shared             |
 | `WorkflowTaskHandler.java` | one `@WorkflowTask` method per check, and none for the subprocess itself                                                                |
 | `Service.java`             | the checks as business methods, and the two halves of the user task picking them                                                        |
 | `Workflow.java`            | `completeUserTask` in addition to `startWorkflow`, and nothing about the subprocess                                                     |
@@ -164,7 +169,7 @@ own, without asking the BPMS.
 | `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the ad-hoc subprocess, its `activeElementsCollection`, and the two ways the list is filled |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.dmn`  | the decision table, whose output column holds BPMN element ids                             |
 | `.../loanapproval/model/Check.java`                                                    | the checks and their element ids, the contract between code and model                      |
-| `.../loanapproval/model/Aggregate.java`                                                | `checksToRun`, the version attribute, and what each check wrote                            |
+| `.../loanapproval/model/Aggregate.java`                                                | `checksToRun`, the version attribute, what each check wrote, and what of it is shared      |
 | `.../loanapproval/WorkflowTaskHandler.java`                                            | one `@WorkflowTask` method per check, and no method for the element itself                 |
 | `.../loanapproval/Service.java`                                                        | the checks as business methods, and keeping the task id while somebody picks               |
 | `.../loanapproval/Workflow.java`                                                       | `completeUserTask`, the only place `ProcessService` is used                                |
@@ -197,7 +202,7 @@ away would be a test of timing rather than of the application.
 
 ## Documentation
 
-- [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): what is shared with the BPMS, which is how the list reaches the model
+- [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): how an aggregate says what is shared with the BPMS, which is how the list reaches the model
 - [Two writers on one aggregate](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate): why the aggregate carries a version attribute
 - [User tasks](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#user-tasks): the notification handler, the task id and completing the task later
 - [Workflow tasks](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks): what a `@WorkflowTask` method is, which is all the activities inside the element need
