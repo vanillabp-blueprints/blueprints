@@ -29,9 +29,9 @@ Blueprint-specific names, each occurring in more than one place:
 | `loan-approval:COMPLIANCE_NOTICE` | the name of the outbox operation, persisted with every entry, namespaced                     |
 | `LOAN_APPROVAL_REVISION`          | the table of the revision entity, referenced in the README                                   |
 
-**The rule this blueprint is built on:** the id naming a state has to exist before the outbox
-entry is written, and the entry is written before the transaction is flushed. Everything
-else here follows from that one sentence.
+**The rule this blueprint is built on:** the id naming a state has to exist before the report
+about that state is written down, and that happens before the transaction is flushed.
+Everything else here follows from that one sentence.
 
 ## Core files
 
@@ -41,7 +41,7 @@ else here follows from that one sentence.
 | `loan-approval/src/main/java/.../loanapproval/model/AggregateRepository.java`              | also a `RevisionRepository`, which is how the trail is read                                                  |
 | `loan-approval/src/main/java/.../loanapproval/config/AuditedRepositories.java`             | `@EnableEnversRepositories`, without which a revision repository has no factory                              |
 | `loan-approval/src/main/java/.../loanapproval/audit/AuditedChange.java`                    | the revision entity: the number, the moment and who made the change                                          |
-| `loan-approval/src/main/java/.../loanapproval/audit/ChangeAuthor.java`                     | the listener filling the name in, and the binding which has to span the commit                               |
+| `loan-approval/src/main/java/.../loanapproval/audit/ChangeBeingMade.java`                  | the id naming the change and the person making it, and how long each of them lives                           |
 | `loan-approval/src/main/java/.../loanapproval/audit/AuditedAggregatePersistence.java`      | `getAuditingId` and `loadByIdAndAuditingId`: the two methods VanillaBP asks, and the early revision          |
 | `loan-approval/src/main/java/.../loanapproval/audit/ComplianceNotices.java`                | the outbox operation of the application, planned in the transaction of the decision and asking for its state |
 | `loan-approval/src/main/java/.../loanapproval/ComplianceArchive.java`                      | the port to the archive; `LocalComplianceArchive` is the stand-in to replace                                 |
@@ -77,23 +77,26 @@ the test extending `WorkflowModuleTest`, never into the base class.
    decided. Do not switch it on because it is available.
 2. Add `spring-data-envers` and put `@Audited` on the workflow aggregate. That alone gives
    the audit table and a revision table called `REVINFO`, and the schema tool creates both.
-3. Add a revision entity and its listener when the trail has to name a person, which is
-   usually the reason for the auditing. The listener cannot be injected, so the name travels
-   on the thread, and the binding has to span the commit: Envers writes the revision when the
-   transaction commits, and a name taken back inside the business method comes too late.
+3. Add a revision entity and its listener. The trail names a person that way, which is
+   usually the reason for the auditing, and the same listener writes the id which lets a
+   state be named before it exists. Neither can be injected, so both travel on the thread.
+   The person is bound around the call which opens the transaction, because Envers writes
+   the revision when that transaction commits and a name taken back earlier comes too late.
 4. Implement `AggregatePersistenceAware` for the aggregate. Everything but the two auditing
-   methods is the repository spelled out. `getAuditingId` answers the revision of the running
-   transaction, `loadByIdAndAuditingId` reads that state back and answers `null` where it is
-   gone. Both have defaults which behave like an application without an auditing, so an
-   application which implements neither keeps working.
-5. Ask for the revision with `AuditReaderFactory.get(entityManager).getCurrentRevision(...,
-   true)`. Envers assigns it at the flush otherwise, which is after the outbox entry was
-   written, and a notice would name a number nobody has yet. The second way is the version
-   attribute of an application which uses optimistic locking; it names a state as well and it
-   says nothing about who made the change.
-6. Let an entry which reports say so, with `askingForTheStateOfTheEvent(auditingId)`. Do not
-   try it on an operation of VanillaBP: those write into the BPMS, which is where the case
-   goes on, and they refuse it with a message saying why.
+   methods is the repository spelled out. `getAuditingId` answers the id of the change the
+   running transaction is making, `loadByIdAndAuditingId` looks up the revision carrying that
+   id and reads the aggregate at it, answering `null` where it is gone. Both have defaults
+   which behave like an application without an auditing, so an application which implements
+   neither keeps working.
+5. Name the state with an id of your own, not with the revision number. Envers numbers a
+   revision while the transaction commits, which is after a report about the event was
+   written down. Do not reach for `AuditReader#getCurrentRevision(..., true)` either: it is
+   deprecated and what it points at runs at commit time as well. The version attribute of an
+   application which uses optimistic locking is the other candidate, and it is assigned per
+   write, so a transaction which writes twice names a state its audit row does not carry.
+6. Let a report say which state it is about. VanillaBP carries the id with it and hands the
+   aggregate of that state to the delivery. Everything written back into the BPMS reads the
+   state of the moment it is written instead, because that is where the case goes on.
 7. Handle the state which is gone. An auditing is cleaned up at some point and an entry may
    wait longer, so the load answers nothing and the report has to fall back to the current
    state and say so in the log.

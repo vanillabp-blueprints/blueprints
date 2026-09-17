@@ -3,7 +3,6 @@ package blueprint.workflowmodule.loanapproval.audit;
 import java.util.List;
 
 import org.hibernate.envers.AuditReaderFactory;
-import org.hibernate.envers.exception.RevisionDoesNotExistException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -87,82 +86,77 @@ public class AuditedAggregatePersistence implements AggregatePersistenceAware<Ag
   }
 
   /**
-   * The revision the changes of the running transaction will belong to.
+   * The id of the change this transaction is making, which is how a caller names the
+   * state it is looking at.
    *
    * <p>
-   * Envers hands out a revision when the transaction is flushed, and an outbox entry is
-   * written before that, so an entry which wants to name the state it saw would name a
-   * revision which does not exist yet. The second argument of
-   * {@code getCurrentRevision} is what solves it: it writes the revision row right here,
-   * and every change of this transaction is then recorded under exactly that number.
+   * The revision itself has no number yet. Envers writes the revision row while the
+   * transaction commits, and an outbox entry is written before that, so an entry which
+   * named the number would name something nobody has. The application therefore makes up
+   * an id of its own, {@link ChangeBeingMade}, and the revision of this transaction is
+   * written with that id in it. The id exists immediately, it belongs to the whole
+   * transaction rather than to a single write, and reading it back is a query.
    * </p>
    *
    * <p>
    * The other way round works too, for an application which uses optimistic locking: the
-   * version attribute of the aggregate names a state as well, and it is there without
-   * asking anybody. This blueprint takes the revision because it asks nothing of the
-   * application - see the README.
-   * </p>
-   *
-   * <p>
-   * {@code getCurrentRevision} carries a deprecation which points at
-   * {@code RevisionListener}, and that pointer does not lead anywhere for this question: a
-   * listener is called while the transaction commits, which is after the notice was
-   * written. Envers has announced a replacement since version 5.2 and has not shipped one,
-   * the method works, and no other API answers the number early. So it is used here, with
-   * this paragraph instead of a warning in every build.
+   * version attribute of the aggregate names a state as well. It is assigned per write
+   * though, so a transaction which writes twice names a state its audit row does not
+   * carry - see the README.
    * </p>
    *
    * @param loanApproval The aggregate whose current state is to be named.
-   * @return The revision as text, because an outbox entry carries text.
+   * @return The id of the change being made.
    */
   @Override
-  @SuppressWarnings("deprecation")
   public String getAuditingId(
       final Aggregate loanApproval) {
 
-    final var revision = AuditReaderFactory
-        .get(entityManager)
-        .getCurrentRevision(AuditedChange.class, true);
-
-    return String.valueOf(revision.getId());
+    return ChangeBeingMade.id();
 
   }
 
   /**
-   * The loan approval as it was at that revision, detached: a past state is something to
+   * The loan approval as it was at that change, detached: a past state is something to
    * read, never something to write back.
+   *
+   * <p>
+   * Two steps, because the id is the application's and the audit rows are Envers'. The
+   * revision carrying the id is looked up first, and its number is what Envers is then
+   * asked for.
+   * </p>
    *
    * <p>
    * Answering {@code null} says the state is gone, which happens once the auditing was
    * cleaned up while the outbox entry was waiting. VanillaBP then reads the current state
-   * and warns, naming the aggregate and the revision, because a report with newer values
-   * is better than no report at all.
+   * and warns, naming the aggregate and the id, because a report with newer values is
+   * better than no report at all.
    * </p>
    *
    * @param loanRequestId The id of the loan approval.
-   * @param auditingId    The revision to read, as {@link #getAuditingId(Aggregate)}
-   *                      wrote it.
-   * @return The loan approval as it was, or {@code null} if that revision is gone.
+   * @param auditingId    The change to read, as {@link #getAuditingId(Aggregate)} named
+   *                      it.
+   * @return The loan approval as it was, or {@code null} if that change is gone.
    */
   @Override
   public Aggregate loadByIdAndAuditingId(
       final Object loanRequestId,
       final String auditingId) {
 
-    final var auditReader = AuditReaderFactory.get(entityManager);
-    final var revision = Integer.valueOf(auditingId);
+    final var revisions = entityManager
+        .createQuery(
+            "select change.id from AuditedChange change where change.changeId = :changeId",
+            Integer.class)
+        .setParameter("changeId", auditingId)
+        .getResultList();
 
-    try {
-      // Envers answers the newest state up to the revision asked for, so a revision
-      // which is gone would silently be answered with an older one. Asking for the
-      // revision itself is what tells "cleaned up" apart from "nothing changed since".
-      auditReader.findRevision(AuditedChange.class, revision);
-    } catch (RevisionDoesNotExistException e) {
+    if (revisions.isEmpty()) {
       return null;
     }
 
-    return auditReader.find(Aggregate.class, String.valueOf(loanRequestId), revision);
+    return AuditReaderFactory
+        .get(entityManager)
+        .find(Aggregate.class, String.valueOf(loanRequestId), revisions.getFirst());
 
   }
 

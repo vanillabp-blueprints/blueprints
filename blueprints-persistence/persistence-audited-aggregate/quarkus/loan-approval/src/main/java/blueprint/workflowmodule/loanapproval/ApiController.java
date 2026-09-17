@@ -2,7 +2,7 @@ package blueprint.workflowmodule.loanapproval;
 
 import java.util.UUID;
 
-import blueprint.workflowmodule.loanapproval.audit.ChangeAuthor;
+import blueprint.workflowmodule.loanapproval.audit.ChangeBeingMade;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.DefaultValue;
@@ -51,7 +51,7 @@ public class ApiController {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    ChangeAuthor.attributeTo(
+    ChangeBeingMade.attributeTo(
         requestedBy,
         () -> service.initiateLoanApproval(loanRequestId, amount, requestedBy));
 
@@ -83,7 +83,7 @@ public class ApiController {
       @QueryParam("decidedBy")
       @DefaultValue("paula") final String decidedBy) {
 
-    ChangeAuthor.attributeTo(
+    ChangeBeingMade.attributeTo(
         decidedBy,
         () -> service.assessRisk(loanRequestId, taskId, riskIsAcceptable, decidedBy));
 

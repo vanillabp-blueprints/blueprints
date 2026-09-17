@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import blueprint.workflowmodule.loanapproval.audit.ChangeAuthor;
+import blueprint.workflowmodule.loanapproval.audit.ChangeBeingMade;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -46,7 +46,7 @@ public class ApiController {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    ChangeAuthor.attributeTo(
+    ChangeBeingMade.attributeTo(
         requestedBy,
         () -> service.initiateLoanApproval(loanRequestId, amount, requestedBy));
 
@@ -75,7 +75,7 @@ public class ApiController {
       @RequestParam(defaultValue = "true") final boolean riskIsAcceptable,
       @RequestParam(defaultValue = "paula") final String decidedBy) {
 
-    ChangeAuthor.attributeTo(
+    ChangeBeingMade.attributeTo(
         decidedBy,
         () -> service.assessRisk(loanRequestId, taskId, riskIsAcceptable, decidedBy));
 

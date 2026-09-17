@@ -15,23 +15,22 @@ import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Reporting a decision to the compliance archive, crash-safe and about the right state.
+ * Reporting a decision to the compliance archive: written down when the decision is
+ * taken, sent once that transaction committed.
  *
  * <p>
- * The report may not get lost, and it may not be sent for a decision which was rolled
- * back afterwards, so it goes through the outbox VanillaBP already runs: the notice is
- * written down inside the transaction of the decision and sent once that transaction
- * committed. An application may put operations of its own into that outbox, and this is
- * one - the name is namespaced, which keeps it apart from VanillaBP's own operations.
+ * Between the two moments lies the wait, and the wait is what this blueprint is about.
+ * The report says which state of the loan approval it means, so what the archive is
+ * handed is the state of the decision and not the state of the day the archive happened
+ * to be reachable. The id naming that state comes from
+ * {@link AuditedAggregatePersistence#getAuditingId(Aggregate)}.
  * </p>
  *
  * <p>
- * Between the two moments lies the wait, and the wait is where this blueprint's subject
- * is. The notice says which state it is about
- * ({@code askingForTheStateOfTheEvent}), and the dispatch reads the loan approval as it
- * was then instead of as it is by the time the archive answers. The other kind of entry
- * asks for nothing: everything VanillaBP writes back into the BPMS reads the state of
- * its dispatch, because that is where the case goes on.
+ * How the report survives the commit is not the subject here: it rides VanillaBP's
+ * outbox, which the application already has, so a report cannot get lost and cannot be
+ * sent for a decision which was rolled back. An application with a mechanism of its own
+ * uses that one and changes nothing about the rest of this class.
  * </p>
  */
 @Slf4j
@@ -44,7 +43,7 @@ public class ComplianceNotices {
   /** The BPMN process id, as the model spells it. */
   private static final String BPMN_PROCESS_ID = "loan_approval";
 
-  /** The operation, namespaced because everything but VanillaBP's own has to be. */
+  /** How the report is named where it is stored. Namespaced, as anything but VanillaBP's own. */
   public static final String OPERATION_NAME = "loan-approval:COMPLIANCE_NOTICE";
 
   /** The event of the one notice this blueprint sends. */
@@ -53,10 +52,9 @@ public class ComplianceNotices {
   private static final String ARG_EVENT = "event";
 
   /**
-   * One notice per loan approval and event, which is what the key says: the outbox
-   * dispatches at least once, so everything going through it has to survive being sent
-   * twice, and a key which names the event lets a second event of the same loan approval
-   * through.
+   * One report per loan approval and event, which is what the key says: a report may be
+   * sent twice after a crash, and a key which names the event lets a second event of the
+   * same loan approval through.
    */
   private static final PhaseOperation NOTIFY_THE_ARCHIVE = PhaseOperation
       .extensionOperation(OPERATION_NAME)

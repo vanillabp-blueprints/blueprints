@@ -26,10 +26,10 @@ risk is acceptable, and a service task after that pays the loan out. Each of the
 writes the workflow aggregate, so each of them is one state of the case.
 
 Two things happen on top of that. Every change is recorded by Hibernate Envers, and the
-decision is reported to a compliance archive through the outbox VanillaBP already runs.
-The archive is away when the notice first arrives, so the notice waits, the payout is
-booked meanwhile, and what the archive is finally handed is the loan approval as it was at
-the decision rather than as it is by then.
+decision is reported to a compliance archive. The report is written down when the decision
+is taken and sent afterwards, and the archive is away at the first attempt, so the payout
+is booked in between. What the archive is handed in the end is the loan approval as it was
+at the decision rather than as it is by then.
 
 ### What the auditing writes
 
@@ -71,49 +71,52 @@ they did. It keeps no old state, so it can never answer what the case looked lik
 earlier moment. Hibernate Envers keeps the old states, and that is what this blueprint is
 about.
 
-### The revision has to exist before the flush
+### Naming a state before it exists
 
 This is the part worth reading before copying anything.
 
-Envers hands out the number of a change when the transaction is flushed. An outbox entry is
-written before that, inside the business transaction, so an entry which wants to name the
-state it saw would have to name a number nobody has yet. The way out is one line in
-`AuditedAggregatePersistence`:
+A report about an event is written down while the event happens and sent later, so it has
+to name the state it means. Envers numbers a change when the transaction commits, which is
+after the report was written, so the number is of no use there.
+
+The way out is an id of the application's own. `ChangeBeingMade` makes one up as soon as
+somebody asks, the revision of that transaction is written with that id in it, and reading
+a state back is two steps: look up the revision carrying the id, then ask Envers for the
+loan approval at that revision.
 
 ```java
-final var revision = AuditReaderFactory
-    .get(entityManager)
-    .getCurrentRevision(AuditedChange.class, true);
+// while the transaction is open, in AuditedAggregatePersistence
+return ChangeBeingMade.id();
+
+// later, when the report is sent
+final var revisions = entityManager
+    .createQuery("select change.id from AuditedChange change where change.changeId = :changeId", Integer.class)
+    .setParameter("changeId", auditingId)
+    .getResultList();
 ```
 
-The second argument writes the revision row right away, and every change of this transaction
-is then recorded under exactly that number. So the notice can carry it, and the dispatch can
-ask for it later. The number belongs to the transaction rather than to a single write, which
-is what makes it usable: a transaction which flushes twice still has one number, and the
-notice stays right.
+The id belongs to the transaction, not to a single write, and that is what makes it
+usable: a transaction which flushes twice still names one state. An id of a transaction
+which rolled back is never referenced by anything, because whatever wrote it down rolled
+back with it.
 
-That method carries a deprecation which points at `RevisionListener`, and the pointer does
-not lead anywhere for this question: a listener runs while the transaction commits, which is
-after the notice was written. Envers has announced a replacement since its version 5.2 and
-has not shipped one. So the call is used here, with the warning suppressed on that one
-method and the reason written next to it, rather than left to show up in every build of
-everybody who copies this.
+Two other ways do not survive a second look, and both are worth knowing about:
 
-There is a second way, and it fits an application which uses optimistic locking already: the
-`@Version` attribute of the aggregate names a state as well, it is there without asking
-anybody, and the load then reads the audit row whose version matches. This blueprint takes
-the revision instead, because it asks nothing of the application. Take the version where you
-have one, and keep in mind that it says nothing about who made the change, which is the other
-half of what an auditing is for.
-
-A transaction which asks for the revision and then changes nothing leaves a revision row
-behind which no audit row points at. That is a row, not a problem, and it is the price of
-knowing the number early.
+- `AuditReader#getCurrentRevision(..., true)` creates the revision row early and hands out
+  its number. It is deprecated, since Envers 5.2, and the replacement it points at,
+  a `RevisionListener`, runs while the transaction commits, which is exactly too late. A
+  blueprint is copied, so it carries nothing which the next upgrade of a dependency can
+  take away.
+- The `@Version` attribute of an application which uses optimistic locking names a state
+  as well, and it costs nothing extra. It is assigned per write though: a transaction which
+  writes the aggregate twice ends with a version its audit row does not carry, and the
+  report then finds nothing. Take it where a transaction writes once, which you have to be
+  sure of.
 
 ### Who made the change
 
 Envers builds the revision entity itself, without asking the bean container, so the name of
-the person cannot be injected into the listener. It travels on the thread: `ChangeAuthor`
+the person cannot be injected into the listener. It travels on the thread: `ChangeBeingMade`
 holds it, the API binds it around the call, and the listener reads it when Envers writes the
 revision.
 
@@ -126,30 +129,17 @@ the same stretch.
 Changes nobody announced come from the process: a service task runs on a thread of the BPMS,
 where there is no person to name.
 
-### What the notice reports, and what it cannot
+### What the report shows, and what it cannot
 
-The notice is an operation of the application in VanillaBP's outbox, namespaced
-(`loan-approval:COMPLIANCE_NOTICE`) so it can never collide with VanillaBP's own. It is
-written down inside the transaction of the decision, which means it cannot survive a rollback
-of that decision, and it is sent after the commit. `askingForTheStateOfTheEvent` is what makes
-it report the state of the decision:
+The report is written down in the transaction of the decision, so a decision which rolls
+back takes its report with it, and it is sent once that transaction committed. It names
+the state of the decision, so its delivery reads the loan approval as it was then, however
+long the delivery took.
 
-```java
-PhaseTwoCall
-    .of(NOTIFY_THE_ARCHIVE, WORKFLOW_MODULE_ID, BPMN_PROCESS_ID, loanRequestId, null, args)
-    .askingForTheStateOfTheEvent(loanApprovals.getAuditingId(loanApproval));
-```
-
-An entry which asks for nothing reads the aggregate as it is when it is dispatched, and that
-is what the entries of VanillaBP itself do. They write into the BPMS, the BPMS is where the
-case goes on, and a value which is a day old would be wrong there. Asking on one of them is
-refused rather than ignored.
-
-The outbox itself is VanillaBP's, and an operation of an application goes into it the same
-way an extension's does: a namespaced name, an idempotency key of its own, and a dispatch
-which no adapter is involved in. An application which already runs an outbox of its own uses
-that one; what this blueprint needs from it is only that the entry is written in the
-transaction of the event and sent after the commit.
+VanillaBP carries the report and the id with it. Which of the two states an entry wants is
+the entry's own business: everything VanillaBP writes back into the BPMS reads the state of
+the moment it is written, because the BPMS is where the case goes on, and a value which is
+a day old would be wrong there.
 
 Limits belong to the picture as well:
 
@@ -179,9 +169,9 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `model/AggregateRepository.java`         | also a `RevisionRepository`, which reads the trail                                                       |
 | `config/AuditedRepositories.java`        | switches on the repository factory that reads revisions                                                  |
 | `audit/AuditedChange.java`               | the revision entity, so a change knows who made it                                                       |
-| `audit/ChangeAuthor.java`                | where that name comes from, and how long it has to be there                                              |
+| `audit/ChangeBeingMade.java`             | the id naming the change, the person making it, and how long each of them has to be there                |
 | `audit/AuditedAggregatePersistence.java` | the seam: the state of now, and the aggregate as it was                                                  |
-| `audit/ComplianceNotices.java`           | the outbox operation of the application, asking for the state of its event                               |
+| `audit/ComplianceNotices.java`           | the report about the decision, which asks to be given the state of that moment                           |
 | `ComplianceArchive.java`                 | the port to the archive, so a test can put a simulator in its place                                      |
 | `LoanApprovalIT.java`                    | decides, waits for the payout, and asserts on what the archive was told                                  |
 
@@ -280,9 +270,9 @@ leaves that section out.
 | `.../loanapproval/model/AggregateRepository.java`                                      | the repository, and the revisions of Spring Data Envers                                        |
 | `.../loanapproval/config/AuditedRepositories.java`                                     | the factory a revision repository needs, declared by the module itself                         |
 | `.../loanapproval/audit/AuditedChange.java`                                            | the revision entity: number, moment, and who made the change                                   |
-| `.../loanapproval/audit/ChangeAuthor.java`                                             | the listener filling that name in, and where the name comes from                               |
+| `.../loanapproval/audit/ChangeBeingMade.java`                                          | the id of the change and the person making it, and the listener writing both into the revision |
 | `.../loanapproval/audit/AuditedAggregatePersistence.java`                              | what VanillaBP asks: the state of now, and the aggregate as it was at a state                  |
-| `.../loanapproval/audit/ComplianceNotices.java`                                        | the notice: planned in the transaction of the decision, sent afterwards, asking for that state |
+| `.../loanapproval/audit/ComplianceNotices.java`                                        | the report: written in the transaction of the decision, sent afterwards, about that state      |
 | `.../loanapproval/ComplianceArchive.java`                                              | the port to the archive; `LocalComplianceArchive` is the stand-in to replace                   |
 | `.../loanapproval/Service.java`                                                        | the business code, which knows nothing about revisions                                         |
 | `.../loanapproval/ApiController.java`                                                  | the GET endpoints, and the one place saying who is acting                                      |
@@ -307,7 +297,7 @@ state is named, and every load reads the current one.
 
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): what an aggregate is, and why there are no process variables
 - [Aggregate persistence](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#aggregate-persistence): the interface this blueprint implements, and when an application needs to
-- [What the outbox guarantees](https://github.com/vanillabp/adapter-platform-integration/wiki/Spring-Boot-integration#what-the-outbox-guarantees): why an entry is written first and sent afterwards, and what that costs
+- [What the outbox guarantees](https://github.com/vanillabp/adapter-platform-integration/wiki/Spring-Boot-integration#what-the-outbox-guarantees): why a report is written first and sent afterwards, and what that costs
 - [Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules): what a workflow module is, its ID, and where its BPMN files are looked for
 - [Wire up a process / Wire up a task](https://github.com/vanillabp/spi-for-java#usage): the annotations used in `WorkflowTaskHandler.java`
 - [Hibernate Envers](https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html#envers): the auditing itself, its tables and its queries

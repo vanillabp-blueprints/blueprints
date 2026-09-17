@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.audit.AuditedAggregatePersistence;
-import blueprint.workflowmodule.loanapproval.audit.ChangeAuthor;
+import blueprint.workflowmodule.loanapproval.audit.ChangeBeingMade;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
@@ -61,7 +61,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    ChangeAuthor.attributeTo(
+    ChangeBeingMade.attributeTo(
         "the customer",
         () -> service.initiateLoanApproval(loanRequestId, 5000, "the customer"));
 
@@ -70,7 +70,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         loanApproval -> loanApproval.getAssessRiskTaskId() != null);
 
-    ChangeAuthor.attributeTo(
+    ChangeBeingMade.attributeTo(
         "paula",
         () -> service.assessRisk(
             loanRequestId,
@@ -132,24 +132,24 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .hasSize(5);
     assertThat(trail.get(0)).contains("by the customer");
     assertThat(trail.get(1)).contains("by "
-        + ChangeAuthor.THE_PROCESS);
+        + ChangeBeingMade.THE_PROCESS);
     // keeping the id of the open user task is a change of the loan approval like any
     // other, which is what makes a trail longer than the list of business steps
     assertThat(trail.get(2)).contains("by "
-        + ChangeAuthor.THE_PROCESS);
+        + ChangeBeingMade.THE_PROCESS);
     assertThat(trail.get(3)).contains("by paula");
     assertThat(trail.get(4)).contains("by "
-        + ChangeAuthor.THE_PROCESS);
+        + ChangeBeingMade.THE_PROCESS);
 
   }
 
   @Test
-  @DisplayName("The revision asked for before the flush is the one the change is recorded under")
-  public void theRevisionNamesTheChangeOfItsOwnTransaction() {
+  @DisplayName("The id asked for before the flush names the change of that transaction")
+  public void theIdNamesTheChangeOfItsOwnTransaction() {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    ChangeAuthor.attributeTo(
+    ChangeBeingMade.attributeTo(
         "the customer",
         () -> service.initiateLoanApproval(loanRequestId, 5000, "the customer"));
     awaitAggregate(
@@ -157,10 +157,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         loanApproval -> loanApproval.getCreditRating() != null);
 
-    // One transaction which asks for the revision first and changes the loan approval
-    // afterwards - the order an outbox entry forces, because the entry is written before
-    // the transaction is flushed.
-    final var revision = QuarkusTransaction
+    // One transaction which asks for the id of the change first and changes the loan
+    // approval afterwards - the order an outbox entry forces, because the entry is
+    // written before the transaction is flushed.
+    final var change = QuarkusTransaction
         .requiringNew()
         .call(() -> {
           final var loanApproval = loanApprovals.findByIdOptional(loanRequestId).orElseThrow();
@@ -171,13 +171,13 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var asItWas = QuarkusTransaction
         .requiringNew()
-        .call(() -> auditedLoanApprovals.loadByIdAndAuditingId(loanRequestId, revision));
+        .call(() -> auditedLoanApprovals.loadByIdAndAuditingId(loanRequestId, change));
 
     assertThat(asItWas)
-        .describedAs("the revision handed out early exists and has a state")
+        .describedAs("the id handed out early names a state which is there")
         .isNotNull();
     assertThat(asItWas.getAmount())
-        .describedAs("the change of that transaction was recorded under the revision it was told")
+        .describedAs("and that state is what the transaction wrote after handing the id out")
         .isEqualTo(6000);
 
   }

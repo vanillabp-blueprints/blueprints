@@ -18,8 +18,9 @@ import lombok.Setter;
  *
  * <p>
  * Envers writes a row of this kind per transaction which touched an audited entity, and
- * every audit row points at one of them. The number is what names a state of the loan
- * approval, and it is the value the compliance notice carries.
+ * every audit row points at one of them. The number names a state of the loan approval,
+ * and the id next to it names the same state in a way the application can write down
+ * before the transaction is over.
  * </p>
  *
  * <p>
@@ -31,7 +32,7 @@ import lombok.Setter;
  */
 @Entity
 @Table(name = "LOAN_APPROVAL_REVISION")
-@RevisionEntity(ChangeAuthor.class)
+@RevisionEntity(ChangeBeingMade.class)
 @Getter
 @Setter
 public class AuditedChange {
@@ -48,8 +49,16 @@ public class AuditedChange {
   @Column(name = "CHANGED_AT")
   private long changedAt;
 
-  /** Who made the change, as {@link ChangeAuthor} knew it while it was made. */
+  /** Who made the change, as {@link ChangeBeingMade} knew it while it was made. */
   @Column(name = "CHANGED_BY")
   private String changedBy;
+
+  /**
+   * The id the application gave this change before it was written. It is what an outbox
+   * entry carries, because the number above is only handed out while the transaction
+   * commits, which is after such an entry was planned.
+   */
+  @Column(name = "CHANGE_ID", unique = true)
+  private String changeId;
 
 }
