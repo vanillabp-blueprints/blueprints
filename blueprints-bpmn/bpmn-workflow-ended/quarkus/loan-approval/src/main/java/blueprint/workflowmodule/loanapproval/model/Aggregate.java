@@ -2,6 +2,8 @@ package blueprint.workflowmodule.loanapproval.model;
 
 import java.time.Instant;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
+import io.vanillabp.spi.service.SyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -22,6 +24,16 @@ import lombok.NoArgsConstructor;
  * a query against an engine.
  * </p>
  *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so nothing reaches the BPMS unless it
+ * says otherwise. One getter says otherwise: the gateway reads
+ * {@link #isRatedAcceptable()}, so that answer carries {@code @SyncWithBPMS}. Everything
+ * else stays in the application, the attributes written at the end included, because no
+ * expression in the model reads them. What the BPMS holds besides the answer is the
+ * aggregate's ID, which VanillaBP always shares because that is how it finds the workflow
+ * again.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -32,6 +44,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
@@ -86,8 +99,14 @@ public class Aggregate {
    * The question the gateway asks. It is a getter rather than an attribute, so the model
    * knows the decision and nothing about the data behind it.
    *
+   * <p>
+   * Annotated {@code @SyncWithBPMS} because the BPMS evaluates the gateway against what
+   * VanillaBP shared with it. It is the only value of this class which is shared.
+   * </p>
+   *
    * @return Whether the rating is good enough.
    */
+  @SyncWithBPMS
   public boolean isRatedAcceptable() {
 
     return "acceptable".equals(ratingBand);
