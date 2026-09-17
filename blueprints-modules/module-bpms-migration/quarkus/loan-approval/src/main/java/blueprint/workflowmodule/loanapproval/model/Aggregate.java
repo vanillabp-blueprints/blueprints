@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanapproval.model;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -20,6 +21,16 @@ import lombok.NoArgsConstructor;
  * workflow of that case is configuration, and nothing here mentions it.
  * </p>
  *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}, so no attribute of it reaches the BPMS.
+ * The model has no reason to get one: it runs from the start event to the end without a
+ * gateway, and no expression in it reads the aggregate. What the BPMS holds is the
+ * aggregate's ID, which VanillaBP always shares because that is how it finds the workflow
+ * again. Both engines hold that and nothing else, so a workflow which moves from the old
+ * BPMS to the new one moves with just its ID. An attribute gets {@code @SyncWithBPMS} the
+ * day a model starts reading it.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -30,6 +41,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
