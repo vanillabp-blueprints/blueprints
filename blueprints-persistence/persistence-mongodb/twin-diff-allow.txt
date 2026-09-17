@@ -12,7 +12,7 @@ d3e240be25066a9f  differs  loan-approval/src/main/java/blueprint/workflowmodule/
 6f779c401afdd136  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/WorkflowTaskHandler.java  # bean and injection annotations only; the VanillaBP annotations are identical, which is the point
 4f6d9798ac729e02  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/config/LoanApprovalProperties.java  # configuration is bound to a class on one platform and to an interface on the other
 95fd35f1ca3187df  only-springboot  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/config/MongoTransactions.java  # only one platform needs a transaction manager to be defined; the other one binds MongoDB to the transaction it always has
-b027acf40e0a13e2  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/model/Aggregate.java  # each platform's way of mapping a document and naming its id
+ac091f94db33d969  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/model/Aggregate.java  # each platform's way of mapping a document and naming its id
 05e62d4b360229a3  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/model/AggregateRepository.java  # each platform's MongoDB repository idiom
 7e004821a59c95ab  only-springboot  loan-approval/src/test/java/blueprint/workflowmodule/MongoDbForTests.java  # only one platform starts the MongoDB of its tests itself, as a replica set; the other one has dev services doing it
 7478214e70e9a2b7  only-springboot  loan-approval/src/test/java/blueprint/workflowmodule/TestApplication.java  # only one platform needs an application class to boot a workflow module for its test

@@ -3,6 +3,7 @@ package blueprint.workflowmodule.loanapproval.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import io.vanillabp.spi.service.NoSyncWithBPMS;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +20,16 @@ import lombok.NoArgsConstructor;
  * with the aggregate is the same, and so is every other class of this workflow module.
  * </p>
  *
+ * <p>
+ * The class is annotated {@code @NoSyncWithBPMS}: the aggregate belongs to the application,
+ * and the BPMS is given only what a model reads. This model reads nothing of it. There is no
+ * condition on a sequence flow, no timer and no multi-instance collection, so no attribute
+ * carries {@code @SyncWithBPMS} and the BPMS holds the aggregate's ID alone, which VanillaBP
+ * always shares because it is how it finds the workflow again. The day an expression in the
+ * model starts reading an attribute, that attribute gets {@code @SyncWithBPMS} and nothing
+ * else does.
+ * </p>
+ *
  * @see <a href=
  *      "https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates">Workflow
  *      aggregates</a>
@@ -28,6 +39,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@NoSyncWithBPMS
 public class Aggregate {
 
   /**
