@@ -448,6 +448,20 @@ groups of three for the sake of rhythm, no phrases about how significant somethi
 what a thing is rather than what it "serves as", and drop hedging and filler. The same
 applies to Javadoc, code comments and log messages, which are documentation as well.
 
+Most people who read a blueprint read English as a second language, and so does the
+maintainer. Long sentences, rare words and stacked nouns slow them down. Write so that
+nobody has to read a sentence twice.
+
+Short main sentences, one thought each. One subordinate clause is enough. Active voice.
+The common word instead of the rare one: `use` instead of `leverage`, `about` instead of
+`regarding`, `so` instead of `consequently`. A technical term stays a technical term, but
+say what it means the first time it turns up, and write an abbreviation out once. If a
+sentence trips you up when you read it aloud, rewrite it.
+
+Nothing a program reads is renamed for the sake of language: class and method names,
+configuration keys and artifact coordinates stay as they are, because the tests and the
+other repositories point at them.
+
 ### What a blueprint may point at
 
 A blueprint explains framework behaviour by linking the
