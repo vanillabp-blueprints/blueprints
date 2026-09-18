@@ -101,7 +101,16 @@ remember. That profile is also what loads `application-camunda8.yaml`: the Maven
 the Spring profile of the same name, so the engine is named once and the build, the tests and
 running the application all follow it.
 The tests bring their own MongoDB: a container, started as a replica set, which is why nothing
-in the test configuration says where the database is.
+in the test configuration says where the database is. `MongoDbForTests` names the image it
+runs, `mongo:8.2`, so a test run says which MongoDB it ran against. The version is not 8.0
+because MongoDB 8.0 refuses to start on a Linux kernel 6.19 or newer
+([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)); the container stops at once
+and the failing test says nothing about the reason. Where your machine wants another version,
+name it on the command line rather than in the file:
+
+```bash
+mvn -Dmongodb.image=mongo:7.0 install verify
+```
 
 To run the application against a MongoDB of your own, point `spring.data.mongodb.uri` at it and
 make sure it is a replica set:
