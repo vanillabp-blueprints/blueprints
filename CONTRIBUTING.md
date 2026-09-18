@@ -159,6 +159,26 @@ module is booted as the application under test and needs nothing but a database 
 means the same on every BPMS. And **wait** instead of asserting immediately, since a remote
 BPMS gets to a task eventually.
 
+### The image a test pins has to start everywhere
+
+A test which starts a container names the version of the image, so a run says what it ran
+against and a new release cannot change the result overnight. The version has to be one which
+starts everywhere the blueprint is built, and that is more than the CI runner. MongoDB 8.0 is
+the case which taught it: it refuses to start on a Linux kernel 6.19 or newer
+([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)) and ends with exit code 1, so
+`persistence-mongodb` failed on a current machine while CI stayed green on its older kernel.
+The blueprint runs `mongo:8.2` now.
+
+Read the version from a system property with the pinned one as its default:
+
+```java
+private static final String IMAGE = System.getProperty("mongodb.image", "mongo:8.2");
+```
+
+Then the next machine which needs another version passes `-Dmongodb.image=mongo:7.0` and
+leaves the blueprint as it is. Where a platform starts the container for you, as Quarkus does
+with its dev services, let it: the version then comes with the platform and moves with it.
+
 ## The test harness
 
 What every blueprint needs for that is the same, so it is written once and copied:
