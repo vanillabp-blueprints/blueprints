@@ -100,6 +100,10 @@ jobs:
     # The aggregator job is what fills the Maven cache, so the matrix waits for it and reads
     # a cache which already holds what every blueprint needs.
     needs: [discover, monorepo]
+    # A change which touches no blueprint leaves an empty list, and a matrix without a single
+    # entry is an error, not an empty run. The job would fail with nothing to show for it, and
+    # the aggregator below still builds every module. 'verified' reads a skipped job as a pass.
+    if: needs.discover.outputs.combinations != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
