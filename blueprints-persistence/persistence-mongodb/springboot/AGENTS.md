@@ -103,6 +103,9 @@ mvn install verify
 
 `camunda8` is the only profile of this blueprint and it is active by default. Docker is
 required: the tests start MongoDB as a container, and the cluster runs in containers as well.
+That container runs `mongo:8.2`, named in `MongoDbForTests` and overridable with
+`-Dmongodb.image=mongo:7.0`. MongoDB 8.0 does not start on a Linux kernel 6.19 or newer, so a
+version older than 8.2 has to be 7.x.
 
 Both tests of `LoanApprovalIT` have to pass. `theServiceTaskFillsTheAggregate` proves the wiring
 between BPMN and code, `aFailedStartLeavesNothingBehind` proves the aggregate and the outbox

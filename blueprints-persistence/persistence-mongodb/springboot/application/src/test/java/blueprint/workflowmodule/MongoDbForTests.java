@@ -35,8 +35,21 @@ public class MongoDbForTests {
 
   private static final String DATABASE = "loan-approval";
 
+  /**
+   * The image the container runs, overridable with {@code -Dmongodb.image=mongo:7.0}.
+   *
+   * <p>
+   * The version is written down, so a test run says which MongoDB it ran against. It is
+   * 8.2 and not 8.0 because MongoDB 8.0 refuses to start on a Linux kernel 6.19 or newer, see
+   * <a href="https://jira.mongodb.org/browse/SERVER-121912">SERVER-121912</a>. The container
+   * ends right after it was started and the failing test says nothing about the reason. Where
+   * a machine needs another version, pass the property instead of changing this file.
+   * </p>
+   */
+  private static final String IMAGE = System.getProperty("mongodb.image", "mongo:8.2");
+
   private static final MongoDBContainer MONGO_DB = new MongoDBContainer(
-      DockerImageName.parse("mongo:8.0"))
+      DockerImageName.parse(IMAGE))
       .withReplicaSet();
 
   static {
