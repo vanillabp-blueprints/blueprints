@@ -47,10 +47,12 @@ end event it reached:
 | `endEventId()`         | the BPMN id of the end event, or `null` where the BPMS does not report it                                                   |
 
 **Not every BPMS reports the same.** Camunda 7 names the end event; Camunda 8 does not, so
-`endEventId()` is `null` there and this blueprint's test does not assert it. Camunda 8 also
-cannot report a cancelled workflow at all - its listeners run for completed instances only,
-which its adapter documents as a deviation. Write code which survives both: a `null` end event
-is normal, and a business decision must not hang on the distinction a BPMS may not make.
+`endEventId()` is `null` there and this blueprint's test does not assert it. What Camunda 8
+says about a cancelled workflow depends on its release line: from the 8.10 line on such a
+workflow reports `TERMINATED`, and on the lines before it the cluster runs its listeners for
+completed instances only, so nothing arrives at all. Its adapter documents both. Write code
+which survives every case: a `null` end event is normal, and a business decision must not hang
+on the distinction a BPMS may not make.
 
 **The notification is at-least-once.** After a crash it may arrive twice, so what the method
 does has to tolerate that. Writing a closing time and a status does. Sending a letter does
