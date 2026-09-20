@@ -83,7 +83,7 @@ public class Aggregate {
 
   /**
    * How it ended, as far as the BPMS can tell: <code>COMPLETED</code> for a workflow which
-   * reached an end event, <code>TERMINATED</code> for one ended without reaching one.
+   * reached an end event, <code>CANCELED</code> for one ended without reaching one.
    */
   @Column
   private String closedBy;

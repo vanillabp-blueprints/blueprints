@@ -39,20 +39,22 @@ knows, and repeating it in front of every end event you add later.
 **What the record tells you.** `WorkflowEnd` carries how the workflow ended, when, and which
 end event it reached:
 
-|         Value          |                                                        What it means                                                        |
-|------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| `kind() == COMPLETED`  | the workflow reached an end event                                                                                           |
-| `kind() == TERMINATED` | it ended without reaching one: cancelled by an operator, a terminate end event, an interrupting event of an enclosing scope |
-| `time()`               | when it ended, as the BPMS reports it, or when VanillaBP was told where it does not                                         |
-| `endEventId()`         | the BPMN id of the end event, or `null` where the BPMS does not report it                                                   |
+|         Value         |                                                    What it means                                                     |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------|
+| `kind() == COMPLETED` | the workflow reached an end event                                                                                    |
+| `kind() == CANCELED`  | it ended without reaching one. Which modelled paths lead there is up to the BPMS, and its adapter says which ones do |
+| `time()`              | when it ended, as the BPMS reports it, or when VanillaBP was told where it does not                                  |
+| `endEventId()`        | the BPMN id of the end event, or `null` where the BPMS does not report it                                            |
 
 **Not every BPMS reports the same.** Camunda 7 names the end event; Camunda 8 does not, so
 `endEventId()` is `null` there and this blueprint's test does not assert it. What Camunda 8
 says about a cancelled workflow depends on its release line: from the 8.10 line on such a
-workflow reports `TERMINATED`, and on the lines before it the cluster runs its listeners for
+workflow reports `CANCELED`, and on the lines before it the cluster runs its listeners for
 completed instances only, so nothing arrives at all. Its adapter documents both. Write code
 which survives every case: a `null` end event is normal, and a business decision must not hang
-on the distinction a BPMS may not make.
+on the distinction a BPMS may not make. What a model looks like decides nothing here: a
+terminate end event and an interrupting event subprocess read like a cancelation and are
+reported as `COMPLETED` by both Camunda engines.
 
 **The notification is at-least-once.** After a crash it may arrive twice, so what the method
 does has to tolerate that. Writing a closing time and a status does. Sending a letter does

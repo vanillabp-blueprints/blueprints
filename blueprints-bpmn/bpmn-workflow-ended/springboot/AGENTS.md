@@ -70,7 +70,7 @@ blueprint - copy them unchanged.
 4. **Make it survive arriving twice.** The notification is at-least-once, so setting a
    timestamp and a status is fine and sending anything is not.
 5. Do NOT let a business decision depend on `endEventId()` or on the difference between
-   `COMPLETED` and `TERMINATED`. Camunda 7 names the end event, Camunda 8 does not; a
+   `COMPLETED` and `CANCELED`. Camunda 7 names the end event, Camunda 8 does not; a
    cancelled workflow is reported by some BPMS and by others not at all. Record what arrives,
    decide on the aggregate.
 6. Do not model a task in front of an end event just to be told about the end. That is the
