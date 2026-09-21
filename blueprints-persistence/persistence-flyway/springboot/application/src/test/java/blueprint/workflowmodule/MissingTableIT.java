@@ -22,17 +22,10 @@ import org.springframework.util.ClassUtils;
  * </p>
  *
  * <p>
- * Two owners can be forgotten, so both are played through, each by pointing one Flyway instance
- * at a location without migrations. That is the realistic mistake: a deployment which applied
- * everything except one part. The engine is left to create its own tables here, because a missing
- * engine schema would end the boot earlier and with the engine's message, and what is under test
- * is VanillaBP's.
- * </p>
- *
- * <p>
- * The outbox table of the outbox library is the more interesting of the two: its statements are
- * the one piece of schema this application writes down itself, so it is the one a deployment can
- * forget without anything else noticing.
+ * The mistake is played through by pointing VanillaBP's Flyway instance at a location without
+ * migrations. That is the realistic one: a deployment which applied everything except one part.
+ * The engine is left to create its own tables here, because a missing engine schema would end the
+ * boot earlier and with the engine's message, and what is under test is VanillaBP's.
  * </p>
  */
 public class MissingTableIT {
@@ -56,27 +49,6 @@ public class MissingTableIT {
           assertThat(message)
               .describedAs("and the artifact to apply")
               .contains("vanillabp-schema");
-        });
-
-  }
-
-  @Test
-  public void aMissingOutboxTableOfTheOutboxLibraryEndsTheBootAsWell() {
-
-    // the application's own instance is the one carrying gruelbox's migration
-    assertThatThrownBy(
-        () -> bootWith("--blueprint.schema.application-locations=classpath:db/no-migrations"))
-        .satisfies(thrown -> {
-          final var message = messageOf(thrown);
-          assertThat(message)
-              .describedAs("The message names the table which is missing")
-              .contains("TXNO_OUTBOX");
-          assertThat(message)
-              .describedAs("and says that this one is not VanillaBP's")
-              .contains("vanillabp-schema");
-          assertThat(message)
-              .describedAs("and where the statements for it come from")
-              .contains("writeSchema");
         });
 
   }

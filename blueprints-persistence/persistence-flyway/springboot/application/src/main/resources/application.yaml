@@ -28,9 +28,7 @@ vanillabp:
   outbox:
     # The tables VanillaBP would create at startup come from Flyway here. With this switch off,
     # VanillaBP instead CHECKS at startup that they exist and ends the boot naming the table and
-    # this property, rather than failing at the first workflow that is started. Note that it covers
-    # the outbox of the Spring Boot integration as well, which is why db/migration holds a
-    # migration for its table.
+    # this property, rather than failing at the first workflow that is started.
     create-schema: false
 blueprint:
   schema:

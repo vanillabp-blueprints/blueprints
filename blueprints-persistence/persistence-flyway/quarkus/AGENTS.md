@@ -24,9 +24,9 @@ Replace all of these consistently; they are the same in every blueprint.
 | `loan_approval`            | BPMN process ID                                                                                                           |
 | `LOAN_APPROVAL`            | the aggregate's table, in the entity AND in the module's migration                                                        |
 
-Two names are not placeholders and must not be renamed: `VANILLABP_PHASE_TWO_OUTBOX` and
-`VANILLABP_TASK_DELIVERY` are VanillaBP's tables. The delivery table's name is not
-configurable at all, so a renamed one is a table nobody reads.
+Three names are not placeholders and must not be renamed: `VANILLABP_PHASE_TWO_OUTBOX`,
+`VANILLABP_PHASE_TWO_PAYLOAD` and `VANILLABP_TASK_DELIVERY` are VanillaBP's tables. The delivery
+table's name is not configurable at all, so a renamed one is a table nobody reads.
 
 `loan-approval` is also the name of the module's migration directory, which is one of the locations
 the extension is pointed at. Renaming the module renames the directory and the location with it.

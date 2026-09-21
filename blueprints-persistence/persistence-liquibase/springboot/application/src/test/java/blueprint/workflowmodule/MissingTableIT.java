@@ -22,16 +22,10 @@ import org.springframework.util.ClassUtils;
  * </p>
  *
  * <p>
- * Two tables can be forgotten, so both are played through, each with a changelog which applies
- * everything except one include line. That is the realistic mistake. The engine is left to
- * create its own tables here, because a missing engine schema would end the boot earlier and
- * with the engine's message, and what is under test is VanillaBP's.
- * </p>
- *
- * <p>
- * {@code TXNO_OUTBOX} is the more interesting of the two: its statements are the one piece of
- * schema this application writes down itself, so it is the one a changelog can forget without
- * anything else noticing.
+ * The mistake is played through with a changelog which applies everything except one include
+ * line. That is the realistic one. The engine is left to create its own tables here, because a
+ * missing engine schema would end the boot earlier and with the engine's message, and what is
+ * under test is VanillaBP's.
  * </p>
  */
 public class MissingTableIT {
@@ -54,25 +48,6 @@ public class MissingTableIT {
           assertThat(message)
               .describedAs("and the artifact to apply")
               .contains("vanillabp-schema");
-        });
-
-  }
-
-  @Test
-  public void aMissingOutboxTableOfTheOutboxLibraryEndsTheBootAsWell() {
-
-    assertThatThrownBy(() -> bootWith("classpath:db/changelog-without-gruelbox.xml"))
-        .satisfies(thrown -> {
-          final var message = messageOf(thrown);
-          assertThat(message)
-              .describedAs("The message names the table which is missing")
-              .contains("TXNO_OUTBOX");
-          assertThat(message)
-              .describedAs("and says that this one is not VanillaBP's")
-              .contains("vanillabp-schema");
-          assertThat(message)
-              .describedAs("and where the statements for it come from")
-              .contains("writeSchema");
         });
 
   }

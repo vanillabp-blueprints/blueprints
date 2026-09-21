@@ -46,7 +46,8 @@ public class SchemaIT {
 
     assertThat(tables)
         .describedAs("The tables VanillaBP needs come from 'vanillabp/schema/changelog.xml'")
-        .contains("VANILLABP_PHASE_TWO_OUTBOX", "VANILLABP_TASK_DELIVERY");
+        .contains(
+            "VANILLABP_PHASE_TWO_OUTBOX", "VANILLABP_PHASE_TWO_PAYLOAD", "VANILLABP_TASK_DELIVERY");
 
     assertThat(tables)
         .describedAs("The workflow module's own table comes from its own changelog")

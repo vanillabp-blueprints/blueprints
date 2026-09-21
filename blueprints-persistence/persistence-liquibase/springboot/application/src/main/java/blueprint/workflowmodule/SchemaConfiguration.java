@@ -10,9 +10,8 @@ import liquibase.integration.spring.SpringLiquibase;
 
 /**
  * The application applies one changelog while it starts, and that changelog includes
- * everything the schema consists of: the tables VanillaBP needs, the outbox table of the
- * Spring Boot integration, the changelog of the workflow module and, with an embedded engine,
- * the engine's own.
+ * everything the schema consists of: the tables VanillaBP needs, the changelog of the workflow
+ * module and, with an embedded engine, the engine's own.
  *
  * <p>
  * Which changelog that is depends on the engine, so the file is named in the profile of
