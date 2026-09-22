@@ -17,6 +17,13 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
+    <!--
+      Lombok is an annotation processor found on the classpath. A JDK 23 or newer does not
+      run such a processor unless the build says so, and then the getters and the logger it
+      writes are simply absent. Saying it here keeps the blueprint building on every JDK
+      from 21 upwards.
+    -->
+    <maven.compiler.proc>full</maven.compiler.proc>
     <spring-boot.version>4.1.1</spring-boot.version>
   </properties>
 

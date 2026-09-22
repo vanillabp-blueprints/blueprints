@@ -82,7 +82,7 @@ getters is for, and the pattern costs nothing there either.
 
 ## Running it
 
-Requires a JDK 21. Camunda 7 is embedded, so nothing else has to run:
+Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 
 ```bash
 mvn install verify

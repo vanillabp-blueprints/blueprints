@@ -6,7 +6,7 @@ it is run, and it is read by developers *and* by AI agents.
 
 ## Prerequisites
 
-- JDK 21
+- JDK 21 or newer; the workflows use 25, and every blueprint compiles for Java 21
 - Git; Maven is provided by the wrapper (`./mvnw`)
 
 ## Where changes go
