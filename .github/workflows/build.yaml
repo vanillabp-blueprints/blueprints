@@ -41,7 +41,7 @@ jobs:
   # therefore says so where it declares everything else, and a reader of the index sees
   # what the CI does.
   discover:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       combinations: "${{ steps.list.outputs.combinations }}"
     steps:
@@ -104,7 +104,7 @@ jobs:
     # entry is an error, not an empty run. The job would fail with nothing to show for it, and
     # the aggregator below still builds every module. 'verified' reads a skipped job as a pass.
     if: needs.discover.outputs.combinations != '[]'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       # Without a limit all of them start at once, and about a hundred jobs asking Maven
@@ -184,7 +184,7 @@ jobs:
   # job which WRITES the Maven cache. Everything the matrix needs is downloaded here, once,
   # instead of by a hundred jobs at the same second.
   monorepo:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -225,7 +225,7 @@ jobs:
   verified:
     if: always()
     needs: [blueprint, monorepo]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Every build job succeeded
         run: |

@@ -20,7 +20,7 @@ jobs:
   # so Maven kept that profile, Spring started with the camunda8 one, and the deployment
   # ran into a cluster no Camunda 7 job ever starts.
   discover:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       combinations: "${{ steps.list.outputs.combinations }}"
     steps:
@@ -46,7 +46,7 @@ jobs:
   # exactly what this job is for.
   freshness:
     needs: discover
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     # The longest job of a green run takes six minutes and the median two, so anything
     # near this limit is stuck rather than slow. Without it a job would inherit the six
     # hours GitHub gives by default, which is how a nightly ends up still running when
