@@ -93,6 +93,13 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${maven-compiler-plugin.version}</version>
         <configuration>
+          <!--
+            Lombok is an annotation processor found on the classpath. A JDK 23 or newer does not
+            run such a processor unless the build says so, and then the getters and the logger it
+            writes are simply absent. Saying it here keeps the blueprint building on every JDK
+            from 21 upwards.
+          -->
+          <proc>full</proc>
           <!-- Parameter names are what VanillaBP binds a task method's arguments by. -->
           <parameters>true</parameters>
           <compilerArgs>

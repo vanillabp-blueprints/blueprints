@@ -85,7 +85,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 
 ## Running it
 
-Requires a JDK 21 and a Camunda 8 cluster, because Camunda 8 is a remote engine:
+Requires a JDK 21 or newer and a Camunda 8 cluster, because Camunda 8 is a remote engine:
 
 ```bash
 mvn install verify

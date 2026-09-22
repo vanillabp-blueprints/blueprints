@@ -99,7 +99,7 @@ one bean-name generator per workflow module, is what
 
 ## Running it
 
-Requires a JDK 21. The state before the migration needs nothing but the embedded engine:
+Requires a JDK 21 or newer. The state before the migration needs nothing but the embedded engine:
 
 ```bash
 mvn install verify

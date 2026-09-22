@@ -90,7 +90,7 @@ A called process is part of the module which owns it, not a module of its own.
 
 ## Running it
 
-Requires a JDK 21. Camunda 7 is embedded, so nothing else has to run:
+Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 
 ```bash
 mvn install verify

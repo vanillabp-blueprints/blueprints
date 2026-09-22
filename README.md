@@ -54,7 +54,9 @@ repository is the build, the formatting rules and the conventions the others fol
 
 ## Building
 
-Requires a JDK 21; Maven comes with the wrapper.
+Requires a JDK 21 or newer; Maven comes with the wrapper. The workflows build with the JDK
+named in `.github/workflows`, currently 25. Every blueprint compiles for Java 21 either way,
+so a copy of it runs on a Java 21 runtime.
 
 ```bash
 ./mvnw install verify                    # all blueprints, default BPMS

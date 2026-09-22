@@ -42,7 +42,7 @@ Omit this section if this blueprint is a base itself.>
 
 ## Running it
 
-Requires a JDK 21 and, depending on the BPMS, a running engine (see below).
+Requires a JDK 21 or newer and, depending on the BPMS, a running engine (see below).
 
 ```bash
 mvn verify

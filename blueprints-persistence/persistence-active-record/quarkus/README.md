@@ -139,7 +139,7 @@ own configuration, the test harness.
 
 ## Running it
 
-Requires a JDK 21 and a running Docker, because the dev services start a MongoDB for the second
+Requires a JDK 21 or newer and a running Docker, because the dev services start a MongoDB for the second
 use case. Camunda 7 is embedded, so nothing else has to run:
 
 ```bash

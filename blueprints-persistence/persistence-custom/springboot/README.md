@@ -97,7 +97,7 @@ the module's own configuration, the test harness.
 
 ## Running it
 
-Requires a JDK 21, Docker and a Camunda 8 cluster. The monorepo brings the shortest way to a
+Requires a JDK 21 or newer, Docker and a Camunda 8 cluster. The monorepo brings the shortest way to a
 cluster:
 
 ```bash

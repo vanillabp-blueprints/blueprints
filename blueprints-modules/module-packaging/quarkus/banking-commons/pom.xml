@@ -16,6 +16,13 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
+    <!--
+      Lombok is an annotation processor found on the classpath. A JDK 23 or newer does not
+      run such a processor unless the build says so, and then the getters and the logger it
+      writes are simply absent. Saying it here keeps the blueprint building on every JDK
+      from 21 upwards.
+    -->
+    <maven.compiler.proc>full</maven.compiler.proc>
     <quarkus.version>3.39.3</quarkus.version>
     <jandex-maven-plugin.version>3.6.0</jandex-maven-plugin.version>
     <lombok.version>1.18.48</lombok.version>
