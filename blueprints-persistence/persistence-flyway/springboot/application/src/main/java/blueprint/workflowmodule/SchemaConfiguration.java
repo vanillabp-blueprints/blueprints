@@ -22,8 +22,8 @@ import org.springframework.context.annotation.Configuration;
  * <p>
  * Three owners exist here: VanillaBP, whose SQL comes out of
  * {@code io.vanillabp:vanillabp-schema}; the workflow module, whose migrations travel in its own
- * JAR; and the application itself, which owns what the outbox library needs and, with an embedded
- * engine, the engine's tables.
+ * JAR; and the application itself, which owns its own migrations and, with an embedded engine,
+ * the engine's tables.
  * </p>
  *
  * <p>
@@ -103,9 +103,10 @@ public class SchemaConfiguration {
   }
 
   /**
-   * What the application owns: the table of the outbox library and, with an embedded engine, the
-   * engine's own tables. Which locations those are depends on the engine, so they are named in
-   * the profile of the engine.
+   * What the application owns: its own migrations and, with an embedded engine, the engine's
+   * tables. Which locations those are depends on the engine, so they are named in the profile of
+   * the engine. This blueprint has no table of its own, so {@code db/migration} holds nothing but
+   * a README.
    *
    * @param dataSource The data source of the application
    * @param locations The migrations to apply, named by the engine's profile

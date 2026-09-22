@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  The changelog the application applies: what VanillaBP needs, and what the outbox library of
-  the Spring Boot integration needs. The workflow module brings its own changelog along
-  and is not referenced here.
+  The changelog the application applies: what VanillaBP needs, plus the changelog of the workflow
+  module.
 
   Nothing in this file describes a table twice. VanillaBP's own changelog is included from
   the artifact 'io.vanillabp:vanillabp-schema', so an update of VanillaBP brings its new
@@ -18,12 +17,14 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
   <!--
-    The two tables VanillaBP needs: the phase-two outbox and the log of processed task
-    deliveries. Read from the classpath, out of the JAR, so the statements always match
-    the VanillaBP version this application depends on.
+    The three tables VanillaBP needs: the phase-two outbox, the payloads of the calls which carry
+    one, and the log of processed task deliveries. Read from the classpath, out of the JAR, so the
+    statements always match the VanillaBP version this application depends on.
 
     A renamed outbox table ('vanillabp.outbox.jdbc.table') would be set here as
-    <property name="vanillabp.outbox.table" value="..."/> before the include.
+    <property name="vanillabp.outbox.table" value="..."/> before the include. The payload table
+    follows the outbox table, so a rename needs the property 'vanillabp.payload.table' as well,
+    unless 'vanillabp.outbox.jdbc.payload-table' gives it a name of its own.
   -->
   <include file="vanillabp/schema/changelog.xml" />
 
@@ -32,11 +33,5 @@
     line here and nothing else.
   -->
   <include file="loan-approval/db/changelog.xml" relativeToChangelogFile="false" />
-
-  <!--
-    The outbox of the Spring Boot integration is gruelbox, and its schema belongs to
-    gruelbox. See gruelbox-outbox.xml for why this application has to create it anyway.
-  -->
-  <include file="db/gruelbox-outbox.xml" relativeToChangelogFile="false" />
 
 </databaseChangeLog>

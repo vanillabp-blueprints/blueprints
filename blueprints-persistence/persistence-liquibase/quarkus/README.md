@@ -18,12 +18,12 @@ The process is the one from `module-single` and nothing about it changed: a loan
 with a single service task. What changed is who creates the tables it needs, and who owns
 which of them.
 
-|                          Table                          |           Created by            |                                   From                                   |
-|---------------------------------------------------------|---------------------------------|--------------------------------------------------------------------------|
-| `VANILLABP_PHASE_TWO_OUTBOX`, `VANILLABP_TASK_DELIVERY` | the application's Liquibase     | `vanillabp/schema/changelog.xml`, out of `io.vanillabp:vanillabp-schema` |
-| `ACT_*`                                                 | the application's Liquibase     | the changelog Camunda ships inside its engine JAR                        |
-| `LOAN_APPROVAL`                                         | the workflow module's Liquibase | `loan-approval/.../loan-approval/db/changelog.xml`                       |
-| `DATABASECHANGELOG`                                     | Liquibase                       | the bookkeeping, one row per changeset and owner                         |
+|                                             Table                                             |           Created by            |                                   From                                   |
+|-----------------------------------------------------------------------------------------------|---------------------------------|--------------------------------------------------------------------------|
+| `VANILLABP_PHASE_TWO_OUTBOX`, `VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD`, `VANILLABP_TASK_DELIVERY` | the application's Liquibase     | `vanillabp/schema/changelog.xml`, out of `io.vanillabp:vanillabp-schema` |
+| `ACT_*`                                                                                       | the application's Liquibase     | the changelog Camunda ships inside its engine JAR                        |
+| `LOAN_APPROVAL`                                                                               | the workflow module's Liquibase | `loan-approval/.../loan-approval/db/changelog.xml`                       |
+| `DATABASECHANGELOG`                                                                           | Liquibase                       | the bookkeeping, one row per changeset and owner                         |
 
 Three settings are what make this real, and all three are in the configuration rather than
 in code: the schema management strategy `validate` has Hibernate check the result instead of
@@ -81,12 +81,13 @@ keeps each released version in a file of its own and pins it with a checksum for
 reason, and the changelogs here follow the same rule. Their changeset ids carry the version
 which introduced them, and a later change is a new changeset, always.
 
-Two tables are described: the phase-two outbox, which holds what may only reach a remote BPMS
-after the caller's transaction committed, and the log of processed task deliveries, from which
-a BPMS repeating a delivery is answered instead of running the handler twice. Both are
-described database independently, so the statements for a database nobody tested are still
-Liquibase's own rather than somebody's guess. H2 and PostgreSQL are covered by tests of the
-framework; MySQL, MariaDB, SQL Server, Oracle and DB2 are shipped without one.
+Three tables are described. The phase-two outbox holds what may only reach a remote BPMS after
+the caller's transaction committed. A call which carries a payload stores it in a table of its own,
+and the entry names the row. The log of processed task deliveries is what a BPMS repeating a
+delivery is answered from, instead of the handler running twice. Each of them is described database
+independently, so the statements for a database nobody tested are still Liquibase's own rather than
+somebody's guess. H2 and PostgreSQL are covered by tests of the framework; MySQL, MariaDB, SQL
+Server, Oracle and DB2 are shipped without one.
 
 ### The engine's tables
 

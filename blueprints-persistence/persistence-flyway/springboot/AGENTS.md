@@ -24,10 +24,9 @@ Replace all of these consistently; they are the same in every blueprint.
 | `loan_approval`            | BPMN process ID                                                                                                           |
 | `LOAN_APPROVAL`            | the aggregate's table, in the entity AND in the module's migration                                                        |
 
-Two names are not placeholders and must not be renamed: `VANILLABP_PHASE_TWO_OUTBOX` and
-`VANILLABP_TASK_DELIVERY` are VanillaBP's tables, `TXNO_OUTBOX` and `TXNO_SEQUENCE` are the
-outbox library's. The delivery table's name is not configurable at all, so a renamed one is a
-table nobody reads.
+Three names are not placeholders and must not be renamed: `VANILLABP_PHASE_TWO_OUTBOX`,
+`VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD` and `VANILLABP_TASK_DELIVERY` are VanillaBP's tables. The delivery
+table's name is not configurable at all, so a renamed one is a table nobody reads.
 
 `loan-approval` is also the name of the module's history table
 (`flyway_schema_history_loan_approval`) and of its migration directory. Renaming the module renames
@@ -36,19 +35,18 @@ find no history and try to apply every migration again.
 
 ## Core files
 
-|                                    File                                     |                                                           Why it matters                                                            |
-|-----------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/db/migration/V1.0.0__*.sql` | the module's schema: its aggregate table. Inside the module's resource directory, because modules share one classpath               |
-| `application/src/main/resources/db/migration/V1.0.0__*.sql`                 | the outbox table of the outbox library, in the statements that library writes for itself                                            |
-| `application/src/main/java/.../SchemaConfiguration.java`                    | one `Flyway` plus one `FlywayMigrationInitializer` per owner, each with a history table of its own                                  |
-| `application/pom.xml`, profile `camunda7`                                   | takes Camunda's scripts out of the engine JAR and names them for Flyway; the engine version is a property and the migration version |
-| `application/src/main/resources/application.yaml`                           | `ddl-auto: validate`, `vanillabp.outbox.create-schema: false`, the locations per owner                                              |
-| `application/src/main/resources/application-camunda7.yaml`                  | `database-schema-update: false` and the engine's migrations, added where the engine is embedded                                     |
-| `loan-approval/src/test/resources/application.yaml`                         | `spring.flyway.locations`: the module's test IS an application and applies its own migrations                                       |
-| `application/src/test/java/.../SchemaIT.java`                               | asserts every table exists and that every owner has a history of its own                                                            |
-| `application/src/test/java/.../MissingTableIT.java`                         | asserts a forgotten migration ends the boot with VanillaBP's message                                                                |
-| `application/src/test/java/.../WorkflowOnTheOwnSchemaIT.java`               | runs a workflow on the migrated schema: a table described wrongly comes out here instead of in production                           |
-| `application/src/test/java/.../GruelboxSchemaDriftTest.java`                | lets the outbox library migrate an empty database and compares, so a library upgrade cannot rot the copied statements               |
+|                                    File                                     |                                                            Why it matters                                                            |
+|-----------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/db/migration/V1.0.0__*.sql` | the module's schema: its aggregate table. Inside the module's resource directory, because modules share one classpath                |
+| `application/src/main/resources/db/migration`                               | where the application's own migrations go. This blueprint owns no table of its own, so the directory holds a README and nothing else |
+| `application/src/main/java/.../SchemaConfiguration.java`                    | one `Flyway` plus one `FlywayMigrationInitializer` per owner, each with a history table of its own                                   |
+| `application/pom.xml`, profile `camunda7`                                   | takes Camunda's scripts out of the engine JAR and names them for Flyway; the engine version is a property and the migration version  |
+| `application/src/main/resources/application.yaml`                           | `ddl-auto: validate`, `vanillabp.outbox.create-schema: false`, the locations per owner                                               |
+| `application/src/main/resources/application-camunda7.yaml`                  | `database-schema-update: false` and the engine's migrations, added where the engine is embedded                                      |
+| `loan-approval/src/test/resources/application.yaml`                         | `spring.flyway.locations`: the module's test IS an application and applies its own migrations                                        |
+| `application/src/test/java/.../SchemaIT.java`                               | asserts every table exists and that every owner has a history of its own                                                             |
+| `application/src/test/java/.../MissingTableIT.java`                         | asserts a forgotten migration ends the boot with VanillaBP's message                                                                 |
+| `application/src/test/java/.../WorkflowOnTheOwnSchemaIT.java`               | runs a workflow on the migrated schema: a table described wrongly comes out here instead of in production                            |
 
 Rules which hold beyond this blueprint:
 
@@ -108,14 +106,7 @@ migration. A `Flyway` bean alone migrates whenever its bean happens to be create
    name the files `V<engine-version>.<n>__camunda_<part>.sql`, in the order engine, identity,
    history, CMMN, DMN. Keep that in the engine's Maven profile, so a build for a remote engine does
    not carry it.
-6. On this platform the phase-two outbox is `com.gruelbox:transactionoutbox-core`, whose migrator
-   is switched off by the same property. Create `TXNO_OUTBOX` and `TXNO_SEQUENCE` with your own
-   migration, and take the statements from the library rather than from its source:
-   `DefaultPersistor.builder().dialect(<dialect>).build().writeSchema(writer)` emits every migration
-   it has as SQL for that dialect. Then add a test which asks for that output again and compares, so
-   an upgrade of the library fails the build. `TXNO_VERSION` is the bookkeeping of the migrator you
-   just switched off, and `writeSchema` does not emit it.
-7. If the project's database is not H2, every location changes with it: VanillaBP's SQL directory,
+6. If the project's database is not H2, every location changes with it: VanillaBP's SQL directory,
    the engine's script names, and any statement written by hand. Flyway has no abstraction over
    dialects, which is the price of its simplicity.
 
@@ -129,11 +120,10 @@ That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamund
 running cluster and `vanillabp.adapters.camunda8.rest-address` configured; do not report a
 failure of that profile as a defect of the generated code before having checked it.
 
-Five tests have to pass. `LoanApprovalIT` and `WorkflowOnTheOwnSchemaIT` run a real workflow, the
+Four tests have to pass. `LoanApprovalIT` and `WorkflowOnTheOwnSchemaIT` run a real workflow, the
 second one in the application, where the whole schema came from a migration. `SchemaIT` names the
 tables the migration was supposed to bring and checks that every owner has a history of its own.
-`MissingTableIT` proves the opposite case is reported at startup. `GruelboxSchemaDriftTest` proves
-the copied statements still match the library.
+`MissingTableIT` proves the opposite case is reported at startup.
 
 A missing table reported by Hibernate or by VanillaBP is not a defect of the framework: it means a
 migration was not applied, was applied too late, or does not describe that table. A migration which

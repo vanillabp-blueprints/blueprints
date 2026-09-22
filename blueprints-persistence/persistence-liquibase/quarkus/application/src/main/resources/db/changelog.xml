@@ -20,12 +20,14 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
   <!--
-    The two tables VanillaBP needs: the phase-two outbox and the log of processed task
-    deliveries. Read from the classpath, out of the JAR, so the statements always match the
-    VanillaBP version this application depends on.
+    The three tables VanillaBP needs: the phase-two outbox, the payloads of the calls which carry
+    one, and the log of processed task deliveries. Read from the classpath, out of the JAR, so the
+    statements always match the VanillaBP version this application depends on.
 
     A renamed outbox table ('vanillabp.outbox.jdbc.table') would be set here as
-    <property name="vanillabp.outbox.table" value="..."/> before the include.
+    <property name="vanillabp.outbox.table" value="..."/> before the include. The payload table
+    follows the outbox table, so a rename needs the property 'vanillabp.payload.table' as well,
+    unless 'vanillabp.outbox.jdbc.payload-table' gives it a name of its own.
   -->
   <include file="vanillabp/schema/changelog.xml" />
 

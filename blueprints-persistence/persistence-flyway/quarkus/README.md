@@ -17,12 +17,12 @@ otherwise create themselves.
 The process is the one from `module-single` and nothing about it changed: a loan approval with a
 single service task. What changed is who creates the tables it needs, and who owns which of them.
 
-|                          Table                          |          Created by          |                               From                                |
-|---------------------------------------------------------|------------------------------|-------------------------------------------------------------------|
-| `VANILLABP_PHASE_TWO_OUTBOX`, `VANILLABP_TASK_DELIVERY` | Flyway, VanillaBP's history  | the SQL in `io.vanillabp:vanillabp-schema`, one file per database |
-| `ACT_*`                                                 | Flyway, the application's    | Camunda's own scripts, taken out of the engine JAR by the build   |
-| `LOAN_APPROVAL`                                         | Flyway, the module's history | `loan-approval/.../loan-approval/db/migration`                    |
-| `FLYWAY_SCHEMA_HISTORY*`                                | Flyway                       | one history table per owner, see below                            |
+|                                             Table                                             |          Created by          |                               From                                |
+|-----------------------------------------------------------------------------------------------|------------------------------|-------------------------------------------------------------------|
+| `VANILLABP_PHASE_TWO_OUTBOX`, `VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD`, `VANILLABP_TASK_DELIVERY` | Flyway, VanillaBP's history  | the SQL in `io.vanillabp:vanillabp-schema`, one file per database |
+| `ACT_*`                                                                                       | Flyway, the application's    | Camunda's own scripts, taken out of the engine JAR by the build   |
+| `LOAN_APPROVAL`                                                                               | Flyway, the module's history | `loan-approval/.../loan-approval/db/migration`                    |
+| `FLYWAY_SCHEMA_HISTORY*`                                                                      | Flyway                       | one history table per owner, see below                            |
 
 Three settings are what make this real, and all three are in the configuration rather than in
 code: the schema management strategy `validate` has Hibernate check the result instead of building

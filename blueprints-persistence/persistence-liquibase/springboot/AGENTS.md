@@ -24,10 +24,9 @@ Replace all of these consistently; they are the same in every blueprint.
 | `loan_approval`            | BPMN process ID                                                                                                           |
 | `LOAN_APPROVAL`            | the aggregate's table, in the entity AND in the module's changelog                                                        |
 
-Two names are not placeholders and must not be renamed: `VANILLABP_PHASE_TWO_OUTBOX` and
-`VANILLABP_TASK_DELIVERY` are VanillaBP's tables, `TXNO_OUTBOX` and `TXNO_SEQUENCE` are the
-outbox library's. The delivery table's name is not configurable at all, so a renamed one is a
-table nobody reads.
+Three names are not placeholders and must not be renamed: `VANILLABP_PHASE_TWO_OUTBOX`,
+`VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD` and `VANILLABP_TASK_DELIVERY` are VanillaBP's tables. The delivery
+table's name is not configurable at all, so a renamed one is a table nobody reads.
 
 `loan-approval` is also the `logicalFilePath` of the module's changelog. Renaming the module
 means renaming that path, and a changelog already applied somewhere must not have its path
@@ -35,19 +34,17 @@ changed: Liquibase would no longer recognize its rows and would run every change
 
 ## Core files
 
-|                               File                                |                                                        Why it matters                                                         |
-|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/db/changelog.xml` | the module's schema: its aggregate table. Inside the module's resource directory, because modules share one classpath         |
-| `application/src/main/resources/db/changelog.xml`                 | what the application owns: `<include>` of `vanillabp/schema/changelog.xml` from the artifact, plus the outbox library's table |
-| `application/src/main/resources/db/changelog-camunda7.xml`        | the same plus `<include>` of Camunda's changelog from the engine JAR. Applied by the Camunda 7 build only                     |
-| `application/src/main/resources/db/gruelbox-outbox.xml`           | the outbox table of the outbox library, in the statements that library writes for itself                                      |
-| `application/src/main/java/.../SchemaConfiguration.java`          | the application's `SpringLiquibase` bean; the changelog to apply is a property the engine profile sets                        |
-| `application/src/main/resources/application.yaml`                 | `ddl-auto: validate`, `vanillabp.outbox.create-schema: false`, `blueprint.schema.changelog`                                   |
-| `application/src/main/resources/application-camunda7.yaml`        | `database-schema-update: false` and the changelog which includes the engine's                                                 |
-| `application/src/test/java/.../SchemaIT.java`                     | asserts every table exists and that there is one bookkeeping table per owner                                                  |
-| `application/src/test/java/.../MissingTableIT.java`               | asserts a forgotten migration ends the boot with VanillaBP's message                                                          |
-| `application/src/test/java/.../WorkflowOnTheOwnSchemaIT.java`     | runs a workflow on the migrated schema: a table described wrongly comes out here instead of in production                     |
-| `application/src/test/java/.../GruelboxSchemaDriftTest.java`      | lets the outbox library migrate an empty database and compares, so a library upgrade cannot rot the copied statements         |
+|                               File                                |                                                       Why it matters                                                        |
+|-------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/db/changelog.xml` | the module's schema: its aggregate table. Inside the module's resource directory, because modules share one classpath       |
+| `application/src/main/resources/db/changelog.xml`                 | what the application applies: `<include>` of `vanillabp/schema/changelog.xml` from the artifact, plus the workflow module's |
+| `application/src/main/resources/db/changelog-camunda7.xml`        | the same plus `<include>` of Camunda's changelog from the engine JAR. Applied by the Camunda 7 build only                   |
+| `application/src/main/java/.../SchemaConfiguration.java`          | the application's `SpringLiquibase` bean; the changelog to apply is a property the engine profile sets                      |
+| `application/src/main/resources/application.yaml`                 | `ddl-auto: validate`, `vanillabp.outbox.create-schema: false`, `blueprint.schema.changelog`                                 |
+| `application/src/main/resources/application-camunda7.yaml`        | `database-schema-update: false` and the changelog which includes the engine's                                               |
+| `application/src/test/java/.../SchemaIT.java`                     | asserts every table exists and that there is one bookkeeping table per owner                                                |
+| `application/src/test/java/.../MissingTableIT.java`               | asserts a forgotten migration ends the boot with VanillaBP's message                                                        |
+| `application/src/test/java/.../WorkflowOnTheOwnSchemaIT.java`     | runs a workflow on the migrated schema: a table described wrongly comes out here instead of in production                   |
 
 Rules which hold beyond this blueprint:
 
@@ -106,14 +103,7 @@ auto-configuration is what applies the module's changelog, named by
    `org/camunda/bpm/engine/db/liquibase/camunda-changelog.xml` in the application's changelog.
    Make that include depend on the engine, since it is only on the classpath where the engine
    is: name the changelog in a property the engine's profile file sets.
-6. On this platform the phase-two outbox is `com.gruelbox:transactionoutbox-core`, whose
-   migrator is switched off by the same property. Create `TXNO_OUTBOX` and `TXNO_SEQUENCE`
-   with your own migration, and take the statements from the library rather than from its
-   source: `DefaultPersistor.builder().dialect(<dialect>).build().writeSchema(writer)` emits
-   every migration it has as SQL for that dialect. Then add a test which asks for that output
-   again and compares, so an upgrade of the library fails the build. `TXNO_VERSION` is the
-   bookkeeping of the migrator you just switched off, and `writeSchema` does not emit it.
-7. If the project's database is not H2, nothing changes: the changelogs describe columns
+6. If the project's database is not H2, nothing changes: the changelogs describe columns
    database independently, and Liquibase writes the statements for the database in use.
 
 ## Verifying
@@ -126,11 +116,10 @@ That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamund
 running cluster and `vanillabp.adapters.camunda8.rest-address` configured; do not report a
 failure of that profile as a defect of the generated code before having checked it.
 
-Five tests have to pass. `LoanApprovalIT` and `WorkflowOnTheOwnSchemaIT` run a real workflow,
+Four tests have to pass. `LoanApprovalIT` and `WorkflowOnTheOwnSchemaIT` run a real workflow,
 the second one in the application, where the whole schema came from a migration. `SchemaIT`
 names the tables the migration was supposed to bring. `MissingTableIT` proves the opposite case
-is reported at startup. `GruelboxSchemaDriftTest` proves the copied statements still match the
-library.
+is reported at startup.
 
 A missing table reported by Hibernate or by VanillaBP is not a defect of the framework: it
 means a changelog was not applied, was applied too late, or does not describe that table.

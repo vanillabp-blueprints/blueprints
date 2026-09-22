@@ -43,11 +43,8 @@ public class SchemaIT {
 
     assertThat(tables)
         .describedAs("The tables VanillaBP needs come from the SQL in 'vanillabp-schema'")
-        .contains("VANILLABP_PHASE_TWO_OUTBOX", "VANILLABP_TASK_DELIVERY");
-
-    assertThat(tables)
-        .describedAs("The outbox table of the Spring Boot integration comes from db/migration")
-        .contains("TXNO_OUTBOX", "TXNO_SEQUENCE");
+        .contains(
+            "VANILLABP_PHASE_TWO_OUTBOX", "VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD", "VANILLABP_TASK_DELIVERY");
 
     assertThat(tables)
         .describedAs("The workflow module's own table comes from its own migrations")
