@@ -18,12 +18,12 @@ The process is the one from `module-single` and nothing about it changed: a loan
 with a single service task. What changed is who creates the tables it needs, and who owns
 which of them.
 
-|                                         Table                                          |           Created by            |                                   From                                   |
-|----------------------------------------------------------------------------------------|---------------------------------|--------------------------------------------------------------------------|
-| `VANILLABP_PHASE_TWO_OUTBOX`, `VANILLABP_PHASE_TWO_PAYLOAD`, `VANILLABP_TASK_DELIVERY` | the application's Liquibase     | `vanillabp/schema/changelog.xml`, out of `io.vanillabp:vanillabp-schema` |
-| `ACT_*`                                                                                | the application's Liquibase     | the changelog Camunda ships inside its engine JAR                        |
-| `LOAN_APPROVAL`                                                                        | the workflow module's Liquibase | `loan-approval/.../loan-approval/db/changelog.xml`                       |
-| `DATABASECHANGELOG`                                                                    | Liquibase                       | the bookkeeping, one row per changeset and owner                         |
+|                                             Table                                             |           Created by            |                                   From                                   |
+|-----------------------------------------------------------------------------------------------|---------------------------------|--------------------------------------------------------------------------|
+| `VANILLABP_PHASE_TWO_OUTBOX`, `VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD`, `VANILLABP_TASK_DELIVERY` | the application's Liquibase     | `vanillabp/schema/changelog.xml`, out of `io.vanillabp:vanillabp-schema` |
+| `ACT_*`                                                                                       | the application's Liquibase     | the changelog Camunda ships inside its engine JAR                        |
+| `LOAN_APPROVAL`                                                                               | the workflow module's Liquibase | `loan-approval/.../loan-approval/db/changelog.xml`                       |
+| `DATABASECHANGELOG`                                                                           | Liquibase                       | the bookkeeping, one row per changeset and owner                         |
 
 Three settings are what make this real, and all three are in the configuration rather than
 in code: the schema management strategy `validate` has Hibernate check the result instead of

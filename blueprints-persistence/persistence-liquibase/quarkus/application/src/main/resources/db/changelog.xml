@@ -25,7 +25,9 @@
     statements always match the VanillaBP version this application depends on.
 
     A renamed outbox table ('vanillabp.outbox.jdbc.table') would be set here as
-    <property name="vanillabp.outbox.table" value="..."/> before the include.
+    <property name="vanillabp.outbox.table" value="..."/> before the include. The payload table
+    follows the outbox table, so a rename needs the property 'vanillabp.payload.table' as well,
+    unless 'vanillabp.outbox.jdbc.payload-table' gives it a name of its own.
   -->
   <include file="vanillabp/schema/changelog.xml" />
 

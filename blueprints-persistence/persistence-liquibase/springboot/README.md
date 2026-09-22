@@ -18,12 +18,12 @@ The process is the one from `module-single` and nothing about it changed: a loan
 with a single service task. What changed is who creates the tables it needs, and who owns
 which of them.
 
-|                                         Table                                          |           Created by            |                                   From                                   |
-|----------------------------------------------------------------------------------------|---------------------------------|--------------------------------------------------------------------------|
-| `VANILLABP_PHASE_TWO_OUTBOX`, `VANILLABP_PHASE_TWO_PAYLOAD`, `VANILLABP_TASK_DELIVERY` | the application's Liquibase     | `vanillabp/schema/changelog.xml`, out of `io.vanillabp:vanillabp-schema` |
-| `ACT_*`                                                                                | the application's Liquibase     | the changelog Camunda ships inside its engine JAR                        |
-| `LOAN_APPROVAL`                                                                        | the workflow module's Liquibase | `loan-approval/.../loan-approval/db/changelog.xml`                       |
-| `DATABASECHANGELOG`                                                                    | Liquibase                       | the bookkeeping, one row per changeset and owner                         |
+|                                             Table                                             |           Created by            |                                   From                                   |
+|-----------------------------------------------------------------------------------------------|---------------------------------|--------------------------------------------------------------------------|
+| `VANILLABP_PHASE_TWO_OUTBOX`, `VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD`, `VANILLABP_TASK_DELIVERY` | the application's Liquibase     | `vanillabp/schema/changelog.xml`, out of `io.vanillabp:vanillabp-schema` |
+| `ACT_*`                                                                                       | the application's Liquibase     | the changelog Camunda ships inside its engine JAR                        |
+| `LOAN_APPROVAL`                                                                               | the workflow module's Liquibase | `loan-approval/.../loan-approval/db/changelog.xml`                       |
+| `DATABASECHANGELOG`                                                                           | Liquibase                       | the bookkeeping, one row per changeset and owner                         |
 
 Three settings are what make this real, and all three are in the configuration rather than
 in code: `ddl-auto: validate` has Hibernate check the result instead of building it,
@@ -107,7 +107,7 @@ names.
 Before release 2.0 the phase-two outbox of this platform was
 [gruelbox](https://github.com/gruelbox/transaction-outbox), and a blueprint like this one had to
 create that library's table, `TXNO_OUTBOX`, as well. VanillaBP writes the outbox itself now, into
-`VANILLABP_PHASE_TWO_OUTBOX` and `VANILLABP_PHASE_TWO_PAYLOAD`, and both come out of
+`VANILLABP_PHASE_TWO_OUTBOX` and `VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD`, and both come out of
 `vanillabp-schema` like the delivery table. Nothing here migrates `TXNO_OUTBOX` any more.
 
 An application which wants to keep gruelbox sets `vanillabp.outbox.gruelbox.enabled` to `true` and

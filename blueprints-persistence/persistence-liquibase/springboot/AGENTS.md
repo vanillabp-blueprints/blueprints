@@ -25,7 +25,7 @@ Replace all of these consistently; they are the same in every blueprint.
 | `LOAN_APPROVAL`            | the aggregate's table, in the entity AND in the module's changelog                                                        |
 
 Three names are not placeholders and must not be renamed: `VANILLABP_PHASE_TWO_OUTBOX`,
-`VANILLABP_PHASE_TWO_PAYLOAD` and `VANILLABP_TASK_DELIVERY` are VanillaBP's tables. The delivery
+`VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD` and `VANILLABP_TASK_DELIVERY` are VanillaBP's tables. The delivery
 table's name is not configurable at all, so a renamed one is a table nobody reads.
 
 `loan-approval` is also the `logicalFilePath` of the module's changelog. Renaming the module
