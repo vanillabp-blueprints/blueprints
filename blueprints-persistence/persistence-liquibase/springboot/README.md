@@ -84,6 +84,13 @@ independently, so the statements for a database nobody tested are still Liquibas
 somebody's guess. H2 and PostgreSQL are covered by tests of the framework; MySQL, MariaDB, SQL
 Server, Oracle and DB2 are shipped without one.
 
+`SchemaIT` does not take that count on trust. It has Liquibase parse the artifact's changelog,
+which follows every include and fills the table names in, and compares the result with the names
+written down in the test. A VanillaBP release which adds a table therefore fails the build here,
+and the new name is carried into the test, into this README and into `AGENTS.md` in one go. A list
+which nobody compares falls behind, and this one did: the payload table of the phase-two outbox
+travelled in the artifact for months while no test and no document here knew it.
+
 ### The engine's tables
 
 Camunda ships its schema in the engine JAR, as a changelog with a 7.16 baseline plus one
@@ -147,20 +154,20 @@ include line.
 Everything about the process, the aggregate and the wiring is `module-single`. What was added
 or changed:
 
-|                            File                            |                                        Change                                         |
-|------------------------------------------------------------|---------------------------------------------------------------------------------------|
-| `loan-approval/.../loan-approval/db/changelog.xml`         | new: the module's own changelog, its aggregate table                                  |
-| `application/.../db/changelog.xml`                         | new: what the application applies, including VanillaBP's changelog from the artifact  |
-| `application/.../db/changelog-camunda7.xml`                | new: the same plus the engine's changelog, applied by the Camunda 7 build             |
-| `application/.../SchemaConfiguration.java`                 | new: the application's Liquibase bean, the changelog named by the engine profile      |
-| `application/src/main/resources/application.yaml`          | `ddl-auto: validate`, `create-schema: false`, the changelog to apply                  |
-| `application/src/main/resources/application-camunda7.yaml` | `database-schema-update: false` and the changelog including the engine's              |
-| `loan-approval/.../model/Aggregate.java`                   | every column named explicitly, so the entity and the migration cannot drift apart     |
-| `loan-approval/src/test/resources/application.yaml`        | `ddl-auto: validate`: in the module's test its own changelog builds its table         |
-| `application/src/test/.../SchemaIT.java`                   | new: every table is there, one bookkeeping table per owner                            |
-| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | new: a workflow runs through on the migrated schema                                   |
-| `application/src/test/.../MissingTableIT.java`             | new: a forgotten migration ends the boot                                              |
-| both POMs                                                  | `spring-boot-liquibase` and `liquibase-core`; the application also `vanillabp-schema` |
+|                            File                            |                                          Change                                          |
+|------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `loan-approval/.../loan-approval/db/changelog.xml`         | new: the module's own changelog, its aggregate table                                     |
+| `application/.../db/changelog.xml`                         | new: what the application applies, including VanillaBP's changelog from the artifact     |
+| `application/.../db/changelog-camunda7.xml`                | new: the same plus the engine's changelog, applied by the Camunda 7 build                |
+| `application/.../SchemaConfiguration.java`                 | new: the application's Liquibase bean, the changelog named by the engine profile         |
+| `application/src/main/resources/application.yaml`          | `ddl-auto: validate`, `create-schema: false`, the changelog to apply                     |
+| `application/src/main/resources/application-camunda7.yaml` | `database-schema-update: false` and the changelog including the engine's                 |
+| `loan-approval/.../model/Aggregate.java`                   | every column named explicitly, so the entity and the migration cannot drift apart        |
+| `loan-approval/src/test/resources/application.yaml`        | `ddl-auto: validate`: in the module's test its own changelog builds its table            |
+| `application/src/test/.../SchemaIT.java`                   | new: the tables the artifact's changelog describes are there, one history for all owners |
+| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | new: a workflow runs through on the migrated schema                                      |
+| `application/src/test/.../MissingTableIT.java`             | new: a forgotten migration ends the boot                                                 |
+| both POMs                                                  | `spring-boot-liquibase` and `liquibase-core`; the application also `vanillabp-schema`    |
 
 The entity naming its columns is worth a word: as long as a runtime creates the tables, a
 naming strategy decides what they are called, and it is right by definition. Once a migration
@@ -230,15 +237,15 @@ lets the entity manager factory depend on every bean of that type. The engine re
 on top of that same entity manager factory. VanillaBP checks its tables once all beans exist,
 in a `SmartInitializingSingleton`, which is after every migration ran.
 
-|                            File                            |                                     Role                                      |
-|------------------------------------------------------------|-------------------------------------------------------------------------------|
-| `application/.../SchemaConfiguration.java`                 | the application's Liquibase: default bookkeeping tables, changelog per engine |
-| `application/src/main/resources/db/changelog.xml`          | includes VanillaBP's changelog and the workflow module's                      |
-| `application/src/main/resources/db/changelog-camunda7.xml` | includes the above plus Camunda's own changelog                               |
-| `loan-approval/.../loan-approval/db/changelog.xml`         | the aggregate table of this workflow module                                   |
-| `application/src/test/.../SchemaIT.java`                   | which tables the migration was supposed to bring, and one history per owner   |
-| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | a process runs through where nothing created a table at runtime               |
-| `application/src/test/.../MissingTableIT.java`             | the boot ends when a table is missing, and the message says what to do        |
+|                            File                            |                                                Role                                                 |
+|------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| `application/.../SchemaConfiguration.java`                 | the application's Liquibase: default bookkeeping tables, changelog per engine                       |
+| `application/src/main/resources/db/changelog.xml`          | includes VanillaBP's changelog and the workflow module's                                            |
+| `application/src/main/resources/db/changelog-camunda7.xml` | includes the above plus Camunda's own changelog                                                     |
+| `loan-approval/.../loan-approval/db/changelog.xml`         | the aggregate table of this workflow module                                                         |
+| `application/src/test/.../SchemaIT.java`                   | reads the artifact's changelog to know which tables to expect, and who owns what in the one history |
+| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | a process runs through where nothing created a table at runtime                                     |
+| `application/src/test/.../MissingTableIT.java`             | the boot ends when a table is missing, and the message says what to do                              |
 
 Everything else, from `ApiController` through `Service`, `Workflow` and
 `WorkflowTaskHandler` to the aggregate, is the base blueprint unchanged.

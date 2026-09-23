@@ -44,7 +44,7 @@ find no history and try to apply every migration again.
 | `application/src/main/resources/application.yaml`                           | `ddl-auto: validate`, `vanillabp.outbox.create-schema: false`, the locations per owner                                               |
 | `application/src/main/resources/application-camunda7.yaml`                  | `database-schema-update: false` and the engine's migrations, added where the engine is embedded                                      |
 | `loan-approval/src/test/resources/application.yaml`                         | `spring.flyway.locations`: the module's test IS an application and applies its own migrations                                        |
-| `application/src/test/java/.../SchemaIT.java`                               | asserts every table exists and that every owner has a history of its own                                                             |
+| `application/src/test/java/.../SchemaIT.java`                               | reads VanillaBP's migrations, asserts their tables exist and that every owner has a history of its own                               |
 | `application/src/test/java/.../MissingTableIT.java`                         | asserts a forgotten migration ends the boot with VanillaBP's message                                                                 |
 | `application/src/test/java/.../WorkflowOnTheOwnSchemaIT.java`               | runs a workflow on the migrated schema: a table described wrongly comes out here instead of in production                            |
 
@@ -121,8 +121,9 @@ running cluster and `vanillabp.adapters.camunda8.rest-address` configured; do no
 failure of that profile as a defect of the generated code before having checked it.
 
 Four tests have to pass. `LoanApprovalIT` and `WorkflowOnTheOwnSchemaIT` run a real workflow, the
-second one in the application, where the whole schema came from a migration. `SchemaIT` names the
-tables the migration was supposed to bring and checks that every owner has a history of its own.
+second one in the application, where the whole schema came from a migration. `SchemaIT` reads
+VanillaBP's migrations to know which tables to expect and checks that every owner has a history of
+its own.
 `MissingTableIT` proves the opposite case is reported at startup.
 
 A missing table reported by Hibernate or by VanillaBP is not a defect of the framework: it means a
