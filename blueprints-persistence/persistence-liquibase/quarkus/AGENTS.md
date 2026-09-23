@@ -34,17 +34,17 @@ changed: Liquibase would no longer recognize its rows and would run every change
 
 ## Core files
 
-|                               File                                |                                                    Why it matters                                                     |
-|-------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/db/changelog.xml` | the module's schema: its aggregate table. Inside the module's resource directory, because modules share one classpath |
-| `application/src/main/resources/db/changelog.xml`                 | what the application owns: `<include>` of `vanillabp/schema/changelog.xml` from the artifact                          |
-| `application/src/main/resources/db/changelog-camunda7.xml`        | the same plus `<include>` of Camunda's changelog from the engine JAR                                                  |
-| `application/src/main/resources/db/changelog-camunda8.xml`        | the same alone: a remote engine has no tables here                                                                    |
-| `application/src/main/resources/application.yaml`                 | the changelog to apply, `strategy: validate`, `vanillabp.outbox.create-schema: false`                                 |
-| `application/src/main/resources/application-camunda7.yaml`        | `database-schema-update: false`, so the embedded engine leaves its tables to Liquibase                                |
-| `loan-approval/src/test/resources/application.yaml`               | the module's own changelog and `validate`: its test is an application which applies it                                |
-| `application/src/test/java/.../SchemaIT.java`                     | asserts every table exists and that there is one bookkeeping table per owner                                          |
-| `application/src/test/java/.../WorkflowOnTheOwnSchemaIT.java`     | runs a workflow in the application, which is the only place where two datasources and a migrated schema meet          |
+|                               File                                |                                                        Why it matters                                                         |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/db/changelog.xml` | the module's schema: its aggregate table. Inside the module's resource directory, because modules share one classpath         |
+| `application/src/main/resources/db/changelog.xml`                 | what the application owns: `<include>` of `vanillabp/schema/changelog.xml` from the artifact                                  |
+| `application/src/main/resources/db/changelog-camunda7.xml`        | the same plus `<include>` of Camunda's changelog from the engine JAR                                                          |
+| `application/src/main/resources/db/changelog-camunda8.xml`        | the same alone: a remote engine has no tables here                                                                            |
+| `application/src/main/resources/application.yaml`                 | the changelog to apply, `strategy: validate`, `vanillabp.outbox.create-schema: false`                                         |
+| `application/src/main/resources/application-camunda7.yaml`        | `database-schema-update: false`, so the embedded engine leaves its tables to Liquibase                                        |
+| `loan-approval/src/test/resources/application.yaml`               | the module's own changelog and `validate`: its test is an application which applies it                                        |
+| `application/src/test/java/.../SchemaIT.java`                     | reads the artifact's changelog, asserts the tables it describes exist and that every owner is recognizable in the one history |
+| `application/src/test/java/.../WorkflowOnTheOwnSchemaIT.java`     | runs a workflow in the application, which is the only place where two datasources and a migrated schema meet                  |
 
 Rules which hold beyond this blueprint:
 
@@ -115,7 +115,8 @@ running cluster and `vanillabp.adapters.camunda8.rest-address` configured; do no
 failure of that profile as a defect of the generated code before having checked it.
 
 Four tests have to pass. `LoanApprovalIT` and `WorkflowOnTheOwnSchemaIT` run a real workflow,
-the second one in the application, where the whole schema came from a migration. `SchemaIT` names the tables the migration was supposed to bring.
+the second one in the application, where the whole schema came from a migration. `SchemaIT` reads
+the artifact's changelog to know which tables to expect.
 `ApplicationSmokeTest` proves the application boots with the module on the classpath.
 
 A missing table or column reported by Hibernate or by VanillaBP is not a defect of the

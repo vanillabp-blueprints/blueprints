@@ -76,6 +76,13 @@ H2 and PostgreSQL are covered by tests of the framework; MySQL, MariaDB, SQL Ser
 DB2 ship without one. An update of VanillaBP brings its new SQL along in the artifact, numbered in
 VanillaBP's own timeline, which is exactly why that timeline has a history table to itself.
 
+`SchemaIT` does not take that on trust. It asks Flyway which migrations it found in VanillaBP's
+location, reads the `CREATE TABLE` statements out of them and compares the result with the names
+written down in the test. A VanillaBP release which adds a table therefore fails the build here,
+and the new name is carried into the test, into this README and into `AGENTS.md` in one go. A list
+which nobody compares falls behind, and this one did: the payload table of the phase-two outbox
+travelled in the artifact for months while no test and no document here knew it.
+
 A migration which was applied somewhere must never be edited afterwards: Flyway compares
 checksums and refuses to run when one changed, and getting an installation out of that state is
 manual work in somebody's production database. A later change is a new migration, always.
@@ -155,7 +162,7 @@ changed:
 | `application/src/main/resources/application.yaml`            | `ddl-auto: validate`, `create-schema: false`, the locations per owner                                            |
 | `application/src/main/resources/application-camunda7.yaml`   | `database-schema-update: false` and the engine's migrations                                                      |
 | `loan-approval/src/test/resources/application.yaml`          | `ddl-auto: validate` and the module's own migrations                                                             |
-| `application/src/test/.../SchemaIT.java`                     | new: every table is there, and every owner has a history of its own                                              |
+| `application/src/test/.../SchemaIT.java`                     | new: the tables VanillaBP's migrations create are there, one history per owner                                   |
 | `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`     | new: a workflow runs through on the migrated schema                                                              |
 | `application/src/test/.../MissingTableIT.java`               | new: a forgotten migration ends the boot                                                                         |
 | both POMs                                                    | `spring-boot-flyway` and `flyway-core`, in the module for its test only; the application also `vanillabp-schema` |
@@ -223,17 +230,17 @@ factory depend on beans of that type. The engine reaches its schema through the 
 manager, which is built on top of that entity manager factory. VanillaBP checks its own tables once
 all beans exist, in a `SmartInitializingSingleton`, which is after every migration ran.
 
-|                            File                            |                                      Role                                      |
-|------------------------------------------------------------|--------------------------------------------------------------------------------|
-| `application/.../SchemaConfiguration.java`                 | one Flyway and one initializer per owner, each with its own history            |
-| `application/src/main/resources/application.yaml`          | which locations belong to which owner                                          |
-| `application/src/main/resources/application-camunda7.yaml` | the engine's migrations, added where the engine is embedded                    |
-| `application/pom.xml`, profile `camunda7`                  | takes Camunda's scripts out of the engine JAR and names them                   |
-| `application/.../db/migration`                             | where the application's own migrations go; empty in this blueprint             |
-| `loan-approval/.../loan-approval/db/migration`             | the aggregate table of this workflow module                                    |
-| `application/src/test/.../SchemaIT.java`                   | which tables the migration was supposed to bring, and which history holds what |
-| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | a process runs through where nothing created a table at runtime                |
-| `application/src/test/.../MissingTableIT.java`             | the boot ends when a table is missing, and the message says what to do         |
+|                            File                            |                                           Role                                            |
+|------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| `application/.../SchemaConfiguration.java`                 | one Flyway and one initializer per owner, each with its own history                       |
+| `application/src/main/resources/application.yaml`          | which locations belong to which owner                                                     |
+| `application/src/main/resources/application-camunda7.yaml` | the engine's migrations, added where the engine is embedded                               |
+| `application/pom.xml`, profile `camunda7`                  | takes Camunda's scripts out of the engine JAR and names them                              |
+| `application/.../db/migration`                             | where the application's own migrations go; empty in this blueprint                        |
+| `loan-approval/.../loan-approval/db/migration`             | the aggregate table of this workflow module                                               |
+| `application/src/test/.../SchemaIT.java`                   | reads VanillaBP's migrations to know which tables to expect, and which history holds what |
+| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | a process runs through where nothing created a table at runtime                           |
+| `application/src/test/.../MissingTableIT.java`             | the boot ends when a table is missing, and the message says what to do                    |
 
 Everything else, from `ApiController` through `Service`, `Workflow` and `WorkflowTaskHandler` to
 the aggregate, is the base blueprint unchanged.

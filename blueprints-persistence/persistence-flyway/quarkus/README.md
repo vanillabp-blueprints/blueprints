@@ -76,6 +76,13 @@ H2 and PostgreSQL are covered by tests of the framework; MySQL, MariaDB, SQL Ser
 DB2 ship without one. An update of VanillaBP brings its new SQL along in the artifact, numbered in
 VanillaBP's own range of version numbers, which is why an application leaves 2.x alone.
 
+`SchemaIT` does not take that on trust. It asks Flyway which migrations it found in VanillaBP's
+location, reads the `CREATE TABLE` statements out of them and compares the result with the names
+written down in the test. A VanillaBP release which adds a table therefore fails the build here,
+and the new name is carried into the test, into this README and into `AGENTS.md` in one go. A list
+which nobody compares falls behind, and this one did: the payload table of the phase-two outbox
+travelled in the artifact for months while no test and no document here knew it.
+
 A migration which was applied somewhere must never be edited afterwards: Flyway compares checksums
 and refuses to run when one changed, and getting an installation out of that state is manual work in
 somebody's production database. A later change is a new migration, always.
@@ -138,7 +145,7 @@ changed:
 | `application/src/main/resources/application.yaml`            | the locations per owner, `validate`, `create-schema: false`, `migrate-at-start: false`     |
 | `application/src/main/resources/application-camunda7.yaml`   | `database-schema-update: false` and the engine's migrations                                |
 | `loan-approval/src/test/resources/application.yaml`          | `validate` and the module's own migrations, applied by the extension                       |
-| `application/src/test/.../SchemaIT.java`                     | new: every table is there, and every owner has a history of its own                        |
+| `application/src/test/.../SchemaIT.java`                     | new: the tables VanillaBP's migrations create are there, one history for all owners        |
 | `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`     | new: a workflow runs through on the migrated schema                                        |
 | both POMs                                                    | `quarkus-flyway`, in the module for its test only; the application also `vanillabp-schema` |
 
@@ -189,14 +196,14 @@ Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 
 ## How it works
 
-|                            File                            |                                      Role                                      |
-|------------------------------------------------------------|--------------------------------------------------------------------------------|
-| `application/src/main/resources/application.yaml`          | which locations belong to which owner, and what is switched off                |
-| `application/src/main/resources/application-camunda7.yaml` | the engine's migrations, added where the engine is embedded                    |
-| `application/pom.xml`, profile `camunda7`                  | takes Camunda's scripts out of the engine JAR and names them                   |
-| `loan-approval/.../loan-approval/db/migration`             | the aggregate table of this workflow module                                    |
-| `application/src/test/.../SchemaIT.java`                   | which tables the migration was supposed to bring, and which history holds what |
-| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | a process runs through where nothing created a table at runtime                |
+|                            File                            |                                           Role                                            |
+|------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| `application/src/main/resources/application.yaml`          | which locations belong to which owner, and what is switched off                           |
+| `application/src/main/resources/application-camunda7.yaml` | the engine's migrations, added where the engine is embedded                               |
+| `application/pom.xml`, profile `camunda7`                  | takes Camunda's scripts out of the engine JAR and names them                              |
+| `loan-approval/.../loan-approval/db/migration`             | the aggregate table of this workflow module                                               |
+| `application/src/test/.../SchemaIT.java`                   | reads VanillaBP's migrations to know which tables to expect, and which history holds what |
+| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | a process runs through where nothing created a table at runtime                           |
 
 Everything else, from `ApiController` through `Service`, `Workflow` and `WorkflowTaskHandler` to
 the aggregate, is the base blueprint unchanged.

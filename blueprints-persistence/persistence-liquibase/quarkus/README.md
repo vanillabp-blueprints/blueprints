@@ -89,6 +89,13 @@ independently, so the statements for a database nobody tested are still Liquibas
 somebody's guess. H2 and PostgreSQL are covered by tests of the framework; MySQL, MariaDB, SQL
 Server, Oracle and DB2 are shipped without one.
 
+`SchemaIT` does not take that count on trust. It has Liquibase parse the artifact's changelog,
+which follows every include and fills the table names in, and compares the result with the names
+written down in the test. A VanillaBP release which adds a table therefore fails the build here,
+and the new name is carried into the test, into this README and into `AGENTS.md` in one go. A list
+which nobody compares falls behind, and this one did: the payload table of the phase-two outbox
+travelled in the artifact for months while no test and no document here knew it.
+
 ### The engine's tables
 
 Camunda ships its schema in the engine JAR, as a changelog with a 7.16 baseline plus one
@@ -142,19 +149,19 @@ include out of `db/changelog.xml` and start the application.
 Everything about the process, the aggregate and the wiring is `module-single`. What was added
 or changed:
 
-|                            File                            |                                      Change                                       |
-|------------------------------------------------------------|-----------------------------------------------------------------------------------|
-| `loan-approval/.../loan-approval/db/changelog.xml`         | new: the module's own changelog, its aggregate table                              |
-| `application/src/main/resources/db/changelog.xml`          | new: what the application owns, VanillaBP's changelog from the artifact           |
-| `application/src/main/resources/db/changelog-camunda7.xml` | new: the same plus the engine's changelog                                         |
-| `application/src/main/resources/db/changelog-camunda8.xml` | new: the same alone, since a remote engine has no tables here                     |
-| `application/src/main/resources/application.yaml`          | the changelog to apply, `validate`, `create-schema: false`                        |
-| `application/src/main/resources/application-camunda7.yaml` | new: `database-schema-update: false` and the datasource the engine runs on        |
-| `loan-approval/.../model/Aggregate.java`                   | every column named explicitly, so the entity and the migration cannot drift apart |
-| `loan-approval/src/test/resources/application.yaml`        | the module's changelog and `validate`: its test builds its table from it          |
-| `application/src/test/.../SchemaIT.java`                   | new: every table is there, one bookkeeping table per owner                        |
-| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | new: a workflow runs through on the migrated schema, across both datasources      |
-| both POMs                                                  | `quarkus-liquibase`; the application also `vanillabp-schema`                      |
+|                            File                            |                                          Change                                          |
+|------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `loan-approval/.../loan-approval/db/changelog.xml`         | new: the module's own changelog, its aggregate table                                     |
+| `application/src/main/resources/db/changelog.xml`          | new: what the application owns, VanillaBP's changelog from the artifact                  |
+| `application/src/main/resources/db/changelog-camunda7.xml` | new: the same plus the engine's changelog                                                |
+| `application/src/main/resources/db/changelog-camunda8.xml` | new: the same alone, since a remote engine has no tables here                            |
+| `application/src/main/resources/application.yaml`          | the changelog to apply, `validate`, `create-schema: false`                               |
+| `application/src/main/resources/application-camunda7.yaml` | new: `database-schema-update: false` and the datasource the engine runs on               |
+| `loan-approval/.../model/Aggregate.java`                   | every column named explicitly, so the entity and the migration cannot drift apart        |
+| `loan-approval/src/test/resources/application.yaml`        | the module's changelog and `validate`: its test builds its table from it                 |
+| `application/src/test/.../SchemaIT.java`                   | new: the tables the artifact's changelog describes are there, one history for all owners |
+| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | new: a workflow runs through on the migrated schema, across both datasources             |
+| both POMs                                                  | `quarkus-liquibase`; the application also `vanillabp-schema`                             |
 
 The entity naming its columns is worth a word: as long as a runtime creates the tables, a
 naming strategy decides what they are called, and it is right by definition. Once a migration
@@ -208,15 +215,15 @@ runs while the application starts, before the first bean touches a table, and Va
 its tables in a startup observer afterwards. Nothing in this blueprint arranges that order by
 hand.
 
-|                            File                            |                                    Role                                     |
-|------------------------------------------------------------|-----------------------------------------------------------------------------|
-| `application/src/main/resources/application.yaml`          | the changelog to apply, and what is switched off                            |
-| `application/src/main/resources/db/changelog.xml`          | includes VanillaBP's changelog                                              |
-| `application/src/main/resources/db/changelog-camunda7.xml` | includes the above plus Camunda's own changelog                             |
-| `application/src/main/resources/db/changelog-camunda8.xml` | includes the above alone                                                    |
-| `loan-approval/.../loan-approval/db/changelog.xml`         | the aggregate table of this workflow module                                 |
-| `application/src/test/.../SchemaIT.java`                   | which tables the migration was supposed to bring, and one history per owner |
-| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | a process runs through where nothing created a table at runtime             |
+|                            File                            |                                                Role                                                 |
+|------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| `application/src/main/resources/application.yaml`          | the changelog to apply, and what is switched off                                                    |
+| `application/src/main/resources/db/changelog.xml`          | includes VanillaBP's changelog                                                                      |
+| `application/src/main/resources/db/changelog-camunda7.xml` | includes the above plus Camunda's own changelog                                                     |
+| `application/src/main/resources/db/changelog-camunda8.xml` | includes the above alone                                                                            |
+| `loan-approval/.../loan-approval/db/changelog.xml`         | the aggregate table of this workflow module                                                         |
+| `application/src/test/.../SchemaIT.java`                   | reads the artifact's changelog to know which tables to expect, and who owns what in the one history |
+| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | a process runs through where nothing created a table at runtime                                     |
 
 Everything else, from `ApiController` through `Service`, `Workflow` and
 `WorkflowTaskHandler` to the aggregate, is the base blueprint unchanged.

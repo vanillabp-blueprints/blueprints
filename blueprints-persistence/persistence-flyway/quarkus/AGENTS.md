@@ -40,7 +40,7 @@ the extension is pointed at. Renaming the module renames the directory and the l
 | `application/src/main/resources/application.yaml`                           | the locations per owner, `strategy: validate`, `vanillabp.outbox.create-schema: false`, `quarkus.flyway.migrate-at-start: false`    |
 | `application/src/main/resources/application-camunda7.yaml`                  | `database-schema-update: false` and the engine's migrations, added where the engine is embedded                                     |
 | `loan-approval/src/test/resources/application.yaml`                         | `quarkus.flyway.locations`: the module's test IS an application and applies its own migrations                                      |
-| `application/src/test/java/.../SchemaIT.java`                               | asserts every table exists and that every owner has a history of its own                                                            |
+| `application/src/test/java/.../SchemaIT.java`                               | reads VanillaBP's migrations, asserts their tables exist and that every owner is in the one history                                 |
 | `application/src/test/java/.../WorkflowOnTheOwnSchemaIT.java`               | runs a workflow on the schema the migration built                                                                                   |
 
 Rules which hold beyond this blueprint:
@@ -114,7 +114,8 @@ running cluster and `vanillabp.adapters.camunda8.rest-address` configured; do no
 failure of that profile as a defect of the generated code before having checked it.
 
 Four tests have to pass. `LoanApprovalIT` and `WorkflowOnTheOwnSchemaIT` run a real workflow,
-the second one in the application, where the whole schema came from a migration. `SchemaIT` names the tables the migration was supposed to bring.
+the second one in the application, where the whole schema came from a migration. `SchemaIT` reads
+VanillaBP's migrations to know which tables to expect.
 `ApplicationSmokeTest` proves the application boots with the module on the classpath.
 
 A missing table or column reported by Hibernate or by VanillaBP is not a defect of the framework:
