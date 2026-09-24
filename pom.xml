@@ -214,9 +214,9 @@
   </build>
 
   <!--
-    The BPMS a blueprint runs on is a Maven profile, never a code change: '-Pcamunda7'
-    (the default), '-Pcamunda8' or '-Pprocess-engine-api'. The profiles are declared by
-    each blueprint rather than here, because a blueprint has to build standalone after
-    having been split into its own repository - see CONTRIBUTING.md.
+    The BPMS a blueprint runs on is a Maven profile, never a code change. The profiles are
+    declared by each blueprint rather than here, because a blueprint has to build
+    standalone after having been split into its own repository, so the POM of a blueprint
+    is the list of the BPMS it runs on - see CONTRIBUTING.md.
   -->
 </project>

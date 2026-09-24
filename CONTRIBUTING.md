@@ -118,14 +118,20 @@ switching the BPMS is a Maven profile, not a code change.
 
 Reference documentation is linked, never copied.
 
+The documentation of this repository follows the same rule. A blueprint is there to show
+that an application needs no BPMS knowledge, and a `README.md` which explains a BPMS says
+the opposite. So the files here name a BPMS where a command needs the name and nowhere
+else, and everything a reader wants to know about one is in that adapter's own
+documentation.
+
 ### Configuration follows the same rule
 
 `application.yaml` holds what every engine needs. Everything belonging to one engine lives in
-the profile file of that engine, `application-camunda7.yaml` and `application-camunda8.yaml`,
-in the application module and, where a test needs it, in the workflow module's test resources.
-That is how projects do it, and it is what makes a blueprint a starting point for a migration:
-run with both profiles and both adapters, and the two configurations sit side by side instead
-of being edited into each other.
+the profile file of that engine, `application-<bpms>.yaml`, in the application module and,
+where a test needs it, in the workflow module's test resources. That is how projects do it,
+and it is what makes a blueprint a starting point for a migration: run with either profile
+and either adapter, and the two configurations sit side by side instead of being edited
+into each other.
 
 **The profile is named once, on the Maven command line.** Every BPMS profile sets the property
 `bpms`, and that property reaches the application twice over:
@@ -135,15 +141,15 @@ of being edited into each other.
   profile becomes the parent of whichever profile the application runs in),
 - surefire and failsafe hand it to the tests as a system property.
 
-So `mvn -Pcamunda8 install verify` and `mvn -Pcamunda8 -pl application spring-boot:run` need
+So `mvn -P<bpms> install verify` and `mvn -P<bpms> -pl application spring-boot:run` need
 nothing else, and nobody has to keep two flags in sync. On Quarkus the filtering is declared in
 the application module's POM, restricted to `application*.yaml` and to the `@...@` delimiters,
 because Quarkus does not filter resources by default and `${...}` is its own expression syntax.
 
-A BPMS-specific file is always shipped and only sometimes loaded: `application-camunda7.yaml`
-sits in the JAR of a Camunda 8 build as well, where it does nothing. Naming an adapter id
-whose adapter is not on the classpath is a configuration error VanillaBP refuses to start
-with, and the profiles are what keeps that from happening.
+A BPMS-specific file is always shipped and only sometimes loaded: the file of one engine
+sits in the JAR of a build for another one as well, where it does nothing. Naming an
+adapter id whose adapter is not on the classpath is a configuration error VanillaBP refuses
+to start with, and the profiles are what keeps that from happening.
 
 ## Rule 5: the aspect is proven by a test
 
@@ -301,9 +307,9 @@ strokes on no background at all and an SVG of that is unreadable in GitHub's dar
    `platforms.<platform>.status` to `available` once the blueprint has been split out. A
    platform the blueprint cannot exist for is written by hand instead, as
    `not-applicable` plus a one-sentence `reason` (see above); no job derives that.
-5. `./mvnw install verify` for every BPMS profile the blueprint supports. Only `camunda7`
-   runs without infrastructure, because it is embedded. `camunda8` needs a cluster, which
-   `bin/camunda8_cluster.sh start` gives you (see below), and is therefore not part of the
+5. `./mvnw install verify` for every BPMS profile the blueprint declares. A BPMS running
+   inside the application needs nothing else. One running as a server needs that server,
+   which `bin/camunda8_cluster.sh start` gives you (see below), so it is not part of the
    default build.
 
 The index and this repository have to agree: every blueprint directory is a module of the
@@ -361,28 +367,24 @@ table which had to be edited for it would be wrong more often than right. The ex
 in the POMs. Moving the line itself is a pull request somebody reads, and that one carries the
 new line into this table.
 
-|                                                               |    Version     |
-|---------------------------------------------------------------|----------------|
-| Java                                                          | 21             |
-| Spring Boot                                                   | 4.1.x          |
-| Quarkus                                                       | 3.37.x         |
-| `io.vanillabp:vanillabp-bom`                                  | 2.0.0-SNAPSHOT |
-| `org.camunda.community.vanillabp:camunda7-adapter-<platform>` | 2.0.0-SNAPSHOT |
-| `org.camunda.community.vanillabp:camunda8-adapter-<platform>` | 2.0.0-SNAPSHOT |
-| `io.vanillabp:process-engine-api-adapter-<platform>`          | 2.0.0-SNAPSHOT |
+|                              |    Version     |
+|------------------------------|----------------|
+| Java                         | 21             |
+| Spring Boot                  | 4.1.x          |
+| Quarkus                      | 3.37.x         |
+| `io.vanillabp:vanillabp-bom` | 2.0.0-SNAPSHOT |
 
-VanillaBP artifacts are version-managed by `io.vanillabp:vanillabp-bom`; BPMS adapters are
-released independently and carry their own version.
+VanillaBP artifacts are version-managed by `io.vanillabp:vanillabp-bom`. A BPMS adapter is
+released on its own and carries its own version, so its coordinate sits in the BPMS profile
+of every blueprint POM and its version is documented by that adapter. Neither is repeated
+here: a second place to look up a version is a second place to have it wrong.
 
-The Camunda 8 adapter is released once per Camunda 8 minor, and the minor is part of its
-version, `2.1.0-8.9` for a cluster on 8.9. Blueprints build against the current GA line, and
-the snapshot they use today has no suffix yet. With the first release the version in the
-table gets one, and moving it to another line means moving the cluster the CI starts as well,
-which is why `bin/camunda8_cluster.sh` pins a version at all. Renovate cannot cross that
-boundary on its own: `renovate.json` extends the preset the adapter ships, which reads the
-suffix as a compatibility value.
-[Release lines](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter#release-lines)
-explains why the suffix exists.
+An adapter may carry a compatibility value inside its version. Where it does, the engine
+the CI starts has to move with it, which is why `bin/camunda8_cluster.sh` pins a version at
+all, and Renovate cannot cross that boundary on its own. `renovate.json` extends the preset that
+adapter ships, because that preset is what reads the value. What the value means is
+documented by the adapter which carries it, for Camunda 8 under
+[release lines](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter#release-lines).
 
 ## What CI builds
 
@@ -405,8 +407,9 @@ says so once, in its index entry, next to everything else it declares - and a di
 index does not know yet is built against every engine, because being unknown is a finding of
 its own rather than a reason to test less.
 
-Camunda 7 is embedded and needs nothing. Camunda 8 is remote, so the job starts a cluster
-first:
+A BPMS which runs inside the application needs nothing. One which runs as a server has to
+be started first, and `bin/camunda8_cluster.sh` starts the one this repository builds
+against:
 
 ```bash
 bin/camunda8_cluster.sh start
@@ -460,13 +463,14 @@ While the issue is open, every further red night is a comment on it, and so is t
 night which is green again. Whoever fixes the break closes the issue; nothing closes it on
 its own.
 
-The same build by hand, which is what to run when the issue names a blueprint:
+The same build by hand, which is what to run when the issue names a blueprint. The issue
+names the BPMS with it, and that is the profile to pass:
 
 ```bash
 export USER_NAME=<github user> USER_TOKEN=<token with read:packages>
 cd <group>/<blueprint-id>/<platform>
 mvn -s ../../../.github/workflows/github-packages-settings.xml \
-  --update-snapshots -Pcamunda7 verify
+  --update-snapshots -P<bpms> verify
 ```
 
 ## Dependency updates
@@ -479,10 +483,10 @@ matrix is not competing with the branch somebody is working on.
 Two exceptions are deliberate:
 
 - VanillaBP and the BPMS adapters are excluded. Their versions follow the framework and are
-  bumped when a release is cut. Once the Camunda 8 adapter is released, the preset it ships
-  keeps an update inside the release line the blueprints build against.
+  bumped when a release is cut. Once an adapter which pins its engine is released, the
+  preset it ships keeps an update inside the line the blueprints build against.
 - Spring Boot and Quarkus are not merged automatically. Their versions are also written in
-  the table below, and a bot cannot carry them there.
+  the table under `Versions` above, and a bot cannot carry them there.
 
 Automerge relies on the checks being required for the branch. Without branch protection
 naming them, Renovate merges as soon as GitHub lets it, which is not what anybody wants.

@@ -59,8 +59,8 @@ named in `.github/workflows`, currently 25. Every blueprint compiles for Java 21
 so a copy of it runs on a Java 21 runtime.
 
 ```bash
-./mvnw install verify                    # all blueprints, default BPMS
-./mvnw install verify -Pcamunda8         # ... on another BPMS
+./mvnw install verify                    # all blueprints, on the default BPMS
+./mvnw install verify -P<bpms>           # ... on another one
 ./mvnw install verify -pl blueprints-modules/module-single/springboot
 ./mvnw -N spotless:apply                 # fix formatting violations
 ```
@@ -77,10 +77,17 @@ cd blueprints-modules/module-single/springboot && mvn verify
 
 ## The BPMS is a Maven profile
 
-VanillaBP application code is BPMS-invariant, so a blueprint runs on every supported BPMS
-without a single line changing. Which one is used is selected by a profile:
+VanillaBP application code is BPMS-invariant, so a blueprint runs on every BPMS it declares
+without a single line changing. Which one a build uses is a Maven profile named on the
+command line, and one of them is active by default.
 
-`-Pcamunda7` (default) · `-Pcamunda8` · `-Pprocess-engine-api`
+Each blueprint declares its profiles in its own POM, so that POM is the list. The `bpms`
+entry of the blueprint in `blueprints.yaml` names the same set, and that entry is what CI
+builds against.
+
+What a BPMS does behind its profile is not explained here but in the wiki of its adapter,
+which `Documentation of VanillaBP itself` below links. A blueprint which needed that knowledge would
+prove the opposite of what a blueprint is for.
 
 ## Contributing
 
