@@ -27,7 +27,9 @@
     A renamed outbox table ('vanillabp.outbox.jdbc.table') would be set here as
     <property name="vanillabp.outbox.table" value="..."/> before the include. The payload table
     follows the outbox table, so a rename needs the property 'vanillabp.payload.table' as well,
-    unless 'vanillabp.outbox.jdbc.payload-table' gives it a name of its own.
+    unless 'vanillabp.outbox.jdbc.payload-table' gives it a name of its own. The delivery table
+    follows nothing and has a key of its own, 'vanillabp.outbox.jdbc.delivery-table', which the
+    property 'vanillabp.delivery.table' matches here.
   -->
   <include file="vanillabp/schema/changelog.xml" />
 
