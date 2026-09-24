@@ -447,6 +447,11 @@ two blueprints unable to compile, every pull request stayed green, and a person 
 day later.
 
 `nightly.yaml` is the build which reads the platform snapshot from where it is published.
+It runs at 02:00 and at 12:00 UTC. The midday run belongs to the time before the 2.0
+release, when several stories a day reach the platform and a break found at two in the
+morning arrives together with everything merged since. After the release it goes and the
+early run stays alone; the head of the workflow file says the same thing.
+
 It starts with the job `platform`, which stops the run when the two secrets are empty,
 because sixty jobs failing on a 401 read like sixty broken blueprints. That job also writes
 down which platform build the night got. No job of that run restores the Maven cache and
