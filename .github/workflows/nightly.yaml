@@ -40,12 +40,103 @@ jobs:
           echo "combinations=${list}" >> "$GITHUB_OUTPUT"
           echo "Building: ${list}"
 
+  # Where the platform artifacts come from decides what a night is worth, so that is
+  # settled once, before a matrix of sixty jobs starts.
+  #
+  # There are two ways a red night can mean nothing. Without the credentials GitHub
+  # Packages answers 401, every job dies on a POM it could not read, and that reads like
+  # sixty broken blueprints. And a runner which still holds yesterday's snapshot would
+  # build against a framework which no longer exists, which is the one thing this workflow
+  # is here to notice. So this run restores no Maven cache, every Maven call carries
+  # --update-snapshots, and the step below writes down which platform build the night got.
+  # 'Nightly issue' quotes that into its report, so a reader sees which side moved.
+  platform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          java-version: 21
+          distribution: temurin
+      - name: The credentials for the published snapshots have to be there
+        run: |
+          missing=""
+          [ -n "${USER_NAME}" ] || missing="VANILLABP_USER_NAME"
+          [ -n "${USER_TOKEN}" ] || missing="${missing:+${missing} and }VANILLABP_USER_TOKEN"
+          if [ -n "${missing}" ]; then
+            echo "::error::${missing} is empty. Nothing here can then read the published" \
+              "platform snapshots, and a run which resolves nothing proves nothing." \
+              "Set the repository secrets VANILLABP_USER_NAME and VANILLABP_USER_TOKEN to" \
+              "a GitHub user and a token carrying 'read:packages'. The matrix waits for" \
+              "this job, so it does not start on credentials which are not there."
+            exit 1
+          fi
+      - name: Which platform build this run resolves
+        run: |
+          set -o errexit -o nounset -o pipefail
+          probe="${RUNNER_TEMP}/platform-probe"
+          # The BOM, because every blueprint imports it and it carries the platform
+          # versions. Asking for it through the settings file the matrix uses proves the
+          # credentials work before sixty jobs rely on them. The adapters are not asked for
+          # here: they live in repositories of their own, with versions of their own, and
+          # the matrix resolves them itself a minute later, fresh, as it does everything
+          # else.
+          mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+            --batch-mode --no-transfer-progress --update-snapshots \
+            -Dmaven.repo.local="${probe}" \
+            org.apache.maven.plugins:maven-dependency-plugin:3.9.0:get \
+            -Dartifact=io.vanillabp:vanillabp-bom:2.0.0-SNAPSHOT:pom
+          # Which remote build a snapshot came from is not in the '-SNAPSHOT' name Maven
+          # keeps it under, but the timestamped file it downloaded lies next to it, and
+          # Maven's own metadata of that directory says the same thing. Both are read
+          # because the first one depends on how the plugin fetched the file.
+          directory="${probe}/io/vanillabp/vanillabp-bom/2.0.0-SNAPSHOT"
+          build="$(ls "${directory}" \
+            | sed -n 's|^vanillabp-bom-\(2\.0\.0-[0-9.]*-[0-9]*\)\.pom$|\1|p' \
+            | head -1)"
+          if [ -z "${build}" ]; then
+            # Every registry of the 'vanillabp' account answers with the metadata of all of
+            # them, so these files are copies of each other and the first one will do.
+            meta="$(ls "${directory}"/maven-metadata-*.xml 2>/dev/null | head -1 || true)"
+            if [ -n "${meta}" ]; then
+              stamp="$(sed -n 's|.*<timestamp>\(.*\)</timestamp>.*|\1|p' "${meta}" | head -1)"
+              number="$(sed -n 's|.*<buildNumber>\(.*\)</buildNumber>.*|\1|p' "${meta}" \
+                | head -1)"
+              build="2.0.0-${stamp}-${number}"
+            fi
+          fi
+          {
+            echo "The platform build this run resolved:"
+            echo
+            if [ -n "${build}" ]; then
+              echo "- \`io.vanillabp:vanillabp-bom:2.0.0-SNAPSHOT\`, published as \`${build}\`"
+            else
+              echo "- \`io.vanillabp:vanillabp-bom:2.0.0-SNAPSHOT\` was read, and nothing"
+              echo "  Maven left behind names the build it came from"
+            fi
+            echo "- asked for at $(date -u '+%Y-%m-%d %H:%M UTC'), from GitHub Packages"
+          } > platform-snapshot.md
+          cat platform-snapshot.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: platform-snapshot
+          path: platform-snapshot.md
+          # Read by the report of this run and by nobody afterwards.
+          retention-days: 7
+
   # The same build as on a push, but against today's snapshots of spi-for-java,
   # adapter-platform-integration and the adapters rather than whatever was cached. A
   # blueprint breaking here means the framework moved, not the blueprint, and that is
   # exactly what this job is for.
   freshness:
-    needs: discover
+    # 'platform' as well, because it is what says the published snapshots can be read at
+    # all. A matrix which starts without that turns every blueprint red for a reason which
+    # has nothing to do with blueprints.
+    needs: [discover, platform]
+    # Spelled out so the name of a job is stable enough to read: 'Nightly issue' looks for
+    # the jobs of this matrix by name, and the name GitHub builds from a matrix entry
+    # depends on the order of its keys.
+    name: freshness (${{ matrix.blueprint }} on ${{ matrix.bpms }})
     runs-on: ubuntu-latest
     # The longest job of a green run takes six minutes and the median two, so anything
     # near this limit is stuck rather than slow. Without it a job would inherit the six

@@ -1,0 +1,303 @@
+name: Nightly issue
+# A red nightly run has to reach somebody. Nobody opens the list of workflow runs in the
+# morning, and a red run scrolls out of sight within a day. That has been paid for once
+# already: a change in the Spring Boot integration left two persistence blueprints unable to
+# compile, and it was found a day later by a person who went looking, not by a build.
+# So a red night gets a GitHub issue which stays until somebody has dealt with it, and the
+# issue says which side moved.
+#
+# Why the night and not the pull request build: a pull request builds what changed in THIS
+# repository, against the artifacts a runner's cache happens to hold. A change in the
+# framework, in another repository, is invisible there. The nightly run is the only build
+# which resolves the published platform snapshot, so it is the only one which can see it,
+# and this workflow is what makes its answer visible.
+#
+# One issue for the whole night, not one per blueprint. This is where it differs from the
+# same mechanism in the Camunda 8 adapter, which opens an issue per release line: a platform
+# change breaks many blueprints at once and all of them for the same reason, so sixty issues
+# would be noise rather than a report. The count goes into the issue instead, and it is the
+# first thing to read. Many blueprints at once is the platform. One alone is that blueprint.
+#
+# One issue, never a second one for the same break: while an issue with that title is open,
+# the next red night writes a comment on it. A night which is green again writes a comment
+# as well, and nothing here closes an issue. A blueprint can be green in one run and red in
+# the next, and closing and reopening would split one break over several issues. Whoever
+# merged the fix knows it is one and closes this.
+#
+# A workflow of its own rather than a step of the nightly, for two reasons. Writing an issue needs
+# 'issues: write', which a build has no use for and should not be granted. And a night which
+# is green again has to be reported by a run which SUCCEEDED, which no step of a failed
+# matrix can do.
+#
+# 'workflow_run' fires for a RUN of the nightly workflow and for nothing else, so a pull
+# request never arrives here.
+"on":
+  workflow_run:
+    workflows: ["Nightly build"]
+    types: [completed]
+permissions:
+  contents: read
+jobs:
+  issue:
+    # The nightly run of main, and a dispatch of the same workflow on main, which is how
+    # somebody checks that a fix worked. A dispatch on a branch says nothing about main, so
+    # it says nothing about an issue of main either.
+    if: >-
+      github.event.workflow_run.head_branch == 'main'
+      && (github.event.workflow_run.event == 'schedule'
+      || github.event.workflow_run.event == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # the jobs, the logs and the artifacts of the run which triggered this one
+      actions: read
+      issues: write
+    steps:
+      - name: Open or update the issue of a night which went red
+        env:
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          GH_REPO: "${{ github.repository }}"
+          RUN_ID: "${{ github.event.workflow_run.id }}"
+          RUN_URL: "${{ github.event.workflow_run.html_url }}"
+          RUN_CONCLUSION: "${{ github.event.workflow_run.conclusion }}"
+          HEAD_SHA: "${{ github.event.workflow_run.head_sha }}"
+          SERVER_URL: "${{ github.server_url }}"
+        run: |
+          set -o errexit -o nounset -o pipefail
+
+          label=nightly
+
+          # The label is how an open issue is found again, so it has to exist before the
+          # first issue carries it. Creating a label which is already there is an error
+          # rather than a no-op, and that error is the normal case here.
+          gh label create "$label" --color B60205 \
+            --description "A nightly build against the published platform snapshot which is red" \
+            >/dev/null 2>&1 || true
+
+          work=$(mktemp -d)
+
+          # Every job of the matrix is called 'freshness (<blueprint> on <bpms>)'. The
+          # nightly spells that name out so this reading does not depend on how GitHub
+          # builds a name out of a matrix entry. Nothing else in that workflow starts this
+          # way: 'discover' collects the blueprints and 'platform' reads the snapshot.
+          gh api --paginate "repos/$GH_REPO/actions/runs/$RUN_ID/jobs" \
+            --jq '.jobs[]
+                  | select(.name | startswith("freshness ("))
+                  | [.name, .conclusion, .id, .html_url]
+                  | @tsv' > "$work/jobs.tsv"
+
+          : > "$work/red.tsv"
+          built=0
+          while IFS=$'\t' read -r name conclusion id url; do
+            [ -n "$name" ] || continue
+            subject=${name#"freshness ("}
+            subject=${subject%")"}
+            case "$conclusion" in
+              success)
+                built=$((built + 1))
+                ;;
+              # 'cancelled' is somebody stopping the run and 'skipped' is a blueprint the
+              # matrix never reached. Neither says anything about that blueprint.
+              failure | timed_out)
+                built=$((built + 1))
+                printf '%s\t%s\t%s\n' "$subject" "$id" "$url" >> "$work/red.tsv"
+                ;;
+              *) ;;
+            esac
+          done < "$work/jobs.tsv"
+          red=$(wc -l < "$work/red.tsv" | tr -d ' ')
+
+          # Which platform build the night resolved, written down by the 'platform' job
+          # before the matrix started. Without it the report cannot name the platform side,
+          # and then it says so rather than leaving the reader to guess.
+          : > "$work/snapshot.md"
+          if gh run download "$RUN_ID" --name platform-snapshot --dir "$work/snapshot" \
+            >/dev/null 2>&1 && [ -s "$work/snapshot/platform-snapshot.md" ]; then
+            cp "$work/snapshot/platform-snapshot.md" "$work/snapshot.md"
+          else
+            {
+              echo "The job which writes down the platform build left nothing behind, so"
+              echo "this report cannot say which build the night resolved."
+            } > "$work/snapshot.md"
+          fi
+
+          # Two subjects, and a night is red in one of them at most. Blueprints which broke
+          # are the case this workflow exists for. A run which is red without a single red
+          # blueprint is the other one: the credential check, the discovery of the
+          # blueprints, a checkout. A night which proved nothing looks exactly like a night
+          # which proved everything, so it gets a subject of its own.
+          : > "$work/subjects.tsv"
+          if [ "$red" -gt 0 ]; then
+            printf '%s\t%s\n' blueprints red >> "$work/subjects.tsv"
+          else
+            printf '%s\t%s\n' blueprints green >> "$work/subjects.tsv"
+          fi
+          if [ "$RUN_CONCLUSION" = "success" ]; then
+            printf '%s\t%s\n' run green >> "$work/subjects.tsv"
+          elif [ "$red" -gt 0 ]; then
+            # The run is red because blueprints are. That is reported above, and the run is
+            # not called green either.
+            :
+          else
+            printf '%s\t%s\n' run red >> "$work/subjects.tsv"
+          fi
+
+          title_of() {
+            case "$1" in
+              blueprints)
+                echo "Nightly build: the blueprints do not build against the published platform snapshot"
+                ;;
+              run)
+                echo "Nightly build: the run itself is red"
+                ;;
+            esac
+          }
+
+          # The newest text of an issue, which is its last comment or, while it has none,
+          # the body it was opened with. Every text written here ends in a marker, so the
+          # issue itself says whether the last thing reported was red or green.
+          last_state() {
+            gh issue view "$1" --json body,comments \
+              | jq -r '[.body] + [.comments[].body] | last' \
+              | sed -n 's/.*nightly-state: \([a-z]*\).*/\1/p' | tail -1
+          }
+
+          while IFS=$'\t' read -r subject state; do
+            title=$(title_of "$subject")
+            number=$(gh issue list --state open --label "$label" --limit 100 \
+              --json number,title \
+              | jq -r --arg t "$title" 'map(select(.title == $t)) | .[0].number // empty')
+
+            if [ "$state" = green ]; then
+              # Only worth saying where an issue is open and the last thing it was told was
+              # red. Otherwise every quiet night would add a comment.
+              if [ -z "$number" ] || [ "$(last_state "$number")" != red ]; then
+                continue
+              fi
+              {
+                if [ "$subject" = blueprints ]; then
+                  echo "All $built blueprint builds were green against the published"
+                  echo "platform snapshot again."
+                else
+                  echo "The nightly run itself was green again."
+                fi
+                echo
+                echo "- run: $RUN_URL"
+                echo "- commit: $SERVER_URL/$GH_REPO/commit/$HEAD_SHA"
+                echo
+                cat "$work/snapshot.md"
+                echo
+                echo "This does not close the issue, on purpose. A blueprint can be green in"
+                echo "one run and red in the next, and closing and reopening would split one"
+                echo "break over several issues. Whoever merged the fix knows it is one and"
+                echo "closes this."
+                echo
+                echo "<!-- nightly-state: green -->"
+              } > "$work/body.md"
+              gh issue comment "$number" --body-file "$work/body.md"
+              continue
+            fi
+
+            {
+              if [ "$subject" = blueprints ]; then
+                echo "$red of $built blueprint builds failed against the published platform"
+                echo "snapshot."
+              else
+                echo "The nightly run is red and no blueprint build is. Something other"
+                echo "than a blueprint failed: the credential check, the discovery of the"
+                echo "blueprints, a checkout. A night which proved nothing looks exactly"
+                echo "like a night which proved everything, and this is the difference."
+              fi
+              echo
+              echo "- run: $RUN_URL"
+              echo "- commit: $SERVER_URL/$GH_REPO/commit/$HEAD_SHA"
+              echo
+              cat "$work/snapshot.md"
+              echo
+            } > "$work/body.md"
+
+            if [ "$subject" = blueprints ]; then
+              {
+                echo "Which side moved. Every blueprint here was green in the pull request"
+                echo "which changed it, and this run differs from that one in a single"
+                echo "thing: it resolves the platform snapshot from where it is published,"
+                echo "today's. So a break here is a change in the framework which nobody"
+                echo "carried into the blueprints, unless the log below says otherwise."
+                echo
+                echo "The count says where to look. Many blueprints at once is the platform."
+                echo "One blueprint alone is that blueprint, or the twin it drifted from."
+                echo
+                echo "What broke:"
+                echo
+                # Twenty lines are enough to see the pattern. A platform change takes them
+                # all, and then the number above is the message rather than the list.
+                head -20 "$work/red.tsv" \
+                  | while IFS=$'\t' read -r name id url; do
+                      echo "- [$name]($url)"
+                    done
+                if [ "$red" -gt 20 ]; then
+                  echo "- and $((red - 20)) more, in the run above"
+                fi
+                echo
+              } >> "$work/body.md"
+
+              # What the first of them says. One log is quoted and not twenty: where the
+              # platform moved they all say the same thing, and where they do not, the run
+              # above has the rest.
+              IFS=$'\t' read -r first_name first_id first_url < "$work/red.tsv"
+              {
+                echo "What the log of \`$first_name\` says:"
+                echo
+              } >> "$work/body.md"
+              gh run view --job "$first_id" --log-failed > "$work/job.log" 2>/dev/null || true
+              # Every log line carries the job, the step and a timestamp before what was
+              # printed, and the step is 'UNKNOWN STEP' for a job of a matrix, so the whole
+              # log arrives rather than the failed step alone.
+              sed -E 's/^[^\t]*\t[^\t]*\t[^ ]+ //' "$work/job.log" > "$work/plain.log"
+              # Maven's own summary, without the six lines it prints after every failure
+              # about the switches to re-run it with.
+              grep -aE '^\[ERROR\]' "$work/plain.log" \
+                | grep -avE '^\[ERROR\][[:space:]]*$|-> \[Help|\[Help [0-9]+\] http|To see the full stack trace|Re-run Maven using|For more information about the errors|After correcting the problems|mvn <args> -rf|See dump files|See /home/runner/' \
+                | head -30 > "$work/excerpt.md" || true
+              if [ ! -s "$work/excerpt.md" ]; then
+                # A job can go red while Maven says nothing at all, for instance in a step
+                # which starts a cluster. The ten lines up to the runner's own error are
+                # then what there is to read; the tail of the log is not those lines,
+                # because the cleanup of the job runs afterwards and prints its own.
+                end=$(grep -anF '##[error]' "$work/plain.log" | tail -1 | cut -d: -f1 || true)
+                if [ -n "$end" ]; then
+                  start=$(( end > 9 ? end - 9 : 1 ))
+                  sed -n "${start},${end}p" "$work/plain.log" > "$work/excerpt.md"
+                fi
+              fi
+              if [ -s "$work/excerpt.md" ]; then
+                {
+                  echo '```'
+                  cat "$work/excerpt.md"
+                  echo '```'
+                } >> "$work/body.md"
+              else
+                {
+                  echo "Nothing in that log is marked as an error, so there is nothing to"
+                  echo "quote here. The job itself is the place to read."
+                } >> "$work/body.md"
+              fi
+              echo >> "$work/body.md"
+            fi
+
+            if [ -n "$number" ]; then
+              echo "<!-- nightly-state: red -->" >> "$work/body.md"
+              gh issue comment "$number" --body-file "$work/body.md"
+              echo "The night is red and issue #${number} already had it."
+              continue
+            fi
+
+            {
+              echo "While this issue is open, every further red night is a comment here"
+              echo "rather than a second issue, and a night which is green again is a comment"
+              echo "as well. Nothing closes it on its own. Whoever fixes the break closes it."
+              echo
+              echo "<!-- nightly-state: red -->"
+            } >> "$work/body.md"
+            gh issue create --title "$title" --label "$label" --body-file "$work/body.md"
+          done < "$work/subjects.tsv"

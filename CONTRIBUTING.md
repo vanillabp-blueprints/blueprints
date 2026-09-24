@@ -386,13 +386,14 @@ explains why the suffix exists.
 
 ## What CI builds
 
-Three workflows, and they answer three different questions.
+Four workflows, and they answer four different questions.
 
-|    Workflow    |                                            Question                                             |
-|----------------|-------------------------------------------------------------------------------------------------|
-| `checks.yaml`  | do index, documentation structure, test harness copies and platform twins agree?                |
-| `build.yaml`   | does every blueprint build and test, alone and through the aggregator, on every BPMS it claims? |
-| `nightly.yaml` | does it still, against today's snapshots of the framework?                                      |
+|       Workflow       |                                            Question                                             |
+|----------------------|-------------------------------------------------------------------------------------------------|
+| `checks.yaml`        | do index, documentation structure, test harness copies and platform twins agree?                |
+| `build.yaml`         | does every blueprint build and test, alone and through the aggregator, on every BPMS it claims? |
+| `nightly.yaml`       | does it still, against the platform snapshot as it is published today?                          |
+| `nightly-issue.yaml` | does anybody hear about it when the night says no?                                              |
 
 The job that matters most is `blueprint`: it builds `<group>/<blueprint-id>/<platform>/` with a
 plain `mvn`, without the aggregator, the wrapper or the root POM. That is exactly the
@@ -436,6 +437,37 @@ from the repository secrets `VANILLABP_USER_NAME` and `VANILLABP_USER_TOKEN`, a 
 carrying `read:packages`. Locally, the same settings file works with those two variables
 exported. The blueprint POMs stay free of all this: a blueprint shows what an application
 needs, and after the release that is Maven Central.
+
+### When the night goes red
+
+A pull request build sees what moves in this repository. The framework lives in other
+repositories and is republished several times a day, so a platform change which breaks a
+blueprint is invisible there. It has happened: a change in the Spring Boot integration left
+two blueprints unable to compile, every pull request stayed green, and a person found it a
+day later.
+
+`nightly.yaml` is the build which reads the platform snapshot from where it is published.
+It starts with the job `platform`, which stops the run when the two secrets are empty,
+because sixty jobs failing on a 401 read like sixty broken blueprints. That job also writes
+down which platform build the night got. No job of that run restores the Maven cache and
+every Maven call passes `--update-snapshots`, so nothing here can quietly build against
+yesterday's framework.
+
+A red night becomes a GitHub issue under the label `nightly`, written by
+`nightly-issue.yaml`. One issue for the whole night, and the count of the blueprints which
+broke is the first thing in it: many at once is the platform, one alone is that blueprint.
+While the issue is open, every further red night is a comment on it, and so is the first
+night which is green again. Whoever fixes the break closes the issue; nothing closes it on
+its own.
+
+The same build by hand, which is what to run when the issue names a blueprint:
+
+```bash
+export USER_NAME=<github user> USER_TOKEN=<token with read:packages>
+cd <group>/<blueprint-id>/<platform>
+mvn -s ../../../.github/workflows/github-packages-settings.xml \
+  --update-snapshots -Pcamunda7 verify
+```
 
 ## Dependency updates
 
