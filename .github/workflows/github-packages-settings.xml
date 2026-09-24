@@ -8,6 +8,10 @@
   needed; they come from the repository secrets VANILLABP_USER_NAME and
   VANILLABP_USER_TOKEN (a token carrying 'read:packages').
 
+  The list below is what this repository reads, not what VanillaBP publishes. More
+  repositories publish to GitHub Packages than are named here. A registry is added when a
+  build in this repository starts to resolve an artifact it publishes.
+
   This file is build infrastructure and deliberately not a <repositories> section of a
   blueprint POM: a blueprint shows what an application needs, and after the release that
   is Maven Central and nothing else.
@@ -32,6 +36,8 @@
                         <enabled>true</enabled>
                     </releases>
                 </repository>
+                <!-- io.vanillabp:spi-for-java, which every blueprint gets through the
+                     platform integration it depends on -->
                 <repository>
                     <id>vanillabp-spi-for-java</id>
                     <url>https://maven.pkg.github.com/vanillabp/spi-for-java</url>
@@ -42,6 +48,8 @@
                         <enabled>false</enabled>
                     </releases>
                 </repository>
+                <!-- the platform integrations a blueprint builds on: the BOM, the Spring Boot
+                     and Quarkus support, the schema -->
                 <repository>
                     <id>vanillabp-adapter-platform-integration</id>
                     <url>https://maven.pkg.github.com/vanillabp/adapter-platform-integration</url>
@@ -52,6 +60,7 @@
                         <enabled>false</enabled>
                     </releases>
                 </repository>
+                <!-- the adapter of the '-Pcamunda7' build, the default of a blueprint -->
                 <repository>
                     <id>vanillabp-camunda7-adapter</id>
                     <url>https://maven.pkg.github.com/vanillabp/camunda7-adapter</url>
@@ -62,6 +71,7 @@
                         <enabled>false</enabled>
                     </releases>
                 </repository>
+                <!-- the adapter of the '-Pcamunda8' build -->
                 <repository>
                     <id>vanillabp-camunda8-adapter</id>
                     <url>https://maven.pkg.github.com/vanillabp/camunda8-adapter</url>
