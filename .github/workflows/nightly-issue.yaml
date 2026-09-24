@@ -282,6 +282,20 @@ jobs:
                   echo "quote here. The job itself is the place to read."
                 } >> "$work/body.md"
               fi
+
+              # The reports of that job, uploaded by the nightly run. Whoever reads this
+              # issue wants the failed test, and an error line does not carry it. The
+              # nightly builds the name out of the same two values the job name carries,
+              # so it can be spelled out here.
+              first_blueprint=${first_name% on *}
+              first_bpms=${first_name##* on }
+              {
+                echo
+                echo "The test reports of that job are attached to the run above as"
+                echo "\`test-reports-${first_blueprint//\//-}-${first_bpms}\`, and GitHub"
+                echo "keeps them for thirty days. Every other red job of the night has one"
+                echo "as well, named after its blueprint and its BPMS in the same way."
+              } >> "$work/body.md"
               echo >> "$work/body.md"
             fi
 

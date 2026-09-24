@@ -453,6 +453,12 @@ down which platform build the night got. No job of that run restores the Maven c
 every Maven call passes `--update-snapshots`, so nothing here can quietly build against
 yesterday's framework.
 
+Every job which went red attaches its surefire and failsafe reports to the run. The
+artifact is called `test-reports-<blueprint>-<bpms>`, with the slashes of the blueprint
+path turned into dashes, and GitHub keeps it for thirty days, longer than the log of the
+job. The issue below spells out the name of the first red job, so the failed test is one
+download away rather than a scroll through a log which is thrown away sooner.
+
 A red night becomes a GitHub issue under the label `nightly`, written by
 `nightly-issue.yaml`. One issue for the whole night, and the count of the blueprints which
 broke is the first thing in it: many at once is the platform, one alone is that blueprint.
