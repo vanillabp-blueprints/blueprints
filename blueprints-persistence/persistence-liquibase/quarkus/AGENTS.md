@@ -24,9 +24,13 @@ Replace all of these consistently; they are the same in every blueprint.
 | `loan_approval`            | BPMN process ID                                                                                                           |
 | `LOAN_APPROVAL`            | the aggregate's table, in the entity AND in the module's changelog                                                        |
 
-Three names are not placeholders and must not be renamed: `VANILLABP_PHASE_TWO_OUTBOX`,
-`VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD` and `VANILLABP_TASK_DELIVERY` are VanillaBP's tables. The delivery
-table's name is not configurable at all, so a renamed one is a table nobody reads.
+Three names are not placeholders and must not be renamed here: `VANILLABP_PHASE_TWO_OUTBOX`,
+`VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD` and `VANILLABP_TASK_DELIVERY` are VanillaBP's tables. Each of the
+three can be given a name of its own at runtime, with `vanillabp.outbox.jdbc.table`,
+`vanillabp.outbox.jdbc.payload-table` and `vanillabp.outbox.jdbc.delivery-table`. The changelog takes
+the same names through its properties `vanillabp.outbox.table`, `vanillabp.payload.table` and
+`vanillabp.delivery.table`, set before the include. Write a name on one side only and it is a table
+nobody reads. This blueprint keeps the default names.
 
 `loan-approval` is also the `logicalFilePath` of the module's changelog. Renaming the module
 means renaming that path, and a changelog already applied somewhere must not have its path
@@ -92,7 +96,8 @@ Rules which hold beyond this blueprint:
 4. Give the application a changelog which includes `vanillabp/schema/changelog.xml` from the
    classpath plus one line per workflow module. A renamed outbox table
    (`vanillabp.outbox.jdbc.table`) is set as the changelog property `vanillabp.outbox.table`
-   before the include.
+   before the include, and the payload table and the delivery table the same way, through
+   `vanillabp.payload.table` and `vanillabp.delivery.table`.
 5. Point `quarkus.liquibase.change-log` at that changelog and set `migrate-at-start`. One
    datasource, one run.
 6. Switch the runtime creators off: `quarkus.hibernate-orm.schema-management.strategy:
