@@ -1,8 +1,16 @@
 name: Nightly build
+# Two runs a day, and the midday one is temporary. Until the 2.0 release several stories a
+# day reach the platform. A break found at two in the morning therefore arrives together
+# with everything merged since, and the reader has to work out which change it belongs to.
+# The midday run cuts that wait from sixteen hours to about four. After the release a day
+# carries far fewer changes, and then this run goes and the early one stays alone.
 "on":
   schedule:
     # Early enough to be green or red before anybody starts working.
     - cron: "0 2 * * *"
+    # Midday UTC, early afternoon in Europe: what went in during the morning gets its
+    # answer while there is still a working day left.
+    - cron: "0 12 * * *"
   workflow_dispatch:
 permissions:
   contents: read
@@ -158,6 +166,14 @@ jobs:
         with:
           java-version: 25.0.4+101.0.LTS
           distribution: temurin
+      # Written before the build, so the upload below has the name whatever the build does.
+      # 'Nightly issue' builds the same name out of the job name, so the two have to agree:
+      # the blueprint path with its slashes turned into dashes, then the BPMS.
+      - name: The name this job uploads its test reports under
+        env:
+          BLUEPRINT: "${{ matrix.blueprint }}"
+          BPMS: "${{ matrix.bpms }}"
+        run: echo "REPORTS_NAME=test-reports-${BLUEPRINT//\//-}-${BPMS}" >> "$GITHUB_ENV"
       - name: Start a Camunda 8 cluster
         if: matrix.bpms == 'camunda8'
         # The address is published here rather than in the build step: a Camunda 7 build
@@ -190,6 +206,26 @@ jobs:
           -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
           -P${{ matrix.bpms }} install
+      # A red night used to leave nothing behind but the log of the job, so the issue it
+      # opens could quote no more than the lines Maven marked as an error. An error line
+      # says that a test failed. The report says what the test expected and what it got.
+      # Thirty days rather than the default seven, because the Camunda 8 adapter once had
+      # nine red nights open at the same time and only the newest one still had its
+      # reports.
+      - name: Upload the test reports of a blueprint which failed
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          # One artifact name per matrix entry, because two jobs uploading under one name
+          # collide. The name is built by the step above: a blueprint is a path, and a
+          # slash is not allowed in an artifact name.
+          name: "${{ env.REPORTS_NAME }}"
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
+          retention-days: 30
+          # A job which failed while compiling has no reports, and that is not an error.
+          if-no-files-found: ignore
       - name: The Camunda 8 cluster's log, if something went wrong
         if: failure() && matrix.bpms == 'camunda8'
         run: bin/camunda8_cluster.sh logs
