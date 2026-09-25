@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_document_check" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <!--
+    The first section of the loan approval, as a model of its own. Nobody but the call
+    activity of 'loan_approval' starts it, so its start event is plain.
+
+    The two tasks build the sub-object 'documentCheck' of the loan approval, and the
+    gateway reads a value out of that sub-object again. Inside the section that is safe,
+    because the tasks before the gateway made the object.
+
+    A called process runs as a process instance of its own, and its variables belong to
+    that instance. So what this section shares with the engine is gone once the section
+    ends, and the loan approval goes on with what it knew before.
+  -->
+  <bpmn:process id="document_check" name="Document check" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_DocumentsArrived" name="Documents arrived">
+      <bpmn:outgoing>Flow_ToCollectDocuments</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToCollectDocuments" sourceRef="StartEvent_DocumentsArrived" targetRef="ServiceTask_CollectDocuments" />
+    <!-- Creates the sub-object of this section, the way the first task of a section does. -->
+    <bpmn:serviceTask id="ServiceTask_CollectDocuments" name="Collect documents">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="collectDocuments" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToCollectDocuments</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToVerifySignatures</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToVerifySignatures" sourceRef="ServiceTask_CollectDocuments" targetRef="ServiceTask_VerifySignatures" />
+    <bpmn:serviceTask id="ServiceTask_VerifySignatures" name="Verify signatures">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="verifySignatures" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToVerifySignatures</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSignaturesComplete</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToSignaturesComplete" sourceRef="ServiceTask_VerifySignatures" targetRef="Gateway_SignaturesComplete" />
+    <bpmn:exclusiveGateway id="Gateway_SignaturesComplete" name="All signatures there?" default="Flow_ToSignaturesMissing">
+      <bpmn:incoming>Flow_ToSignaturesComplete</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToDocumentsComplete</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToSignaturesMissing</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <!--
+      A value of this section, asked inside this section. The getter behind it still checks
+      the sub-object for null, because the same aggregate serves the calling model too.
+    -->
+    <bpmn:sequenceFlow id="Flow_ToDocumentsComplete" name="yes" sourceRef="Gateway_SignaturesComplete" targetRef="EndEvent_DocumentsComplete">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=signaturesComplete</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToSignaturesMissing" name="no" sourceRef="Gateway_SignaturesComplete" targetRef="EndEvent_SignaturesMissing" />
+    <!-- Both ends hand control back to the call activity, which is all a called process owes its caller. -->
+    <bpmn:endEvent id="EndEvent_DocumentsComplete" name="Documents complete">
+      <bpmn:incoming>Flow_ToDocumentsComplete</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_SignaturesMissing" name="Signatures missing">
+      <bpmn:incoming>Flow_ToSignaturesMissing</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="document_check">
+      <bpmndi:BPMNShape id="StartEvent_DocumentsArrived_di" bpmnElement="StartEvent_DocumentsArrived">
+        <dc:Bounds x="152" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="130" y="265" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_CollectDocuments_di" bpmnElement="ServiceTask_CollectDocuments">
+        <dc:Bounds x="240" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_VerifySignatures_di" bpmnElement="ServiceTask_VerifySignatures">
+        <dc:Bounds x="400" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_SignaturesComplete_di" bpmnElement="Gateway_SignaturesComplete" isMarkerVisible="true">
+        <dc:Bounds x="555" y="215" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="505" y="158" width="75" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_DocumentsComplete_di" bpmnElement="EndEvent_DocumentsComplete">
+        <dc:Bounds x="682" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="657" y="205" width="87" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_SignaturesMissing_di" bpmnElement="EndEvent_SignaturesMissing">
+        <dc:Bounds x="682" y="282" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="659" y="325" width="83" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToCollectDocuments_di" bpmnElement="Flow_ToCollectDocuments">
+        <di:waypoint x="188" y="240" />
+        <di:waypoint x="240" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToVerifySignatures_di" bpmnElement="Flow_ToVerifySignatures">
+        <di:waypoint x="340" y="240" />
+        <di:waypoint x="400" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSignaturesComplete_di" bpmnElement="Flow_ToSignaturesComplete">
+        <di:waypoint x="500" y="240" />
+        <di:waypoint x="555" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToDocumentsComplete_di" bpmnElement="Flow_ToDocumentsComplete">
+        <di:waypoint x="580" y="215" />
+        <di:waypoint x="580" y="180" />
+        <di:waypoint x="682" y="180" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="588" y="186" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSignaturesMissing_di" bpmnElement="Flow_ToSignaturesMissing">
+        <di:waypoint x="580" y="265" />
+        <di:waypoint x="580" y="300" />
+        <di:waypoint x="682" y="300" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="588" y="278" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
