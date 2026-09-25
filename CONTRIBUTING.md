@@ -425,11 +425,13 @@ and it takes a while to connect that to a directory nobody cleaned. CI never see
 starts from a fresh checkout.
 
 The address reaches the blueprint as an environment variable binding to
-`vanillabp.adapters.camunda8.rest-address`. Both spellings are set, because the platforms
-read the name differently: Spring Boot binds `VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS`,
-Quarkus expects the dash as an underscore
-(`VANILLABP_ADAPTERS_CAMUNDA8_REST_ADDRESS`), and a variable matching no property is
-ignored. No CI-specific address is checked in anywhere.
+`vanillabp.adapters.camunda8.rest-address`, and both spellings of the name are set, because
+the two platforms read the dash in a key differently. That is the framework's rule rather
+than this repository's, and the wiki writes it out for
+[Spring Boot](https://github.com/vanillabp/adapter-platform-integration/wiki/Spring-Boot-integration#overriding-configuration-via-environment-variables)
+and for
+[Quarkus](https://github.com/vanillabp/adapter-platform-integration/wiki/Quarkus-integration#overriding-configuration-via-environment-variables).
+No CI-specific address is checked in anywhere.
 
 ### Reading the VanillaBP snapshots
 
