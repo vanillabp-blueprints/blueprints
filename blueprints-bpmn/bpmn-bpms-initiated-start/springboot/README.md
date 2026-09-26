@@ -19,20 +19,20 @@ triggered by a call.
 - **There is no `startWorkflow`.** Look at `nightlyreview/Workflow.java`: the class that
   owns `ProcessService` for this workflow has no method starting one, because there is
   nothing to start. That absence is the blueprint.
-- **The aggregate comes into being on the way in.** A workflow needs one - tasks are routed
-  by its ID and expressions read its attributes - so VanillaBP builds it: it instantiates
-  the class, assigns the ID and saves it before anything else of the process runs. The class
-  therefore needs a constructor without arguments, and every attribute may be null at that
-  moment.
-- **The ID is the engine's, not yours.** VanillaBP takes the most stable identity available:
-  what the BPMS identifies the start by (a remote engine's process instance key), otherwise
-  a timer's trigger time, otherwise a generated value. That order is what makes a repeated
-  notification find the aggregate instead of building a second one.
+- **You still build the aggregate.** A workflow needs one - tasks are routed by its ID and
+  expressions read its attributes - and the application builds it, exactly as it does for a
+  workflow it starts itself. `@WorkflowStartedByBpms` returns the aggregate, VanillaBP saves
+  it before anything else of the process runs, and no object of yours comes into existence
+  without your code.
+- **You name the workflow.** The ID of a workflow is the ID of its aggregate, and the method
+  picks it. The BPMS is told about it afterwards and holds it: Camunda 7 as the business key,
+  Camunda 8 as a process variable. That is also what makes a repeated notification find the
+  aggregate instead of building a second one.
 
-`@WorkflowStartedByBpms` is optional, and this blueprint would run without it. It is here to
-show the hook: the aggregate VanillaBP built is handed in together with a `BpmsStartTrigger`
-saying what fired, and what the method writes is saved in the same transaction. Throwing
-means the workflow does not start.
+The method is **required** for this process. A timer or a signal may fire for it, and an
+application without the method does not boot - the message names the process and the method
+to write. You learn that while the models are deployed, not when the timer fires at three in
+the morning.
 
 The signal start event is the one place where the application has a say. It can broadcast
 `ReviewRequested` and thereby ask for a review, but it still does not start one: a broadcast
@@ -53,9 +53,9 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 |------------------------------------------|-----------------------------------------------------------------------------------|
 | `nightly_review.bpmn`                    | a second process with a timer start event and a signal start event                |
 | `nightlyreview/WorkflowTaskHandler.java` | `@WorkflowStartedByBpms` next to the ordinary `@WorkflowTask`                     |
-| `nightlyreview/Service.java`             | what the trigger carries, written onto the aggregate VanillaBP built              |
+| `nightlyreview/Service.java`             | builds the aggregate of a start nobody asked for, and names it                    |
 | `nightlyreview/Workflow.java`            | `sendSignal` and, deliberately, no `startWorkflow`                                |
-| `nightlyreview/model/Aggregate.java`     | an aggregate nobody constructs: ID assigned by VanillaBP, attributes filled later |
+| `nightlyreview/model/Aggregate.java`     | the aggregate of a workflow nobody started, built by the application all the same |
 | `NightlyReviewIT.java`                   | a test that cannot start anything and waits for an aggregate to appear            |
 
 ## Running it
@@ -111,8 +111,8 @@ Then do nothing. Five seconds after the model was deployed the timer fires, and 
 exists that nobody asked for:
 
 ```
-A nightly review 'a41f…' was started by the BPMS: TIMER at 2026-08-14T09:12:31Z, from start event 'StartEvent_ScheduledReview'. Nobody called startWorkflow
-The nightly review 'a41f…' looked at 0 loan approval(s)
+A nightly review 'a41f…' was started by the BPMS: TIMER, from start event 'StartEvent_ScheduledReview'. Nobody called startWorkflow
+The nightly review 'a41f…' looked at 0 loan approval(s) at 2026-08-14T09:12:31.884Z
 ```
 
 The reviews are listed at
@@ -129,7 +129,7 @@ http://localhost:8080/api/nightly-review/request
 
 ```
 A review was requested. Whether one starts is the engine's decision
-A nightly review '7c02…' was started by the BPMS: SIGNAL at 2026-08-14T09:13:02Z, from start event 'StartEvent_ReviewRequested'. Nobody called startWorkflow
+A nightly review '7c02…' was started by the BPMS: SIGNAL, from start event 'StartEvent_ReviewRequested'. Nobody called startWorkflow
 ```
 
 The loan approval of the base blueprint is still there, started the ordinary way, and gives
@@ -145,8 +145,8 @@ While the application runs on Camunda 7, Camunda's own web applications are serv
 http://localhost:8080/camunda
 ```
 
-Log in with `demo` / `demo`. Cockpit shows the review instances with no business key of
-their own choosing - the ID VanillaBP assigned is what identifies them. The user comes from
+Log in with `demo` / `demo`. Cockpit shows the review instances under the business key the
+application chose while it built the aggregate - that key is the ID of the review. The user comes from
 `application/src/main/resources/application-camunda7.yaml` and exists so that the
 blueprint can be operated without setting one up; an application with an identity provider
 of its own leaves that section out.
@@ -163,19 +163,36 @@ start with, and the profiles are what keeps that from happening.
 |------------------------------------------------------------|--------------------------------------------------------------------------|
 | `.../loan-approval/processes/camunda7/nightly_review.bpmn` | the process: a timer start event, a signal start event, one service task |
 | `.../nightlyreview/WorkflowTaskHandler.java`               | `@WorkflowStartedByBpms`, the hook into a start nobody triggered         |
-| `.../nightlyreview/Service.java`                           | writes what the trigger carried; contains no way to start a review       |
+| `.../nightlyreview/Service.java`                           | builds and names the aggregate; contains no way to start a review        |
 | `.../nightlyreview/Workflow.java`                          | `sendSignal` for asking, and no `startWorkflow` at all                   |
-| `.../nightlyreview/model/Aggregate.java`                   | the aggregate VanillaBP instantiates, with the ID it assigned            |
+| `.../nightlyreview/model/Aggregate.java`                   | the aggregate the application builds for a start it did not ask for      |
 | `loan-approval/src/test/.../NightlyReviewIT.java`          | waits for a workflow to appear, because it cannot start one              |
 
 The order of events: the model is deployed while the application boots, the engine
 schedules the timer, and five seconds later it fires. VanillaBP is notified, opens a
-transaction, instantiates the aggregate, assigns its ID, runs the `@WorkflowStartedByBpms`
-method and saves. A start bringing variables along would have them copied into equally
-named attributes first, but these start events bring none, and the aggregate is annotated
-`@NoSyncWithBPMS`: what the trigger carried is read from the method's trigger argument
-instead. Only then does the process continue to its service task, which is an ordinary
+transaction, calls the `@WorkflowStartedByBpms` method, takes the aggregate it returns and
+saves it. Only then does the process continue to its service task, which is an ordinary
 `@WorkflowTask` - from there nothing about this workflow is special.
+
+### The trigger says what fired, not when
+
+`BpmsStartTrigger` carries the kind of the start event and the BPMN ID of the event that
+fired, and for a signal its name. It carries no time, because no BPMS tells a start listener
+the moment it scheduled the start for, and an adapter would have to invent one.
+
+Where the moment matters, the model writes it. The service task of this process fills a
+variable of its own by an expression - `${now().toInstant().toString()}` on Camunda 7,
+`=string(now())` on Camunda 8 - and `reviewPendingApprovals` reads it as a `@TaskParam`:
+
+```java
+@WorkflowTask
+public void reviewPendingApprovals(final Aggregate review, @TaskParam("reviewedAt") final String reviewedAt) {
+```
+
+It arrives as a text, and the aggregate keeps it as one. What a moment looks like is the
+expression language's business: Camunda 7 writes `2026-08-14T09:12:31.884Z`, Camunda 8
+writes `2026-08-14T09:12:31.884@GMT`. That the two differ is the reason VanillaBP hands out
+no time of its own.
 
 How the two engines arrange that differs, and it is worth knowing which part is theirs.
 Camunda 7 runs an execution listener on the start event inside its own transaction, so the

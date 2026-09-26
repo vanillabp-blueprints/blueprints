@@ -19,8 +19,8 @@ import blueprint.workflowmodule.nightlyreview.model.AggregateRepository;
  * <p>
  * It cannot begin the way every other integration test begins - there is no call that
  * starts this workflow. It waits for an aggregate to appear instead, which is the whole
- * assertion: the engine started a process on its own and VanillaBP built the aggregate for
- * it.
+ * assertion: the engine started a process on its own and the application built the
+ * aggregate for it.
  * </p>
  */
 public class NightlyReviewIT extends WorkflowModuleTest {
@@ -50,16 +50,15 @@ public class NightlyReviewIT extends WorkflowModuleTest {
   }
 
   @Test
-  @DisplayName("The timer starts a workflow and VanillaBP builds its aggregate")
+  @DisplayName("The timer starts a workflow and the application builds its aggregate")
   public void theTimerStartsAWorkflowNobodyAskedFor() {
 
     // no service call above: the cycle of the start event fired after the model was
     // deployed, which is the only thing that happened
     final var review = awaitReviewStartedBy("TIMER");
 
-    // the ID was assigned by VanillaBP, from the most stable identity the BPMS offers
+    // the ID is the one the application picked while it built the aggregate
     assertThat(review.getReviewId()).isNotBlank();
-    assertThat(review.getTriggeredAt()).isNotNull();
     assertThat(review.getStartEventId()).isEqualTo("StartEvent_ScheduledReview");
 
     // and from there it is an ordinary workflow: the service task ran
@@ -68,6 +67,10 @@ public class NightlyReviewIT extends WorkflowModuleTest {
         review.getReviewId(),
         aggregate -> aggregate.getApprovalsReviewed() != null);
     assertThat(reviewed.getApprovalsReviewed()).isNotNegative();
+
+    // the moment came from the model, not from the trigger: what the text looks like is
+    // the expression language's business, that there is one is the blueprint's point
+    assertThat(reviewed.getReviewedAt()).isNotBlank();
 
   }
 

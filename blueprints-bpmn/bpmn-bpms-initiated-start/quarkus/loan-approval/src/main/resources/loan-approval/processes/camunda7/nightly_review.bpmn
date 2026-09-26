@@ -26,7 +26,18 @@
       <bpmn:signalEventDefinition id="SignalEventDefinition_ReviewRequested" signalRef="Signal_ReviewRequested" />
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_FromRequest" sourceRef="StartEvent_ReviewRequested" targetRef="ServiceTask_ReviewPendingApprovals" />
+    <!--
+      The trigger of a BPMS-initiated start carries no time: no BPMS tells a start listener
+      the moment it scheduled the start for. Where the moment matters, the model writes it,
+      and the handler reads it as a @TaskParam. That is the only place which knows what "the
+      moment" is meant to be here - the moment the review looked at the approvals.
+    -->
     <bpmn:serviceTask id="ServiceTask_ReviewPendingApprovals" name="Review pending approvals" camunda:expression="${reviewPendingApprovals}">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="reviewedAt">${now().toInstant().toString()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_FromSchedule</bpmn:incoming>
       <bpmn:incoming>Flow_FromRequest</bpmn:incoming>
       <bpmn:outgoing>Flow_ToReviewDone</bpmn:outgoing>
