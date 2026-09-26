@@ -102,31 +102,25 @@ Running it on another BPMS is a Maven profile, not one line of Java changes:
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run and be pointed at. Start one, then add
-its address to `application/src/main/resources/application.yaml` and to
-`loan-approval/src/test/resources/application.yaml`:
+Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
+else specific to that engine, lives in its profile file
+`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
+test:
 
 ```yaml
 vanillabp:
   adapters:
     camunda8:
+      # Camunda 8 is a remote engine: point this at your cluster.
       rest-address: http://localhost:8080
-      # Nothing else is needed: this adapter keeps workflow modules apart by nothing at all
-      # ('name-clash-avoidance: none') unless told otherwise, because a cluster started from
-      # the stock image has multi-tenancy switched off and rejects a tenant per module. The
-      # adapter warns about it while booting - with one workflow module the identifiers are
-      # unique anyway. Set 'name-clash-avoidance: use-prefix' to have VanillaBP prefix them.
 ```
 
-Without it the application does not boot, and says so:
+Without it the application does not boot. That is the normal way to work with VanillaBP:
+configuration is validated while booting, and the message names the property to set.
 
-```
-Camunda 8 adapter 'camunda8' is used but not configured: the property
-'vanillabp.adapters.camunda8.rest-address' is missing.
-```
-
-That is the normal way to work with VanillaBP: configuration is validated while booting, and
-the message names what to do.
+That file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
+name, so the engine is chosen once, on the Maven command line, and the build, the tests and
+`spring-boot:run` all follow it.
 
 Start the application:
 
