@@ -67,7 +67,8 @@ public class SchemaIT {
   private static final Set<String> TABLES_OF_VANILLABP = Set.of(
       "VANILLABP_PHASE_TWO_OUTBOX",
       "VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD",
-      "VANILLABP_TASK_DELIVERY");
+      "VANILLABP_TASK_DELIVERY",
+      "VANILLABP_HOUSEKEEPING");
 
   @Inject
   DataSource dataSource;
