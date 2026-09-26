@@ -68,11 +68,10 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `Aggregate.java`                  | `partnerApprovalTaskId` and what the process wrote on the way out                                |
 | `LoanApprovalIT.java`             | one test per way the task ends: still open, completed, canceled                                  |
 
-The one line worth understanding is `camunda:delegateExpression` in the Camunda 7 model. A
-task wired by `camunda:expression` is done as soon as the expression has been evaluated,
-which is right for a service task and wrong here, and the application does not start if the
-two disagree. Camunda 8 needs no counterpart: there a job stays open until somebody completes
-it.
+The one line worth looking at is `camunda:delegateExpression` in the Camunda 7 model, which is
+what a task that stays open needs there. Camunda 8 needs no counterpart. How each engine wants
+such a task modelled is in the wiki of its adapter, for
+[Camunda 7](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Configuration#the-bpmn-model-for-camunda-7).
 
 ## Running it
 
@@ -156,23 +155,10 @@ The middle line is the cancellation arriving at the same handler method that sen
 request. Opening the same URL twice answers that this request is not open any more, which
 the application decides on its own, without asking the BPMS.
 
-While the application runs on Camunda 7, Camunda's own web applications are served at
-
-```
-http://localhost:8080/camunda
-```
-
-Log in with `demo` / `demo`. Cockpit shows the instance standing at the task that waits for
-the partner, which is the view the logged URLs cannot give. The user comes from
-`application/src/main/resources/application-camunda7.yaml` and exists so that the
-blueprint can be operated without setting one up; an application with an identity provider
-of its own leaves that section out.
-
-The Camunda 8 profile brings neither the dependency nor those settings into effect. Its
-tooling is part of the cluster, and the file naming a Camunda 7 adapter id is simply not
-loaded there - a profile file applies to its own engine and to no other. Naming an adapter
-id whose adapter is not on the classpath is a configuration error VanillaBP refuses to
-start with, and the profiles are what keeps that from happening.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. They show the instance standing at the task which waits for the
+partner, a view the logged URLs cannot give. Where they are served and how to log in is in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

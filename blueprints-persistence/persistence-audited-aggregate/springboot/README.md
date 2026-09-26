@@ -250,16 +250,9 @@ http://localhost:8080/api/loan-approval/0f7c…
 http://localhost:8080/api/loan-approval/0f7c…/trail
 ```
 
-While the application runs on Camunda 7, Camunda's own web applications are served at
-
-```
-http://localhost:8080/camunda
-```
-
-Log in with `demo` / `demo`. The user comes from
-`application/src/main/resources/application-camunda7.yaml` and exists so that the blueprint
-can be operated without setting one up; an application with an identity provider of its own
-leaves that section out.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. Where they are served and how to log in is in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

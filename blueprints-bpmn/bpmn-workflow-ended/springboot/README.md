@@ -47,14 +47,14 @@ end event it reached:
 | `endEventId()`        | the BPMN id of the end event, or `null` where the BPMS does not report it                                            |
 
 **Not every BPMS reports the same.** Camunda 7 names the end event; Camunda 8 does not, so
-`endEventId()` is `null` there and this blueprint's test does not assert it. What Camunda 8
-says about a cancelled workflow depends on its release line: from the 8.10 line on such a
-workflow reports `CANCELED`, and on the lines before it the cluster runs its listeners for
-completed instances only, so nothing arrives at all. Its adapter documents both. Write code
-which survives every case: a `null` end event is normal, and a business decision must not hang
-on the distinction a BPMS may not make. What a model looks like decides nothing here: a
-terminate end event and an interrupting event subprocess read like a cancelation and are
-reported as `COMPLETED` by both Camunda engines.
+`endEventId()` is `null` there and this blueprint's test does not assert it. Whether a
+cancelled workflow is reported at all differs too, and the adapter of each engine says what
+its own does, for
+[Camunda 8](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Deviations#a-cancelled-workflow-reports-no-end-before-line-810).
+Write code which survives every case: a `null` end event is normal, and a business decision must not hang on the
+distinction a BPMS may not make. What a model looks like decides nothing here: a terminate end
+event and an interrupting event subprocess read like a cancelation and are reported as
+`COMPLETED` by both Camunda engines.
 
 **The notification is at-least-once.** After a crash it may arrive twice, so what the method
 does has to tolerate that. Writing a closing time and a status does. Sending a letter does
@@ -154,21 +154,12 @@ The result of a run is at
 http://localhost:8080/api/loan-approval/{loanRequestId}
 ```
 
-While the application runs on Camunda 7, Camunda's own web applications are served at
-
-```
-http://localhost:8080/camunda
-```
-
-Log in with `demo` / `demo`. Cockpit is where an ended instance disappears from the running
-ones, which is the view this blueprint replaces for your application: your users should not
-have to look into a BPMS to see whether a case is closed.
-
-The Camunda 8 profile brings neither the dependency nor those settings into effect. Its
-tooling is part of the cluster, and the file naming a Camunda 7 adapter id is simply not
-loaded there - a profile file applies to its own engine and to no other. Naming an adapter
-id whose adapter is not on the classpath is a configuration error VanillaBP refuses to
-start with, and the profiles are what keeps that from happening.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. They are where an ended instance disappears from the running ones,
+and that is the view this blueprint replaces for your application: your users should not have
+to look into a BPMS to see whether a case is closed. Where they are served and how to log in is
+in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

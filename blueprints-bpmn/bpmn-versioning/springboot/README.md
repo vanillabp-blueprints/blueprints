@@ -110,15 +110,9 @@ That file is loaded because the Maven profile `camunda8` sets the Spring profile
 name, so the engine is chosen once, on the Maven command line, and the build, the tests and
 `spring-boot:run` all follow it.
 
-Take the address out and the application does not boot, and says so:
-
-```
-Camunda 8 adapter 'camunda8' is used but not configured: the property
-'vanillabp.adapters.camunda8.rest-address' is missing.
-```
-
-That is the normal way to work with VanillaBP: configuration is validated while booting, and
-the message names what to do.
+Take the address out and the application does not boot. That is the normal way to work with
+VanillaBP: configuration is validated while booting, and the message names the property to
+set.
 
 Start the application:
 
@@ -150,24 +144,9 @@ Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 
 Opening that URL shows the aggregate, including the credit rating the service task wrote.
 
-While the application runs on Camunda 7, Camunda's own web applications are served at
-
-```
-http://localhost:8080/camunda
-```
-
-Log in with `demo` / `demo`. Cockpit shows what the engine is doing with the workflows
-started above, which is the view the logged URLs cannot give: where an instance stands, and
-why a job failed. The user comes from
-`application/src/main/resources/application-camunda7.yaml` and exists so that the
-blueprint can be operated without setting one up; an application with an identity provider
-of its own leaves that section out.
-
-The Camunda 8 profile brings neither the dependency nor those settings into effect. Its
-tooling is part of the cluster, and the file naming a Camunda 7 adapter id is simply not
-loaded there - a profile file applies to its own engine and to no other. Naming an adapter
-id whose adapter is not on the classpath is a configuration error VanillaBP refuses to
-start with, and the profiles are what keeps that from happening.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. Where they are served and how to log in is in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

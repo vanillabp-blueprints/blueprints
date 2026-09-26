@@ -97,17 +97,23 @@ the module's own configuration, the test harness.
 
 ## Running it
 
-Requires a JDK 21 or newer, Docker and a Camunda 8 cluster. The monorepo brings the shortest way to a
-cluster:
-
-```bash
-bin/camunda8_cluster.sh start
-```
-
-Then, in this directory:
+Requires a JDK 21 or newer, Docker and a Camunda 8 cluster, because Camunda 8 is a remote
+engine:
 
 ```bash
 mvn install verify
+```
+
+The cluster's address, and everything else specific to that engine, lives in
+`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
+test:
+
+```yaml
+vanillabp:
+  adapters:
+    camunda8:
+      # Camunda 8 is a remote engine: point this at your cluster.
+      rest-address: http://localhost:8080
 ```
 
 `camunda8` is the only profile and it is active by default, so there is no `-P` to

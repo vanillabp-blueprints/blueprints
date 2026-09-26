@@ -56,15 +56,14 @@ moment later. Nothing is lost, and the retry is what the version attribute buys:
 second write would have overwritten the first and nothing would have been logged at all. The
 Camunda 8 profile shortens the retry backoff so that moment stays short.
 
-A third decision maker exists and is not shown here: Camunda's
-[AI agent](https://docs.camunda.io/docs/components/agentic-orchestration/ai-agent-subprocess/)
-is a connector on exactly this element, and the activities inside are the tools it may choose
-from. It needs a connector runtime and an account with a model provider, which is why this
-blueprint stays with the two decision makers anybody can run.
+A third decision maker exists and is not shown here: a model provider can pick the activities.
+It needs a connector runtime and an account with that provider, which is why this blueprint
+stays with the two decision makers anybody can run. What the adapter does with such an element
+is in its
+[wiki](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#the-bpmn-model-for-camunda-8).
 
-This blueprint runs on Camunda 8 only. Camunda 7 does not execute the element: its parser
-lists it among the activity types it ignores and only warns while deploying, so a Camunda 7
-build would ask for handlers of activities which never run.
+This blueprint runs on Camunda 8 only, because Camunda 7 does not execute an ad-hoc
+subprocess.
 
 ## Delta to the base blueprint
 
