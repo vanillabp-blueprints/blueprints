@@ -18,3 +18,17 @@ loan-approval:
       spread: 20
     - id: harbour-credit
       spread: 35
+
+# The two lists the model loops over reach the BPMS, and a list is neither a boolean nor a
+# text, so both are declared. A multi-instance element needs the collection itself: it
+# counts the entries to know how often it runs, and no boolean getter can answer that.
+vanillabp:
+  workflow-modules:
+    loan-approval:
+      workflows:
+        loan_approval:
+          declared-aggregate-values:
+            # one iteration of the subprocess per region
+            - regionIds
+            # one iteration of the task inside it per partner
+            - partnerIds
