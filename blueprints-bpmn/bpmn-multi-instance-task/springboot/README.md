@@ -148,17 +148,11 @@ Add a partner to `loan-approval/src/main/resources/loan-approval/loan-approval.y
 task runs four times instead of three, without the model being touched and without a
 deployment. That is the reason the list lives in configuration.
 
-While the application runs on Camunda 7, Camunda's own web applications are served at
-
-```
-http://localhost:8080/camunda
-```
-
-Log in with `demo` / `demo`. Cockpit draws the multi-instance task with the number of
-instances that ran, which is the quickest way to see an iteration from the outside. The user
-comes from `application/src/main/resources/application-camunda7.yaml` and exists so that
-the blueprint can be operated without setting one up; an application with an identity provider
-of its own leaves that section out.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. They draw the multi-instance task with the number of instances that
+ran, which is the quickest way to see an iteration from outside. Where they are served and how
+to log in is in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

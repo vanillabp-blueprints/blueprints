@@ -175,10 +175,11 @@ Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 Both URLs are a module's own, published by that module, and this project neither knows nor
 declares them.
 
-While the application runs on Camunda 7, Camunda's own web applications are served at
-`http://localhost:8080/camunda`, user `demo` / `demo`. Cockpit shows what was deployed, which
-is the shortest answer to "what is actually in this runtime": two processes, each prefixed
-with the module which brought it.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. They show what was deployed, which is the shortest answer to what
+is actually in this runtime: two processes, each prefixed with the module which brought it.
+Where they are served and how to log in is in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 To run the image instead of the JAR:
 

@@ -224,11 +224,12 @@ Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 The names in those lines come from `banking-commons`, which is the shortest demonstration of
 what a shared library is for: both modules ask the same directory the same question.
 
-While the application runs on Camunda 7, Camunda's own web applications are served at
-`http://localhost:8080/camunda`, user `demo` / `demo`. Cockpit is also where prefixing
-becomes visible: the deployed processes are named `loan-approval-loan_approval` and
-`loan-repayment-loan_repayment` there, while everything in this repository keeps calling them
-`loan_approval` and `loan_repayment`.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. They are also where prefixing becomes visible: the deployed
+processes are named `loan-approval-loan_approval` and `loan-repayment-loan_repayment` there,
+while everything in this repository keeps calling them `loan_approval` and `loan_repayment`.
+Where they are served and how to log in is in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

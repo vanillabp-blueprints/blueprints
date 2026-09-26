@@ -210,19 +210,11 @@ To see the other side, put `poll-interval: PT10S` back into `application.yaml`, 
 application again. Ask the same question twice a minute apart, and the number grows by what
 the two pollers do.
 
-While the application runs on Camunda 7, Camunda's own web applications are served at
-
-```
-http://localhost:8080/camunda
-```
-
-Log in with `demo` / `demo`. Cockpit is the quickest way to see what the application is
-waiting for: the instance sits at the timer with the date it fires. The user comes from
-`application/src/main/resources/application-camunda7.yaml` and exists so that the blueprint
-can be operated without setting one up; an application with an identity provider of its own
-leaves that section out. A browser looking at Cockpit is traffic of its own: the web
-applications ask the database on every page, so a dashboard left open in front of a sleeping
-application is a poller with a person behind it.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. A browser looking at them is traffic of its own: they ask the
+database on every page, so a dashboard left open in front of a sleeping application is a poller
+with a person behind it. Where they are served and how to log in is in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 
