@@ -24,10 +24,11 @@ Replace all of these consistently; they are the same in every blueprint.
 | `loan_approval`            | BPMN process ID                                                                                                           |
 | `LOAN_APPROVAL`            | the aggregate's table, in the entity AND in the module's migration                                                        |
 
-Three names are not placeholders and must not be renamed here: `VANILLABP_PHASE_TWO_OUTBOX`,
-`VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD` and `VANILLABP_TASK_DELIVERY` are VanillaBP's tables. Each of the
-three can be given a name of its own at runtime, with `vanillabp.outbox.jdbc.table`,
-`vanillabp.outbox.jdbc.payload-table` and `vanillabp.outbox.jdbc.delivery-table`. The SQL in
+Four names are not placeholders and must not be renamed here: `VANILLABP_PHASE_TWO_OUTBOX`,
+`VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD`, `VANILLABP_TASK_DELIVERY` and `VANILLABP_HOUSEKEEPING` are
+VanillaBP's tables. Each of the four can be given a name of its own at runtime, with
+`vanillabp.outbox.jdbc.table`, `vanillabp.outbox.jdbc.payload-table`,
+`vanillabp.outbox.jdbc.delivery-table` and `vanillabp.outbox.jdbc.housekeeping-table`. The SQL in
 `io.vanillabp:vanillabp-schema` cannot follow such a name: it is generated while that artifact is
 built and carries the defaults. Whoever renames a table therefore edits the generated statements as
 well, because a table renamed on one side only is a table nobody reads. This blueprint keeps the

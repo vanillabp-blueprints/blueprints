@@ -15,3 +15,14 @@ loan-approval:
       spread: 20
     - id: alpine-savings
       spread: 35
+
+# The list the model loops over reaches the BPMS, and a list is neither a boolean nor a
+# text, so it is declared. A multi-instance task needs the collection itself: it counts the
+# entries to know how often it runs, and no boolean getter can answer that.
+vanillabp:
+  workflow-modules:
+    loan-approval:
+      workflows:
+        loan_approval:
+          declared-aggregate-values:
+            - partnerIds

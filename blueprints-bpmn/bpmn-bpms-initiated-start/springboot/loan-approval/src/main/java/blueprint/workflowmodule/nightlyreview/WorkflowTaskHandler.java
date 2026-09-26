@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import blueprint.workflowmodule.nightlyreview.model.Aggregate;
 import io.vanillabp.spi.service.BpmnProcess;
 import io.vanillabp.spi.service.BpmsStartTrigger;
+import io.vanillabp.spi.service.TaskParam;
 import io.vanillabp.spi.service.WorkflowService;
 import io.vanillabp.spi.service.WorkflowStartedByBpms;
 import io.vanillabp.spi.service.WorkflowTask;
@@ -32,13 +33,18 @@ public class WorkflowTaskHandler {
    * Called by VanillaBP when the engine started this workflow by itself.
    *
    * <p>
-   * <b>The annotation is optional.</b> Leave it out and VanillaBP still builds the
-   * aggregate and assigns its ID, so this blueprint would run with an empty class here. It
-   * would also copy process variables into attributes of the same name, but this aggregate
-   * shares nothing with the BPMS and the start events carry no variable, so there is
-   * nothing to copy. The annotation exists to show the hook: the aggregate VanillaBP built
-   * is handed in, together with a {@link BpmsStartTrigger} saying what fired, and whatever
-   * is written here is saved with it in the same transaction.
+   * <b>The annotation is required for a process the BPMS can start on its own.</b> A timer,
+   * a signal or a condition may fire for this process, and without this method the
+   * application refuses to boot, naming the process and the method to write. The check runs
+   * while the models are deployed, so a missing method is found then and not at three in the
+   * morning.
+   * </p>
+   *
+   * <p>
+   * The method BUILDS the aggregate and returns it. Nobody handed one in, because nothing of
+   * the application has seen this workflow yet, and an object VanillaBP had instantiated
+   * would carry none of the application's values. The ID it picks is the ID of the workflow:
+   * the BPMS is told about it and finds the aggregate under it from here on.
    * </p>
    *
    * <p>
@@ -54,15 +60,14 @@ public class WorkflowTaskHandler {
    * BPMS applies its retry semantics.
    * </p>
    *
-   * @param review  The aggregate VanillaBP built and is about to save.
    * @param trigger What made the BPMS start this workflow.
+   * @return The aggregate of the review, which VanillaBP saves.
    */
   @WorkflowStartedByBpms
-  public void reviewDue(
-      final Aggregate review,
+  public Aggregate reviewDue(
       final BpmsStartTrigger trigger) {
 
-    service.reviewDue(review, trigger);
+    return service.reviewDue(trigger);
 
   }
 
@@ -70,13 +75,15 @@ public class WorkflowTaskHandler {
    * Called by VanillaBP when the service task of the review is reached. From here on this
    * is an ordinary workflow: how it started is not visible any more.
    *
-   * @param review The workflow's aggregate.
+   * @param review     The workflow's aggregate.
+   * @param reviewedAt The moment the model wrote into a process variable of its own.
    */
   @WorkflowTask
   public void reviewPendingApprovals(
-      final Aggregate review) {
+      final Aggregate review,
+      @TaskParam("reviewedAt") final String reviewedAt) {
 
-    service.reviewPendingApprovals(review);
+    service.reviewPendingApprovals(review, reviewedAt);
 
   }
 

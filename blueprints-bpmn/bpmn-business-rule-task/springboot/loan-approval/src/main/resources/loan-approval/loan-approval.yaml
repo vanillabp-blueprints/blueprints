@@ -6,3 +6,15 @@
 # application.
 loan-approval:
   rating-scale: 100
+
+# The inputs of a decision table are numbers, which is what a decision table is for, so
+# they are declared instead of being turned into boolean getters. This is the case the
+# rule about portable values was written with in mind.
+vanillabp:
+  workflow-modules:
+    loan-approval:
+      workflows:
+        loan_approval:
+          declared-aggregate-values:
+            - amount
+            - creditRating

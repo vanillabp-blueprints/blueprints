@@ -1,0 +1,19 @@
+# Configuration of the workflow module 'loan-approval'.
+#
+# The file is named after the workflow module ID and is loaded automatically, with a
+# higher priority than application.yaml. Everything only this module needs belongs here -
+# that is what keeps a workflow module a self-contained application inside the
+# application.
+loan-approval:
+  rating-scale: 100
+  minimum-rating: 30
+  # The limit which makes the second section run. Below it the risk assessment is skipped,
+  # and the workflow aggregate of such a loan never gets a risk assessment object.
+  risk-assessment-from: 10000
+  # Used by the first section, the document check.
+  documents-expected: 3
+  # Used by the second section, the risk assessment.
+  collateral-percentage: 60
+  maximum-collateral: 12000
+  minimum-collateral-percentage: 50
+  maximum-debt-ratio: 40

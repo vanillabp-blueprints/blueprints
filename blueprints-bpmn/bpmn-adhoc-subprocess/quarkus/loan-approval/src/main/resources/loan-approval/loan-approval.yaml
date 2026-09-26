@@ -6,3 +6,17 @@
 # application.
 loan-approval:
   rating-scale: 100
+
+# Two values of the aggregate reach the BPMS as something other than a boolean or a text,
+# so both are declared.
+vanillabp:
+  workflow-modules:
+    loan-approval:
+      workflows:
+        loan_approval:
+          declared-aggregate-values:
+            # a number, which does not mean the same in every expression language
+            - amount
+            # the list of checks the ad-hoc subprocess picks its activities from: the
+            # engine needs the collection itself, not a decision derived from it
+            - checksToRun

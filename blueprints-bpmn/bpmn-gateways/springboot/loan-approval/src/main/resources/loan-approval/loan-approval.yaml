@@ -11,3 +11,14 @@ loan-approval:
   # not touch the model.
   minimum-rating: 30
   manual-review-rating: 10
+
+# The gateway reads decisions the aggregate computes, and the amount itself travels as
+# well. A number does not mean the same in every expression language, so it is declared:
+# that says we looked at it and know what our BPMS makes of it.
+vanillabp:
+  workflow-modules:
+    loan-approval:
+      workflows:
+        loan_approval:
+          declared-aggregate-values:
+            - amount

@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToRetrieveCreditRating</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRetrieveCreditRating" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_RetrieveCreditRating" />
+    <!--
+      The expression names the task definition, which defaults to the method name of the
+      @WorkflowTask. This task runs in the loan approval itself and therefore answers the
+      two questions the gateways below ask, for every workflow and before any section ran.
+    -->
+    <bpmn:serviceTask id="ServiceTask_RetrieveCreditRating" name="Retrieve credit rating" camunda:expression="${retrieveCreditRating}">
+      <bpmn:incoming>Flow_ToRetrieveCreditRating</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToCheckDocuments</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToCheckDocuments" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="CallActivity_CheckDocuments" />
+    <!--
+      The first section, drawn as a call activity. The engine starts an instance of
+      'document_check' and waits for it, and the tasks of that process build the sub-object
+      'documentCheck' of the workflow aggregate.
+
+      A call activity because this section has a model of its own: another team owns it and
+      changes it without anybody touching the loan approval.
+
+      Nothing is handed over and nothing comes back: the workflow aggregate is the state of
+      the business case, and both processes read and write the same one. What the section
+      shares with the engine stays in the instance of the section.
+    -->
+    <bpmn:callActivity id="CallActivity_CheckDocuments" name="Check documents" calledElement="document_check">
+      <bpmn:incoming>Flow_ToCheckDocuments</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToRiskAssessmentRequired</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_ToRiskAssessmentRequired" sourceRef="CallActivity_CheckDocuments" targetRef="Gateway_RiskAssessmentRequired" />
+    <!--
+      This gateway is why the blueprint exists: the second section runs for a big loan only.
+      A small one goes straight on, and its workflow aggregate never gets a risk assessment.
+    -->
+    <bpmn:exclusiveGateway id="Gateway_RiskAssessmentRequired" name="Big enough for a risk assessment?" default="Flow_SkipRiskAssessment">
+      <bpmn:incoming>Flow_ToRiskAssessmentRequired</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToAssessRisk</bpmn:outgoing>
+      <bpmn:outgoing>Flow_SkipRiskAssessment</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <!--
+      A plain boolean the workflow aggregate answers, about the loan rather than about the
+      data model behind it. The rating task wrote it, so it is there whatever the sections
+      did.
+    -->
+    <bpmn:sequenceFlow id="Flow_ToAssessRisk" name="yes" sourceRef="Gateway_RiskAssessmentRequired" targetRef="SubProcess_AssessRisk">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${riskAssessmentRequired}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_SkipRiskAssessment" name="no" sourceRef="Gateway_RiskAssessmentRequired" targetRef="Gateway_Decision" />
+    <!--
+      The second section, drawn as an embedded subprocess. Everything it does belongs
+      together and is put away in one box, which is what keeps a large model readable.
+
+      Its tasks build the sub-object 'riskAssessment'. A workflow taking the other path
+      never runs them, so its aggregate keeps that sub-object empty until the end.
+    -->
+    <bpmn:subProcess id="SubProcess_AssessRisk" name="Assess risk">
+      <bpmn:incoming>Flow_ToAssessRisk</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToDecisionAfterRisk</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_RiskAssessmentStarted">
+        <bpmn:outgoing>Flow_ToCheckCollateral</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_ToCheckCollateral" sourceRef="StartEvent_RiskAssessmentStarted" targetRef="ServiceTask_CheckCollateral" />
+      <!-- Creates the sub-object of this section. Nothing before this task may read into it. -->
+      <bpmn:serviceTask id="ServiceTask_CheckCollateral" name="Check collateral" camunda:expression="${checkCollateral}">
+        <bpmn:incoming>Flow_ToCheckCollateral</bpmn:incoming>
+        <bpmn:outgoing>Flow_ToCheckDebtRatio</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="Flow_ToCheckDebtRatio" sourceRef="ServiceTask_CheckCollateral" targetRef="ServiceTask_CheckDebtRatio" />
+      <bpmn:serviceTask id="ServiceTask_CheckDebtRatio" name="Check debt ratio" camunda:expression="${checkDebtRatio}">
+        <bpmn:incoming>Flow_ToCheckDebtRatio</bpmn:incoming>
+        <bpmn:outgoing>Flow_ToCollateralSufficient</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="Flow_ToCollateralSufficient" sourceRef="ServiceTask_CheckDebtRatio" targetRef="Gateway_CollateralSufficient" />
+      <bpmn:exclusiveGateway id="Gateway_CollateralSufficient" name="Enough security?" default="Flow_ToGuaranteeNeeded">
+        <bpmn:incoming>Flow_ToCollateralSufficient</bpmn:incoming>
+        <bpmn:outgoing>Flow_ToRiskAcceptable</bpmn:outgoing>
+        <bpmn:outgoing>Flow_ToGuaranteeNeeded</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <!--
+        A value of this section, asked inside this section. The getter behind it still
+        checks the sub-object for null, because the same aggregate serves the rest of the
+        model too.
+      -->
+      <bpmn:sequenceFlow id="Flow_ToRiskAcceptable" name="yes" sourceRef="Gateway_CollateralSufficient" targetRef="EndEvent_RiskAcceptable">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${collateralSufficient}</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="Flow_ToGuaranteeNeeded" name="no" sourceRef="Gateway_CollateralSufficient" targetRef="EndEvent_GuaranteeNeeded" />
+      <bpmn:endEvent id="EndEvent_RiskAcceptable" name="Risk acceptable">
+        <bpmn:incoming>Flow_ToRiskAcceptable</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:endEvent id="EndEvent_GuaranteeNeeded" name="Guarantee needed">
+        <bpmn:incoming>Flow_ToGuaranteeNeeded</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_ToDecisionAfterRisk" sourceRef="SubProcess_AssessRisk" targetRef="Gateway_Decision" />
+    <!--
+      Both paths meet here, and one of them ran the second section while the other did not.
+      So this is the place where the aggregate may or may not have that section's
+      sub-object, and where a model is tempted to read into it.
+    -->
+    <bpmn:exclusiveGateway id="Gateway_Decision" name="Is there a risk report?" default="Flow_ToDecideOnDocumentsAlone">
+      <bpmn:incoming>Flow_ToDecisionAfterRisk</bpmn:incoming>
+      <bpmn:incoming>Flow_SkipRiskAssessment</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToDecideWithRiskReport</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToDecideOnDocumentsAlone</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <!--
+      'riskAssessed' answers whether the section ran, and it is a plain boolean the
+      aggregate computes. Writing '${riskAssessment.collateralSufficient}' here would read
+      into a sub-object which is empty on the other path, and VanillaBP stops such a
+      workflow instead of guessing a value for it.
+    -->
+    <bpmn:sequenceFlow id="Flow_ToDecideWithRiskReport" name="yes" sourceRef="Gateway_Decision" targetRef="ServiceTask_DecideWithRiskReport">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${riskAssessed}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="ServiceTask_DecideWithRiskReport" name="Decide with risk report" camunda:expression="${decideWithRiskReport}">
+      <bpmn:incoming>Flow_ToDecideWithRiskReport</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanDecided</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToDecideOnDocumentsAlone" name="no" sourceRef="Gateway_Decision" targetRef="ServiceTask_DecideOnDocumentsAlone" />
+    <bpmn:serviceTask id="ServiceTask_DecideOnDocumentsAlone" name="Decide on documents alone" camunda:expression="${decideOnDocumentsAlone}">
+      <bpmn:incoming>Flow_ToDecideOnDocumentsAlone</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanDecidedWithoutRisk</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanDecided" sourceRef="ServiceTask_DecideWithRiskReport" targetRef="EndEvent_LoanDecided" />
+    <bpmn:sequenceFlow id="Flow_ToLoanDecidedWithoutRisk" sourceRef="ServiceTask_DecideOnDocumentsAlone" targetRef="EndEvent_LoanDecided" />
+    <bpmn:endEvent id="EndEvent_LoanDecided" name="Loan decided">
+      <bpmn:incoming>Flow_ToLoanDecided</bpmn:incoming>
+      <bpmn:incoming>Flow_ToLoanDecidedWithoutRisk</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="265" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RetrieveCreditRating_di" bpmnElement="ServiceTask_RetrieveCreditRating">
+        <dc:Bounds x="240" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CallActivity_CheckDocuments_di" bpmnElement="CallActivity_CheckDocuments">
+        <dc:Bounds x="400" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_RiskAssessmentRequired_di" bpmnElement="Gateway_RiskAssessmentRequired" isMarkerVisible="true">
+        <dc:Bounds x="555" y="215" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="541" y="175" width="79" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_AssessRisk_di" bpmnElement="SubProcess_AssessRisk" isExpanded="true">
+        <dc:Bounds x="660" y="300" width="600" height="240" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_RiskAssessmentStarted_di" bpmnElement="StartEvent_RiskAssessmentStarted">
+        <dc:Bounds x="700" y="397" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_CheckCollateral_di" bpmnElement="ServiceTask_CheckCollateral">
+        <dc:Bounds x="790" y="375" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_CheckDebtRatio_di" bpmnElement="ServiceTask_CheckDebtRatio">
+        <dc:Bounds x="940" y="375" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_CollateralSufficient_di" bpmnElement="Gateway_CollateralSufficient" isMarkerVisible="true">
+        <dc:Bounds x="1095" y="390" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1035" y="352" width="69" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_RiskAcceptable_di" bpmnElement="EndEvent_RiskAcceptable">
+        <dc:Bounds x="1180" y="352" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1162" y="395" width="73" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_GuaranteeNeeded_di" bpmnElement="EndEvent_GuaranteeNeeded">
+        <dc:Bounds x="1180" y="462" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1157" y="505" width="83" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Decision_di" bpmnElement="Gateway_Decision" isMarkerVisible="true">
+        <dc:Bounds x="1280" y="215" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1185" y="272" width="75" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_DecideWithRiskReport_di" bpmnElement="ServiceTask_DecideWithRiskReport">
+        <dc:Bounds x="1380" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_DecideOnDocumentsAlone_di" bpmnElement="ServiceTask_DecideOnDocumentsAlone">
+        <dc:Bounds x="1380" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanDecided_di" bpmnElement="EndEvent_LoanDecided">
+        <dc:Bounds x="1542" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1528" y="265" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
+        <di:waypoint x="188" y="240" />
+        <di:waypoint x="240" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToCheckDocuments_di" bpmnElement="Flow_ToCheckDocuments">
+        <di:waypoint x="340" y="240" />
+        <di:waypoint x="400" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRiskAssessmentRequired_di" bpmnElement="Flow_ToRiskAssessmentRequired">
+        <di:waypoint x="500" y="240" />
+        <di:waypoint x="555" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToAssessRisk_di" bpmnElement="Flow_ToAssessRisk">
+        <di:waypoint x="580" y="265" />
+        <di:waypoint x="580" y="415" />
+        <di:waypoint x="660" y="415" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="588" y="330" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SkipRiskAssessment_di" bpmnElement="Flow_SkipRiskAssessment">
+        <di:waypoint x="605" y="240" />
+        <di:waypoint x="1280" y="240" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="936" y="222" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToCheckCollateral_di" bpmnElement="Flow_ToCheckCollateral">
+        <di:waypoint x="736" y="415" />
+        <di:waypoint x="790" y="415" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToCheckDebtRatio_di" bpmnElement="Flow_ToCheckDebtRatio">
+        <di:waypoint x="890" y="415" />
+        <di:waypoint x="940" y="415" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToCollateralSufficient_di" bpmnElement="Flow_ToCollateralSufficient">
+        <di:waypoint x="1040" y="415" />
+        <di:waypoint x="1095" y="415" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRiskAcceptable_di" bpmnElement="Flow_ToRiskAcceptable">
+        <di:waypoint x="1120" y="390" />
+        <di:waypoint x="1120" y="370" />
+        <di:waypoint x="1180" y="370" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1130" y="346" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToGuaranteeNeeded_di" bpmnElement="Flow_ToGuaranteeNeeded">
+        <di:waypoint x="1120" y="440" />
+        <di:waypoint x="1120" y="480" />
+        <di:waypoint x="1180" y="480" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1130" y="458" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToDecisionAfterRisk_di" bpmnElement="Flow_ToDecisionAfterRisk">
+        <di:waypoint x="1260" y="415" />
+        <di:waypoint x="1305" y="415" />
+        <di:waypoint x="1305" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToDecideWithRiskReport_di" bpmnElement="Flow_ToDecideWithRiskReport">
+        <di:waypoint x="1330" y="240" />
+        <di:waypoint x="1380" y="240" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1345" y="222" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToDecideOnDocumentsAlone_di" bpmnElement="Flow_ToDecideOnDocumentsAlone">
+        <di:waypoint x="1305" y="215" />
+        <di:waypoint x="1305" y="150" />
+        <di:waypoint x="1380" y="150" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1313" y="175" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanDecided_di" bpmnElement="Flow_ToLoanDecided">
+        <di:waypoint x="1480" y="240" />
+        <di:waypoint x="1542" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanDecidedWithoutRisk_di" bpmnElement="Flow_ToLoanDecidedWithoutRisk">
+        <di:waypoint x="1480" y="150" />
+        <di:waypoint x="1560" y="150" />
+        <di:waypoint x="1560" y="222" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

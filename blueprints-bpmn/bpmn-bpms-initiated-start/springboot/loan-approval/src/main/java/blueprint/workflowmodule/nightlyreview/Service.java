@@ -2,6 +2,7 @@ package blueprint.workflowmodule.nightlyreview;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,53 +36,68 @@ public class Service {
   private Workflow workflow;
 
   /**
-   * The engine started a review. This runs in the transaction VanillaBP opened for the
-   * start, and what it writes is saved with the aggregate.
+   * The engine started a review, so the application builds its aggregate. This runs in the
+   * transaction VanillaBP opened for the start, and what it returns is saved in that same
+   * transaction.
    *
    * <p>
-   * The trigger is the only thing telling the two start events apart afterwards: a timer
-   * reports its scheduled time, a signal its name. Note what is NOT here: an ID. VanillaBP
-   * assigned it before this method was called, from the most stable identity the BPMS
-   * offers.
+   * The ID is picked here, and picking it is the whole point: a workflow is named by its
+   * aggregate, whoever started it. A generated one does here, because a review is not
+   * about anything the BPMS could name.
    * </p>
    *
-   * @param review  The aggregate VanillaBP built.
+   * <p>
+   * The trigger tells the two start events apart: a signal reports its name, and both
+   * report the BPMN id of the event that fired. What it does NOT report is a time. No BPMS
+   * hands a start listener the moment it scheduled the start for, so a time here would be
+   * invented; where the moment matters, the model writes it into a process variable of its
+   * own (see {@link #reviewPendingApprovals}).
+   * </p>
+   *
    * @param trigger What made the BPMS start this workflow.
+   * @return The aggregate of the review.
    */
-  public void reviewDue(
-      final Aggregate review,
+  public Aggregate reviewDue(
       final BpmsStartTrigger trigger) {
 
-    review.setStartedBy(trigger.kind().name());
-    review.setTriggeredAt(trigger.time());
-    review.setStartEventId(trigger.startEventId());
+    final var review = Aggregate
+        .builder()
+        .reviewId(UUID.randomUUID().toString())
+        .startedBy(trigger.kind().name())
+        .startEventId(trigger.startEventId())
+        .build();
 
     log.info(
-        "A nightly review '{}' was started by the BPMS: {} at {}, from start event '{}'."
+        "A nightly review '{}' was started by the BPMS: {}, from start event '{}'."
             + " Nobody called startWorkflow",
         review.getReviewId(),
         trigger.kind(),
-        trigger.time(),
         trigger.startEventId());
+
+    return review;
 
   }
 
   /**
    * Reviews the loan approvals, which is what the service task of the process triggers.
    *
-   * @param review The workflow's aggregate.
+   * @param review     The workflow's aggregate.
+   * @param reviewedAt The moment the model wrote into a process variable of its own.
    */
   public void reviewPendingApprovals(
-      final Aggregate review) {
+      final Aggregate review,
+      final String reviewedAt) {
 
     final var reviewed = (int) loanApprovals.count();
 
     review.setApprovalsReviewed(reviewed);
+    review.setReviewedAt(reviewedAt);
 
     log.info(
-        "The nightly review '{}' looked at {} loan approval(s)",
+        "The nightly review '{}' looked at {} loan approval(s) at {}",
         review.getReviewId(),
-        reviewed);
+        reviewed,
+        reviewedAt);
 
   }
 
@@ -113,7 +129,7 @@ public class Service {
   /**
    * One review, if it exists.
    *
-   * @param reviewId The ID VanillaBP assigned.
+   * @param reviewId The ID the application gave it.
    * @return The review.
    */
   public Optional<Aggregate> getReview(
