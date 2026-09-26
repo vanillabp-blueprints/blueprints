@@ -79,12 +79,12 @@ vanillabp:
       rest-address: http://localhost:8080
 ```
 
-Without it the application does not boot. That is the normal way to work with VanillaBP:
-configuration is validated while booting, and the message names the property to set.
-
 That file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
 name, so the engine is chosen once, on the Maven command line, and the build, the tests and
 `spring-boot:run` all follow it.
+
+Without it the application does not boot. That is the normal way to work with VanillaBP:
+configuration is validated while booting, and the message names the property to set.
 
 Start the application:
 

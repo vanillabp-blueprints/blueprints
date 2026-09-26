@@ -86,12 +86,12 @@ vanillabp:
       rest-address: http://localhost:8080
 ```
 
-Without it the application does not boot. That is the normal way to work with VanillaBP:
-configuration is validated while booting, and the message names the property to set.
-
 That file is loaded because the Maven profile `camunda8` makes the config profile of the same
 name the parent of whichever profile the application runs in, so the engine is chosen once, on
 the Maven command line, and the build, the tests and `quarkus:dev` all follow it.
+
+Without it the application does not boot. That is the normal way to work with VanillaBP:
+configuration is validated while booting, and the message names the property to set.
 
 Start the application:
 
