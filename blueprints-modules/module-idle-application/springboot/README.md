@@ -30,10 +30,11 @@ day about work nobody created. This blueprint sets an hour.
 
 `vanillabp.adapters.camunda7.sleep-until-something-is-due` in
 `application/src/main/resources/application-camunda7.yaml` is the second, and it belongs to
-the embedded engine. Without it the Camunda 7 job executor asks for work every 5 seconds,
-widening to 60 while it finds none. With it, a cycle which found nothing asks once when the
-next job is due and waits for that moment, and any transaction which writes a job wakes it
-again.
+the embedded engine. Without it the engine keeps asking its database for work while nothing
+happens. With it, a cycle which found nothing asks once when the next job is due and waits for
+that moment, and any transaction which writes a job wakes it again. What the key costs, and
+the one database index it asks of you, is in the adapter's
+[wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Configuration#letting-an-idle-engine-go-quiet).
 
 One key without the other buys nothing. Let the engine wait but leave the outbox at its
 default, and the database is asked every ten seconds, which is what it was asked before. That

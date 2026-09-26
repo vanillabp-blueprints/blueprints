@@ -68,11 +68,10 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `Aggregate.java`                  | `partnerApprovalTaskId` and what the process wrote on the way out                                |
 | `LoanApprovalIT.java`             | one test per way the task ends: still open, completed, canceled                                  |
 
-The one line worth understanding is `camunda:delegateExpression` in the Camunda 7 model. A
-task wired by `camunda:expression` is done as soon as the expression has been evaluated,
-which is right for a service task and wrong here, and the application does not start if the
-two disagree. Camunda 8 needs no counterpart: there a job stays open until somebody completes
-it.
+The one line worth looking at is `camunda:delegateExpression` in the Camunda 7 model, which is
+what a task that stays open needs there. Camunda 8 needs no counterpart. How each engine wants
+such a task modelled is in the wiki of its adapter, for
+[Camunda 7](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Configuration#the-bpmn-model-for-camunda-7).
 
 ## Running it
 
