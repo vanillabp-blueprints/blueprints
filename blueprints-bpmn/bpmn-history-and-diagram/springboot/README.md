@@ -153,21 +153,12 @@ http://localhost:8080/api/loan-approval/{loanRequestId}/diagram
 Answer the wait with the `approve` URL and ask again: the last element has an end time, the
 task after it appears, and the workflow itself has one.
 
-While the application runs on Camunda 7, Camunda's own web applications are served at
-
-```
-http://localhost:8080/camunda
-```
-
-Log in with `demo` / `demo`. Cockpit shows the same thing for an operator, which is worth
-comparing: this blueprint is about serving it to YOUR users, in your application, without
-sending them to the tooling of a BPMS they should not need to know.
-
-The Camunda 8 profile brings neither the dependency nor those settings into effect. Its
-tooling is part of the cluster, and the file naming a Camunda 7 adapter id is simply not
-loaded there - a profile file applies to its own engine and to no other. Naming an adapter
-id whose adapter is not on the classpath is a configuration error VanillaBP refuses to
-start with, and the profiles are what keeps that from happening.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. They show the same thing for an operator, which is worth comparing:
+this blueprint is about serving it to YOUR users, in your application, without sending them to
+the tooling of a BPMS they should not need to know. Where they are served and how to log in is
+in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

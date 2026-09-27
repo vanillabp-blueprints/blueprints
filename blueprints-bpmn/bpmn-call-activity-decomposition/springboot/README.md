@@ -166,24 +166,11 @@ http://localhost:8080/api/loan-approval/{loanRequestId}
 Both numbers the checks use are in the module's own configuration
 (`loan-approval/src/main/resources/loan-approval/loan-approval.yaml`).
 
-While the application runs on Camunda 7, Camunda's own web applications are served at
-
-```
-http://localhost:8080/camunda
-```
-
-Log in with `demo` / `demo`. Cockpit is the place a call activity is worth looking at: the
-calling instance stands in the call activity while a second instance runs the called
-process, and the two are linked in both directions. The user comes from
-`application/src/main/resources/application-camunda7.yaml` and exists so that the
-blueprint can be operated without setting one up; an application with an identity provider
-of its own leaves that section out.
-
-The Camunda 8 profile brings neither the dependency nor those settings into effect. Its
-tooling is part of the cluster, and the file naming a Camunda 7 adapter id is simply not
-loaded there - a profile file applies to its own engine and to no other. Naming an adapter
-id whose adapter is not on the classpath is a configuration error VanillaBP refuses to
-start with, and the profiles are what keeps that from happening.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. They are worth a look for a call activity: the calling instance
+stands in it while a second instance runs the called process, and the two are linked in both
+directions. Where they are served and how to log in is in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

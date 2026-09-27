@@ -145,10 +145,12 @@ Loan approval '0f7c…' knows its risk score: 30
 
 Two processes, two aggregates, and between them one method call and one event.
 
-While the application runs on Camunda 7, Camunda's own web applications are served at
-`http://localhost:8080/camunda`, user `demo` / `demo`. Cockpit shows the two processes side
-by side and, between them, nothing: no message flow, no call activity, no relation the engine
-knows about. Their names carry the prefix of their module there, as `module-multi` explains.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. They show the two processes side by side and, between them,
+nothing: no message flow, no call activity, no relation the engine knows about. The names carry
+the prefix of their module there, as `module-multi` explains. Where they are served and how to
+log in is in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

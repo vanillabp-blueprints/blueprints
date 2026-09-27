@@ -224,10 +224,11 @@ Credit rating of loan approval '0f7c…' is 50
 Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 ```
 
-While the application runs on Camunda 7, Camunda's web applications are at
-`http://localhost:8080/camunda`, user `demo`, password `demo`. They work on a schema
-Liquibase built, which is the point of this blueprint: the engine does not need to have
-created its tables itself.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. They work on a schema Liquibase built, which is the point of this
+blueprint: the engine does not need to have created its tables itself. Where they are served
+and how to log in is in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

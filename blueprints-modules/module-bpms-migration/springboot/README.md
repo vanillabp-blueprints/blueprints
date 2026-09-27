@@ -176,9 +176,10 @@ http://localhost:8080/api/loan-repayment/<id>/bpms
 camunda7
 ```
 
-While the application runs on Camunda 7, Camunda's own web applications are served at
-`http://localhost:8080/camunda` with `demo` / `demo`, which is a second way to see where a
-workflow lives.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. They are a second way to see where a workflow lives. Where they are
+served and how to log in is in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

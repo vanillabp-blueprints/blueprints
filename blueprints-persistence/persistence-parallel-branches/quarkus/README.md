@@ -115,15 +115,9 @@ That file is loaded because the Maven profile `camunda8` makes the config profil
 name the parent of whichever profile the application runs in, so the engine is chosen once, on
 the Maven command line, and the build, the tests and `quarkus:dev` all follow it.
 
-Take the address out and the application does not boot, and says so:
-
-```
-Camunda 8 adapter 'camunda8' is used but not configured: the property
-'vanillabp.adapters.camunda8.rest-address' is missing.
-```
-
-That is the normal way to work with VanillaBP: configuration is validated while booting, and
-the message names what to do.
+Take the address out and the application does not boot. That is the normal way to work with
+VanillaBP: configuration is validated while booting, and the message names the property to
+set.
 
 Start the application:
 

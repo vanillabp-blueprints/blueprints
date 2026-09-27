@@ -154,24 +154,11 @@ Add a region to `loan-approval/src/main/resources/loan-approval/loan-approval.ya
 subprocess runs three times instead of twice, with every partner asked in each of them. The
 model is not touched, which is why the two lists live in configuration.
 
-While the application runs on Camunda 7, Camunda's own web applications are served at
-
-```
-http://localhost:8080/camunda
-```
-
-Log in with `demo` / `demo`. Cockpit draws the subprocess with the number of instances it
-ran, and lets you step into one of them, which is the quickest way to see what an iteration
-is from the outside. The user comes from
-`application/src/main/resources/application-camunda7.yaml` and exists so that the
-blueprint can be operated without setting one up; an application with an identity provider
-of its own leaves that section out.
-
-The Camunda 8 profile brings neither the dependency nor those settings into effect. Its
-tooling is part of the cluster, and the file naming a Camunda 7 adapter id is simply not
-loaded there - a profile file applies to its own engine and to no other. Naming an adapter
-id whose adapter is not on the classpath is a configuration error VanillaBP refuses to
-start with, and the profiles are what keeps that from happening.
+Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
+configures a user for them. They draw the subprocess with the number of instances it ran and
+let you step into one of them, which is the quickest way to see what an iteration is from
+outside. Where they are served and how to log in is in the
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

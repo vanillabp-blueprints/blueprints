@@ -43,10 +43,12 @@ Two smaller things this blueprint carries:
   call to the BPMS.
 
 Canceling a user task is not supported by every BPMS: the engine has to offer a command for
-it, and Camunda 8 does not up to and including version 8.8. VanillaBP answers such a call
-with an error naming the reason instead of pretending, and the test covering the
-cancellation runs on Camunda 7 for that reason. Which operations a BPMS supports is on
-[its adapter's wiki page](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters).
+it, and Camunda 8 does not. VanillaBP answers such a call with an error naming the reason
+instead of pretending, and the test covering the cancellation runs on Camunda 7 for that
+reason. Which operations a BPMS supports is on
+[its adapter's wiki page](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters),
+and the Camunda 8 adapter names this one under
+[deviations](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Deviations#cancelusertask-is-not-supported).
 
 ## Delta to the base blueprint
 
