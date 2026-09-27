@@ -13,8 +13,16 @@
 # Used by .github/workflows/build.yaml and usable locally for the same purpose:
 #
 #   bin/camunda8_cluster.sh start
-#   cd bpmn-service-task/springboot && mvn -Pcamunda8 install verify
+#   cd blueprints-bpmn/bpmn-service-task/springboot && mvn -Pcamunda8 install verify
 #   bin/camunda8_cluster.sh stop
+#
+# One cluster serves one run of one twin. A timer start event with a cycle of R1 fires
+# ONCE per model, and a cluster which already holds that model creates no new timer for
+# the next deployment of it. Running the Spring Boot twin and the Quarkus twin of
+# bpmn-bpms-initiated-start one after the other against the same cluster therefore lets
+# NightlyReviewIT.theTimerStartsAWorkflowNobodyAskedFor of the second run wait for a start
+# which happened during the first, and the test times out although nothing is broken. Stop
+# the cluster and start it again between the two twins.
 
 set -o errexit
 set -o nounset
