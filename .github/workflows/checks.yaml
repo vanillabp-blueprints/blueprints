@@ -35,6 +35,11 @@ jobs:
         run: python bin/check_index_consistency.py blueprints.yaml
       - name: Check the documentation of every blueprint
         run: python bin/check_docs_structure.py blueprints.yaml
+      # A file table is the first thing a reader of a blueprint looks at, and a file which
+      # moves leaves it behind without anything noticing (story 683 corrected 22 of them by
+      # hand). This reads the paths and asks the file system.
+      - name: Check that the file tables name files which exist
+        run: python bin/check_table_paths.py
       - name: Check the test harness copies against their reference
         run: python bin/sync_harness.py --check
       # Active since the first platform twin exists (2026-08-15). It keeps the two twins of

@@ -261,6 +261,31 @@ copied from this one.
 Write the reason in terms of the platform, not of the code. "bean and injection annotations
 only" says what a reviewer needs; "uses @Inject" does not.
 
+## The file tables
+
+A blueprint is read through its tables: the core files and the boilerplate files in
+`AGENTS.md`, the delta to the base blueprint and "How it works" in `README.md`. A reader
+looks at them first, and they go stale first, because moving a file does not touch them.
+Story 683 corrected 22 blueprints which still named a profile file that had moved a month
+earlier.
+
+`bin/check_table_paths.py` reads every table whose first column is `File` and holds each
+path in a row against the file system:
+
+```bash
+python3 bin/check_table_paths.py
+```
+
+A path may be written from the root of the blueprint (`loan-approval/pom.xml`), with
+`...` for the part the writer left out, or with `<...>` for a name the reader chooses. A
+README names a file the way its section reads it, `Workflow.java` rather than the whole
+path, so a path which does not lead anywhere from the root is looked for below it.
+
+A first cell which is not a file needs no exception of its own, because the header of the
+table decides: a table of beans, of BPMN element ids or of placeholders is headed `Bean`,
+`Name` or `Placeholder` and is not read. A row saying the file is `deleted` or `gone` is
+read the other way round, and fails when the blueprint still has it.
+
 ## The picture of the process
 
 Every blueprint README shows its process in the first section, before a word is said about
@@ -392,7 +417,7 @@ Four workflows, and they answer four different questions.
 
 |       Workflow       |                                            Question                                             |
 |----------------------|-------------------------------------------------------------------------------------------------|
-| `checks.yaml`        | do index, documentation structure, test harness copies and platform twins agree?                |
+| `checks.yaml`        | do index, documentation, file tables, test harness copies and platform twins agree?             |
 | `build.yaml`         | does every blueprint build and test, alone and through the aggregator, on every BPMS it claims? |
 | `nightly.yaml`       | does it still, against the platform snapshot as it is published today?                          |
 | `nightly-issue.yaml` | does anybody hear about it when the night says no?                                              |
