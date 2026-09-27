@@ -65,7 +65,6 @@ Names this blueprint adds, because it has more than one of everything:
 | `application/src/main/resources/application.yaml`                   | the database and the profile, and nothing about either module                                |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | the module's own configuration, loaded by its file name                                      |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of a module's integration test, identical in every blueprint                      |
-| `loan-approval/src/test/java/.../TestApplication.java`              | the minimal application a module test boots, identical in every blueprint                    |
 | `docs/loan_approval.png`, `docs/loan_repayment.png`                 | the pictures of the two processes the README shows, rendered from the BPMN models            |
 
 `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint - copy them

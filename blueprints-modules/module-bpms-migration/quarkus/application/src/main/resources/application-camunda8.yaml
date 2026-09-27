@@ -1,9 +1,6 @@
 # The state DURING the migration: both BPMS configured at once. Applies while the 'camunda8'
 # profile is the parent profile, and that Maven profile brings BOTH adapters along, because a
 # migration always has the old BPMS still in it.
-#
-# The state BEFORE the migration needs no file of its own: with a single adapter there is
-# nothing to prioritize and the embedded engine needs nothing but its dependency.
 vanillabp:
   # The order is the whole configuration. New workflows start in the first adapter of this
   # list; every operation on a workflow which already exists is routed to the adapter
