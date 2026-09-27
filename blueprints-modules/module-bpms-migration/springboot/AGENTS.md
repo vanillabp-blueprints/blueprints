@@ -36,7 +36,7 @@ they may as well be `old-bpms` and `new-bpms`, which reads better in a priority 
 |                              File                              |                                             Why it matters                                             |
 |----------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
 | `application/src/main/resources/application-camunda8.yaml`     | the migration state: `prioritized-adapters`, both adapters, the workflow-level list of the repayment   |
-| `application/src/main/resources/application-camunda7.yaml`     | the state before it: one adapter, and nothing to prioritize                                            |
+| `application/src/main/resources/application-camunda7.yaml`     | the state before it: one adapter, nothing to prioritize, and the demo user of its web applications     |
 | `loan-approval/.../processes/<adapter-id>/loan_approval.bpmn`  | a user task and a message catch event: two operations which have to find the BPMS holding the workflow |
 | `loan-approval/.../processes/<adapter-id>/loan_repayment.bpmn` | the second workflow, the one which stays behind                                                        |
 | `loan-approval/src/main/java/.../loanapproval/Workflow.java`   | `startWorkflow`, `completeUserTask`, `correlateMessage`, and the viewer call naming the adapter        |
@@ -47,18 +47,17 @@ they may as well be `old-bpms` and `new-bpms`, which reads better in a priority 
 
 ## Boilerplate files
 
-|                              File                               |                                           Purpose                                           |
-|-----------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                      | the BPMS profiles and the VanillaBP BOM import                                              |
-| `loan-approval/pom.xml`                                         | `vanillabp-spring-boot-support`, never an adapter                                           |
-| `application/pom.xml`                                           | the BPMS adapter, the only place a BPMS is named                                            |
-| `application/src/main/java/.../Application.java`                | the Spring Boot application, in the parent package of the module                            |
-| `application/src/main/resources/application.yaml`               | the datasource, and the optional import of the file below                                   |
-| `application/src/main/camunda7/resources/camunda7-webapps.yaml` | the demo user of Camunda's web applications; on the classpath in the Camunda 7 profile only |
-| `loan-approval/src/test/java/.../TestApplication.java`          | the minimal application the module's test boots                                             |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`       | base class of the integration test: waits for workflow progress                             |
-| `application/src/test/java/.../ApplicationSmokeTest.java`       | boots the application, which validates the BPMN-to-code wiring                              |
-| `docs/loan_approval.png`                                        | the picture of the process the README shows, rendered from the BPMN model                   |
+|                           File                            |                                    Purpose                                     |
+|-----------------------------------------------------------|--------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                | the BPMS profiles and the VanillaBP BOM import                                 |
+| `loan-approval/pom.xml`                                   | `vanillabp-spring-boot-support`, never an adapter                              |
+| `application/pom.xml`                                     | the BPMS adapter, the only place a BPMS is named                               |
+| `application/src/main/java/.../Application.java`          | the Spring Boot application, in the parent package of the module               |
+| `application/src/main/resources/application.yaml`         | the file database both boots share, and the profile the Maven build filters in |
+| `loan-approval/src/test/java/.../TestApplication.java`    | the minimal application the module's test boots                                |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java` | base class of the integration test: waits for workflow progress                |
+| `application/src/test/java/.../ApplicationSmokeTest.java` | boots the application, which validates the BPMN-to-code wiring                 |
+| `docs/loan_approval.png`                                  | the picture of the process the README shows, rendered from the BPMN model      |
 
 ## Adding this blueprint to an existing project
 
