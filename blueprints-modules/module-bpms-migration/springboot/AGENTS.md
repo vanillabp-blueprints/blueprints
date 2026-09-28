@@ -33,17 +33,17 @@ they may as well be `old-bpms` and `new-bpms`, which reads better in a priority 
 
 ## Core files
 
-|                              File                              |                                             Why it matters                                             |
-|----------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| `application/src/main/resources/application-camunda8.yaml`     | the migration state: `prioritized-adapters`, both adapters, the workflow-level list of the repayment   |
-| `application/src/main/resources/application-camunda7.yaml`     | the state before it: one adapter, nothing to prioritize, and the demo user of its web applications     |
-| `loan-approval/.../processes/<adapter-id>/loan_approval.bpmn`  | a user task and a message catch event: two operations which have to find the BPMS holding the workflow |
-| `loan-approval/.../processes/<adapter-id>/loan_repayment.bpmn` | the second workflow, the one which stays behind                                                        |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`   | `startWorkflow`, `completeUserTask`, `correlateMessage`, and the viewer call naming the adapter        |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`    | the business code, and the one method reading which BPMS holds a workflow                              |
-| `loan-approval/src/main/java/.../loanrepayment/`               | the second use case, its classes named after it so two use cases of one module stay apart              |
-| `loan-approval/src/test/java/.../MigrationIT.java`             | where a workflow starts, where a pinned one starts, and that both wait states are answered             |
-| `application/src/test/java/.../MigrationRestartIT.java`        | the migration itself: two boots against one file database                                              |
+|                              File                              |                                                         Why it matters                                                          |
+|----------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| `application/src/main/resources/application-camunda8.yaml`     | the migration state: `prioritized-adapters`, both adapters with the same scoping mode, the workflow-level list of the repayment |
+| `application/src/main/resources/application-camunda7.yaml`     | the state before it: one adapter, nothing to prioritize, and the demo user of its web applications                              |
+| `loan-approval/.../processes/<adapter-id>/loan_approval.bpmn`  | a user task and a message catch event: two operations which have to find the BPMS holding the workflow                          |
+| `loan-approval/.../processes/<adapter-id>/loan_repayment.bpmn` | the second workflow, the one which stays behind                                                                                 |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`   | `startWorkflow`, `completeUserTask`, `correlateMessage`, and the viewer call naming the adapter                                 |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`    | the business code, and the one method reading which BPMS holds a workflow                                                       |
+| `loan-approval/src/main/java/.../loanrepayment/`               | the second use case, its classes named after it so two use cases of one module stay apart                                       |
+| `loan-approval/src/test/java/.../MigrationIT.java`             | where a workflow starts, where a pinned one starts, and that both wait states are answered                                      |
+| `application/src/test/java/.../MigrationRestartIT.java`        | the migration itself: two boots against one file database                                                                       |
 
 ## Boilerplate files
 
@@ -67,7 +67,12 @@ they may as well be `old-bpms` and `new-bpms`, which reads better in a priority 
 2. Add the second adapter as a dependency and configure it the same way. From now on the
    order matters, so name it: `vanillabp.prioritized-adapters`, the new BPMS first and the
    old one behind it. **New workflows start in the first entry, and no probing happens on a
-   start.**
+   start.** Give both adapters the same `name-clash-avoidance` mode, and say it again in every
+   profile or file your configuration splits into: the mode decides what an engine calls a
+   process, a message, a signal and an error, so changing it during the migration renames what
+   the old BPMS already holds and the workflows living there stop being found. Leaving it out
+   of one place is enough, because the default is `by-adapter`. Changing the mode is a
+   migration of its own, with a second adapter id for the same engine.
 3. Deploy nothing by hand. The BPMN models of a workflow module go to every adapter its
    lists name, so both engines are ready for their workflows.
 4. Change no business code. Completing a task, completing a user task and correlating a

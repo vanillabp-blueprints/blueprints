@@ -16,6 +16,11 @@ vanillabp:
       # the mode of a running application is a migration rather than a setting.
       name-clash-avoidance: use-prefix
       rest-address: http://localhost:8080
+    camunda7:
+      # The mode of the OLD BPMS, spelled out for the same reason as in the application's
+      # profile file: the default would be 'by-adapter', and then the migration state would
+      # address Camunda 7 differently than the state before it.
+      name-clash-avoidance: use-prefix
   workflow-modules:
     loan-approval:
       workflows:

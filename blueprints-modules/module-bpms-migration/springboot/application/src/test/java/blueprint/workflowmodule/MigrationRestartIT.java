@@ -38,6 +38,14 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * </p>
  *
  * <p>
+ * Both boots read the profile files the blueprint ships rather than a configuration of the
+ * test's own. The first one adds {@code application-camunda7.yaml} on top, which is the state
+ * before the migration, and the second one runs the migration profile alone. So the switch the
+ * README walks through is the switch this test drives, and a setting the two files disagree
+ * about fails it.
+ * </p>
+ *
+ * <p>
  * The test runs where two adapters are configured, which is the {@code camunda8} profile.
  * With a single BPMS there is nothing to migrate to.
  * </p>
@@ -81,12 +89,25 @@ public class MigrationRestartIT {
     final String firstOfTheOld;
     final String secondOfTheOld;
 
-    // BEFORE the migration: loan approvals still start in the old BPMS, said by the priority
-    // list of that workflow. The adapter list stays as it is on purpose. Taking the new
-    // adapter out of the configuration would be the other way to write this, but then an
-    // environment variable addressing that adapter id ends the boot, and handing the address
-    // of a cluster in through the environment is exactly what the CI does.
+    // BEFORE the migration: the profile file of the old BPMS applies, on top of the migration
+    // profile, so everything that file configures is what this boot runs with - above all
+    // 'name-clash-avoidance', which decides what the old BPMS calls this module's processes
+    // and messages. Reading that file rather than restating its content is the point: a
+    // migration profile which leaves the old BPMS under another mode than the profile before
+    // it renames every identifier mid-migration, and then the message below finds nothing.
+    // The last profile wins where two of them say the same key, which is why the old one is
+    // named second.
+    //
+    // Loan approvals still start in the old BPMS, said by the priority list of that workflow.
+    // The adapter list stays as it is on purpose. Taking the new adapter out of the
+    // configuration would be the other way to write this, but then an environment variable
+    // addressing that adapter id ends the boot, and handing the address of a cluster in
+    // through the environment is exactly what the CI does.
     try (var application = boot(
+        "--spring.profiles.active="
+            + NEW_BPMS
+            + ","
+            + OLD_BPMS,
         "--vanillabp.workflow-modules.loan-approval.workflows.loan_approval.prioritized-adapters="
             + OLD_BPMS)) {
 
@@ -110,8 +131,10 @@ public class MigrationRestartIT {
       assertThat(service.bpmsHolding(firstOfTheOld)).contains(OLD_BPMS);
     }
 
-    // AFTER the migration: the priority list of the workflow is gone, so the adapter list
-    // applies, and that one names the new BPMS first. Nothing else changes.
+    // AFTER the migration: the migration profile alone, so the priority list of the workflow
+    // is gone and the adapter list applies, and that one names the new BPMS first. Nothing
+    // else changes - and if the two profiles disagree about how the old BPMS scopes its
+    // identifiers, the message further down is the operation which notices.
     try (var application = boot()) {
 
       final var service = application.getBean(Service.class);

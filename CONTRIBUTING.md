@@ -151,6 +151,23 @@ sits in the JAR of a build for another one as well, where it does nothing. Namin
 adapter id whose adapter is not on the classpath is a configuration error VanillaBP refuses
 to start with, and the profiles are what keeps that from happening.
 
+One setting has to say the same thing in every profile which uses an adapter:
+`name-clash-avoidance`. It decides what the adapter calls a process, a message, a signal
+and an error in the BPMS, so changing it while an application runs is a migration and not a
+setting - workflows started before would no longer be found. Leaving it out of one profile
+is enough to change it, because then the default `by-adapter` applies there.
+`bin/check_scoping_modes.py` compares the profiles of each source root and fails on that:
+
+```bash
+python3 bin/check_scoping_modes.py
+```
+
+It found `module-bpms-migration`, whose `camunda7` profile set `use-prefix` while its
+`camunda8` profile named nothing, so the migration the blueprint demonstrates lost the
+message of every loan approval started before the switch. A blueprint which really wants to
+show a change of mode shows it the way the wiki does, as a migration with a second adapter
+id.
+
 ## Rule 5: the aspect is proven by a test
 
 A blueprint ships an integration test which plays through the aspect it shows, using a
@@ -417,7 +434,7 @@ Four workflows, and they answer four different questions.
 
 |       Workflow       |                                            Question                                             |
 |----------------------|-------------------------------------------------------------------------------------------------|
-| `checks.yaml`        | do index, documentation, file tables, test harness copies and platform twins agree?             |
+| `checks.yaml`        | do index, documentation, file tables, harness copies, platform twins and BPMS profiles agree?   |
 | `build.yaml`         | does every blueprint build and test, alone and through the aggregator, on every BPMS it claims? |
 | `nightly.yaml`       | does it still, against the platform snapshot as it is published today?                          |
 | `nightly-issue.yaml` | does anybody hear about it when the night says no?                                              |

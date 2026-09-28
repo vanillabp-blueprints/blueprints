@@ -42,6 +42,12 @@ jobs:
         run: python bin/check_table_paths.py
       - name: Check the test harness copies against their reference
         run: python bin/sync_harness.py --check
+      # A blueprint whose BPMS profiles scope identifiers differently describes a switch
+      # nobody survives, and leaving the setting out of one profile is enough to do it:
+      # the default is the other mode. module-bpms-migration did exactly that until story
+      # 704 measured it, and no test saw it, because a test boots ONE profile.
+      - name: Check that the BPMS profiles agree on how identifiers are scoped
+        run: python bin/check_scoping_modes.py
       # Active since the first platform twin exists (2026-08-15). It keeps the two twins of
       # a blueprint saying the same thing: every difference between their Java sources is
       # either the platform, and then it is approved with a reason, or a mistake. The index

@@ -26,6 +26,15 @@ vanillabp:
       # https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next
       job-timeout: PT20S
     camunda7:
+      # The same mode 'application-camunda7.yaml' set before the migration, and repeating it
+      # here is not redundant: leaving it out would fall back to the default 'by-adapter' and
+      # change how the OLD BPMS is addressed in the middle of the migration. Camunda 7 then
+      # holds 'loan-approval__ContractSigned' without a tenant while the adapter asks for
+      # 'ContractSigned' in tenant 'loan-approval', and a message for a loan approval started
+      # before the switch correlates against nothing. Changing the mode is a migration of its
+      # own, which the wiki page linked from the README explains, and this blueprint shows one
+      # migration at a time.
+      name-clash-avoidance: use-prefix
       webapps:
         admin-user:
           id: demo
