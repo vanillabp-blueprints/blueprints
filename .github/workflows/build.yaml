@@ -133,6 +133,11 @@ jobs:
           restore-keys: |
             maven-${{ hashFiles('**/pom.xml') }}-
             maven-
+      # What the cache just carried in is not what this job builds against: the Maven call
+      # below refreshes the platform. The report at the end of the job reads what is newer
+      # than this marker, so it names the refreshed one.
+      - name: Mark the moment the build starts
+        run: touch "${RUNNER_TEMP}/platform-snapshot-marker"
       - name: Start a Camunda 8 cluster
         if: matrix.bpms == 'camunda8'
         # The address is published here rather than in the build step: a Camunda 7 build
@@ -165,6 +170,15 @@ jobs:
         run: mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
           -P${{ matrix.bpms }} install
+      # In the summary of this job, because this is where a red blueprint is read. The
+      # aggregator writes the same report for the run as a whole, and that one is not enough
+      # on its own: a re-run of the failed jobs does not run the aggregator again, so those
+      # jobs build against a newer platform than the aggregator ever saw. That is what happened
+      # on the 26th of September 2026, and bin/platform_snapshot.sh has the details.
+      - name: Which platform snapshot this blueprint was built against
+        if: always()
+        run: $GITHUB_WORKSPACE/bin/platform_snapshot.sh
+          "${RUNNER_TEMP}/platform-snapshot-marker" "${RUNNER_TEMP}/platform-snapshot.md"
       - name: The Camunda 8 cluster's log, if something went wrong
         if: failure() && matrix.bpms == 'camunda8'
         run: bin/camunda8_cluster.sh logs
@@ -203,6 +217,11 @@ jobs:
           restore-keys: |
             maven-${{ hashFiles('**/pom.xml') }}-
             maven-
+      # The cache above can hold a platform jar from yesterday. The step at the end of this
+      # job reads what is newer than this marker, so it names what Maven fetched in this run
+      # and not what the cache happened to carry in.
+      - name: Mark the moment the build starts
+        run: touch "${RUNNER_TEMP}/platform-snapshot-marker"
       - name: Build every blueprint through the aggregator
         # Both switches, because they belong to different plugins: Surefire reads
         # -DskipTests, Failsafe does not and wants -DskipITs. With only the first one the
@@ -215,9 +234,31 @@ jobs:
       - name: Resolve what the other engine needs, so the cache holds that too
         # The build above runs the default profile, so the artifacts of the other engine
         # would be missing and every job of that engine would fetch them itself.
+        # --update-snapshots here as well, because this step decides what the cache carries
+        # for the jobs of that engine. Without it the cache handed them yesterday's adapter
+        # out of the restored cache, and only their own --update-snapshots saved them.
         run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
-          --batch-mode --no-transfer-progress -Pcamunda8 -DskipTests -DskipITs
-          dependency:go-offline
+          --batch-mode --no-transfer-progress --update-snapshots -Pcamunda8
+          -DskipTests -DskipITs dependency:go-offline
+      # This job writes down the platform for the run as a whole, because it is the one which
+      # fills the cache the matrix reads. bin/platform_snapshot.sh says why a version string
+      # cannot answer the question and what the report is good for.
+      - name: Which platform snapshot this run built against
+        if: always()
+        run: bin/platform_snapshot.sh "${RUNNER_TEMP}/platform-snapshot-marker"
+          "${RUNNER_TEMP}/platform-snapshot.md"
+      # So two attempts of one run can be held against each other. An attempt started the
+      # next morning builds against a newer platform than the attempt which was green, and
+      # the attempt number in the name keeps both reports instead of the second overwriting
+      # the first.
+      - name: Keep that with the run
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: "platform-snapshot-attempt-${{ github.run_attempt }}"
+          path: "${{ runner.temp }}/platform-snapshot.md"
+          retention-days: 30
+          if-no-files-found: ignore
 
   # One name that never changes, so branch protection has something to require and
   # Renovate has something to wait for. The matrix above is generated from the

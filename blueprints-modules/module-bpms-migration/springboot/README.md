@@ -236,6 +236,15 @@ keep the plain names, which is why nothing here mentions the prefix twice. What 
 and what each of them costs is explained on the wiki page
 [Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
 
+Both profiles say it for `camunda7`, and that repetition is the point of this section. The
+mode decides what the engine calls a process, a message, a signal and an error, so a migration
+which changes it renames everything the old BPMS already holds: the loan approval waiting for
+`ContractSigned` would be waiting under `loan-approval__ContractSigned` while the application
+asks for `ContractSigned` in a tenant, and the message correlates against nothing. Leaving the
+setting out of one profile is enough to do that, because the default is the other mode. So the
+migration profile repeats what the profile before it said, and a change of mode is a migration
+of its own, with a second adapter id for the same engine, which the wiki page above describes.
+
 ## Documentation
 
 - [BPMS migration](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-migration): the priority list, the election, the cache, and migrating between tenant setups
