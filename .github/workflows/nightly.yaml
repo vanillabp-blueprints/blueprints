@@ -7,10 +7,17 @@ name: Nightly build
 "on":
   schedule:
     # Early enough to be green or red before anybody starts working.
-    - cron: "0 2 * * *"
+    #
+    # The minute is a crooked one, and after the four platform repositories which measure the
+    # same published snapshot: the Camunda 8 line matrix from 00:23, the Camunda 7 adapter at
+    # 00:41, the Process-Engine-API adapter at 00:56 and the election cache at 01:11. GitHub
+    # queues a scheduled run instead of starting it, the queue is longest on the hour, and
+    # what stands here is the earliest this may start rather than the time it runs at. So a
+    # run on the hour waits behind everybody else's hourly jobs for no reason.
+    - cron: "7 2 * * *"
     # Midday UTC, early afternoon in Europe: what went in during the morning gets its
-    # answer while there is still a working day left.
-    - cron: "0 12 * * *"
+    # answer while there is still a working day left. Crooked as well, for the same reason.
+    - cron: "7 12 * * *"
   workflow_dispatch:
 permissions:
   contents: read

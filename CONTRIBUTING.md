@@ -468,6 +468,32 @@ carrying `read:packages`. Locally, the same settings file works with those two v
 exported. The blueprint POMs stay free of all this: a blueprint shows what an application
 needs, and after the release that is Maven Central.
 
+### Which platform a run built against
+
+Every framework artifact is `2.0.0-SNAPSHOT`, and the framework publishes under that string
+several times a day. So the version in a build log does not say which framework a run met, and
+two runs of the same branch can mean different things.
+
+`bin/platform_snapshot.sh` writes it down. `build.yaml` calls it in the aggregator job and in
+every blueprint job, and each run then has a list like this in its summary:
+
+```
+- `io.vanillabp:vanillabp-bom` 2.0.0-20260926.082311-263
+- `io.vanillabp:vanillabp-schema` 2.0.0-20260926.082311-203
+```
+
+The timestamp and the number after it are the build GitHub Packages served, so two runs can be
+read next to each other. The script only names what Maven fetched during the run; if Maven
+refreshed nothing, the report says so instead of passing off the runner's cache as the
+framework of today.
+
+Read it before you conclude anything from a green job next to a red one. On the 25th of
+September 2026 seven blueprint jobs were green and one was red, and they looked comparable.
+They were not: the green ones ran at 13:46, the framework published a new table at 14:39, and
+the red one was a second attempt of the same run started the next morning. A re-run of the
+failed jobs does not run the aggregator again, which is why every blueprint job reports for
+itself.
+
 ### When the night goes red
 
 A pull request build sees what moves in this repository. The framework lives in other
@@ -477,7 +503,10 @@ two blueprints unable to compile, every pull request stayed green, and a person 
 day later.
 
 `nightly.yaml` is the build which reads the platform snapshot from where it is published.
-It runs at 02:00 and at 12:00 UTC. The midday run belongs to the time before the 2.0
+It asks to run at 02:07 and at 12:07 UTC. Asks, because GitHub queues a scheduled run
+rather than starting it, and the minute is crooked because that queue is longest on the
+hour. The early one also comes after the four platform repositories which measure the same
+published snapshot, the last of them at 01:11. The midday run belongs to the time before the 2.0
 release, when several stories a day reach the platform and a break found at two in the
 morning arrives together with everything merged since. After the release it goes and the
 early run stays alone; the head of the workflow file says the same thing.
