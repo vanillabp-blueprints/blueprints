@@ -118,7 +118,7 @@ create that library's table, `TXNO_OUTBOX`, as well. VanillaBP writes the outbox
 `vanillabp-schema` like the delivery table. Nothing here migrates `TXNO_OUTBOX` any more.
 
 An application which wants to keep gruelbox adds the artifact
-`io.vanillabp:gruelbox-phase-two-outbox-spring-boot`, which is where that store lives since it left
+`io.vanillabp:gruelbox-phase-two-outbox`, which is where that store lives since it left
 the platform. The table is then that library's again and the application migrates it. That is a way
 out for an application which already runs gruelbox, not a recipe for a new one, so this blueprint
 shows the default.
