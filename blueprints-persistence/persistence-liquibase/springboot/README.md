@@ -117,11 +117,11 @@ create that library's table, `TXNO_OUTBOX`, as well. VanillaBP writes the outbox
 `VANILLABP_PHASE_TWO_OUTBOX` and `VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD`, and both come out of
 `vanillabp-schema` like the delivery table. Nothing here migrates `TXNO_OUTBOX` any more.
 
-An application which wants to keep gruelbox sets `vanillabp.outbox.gruelbox.enabled` to `true` and
-adds `com.gruelbox:transactionoutbox-core` and `com.gruelbox:transactionoutbox-spring` to its own
-dependencies. The table is then that library's again and the application migrates it. That is a
-way out for an application which already runs gruelbox, not a recipe for a new one, so this
-blueprint shows the default.
+An application which wants to keep gruelbox adds the artifact
+`io.vanillabp:gruelbox-phase-two-outbox`, which is where that store lives since it left
+the platform. The table is then that library's again and the application migrates it. That is a way
+out for an application which already runs gruelbox, not a recipe for a new one, so this blueprint
+shows the default.
 
 What a handover of the tables involves, for both migration tools, is documented in
 [Creating the tables with Liquibase or Flyway](https://github.com/vanillabp/adapter-platform-integration/wiki/Spring-Boot-integration#creating-the-tables-with-liquibase-or-flyway).
