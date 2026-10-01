@@ -29,10 +29,16 @@ set -o nounset
 set -o pipefail
 
 # The cluster has to be at least as new as the client the Camunda 8 adapter is built
-# against, currently camunda-client-java 8.9.16. An older cluster rejects requests the newer
+# against, currently camunda-client-java 8.10.0. An older cluster rejects requests the newer
 # client sends: with 8.8.34 every job activation ended in "Request property [tenantFilter]
 # cannot be parsed", so a workflow started and its task was never delivered.
-CAMUNDA_VERSION="${CAMUNDA_VERSION:-8.9.16}"
+#
+# The blueprints build against the adapter snapshot without a release-line profile, so they
+# get the adapter's current GA line. That line is 8.10, since Camunda released 8.10.0 on the
+# 29th of September 2026. When the next minor goes GA the adapter moves its default line, and
+# this pin moves with it. Each line has its pin as a property in the root POM of the adapter,
+# and the README of the adapter explains the lines under "Release lines".
+CAMUNDA_VERSION="${CAMUNDA_VERSION:-8.10.0}"
 ELASTICSEARCH_VERSION="${ELASTICSEARCH_VERSION:-8.18.2}"
 REST_PORT="${REST_PORT:-8080}"
 NETWORK=vanillabp-camunda8

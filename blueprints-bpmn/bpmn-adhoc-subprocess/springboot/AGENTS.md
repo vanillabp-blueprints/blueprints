@@ -57,7 +57,7 @@ The ids are not touched by name-clash avoidance, so they are the same string eve
 | `application/pom.xml`                                      | the BPMS adapter, the only place a BPMS is named                           |
 | `application/src/main/java/.../Application.java`           | the Spring Boot application, in the parent package of the module           |
 | `application/src/main/resources/application.yaml`          | the datasource and the profile the Maven build filters in                  |
-| `application/src/main/resources/application-camunda8.yaml` | the cluster address and the name-clash-avoidance mode                      |
+| `application/src/main/resources/application-camunda8.yaml` | the cluster address, the name-clash-avoidance mode and the job lease       |
 | `loan-approval/src/test/java/.../TestApplication.java`     | the minimal application the module's test boots                            |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`  | base class of the integration test: waits for workflow progress            |
 | `application/src/test/java/.../ApplicationSmokeTest.java`  | boots the application, which validates the BPMN-to-code wiring             |
