@@ -168,6 +168,16 @@ message of every loan approval started before the switch. A blueprint which real
 show a change of mode shows it the way the wiki does, as a migration with a second adapter
 id.
 
+A second setting is written out in every `camunda8` profile, for a different reason: `job-lease`.
+The Camunda 8 adapter has no default for it and stops the boot on a cluster of the 8.10 line while
+the key is missing. A lease makes the cluster take the answer of the current activation only, so a
+run whose lock ran out while it was working can no longer overwrite what the newer run wrote. The
+blueprints write `use`. That is the value the adapter recommends and the one its own example
+shows, and a blueprint shows the recommended way. The other value, `do-not-use`, is what every
+release line before 8.10 did. An application which may have to move back to such a line needs it,
+because the cluster never takes a lease off a job again. What a lease costs is in the
+[wiki of the adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds).
+
 ## Rule 5: the aspect is proven by a test
 
 A blueprint ships an integration test which plays through the aspect it shows, using a
