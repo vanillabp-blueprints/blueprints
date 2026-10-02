@@ -184,9 +184,9 @@ no time of its own.
 How the two engines arrange that differs, and it is worth knowing which part is theirs.
 Camunda 7 runs an execution listener on the start event inside its own transaction, so the
 aggregate and the process instance commit together, and the aggregate's ID becomes the
-instance's business key. Camunda 8 has VanillaBP add an execution listener whose job builds
-the aggregate and writes its ID into the instance; the listener gates the workflow, so
-nothing runs before the aggregate exists.
+instance's business key. Camunda 8 has VanillaBP add an execution listener whose job asks
+your method for the aggregate and writes its ID into the instance; the listener gates the
+workflow, so nothing runs before the aggregate exists.
 
 The test is the unusual part. It has no call to make, so it waits for an aggregate with the
 expected trigger kind to appear. For the signal it broadcasts in a poll loop rather than
