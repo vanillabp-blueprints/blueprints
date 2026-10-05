@@ -36,20 +36,20 @@ import io.vanillabp.spi.service.WorkflowTask;
 public class WorkflowTaskHandler {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. The
    * aggregate is loaded before and saved after the call, so the business code only has to
    * change it.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -74,19 +74,19 @@ public class WorkflowTaskHandler {
    * this class.
    * </p>
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    * @param taskId       The BPMS-side id of this task.
    * @param event        Whether the task was delivered or canceled.
    */
   @WorkflowTask
   public void requestPartnerApproval(
-      final Aggregate loanApproval,
+      final Aggregate loanRequest,
       @TaskId final String taskId,
       @TaskEvent final TaskEvent.Event event) {
 
     switch (event) {
-      case CREATED -> service.requestPartnerApproval(loanApproval, taskId);
-      case CANCELED -> service.partnerApprovalClosed(loanApproval);
+      case CREATED -> loanApproval.requestPartnerApproval(loanRequest, taskId);
+      case CANCELED -> loanApproval.partnerApprovalClosed(loanRequest);
       default -> throw new IllegalStateException("Unexpected task event '"
           + event
           + "'");
@@ -98,26 +98,26 @@ public class WorkflowTaskHandler {
    * Called by VanillaBP when the completed task was followed by the service task of the
    * same name.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void informCustomer(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.informCustomer(loanApproval);
+    loanApproval.informCustomer(loanRequest);
 
   }
 
   /**
    * Called by VanillaBP on the path the error boundary event leads to.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void noteRejection(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.noteRejection(loanApproval);
+    loanApproval.noteRejection(loanRequest);
 
   }
 

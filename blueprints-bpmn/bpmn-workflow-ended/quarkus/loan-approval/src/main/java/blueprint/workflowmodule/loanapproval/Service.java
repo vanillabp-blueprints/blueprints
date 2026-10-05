@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
  * expressed without a single word about processes.
  *
  * <p>
- * {@link #loanApprovalClosed} is the interesting one. It is business code like every other
+ * {@link #closed} is the interesting one. It is business code like every other
  * method here - it closes the case - and nothing in it says that a BPMS end event is what
  * triggered it.
  * </p>
@@ -48,7 +48,7 @@ public class Service {
    * @param amount        The amount requested.
    */
   @Transactional
-  public void initiateLoanApproval(
+  public void request(
       final String loanRequestId,
       final int amount) {
 
@@ -113,7 +113,7 @@ public class Service {
    * @param loanApproval The workflow's aggregate.
    * @param end          How and when it ended, as far as the BPMS reports it.
    */
-  public void loanApprovalClosed(
+  public void closed(
       final Aggregate loanApproval,
       final WorkflowEnd end) {
 
@@ -138,7 +138,7 @@ public class Service {
    * @param loanRequestId The natural id of the loan request.
    * @return The loan approval, if it exists.
    */
-  public Optional<Aggregate> getLoanApproval(
+  public Optional<Aggregate> get(
       final String loanRequestId) {
 
     return loanApprovals.findByIdOptional(loanRequestId);

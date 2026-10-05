@@ -40,7 +40,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   @Autowired
   private AggregateRepository loanApprovals;
@@ -60,17 +60,17 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals,
         loanRequestId,
         aggregate -> aggregate.getCreditRating() != null);
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
     // Nobody compiled the provider in: it comes from the input mapping of the BPMN task.
-    assertThat(loanApproval.getRatedBy()).isEqualTo("acme-rating");
-    assertThat(loanApproval.getRejectionReason()).isNull();
+    assertThat(loanRequest.getRatedBy()).isEqualTo("acme-rating");
+    assertThat(loanRequest.getRejectionReason()).isNull();
 
   }
 
@@ -81,14 +81,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals,
         loanRequestId,
         aggregate -> aggregate.getCreditRating() != null);
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
     // The first request was refused, so the provider was asked more than once.
     assertThat(creditRatings.invocations()).hasSizeGreaterThan(1);
 
@@ -100,16 +100,16 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequestId = UUID.randomUUID().toString();
 
     // 500 / 100 is a rating of 5, below the configured minimum of 10.
-    service.initiateLoanApproval(loanRequestId, 500);
+    loanApproval.request(loanRequestId, 500);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals,
         loanRequestId,
         aggregate -> aggregate.getRejectionReason() != null);
 
     // The handler threw a TaskException, and everything it wrote before is still here.
-    assertThat(loanApproval.getCreditRating()).isEqualTo(5);
-    assertThat(loanApproval.getRejectionReason()).contains("below the minimum");
+    assertThat(loanRequest.getCreditRating()).isEqualTo(5);
+    assertThat(loanRequest.getRejectionReason()).contains("below the minimum");
 
   }
 

@@ -26,7 +26,7 @@ import jakarta.inject.Inject;
 public class RiskAssessedListener {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * The risk assessment published its verdict.
@@ -36,7 +36,7 @@ public class RiskAssessedListener {
   public void onRiskAssessed(
       @Observes final RiskAssessed event) {
 
-    service.riskAssessed(event.caseId(), event.score());
+    loanApproval.riskAssessed(event.caseId(), event.score());
 
   }
 

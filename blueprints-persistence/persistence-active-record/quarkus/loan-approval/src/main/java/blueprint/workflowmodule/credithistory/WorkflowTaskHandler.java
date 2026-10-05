@@ -27,19 +27,19 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service creditHistory;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. The aggregate
    * is loaded before and saved after the call, so the business code only has to change it.
    *
-   * @param creditHistory The workflow's aggregate.
+   * @param historyRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void collectHistoryEntries(
-      final Aggregate creditHistory) {
+      final Aggregate historyRequest) {
 
-    service.collectHistoryEntries(creditHistory);
+    creditHistory.collectHistoryEntries(historyRequest);
 
   }
 

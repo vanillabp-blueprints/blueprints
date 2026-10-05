@@ -42,7 +42,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   private static final Duration IDLE_WINDOW = Duration.ofSeconds(15);
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -55,7 +55,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     awaitAggregate(
         loanApprovals::findByIdOptional,
@@ -78,12 +78,12 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // ... and the workflow still goes on when the timer is due, which is the half nobody
     // may trade away for the quiet above.
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getPaidOut()));
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
 
   }
 

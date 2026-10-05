@@ -21,7 +21,7 @@ multi-instance element in the model:
 ```java
 @WorkflowTask
 public void requestPartnerOffer(
-    final Aggregate loanApproval,
+    final Aggregate loanRequest,
     @MultiInstanceElement("ServiceTask_RequestPartnerOffer") final String partnerId,
     @MultiInstanceIndex("ServiceTask_RequestPartnerOffer") final int index,
     @MultiInstanceTotal("ServiceTask_RequestPartnerOffer") final int total) {

@@ -34,18 +34,18 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -55,28 +55,28 @@ public class WorkflowTaskHandler {
    * application says otherwise - and a standing workflow is what makes a history worth
    * looking at.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    * @param taskId       The id of this task.
    */
   @WorkflowTask
   public void awaitPartnerApproval(
-      final Aggregate loanApproval,
+      final Aggregate loanRequest,
       @TaskId final String taskId) {
 
-    service.awaitPartnerApproval(loanApproval, taskId);
+    loanApproval.awaitPartnerApproval(loanRequest, taskId);
 
   }
 
   /**
    * Called after the partner approved.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void decideOnLoan(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.decideOnLoan(loanApproval);
+    loanApproval.decideOnLoan(loanRequest);
 
   }
 

@@ -62,7 +62,7 @@ because the repetition which would have fixed it is answered from the record and
 **Where the other blueprints write `@Transactional`, this one opens the unit of work itself.**
 An annotation of the platform would open a transaction this application's store is not part of,
 and VanillaBP refuses to start a workflow when the unit of work it asks about is not open. So
-`Service#initiateLoanApproval` brackets its work with `UnitOfWork`, and the methods a task
+`Service#request` brackets its work with `UnitOfWork`, and the methods a task
 handler calls bracket nothing, exactly as everywhere else.
 
 **In memory means: gone after a restart.** That is deliberate. This blueprint is the reference

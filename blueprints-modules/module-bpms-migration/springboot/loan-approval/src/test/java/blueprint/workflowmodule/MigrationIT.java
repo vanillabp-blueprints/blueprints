@@ -40,17 +40,17 @@ public class MigrationIT extends WorkflowModuleTest {
   private Environment environment;
 
   @Autowired
-  private Service loanApprovals;
+  private Service loanApproval;
 
   @Autowired
-  private blueprint.workflowmodule.loanrepayment.RepaymentService repayments;
+  private blueprint.workflowmodule.loanrepayment.RepaymentService loanRepayment;
 
   @Autowired
-  private AggregateRepository loanApprovalAggregates;
+  private AggregateRepository loanApprovals;
 
   // both packages of this module carry a class of that name, so one of the two is spelled out
   @Autowired
-  private blueprint.workflowmodule.loanrepayment.model.RepaymentRepository repaymentAggregates;
+  private blueprint.workflowmodule.loanrepayment.model.RepaymentRepository repayments;
 
   @Test
   @DisplayName("A new workflow starts in the first adapter of the priority list")
@@ -59,14 +59,14 @@ public class MigrationIT extends WorkflowModuleTest {
     assumeTwoAdaptersAreConfigured();
 
     final var loanRequestId = UUID.randomUUID().toString();
-    loanApprovals.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     awaitAggregate(
-        loanApprovalAggregates,
+        loanApprovals,
         loanRequestId,
         aggregate -> aggregate.getRiskAssessmentTaskId() != null);
 
-    assertThat(loanApprovals.bpmsHolding(loanRequestId))
+    assertThat(loanApproval.bpmsHolding(loanRequestId))
         .describedAs("the loan approval follows the adapter list, so it starts in the new BPMS")
         .contains(NEW_BPMS);
 
@@ -79,15 +79,15 @@ public class MigrationIT extends WorkflowModuleTest {
     assumeTwoAdaptersAreConfigured();
 
     final var repaymentId = UUID.randomUUID().toString();
-    repayments.initiateRepayment(repaymentId, 500);
+    loanRepayment.initiate(repaymentId, 500);
 
     // the workflow runs to its end in the BPMS its own list names
     awaitAggregate(
-        repaymentAggregates,
+        repayments,
         repaymentId,
         aggregate -> Boolean.TRUE.equals(aggregate.getInstalmentBooked()));
 
-    assertThat(repayments.bpmsHolding(repaymentId))
+    assertThat(loanRepayment.bpmsHolding(repaymentId))
         .describedAs("'vanillabp...workflows.loan_repayment.prioritized-adapters' names the old BPMS")
         .contains(OLD_BPMS);
 
@@ -100,29 +100,29 @@ public class MigrationIT extends WorkflowModuleTest {
     assumeTwoAdaptersAreConfigured();
 
     final var loanRequestId = UUID.randomUUID().toString();
-    loanApprovals.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     final var waiting = awaitAggregate(
-        loanApprovalAggregates,
+        loanApprovals,
         loanRequestId,
         aggregate -> aggregate.getRiskAssessmentTaskId() != null);
 
     // completing the user task and correlating the message both elect the adapter; an
     // election going wrong ends in an exception instead of in a finished workflow
-    loanApprovals.assessRisk(loanRequestId, waiting.getRiskAssessmentTaskId());
+    loanApproval.assessRisk(loanRequestId, waiting.getRiskAssessmentTaskId());
     awaitAggregate(
-        loanApprovalAggregates,
+        loanApprovals,
         loanRequestId,
         aggregate -> aggregate.getRiskAssessmentTaskId() == null);
 
-    loanApprovals.contractSigned(loanRequestId, "Jane Doe");
+    loanApproval.contractSigned(loanRequestId, "Jane Doe");
     final var paidOut = awaitAggregate(
-        loanApprovalAggregates,
+        loanApprovals,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getPaidOut()));
 
     assertThat(paidOut.getContractSignedBy()).isEqualTo("Jane Doe");
-    assertThat(loanApprovals.bpmsHolding(loanRequestId))
+    assertThat(loanApproval.bpmsHolding(loanRequestId))
         .describedAs("the workflow ran to its end in the BPMS it was started in")
         .contains(NEW_BPMS);
 

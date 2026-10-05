@@ -53,19 +53,19 @@ import lombok.extern.slf4j.Slf4j;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached, before the
    * subprocess and therefore exactly once.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -78,12 +78,12 @@ public class WorkflowTaskHandler {
    * this way the method is handed one object which says what the pair means.
    * </p>
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    * @param iteration    Where this call sits: which region, which partner.
    */
   @WorkflowTask
   public void requestPartnerOffer(
-      final Aggregate loanApproval,
+      final Aggregate loanRequest,
       @MultiInstanceElement(resolverBean = IterationResolver.class) final Iteration iteration) {
 
     log.info(
@@ -92,9 +92,9 @@ public class WorkflowTaskHandler {
         iteration.partners(),
         iteration.regionIndex() + 1,
         iteration.regions(),
-        loanApproval.getLoanRequestId());
+        loanRequest.getLoanRequestId());
 
-    service.requestPartnerOffer(loanApproval, iteration.regionId(), iteration.partnerId());
+    loanApproval.requestPartnerOffer(loanRequest, iteration.regionId(), iteration.partnerId());
 
   }
 
@@ -103,14 +103,14 @@ public class WorkflowTaskHandler {
    * multi-instance itself and still runs inside an iteration, which it asks the subprocess
    * about by naming it.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    * @param regionId     The region this iteration of the subprocess runs for.
    * @param index        Which region this is, counted from zero.
    * @param total        How many regions there are.
    */
   @WorkflowTask
   public void summariseRegion(
-      final Aggregate loanApproval,
+      final Aggregate loanRequest,
       @MultiInstanceElement(IterationResolver.ASSESS_REGION) final String regionId,
       @MultiInstanceIndex(IterationResolver.ASSESS_REGION) final int index,
       @MultiInstanceTotal(IterationResolver.ASSESS_REGION) final int total) {
@@ -119,22 +119,22 @@ public class WorkflowTaskHandler {
         "Finishing region {} of {} for loan approval '{}'",
         index + 1,
         total,
-        loanApproval.getLoanRequestId());
+        loanRequest.getLoanRequestId());
 
-    service.summariseRegion(loanApproval, regionId, index);
+    loanApproval.summariseRegion(loanRequest, regionId, index);
 
   }
 
   /**
    * Called once, after the last iteration of the subprocess has finished.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void chooseBestOffer(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.chooseBestOffer(loanApproval);
+    loanApproval.chooseBestOffer(loanRequest);
 
   }
 

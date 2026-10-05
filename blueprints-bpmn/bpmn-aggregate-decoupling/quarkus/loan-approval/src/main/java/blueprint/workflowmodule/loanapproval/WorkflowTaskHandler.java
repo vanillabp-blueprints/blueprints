@@ -51,7 +51,7 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. The
@@ -64,39 +64,39 @@ public class WorkflowTaskHandler {
    * business, which is why changing the data model does not reach here.
    * </p>
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void assessRisk(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessRisk(loanApproval);
+    loanApproval.assessRisk(loanRequest);
 
   }
 
   /**
    * Called on the branch the gateway takes when the loan may be approved right away.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void approveLoan(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.approveLoan(loanApproval);
+    loanApproval.approveLoan(loanRequest);
 
   }
 
   /**
    * Called on the branch asking a person to look at the request.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void requestManualReview(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.requestManualReview(loanApproval);
+    loanApproval.requestManualReview(loanRequest);
 
   }
 
@@ -104,13 +104,13 @@ public class WorkflowTaskHandler {
    * Called on the default flow, taken when neither question of the model was answered with
    * yes.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void rejectLoan(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.rejectLoan(loanApproval);
+    loanApproval.rejectLoan(loanRequest);
 
   }
 

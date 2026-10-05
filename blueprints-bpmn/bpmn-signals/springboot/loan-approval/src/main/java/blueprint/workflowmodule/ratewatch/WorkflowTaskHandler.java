@@ -24,18 +24,18 @@ import io.vanillabp.spi.service.WorkflowTask;
 public class WorkflowTaskHandler {
 
   @Autowired
-  private Service service;
+  private Service rateWatch;
 
   /**
    * Called by VanillaBP when the service task behind the signal event is reached.
    *
-   * @param rateWatch The workflow's aggregate.
+   * @param watch The workflow's aggregate.
    */
   @WorkflowTask
   public void recordPublication(
-      final Aggregate rateWatch) {
+      final Aggregate watch) {
 
-    service.rateNoticed(rateWatch);
+    rateWatch.rateNoticed(watch);
 
   }
 

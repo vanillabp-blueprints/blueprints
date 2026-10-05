@@ -52,20 +52,20 @@ import io.vanillabp.spi.service.WorkflowTask;
 public class WorkflowTaskHandler {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. The
    * aggregate is loaded before and saved after the call, so the business code only has to
    * change it.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -74,13 +74,13 @@ public class WorkflowTaskHandler {
    * As every {@code @WorkflowTask} method it does nothing but hand over to the business
    * code - that the business code talks to another module is none of the BPMN's business.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void requestRiskAssessment(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.requestRiskAssessment(loanApproval);
+    loanApproval.requestRiskAssessment(loanRequest);
 
   }
 

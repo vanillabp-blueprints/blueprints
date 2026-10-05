@@ -13,6 +13,10 @@ https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md
 and must not be repeated here.
 
 Never mention the other platform.
+
+Code quoted here uses the names of the blueprint's code. Injected beans are named after their
+role, as CONTRIBUTING.md describes: `loanApproval` for the `Service`, `bpms` for the
+`ProcessService`.
 -->
 
 <One sentence: what this blueprint adds to an application.>

@@ -25,7 +25,7 @@ import io.vanillabp.spi.process.ProcessService;
 public class RepaymentWorkflow {
 
   @Autowired
-  private ProcessService<Repayment> processService;
+  private ProcessService<Repayment> bpms;
 
   /**
    * A repayment is due.
@@ -35,7 +35,7 @@ public class RepaymentWorkflow {
   public void repaymentDue(
       final Repayment repayment) {
 
-    processService.startWorkflow(repayment);
+    bpms.startWorkflow(repayment);
 
   }
 
@@ -46,7 +46,7 @@ public class RepaymentWorkflow {
   public List<ProcessDefinition> definitionsOf(
       final Repayment repayment) {
 
-    return processService.getProcessDefinitions(repayment, null);
+    return bpms.getProcessDefinitions(repayment, null);
 
   }
 

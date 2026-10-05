@@ -28,7 +28,7 @@ import jakarta.inject.Inject;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -39,7 +39,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequestId = UUID.randomUUID().toString();
 
     // above ten thousand a person has to look at the request
-    service.initiateLoanApproval(loanRequestId, 20000);
+    loanApproval.request(loanRequestId, 20000);
 
     final var taskId = awaitAggregate(
         loanApprovals::findByIdOptional,
@@ -47,22 +47,22 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         aggregate -> aggregate.getSelectChecksTaskId() != null)
         .getSelectChecksTaskId();
 
-    service.selectChecks(loanRequestId, taskId, List.of(Check.INCOME, Check.COLLATERAL));
+    loanApproval.selectChecks(loanRequestId, taskId, List.of(Check.INCOME, Check.COLLATERAL));
 
     // the service task behind the subprocess ran, so the workflow left the element - which
     // it does when everything it activated is done, with no completion condition modelled
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getCustomerInformed()));
 
-    assertThat(loanApproval.getIncomeChecked()).isTrue();
-    assertThat(loanApproval.getCollateralChecked()).isTrue();
+    assertThat(loanRequest.getIncomeChecked()).isTrue();
+    assertThat(loanRequest.getCollateralChecked()).isTrue();
     // the third activity is in the model and was not picked, so it never ran
-    assertThat(loanApproval.getFraudChecked()).isNull();
-    assertThat(loanApproval.getChecksToRun())
+    assertThat(loanRequest.getFraudChecked()).isNull();
+    assertThat(loanRequest.getChecksToRun())
         .containsExactly("Check_Income", "Check_Collateral");
-    assertThat(loanApproval.getSelectChecksTaskId()).isNull();
+    assertThat(loanRequest.getSelectChecksTaskId()).isNull();
 
   }
 
@@ -73,20 +73,20 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // below ten thousand nobody is asked: the decision table picks, and it picks the income
     // check for every request plus the fraud check above three thousand
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getCustomerInformed()));
 
-    assertThat(loanApproval.getIncomeChecked()).isTrue();
-    assertThat(loanApproval.getFraudChecked()).isTrue();
-    assertThat(loanApproval.getCollateralChecked()).isNull();
+    assertThat(loanRequest.getIncomeChecked()).isTrue();
+    assertThat(loanRequest.getFraudChecked()).isTrue();
+    assertThat(loanRequest.getCollateralChecked()).isNull();
     // no user task was created, and no Java wrote the list: the decision table's result
     // went straight into the variable the model reads
-    assertThat(loanApproval.getSelectChecksTaskId()).isNull();
-    assertThat(loanApproval.getChecksToRun()).isEmpty();
+    assertThat(loanRequest.getSelectChecksTaskId()).isNull();
+    assertThat(loanRequest.getChecksToRun()).isEmpty();
 
   }
 

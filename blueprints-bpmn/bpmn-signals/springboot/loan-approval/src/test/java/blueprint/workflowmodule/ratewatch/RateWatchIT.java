@@ -24,20 +24,20 @@ public class RateWatchIT extends WorkflowModuleTest {
   private static final BigDecimal RATE = new BigDecimal("3.5");
 
   @Autowired
-  private Service rateWatches;
+  private Service rateWatch;
 
   @Autowired
   private AggregateRepository watches;
 
   @Autowired
-  private blueprint.workflowmodule.loanapproval.Service loanApprovals;
+  private blueprint.workflowmodule.loanapproval.Service loanApproval;
 
   @Test
   @DisplayName("A signal broadcast by one use case reaches the other process of the module")
   public void theBroadcastReachesEveryProcessOfTheModule() {
 
     final var watchId = UUID.randomUUID().toString();
-    rateWatches.startWatching(watchId);
+    rateWatch.startWatching(watchId);
     awaitAggregate(watches, watchId);
 
     // the loan approval use case sends it, and it knows nothing about rate watches
@@ -45,7 +45,7 @@ public class RateWatchIT extends WorkflowModuleTest {
         .atMost(TIMEOUT)
         .pollInterval(Duration.ofMillis(500))
         .until(() -> {
-          loanApprovals.publishInterestRate(RATE);
+          loanApproval.publishInterestRate(RATE);
           return watches
               .findById(watchId)
               .filter(watch -> watch.getNoticedAt() != null)

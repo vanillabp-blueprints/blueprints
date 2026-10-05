@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 public class RepaymentApiController {
 
   @Autowired
-  private RepaymentService service;
+  private RepaymentService loanRepayment;
 
   /**
    * Starts a repayment, the workflow which stays in the old BPMS.
@@ -34,7 +34,7 @@ public class RepaymentApiController {
 
     final var repaymentId = UUID.randomUUID().toString();
 
-    service.initiateRepayment(repaymentId, amount);
+    loanRepayment.initiate(repaymentId, amount);
 
     log.info(
         "Which BPMS runs it -> http://localhost:8080/api/loan-repayment/{}/bpms",
@@ -52,7 +52,7 @@ public class RepaymentApiController {
   public String bpms(
       @PathVariable final String repaymentId) {
 
-    return service
+    return loanRepayment
         .bpmsHolding(repaymentId)
         .orElse("unknown repayment '"
             + repaymentId
@@ -68,8 +68,8 @@ public class RepaymentApiController {
   public String show(
       @PathVariable final String repaymentId) {
 
-    return service
-        .getRepayment(repaymentId)
+    return loanRepayment
+        .get(repaymentId)
         .map(Object::toString)
         .orElse("unknown repayment '"
             + repaymentId

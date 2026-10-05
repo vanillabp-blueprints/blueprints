@@ -26,7 +26,7 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service loanRepayment;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached.
@@ -37,7 +37,7 @@ public class WorkflowTaskHandler {
   public void scheduleInstallments(
       final Aggregate repayment) {
 
-    service.scheduleInstallments(repayment);
+    loanRepayment.scheduleInstallments(repayment);
 
   }
 

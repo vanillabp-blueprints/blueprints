@@ -40,7 +40,7 @@ public class Workflow {
    * bean. It is typed by the workflow aggregate, so there is one per workflow.
    */
   @Inject
-  ProcessService<Aggregate> processService;
+  ProcessService<Aggregate> bpms;
 
   /**
    * The name of the BPMN message the process waits for. The same string is the name of
@@ -58,7 +58,7 @@ public class Workflow {
   public void loanRequested(
       final Aggregate loanApproval) {
 
-    processService.startWorkflow(loanApproval);
+    bpms.startWorkflow(loanApproval);
 
   }
 
@@ -83,7 +83,7 @@ public class Workflow {
   public void contractSigned(
       final Aggregate loanApproval) {
 
-    processService.correlateMessage(loanApproval, CONTRACT_SIGNED);
+    bpms.correlateMessage(loanApproval, CONTRACT_SIGNED);
 
   }
 

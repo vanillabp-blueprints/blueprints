@@ -43,7 +43,7 @@ public class Service {
    * @param years           How many years back the customer asked for.
    */
   @Transactional
-  public void requestCreditHistory(
+  public void request(
       final String creditHistoryId,
       final int years) {
 
@@ -87,7 +87,7 @@ public class Service {
    * @return The credit history, if it exists.
    */
   @Transactional
-  public Optional<Aggregate> getCreditHistory(
+  public Optional<Aggregate> get(
       final String creditHistoryId) {
 
     return Aggregate.byId(creditHistoryId);

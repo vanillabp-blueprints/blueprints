@@ -1,7 +1,7 @@
 package blueprint.api;
 
 /**
- * The answer to a {@link RiskAssessments#requestAssessment(String, int)}, published as an
+ * The answer to a {@link RiskAssessments#request(String, int)}, published as an
  * event rather than returned as a value.
  *
  * <p>

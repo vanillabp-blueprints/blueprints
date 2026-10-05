@@ -51,85 +51,85 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. The
    * aggregate is loaded before and saved after the call, so the business code only has to
    * change it.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
   /**
    * Called on the branch the gateway takes for an acceptable rating.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void approveLoan(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.approveLoan(loanApproval);
+    loanApproval.approveLoan(loanRequest);
 
   }
 
   /**
    * Called on the branch of the second gateway taken for a large amount.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void sendPaperLetter(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.sendPaperLetter(loanApproval);
+    loanApproval.sendPaperLetter(loanRequest);
 
   }
 
   /**
    * Called on the default flow of the second gateway.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void sendEmail(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.sendEmail(loanApproval);
+    loanApproval.sendEmail(loanRequest);
 
   }
 
   /**
    * Called on the branch asking a person to look at the request.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void requestManualReview(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.requestManualReview(loanApproval);
+    loanApproval.requestManualReview(loanRequest);
 
   }
 
   /**
    * Called on the default flow, taken when no condition of the gateway holds.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void rejectLoan(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.rejectLoan(loanApproval);
+    loanApproval.rejectLoan(loanRequest);
 
   }
 

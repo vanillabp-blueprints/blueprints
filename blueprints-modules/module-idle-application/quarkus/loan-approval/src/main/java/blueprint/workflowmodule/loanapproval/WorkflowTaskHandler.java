@@ -51,20 +51,20 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. The
    * aggregate is loaded before and saved after the call, so the business code only has to
    * change it.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -73,13 +73,13 @@ public class WorkflowTaskHandler {
    * behind it. Whether the application was busy, waiting or restarted meanwhile makes no
    * difference: the due date is kept by the BPMS.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void payOutLoan(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.payOutLoan(loanApproval);
+    loanApproval.payOutLoan(loanRequest);
 
   }
 

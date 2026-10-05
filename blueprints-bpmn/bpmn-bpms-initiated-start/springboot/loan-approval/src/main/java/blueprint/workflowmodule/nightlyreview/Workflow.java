@@ -32,7 +32,7 @@ public class Workflow {
    * for a signal decides the workflow module it is broadcast in, not who receives it.
    */
   @Autowired
-  private ProcessService<Aggregate> processService;
+  private ProcessService<Aggregate> bpms;
 
   /**
    * The name of the BPMN signal the second start event listens for. The same string is the
@@ -52,7 +52,7 @@ public class Workflow {
    */
   public void reviewRequested() {
 
-    processService.sendSignal(REVIEW_REQUESTED);
+    bpms.sendSignal(REVIEW_REQUESTED);
 
   }
 

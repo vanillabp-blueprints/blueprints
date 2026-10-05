@@ -25,9 +25,9 @@ Replace all of these consistently; they are the same in every blueprint.
 
 Blueprint-specific name:
 
-|  Name  |                                       Where it occurs                                        |
-|--------|----------------------------------------------------------------------------------------------|
-| `byId` | the finder on the aggregate, called by `Service#getLoanApproval` and by the integration test |
+|  Name  |                                 Where it occurs                                  |
+|--------|----------------------------------------------------------------------------------|
+| `byId` | the finder on the aggregate, called by `Service#get` and by the integration test |
 
 **The rule this blueprint is built on:** an aggregate which is an active record is the only
 class on its persistence path, so every read the application does has to bring a transaction
@@ -44,7 +44,7 @@ application only says something about that where it brought the persistence itse
 |--------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | extends `PanacheEntityBase`, natural ID as `@Id`, plus the typed finder `byId`. There is deliberately no repository next to it |
 | `loan-approval/src/main/java/.../credithistory/model/Aggregate.java`                       | extends `PanacheMongoEntityBase`, natural ID as `@BsonId`, plus `byId`. The second use case, stored in MongoDB                 |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `getLoanApproval` calls `Aggregate.byId` and carries the `@Transactional` the finder needs; the task path carries none         |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `get` calls `Aggregate.byId` and carries the `@Transactional` the finder needs; the task path carries none                     |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | reads through `Aggregate::byId` and asserts that a workflow started on a remote engine keeps its aggregate                     |
 | `loan-approval/src/test/java/.../CreditHistoryIT.java`                                     | the same two assertions for the aggregate MongoDB stores                                                                       |
 | `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the process, one service task. Unchanged from the base blueprint                                                               |
@@ -88,7 +88,7 @@ extending `WorkflowModuleTest`, never into the base class.
    question (`byId` here) rather than after the query. The inherited `findByIdOptional` is
    generic and hands the caller a `PanacheEntityBase`, which is not worth reading.
 5. Give every method which reads the aggregate a transaction: `@Transactional` on the business
-   method the API calls, as `Service#getLoanApproval` shows. Without one the finder has nothing
+   method the API calls, as `Service#get` shows. Without one the finder has nothing
    to read from, and the failure is a runtime one, not a compile error.
 6. Leave the task path alone. `@WorkflowTask` methods and the business methods they call must
    not declare a transaction - VanillaBP owns the one a task runs in and commits it for a

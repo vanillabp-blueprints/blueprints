@@ -23,7 +23,7 @@ import jakarta.transaction.Transactional;
 public class Workflow {
 
   @Inject
-  ProcessService<Aggregate> processService;
+  ProcessService<Aggregate> bpms;
 
   /**
    * An assessment was asked for. VanillaBP persists the aggregate and starts the process in
@@ -34,7 +34,7 @@ public class Workflow {
   public void assessmentRequested(
       final Aggregate assessment) {
 
-    processService.startWorkflow(assessment);
+    bpms.startWorkflow(assessment);
 
   }
 

@@ -36,7 +36,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   private static final Duration GRACE = Duration.ofSeconds(3);
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -45,7 +45,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     awaitAggregate(
         loanApprovals::findByIdOptional,
@@ -77,7 +77,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .atMost(TIMEOUT)
         .pollInterval(Duration.ofMillis(500))
         .until(() -> {
-          service.publishInterestRate(RATE);
+          loanApproval.publishInterestRate(RATE);
           return reacted.getAsBoolean();
         });
 
@@ -92,7 +92,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .requiringNew()
         .call(() -> loanApprovals
             .findByIdOptional(loanRequestId)
-            .filter(loanApproval -> loanApproval.getInterestRate() != null)
+            .filter(loanRequest -> loanRequest.getInterestRate() != null)
             .isPresent());
 
   }
@@ -122,11 +122,11 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var first = awaitAggregate(
         loanApprovals::findByIdOptional,
         firstLoanRequestId,
-        loanApproval -> loanApproval.getInterestRate() != null);
+        loanRequest -> loanRequest.getInterestRate() != null);
     final var second = awaitAggregate(
         loanApprovals::findByIdOptional,
         secondLoanRequestId,
-        loanApproval -> loanApproval.getInterestRate() != null);
+        loanRequest -> loanRequest.getInterestRate() != null);
 
     // what the signal could not carry, both workflows read from the application's data
     assertThat(first.getInterestRate()).isEqualTo(RATE.doubleValue());
@@ -139,7 +139,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void aSignalIsNotBuffered() {
 
     // nobody is waiting for this one, so it reaches nobody and is gone
-    service.publishInterestRate(RATE);
+    loanApproval.publishInterestRate(RATE);
 
     final var loanRequestId = startAndAwaitTheWaitingWorkflow();
 
@@ -152,12 +152,12 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // the next publication is the one it gets
     broadcastUntil(() -> wasOffered(loanRequestId));
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> aggregate.getInterestRate() != null);
 
-    assertThat(loanApproval.getInterestRate()).isEqualTo(RATE.doubleValue());
+    assertThat(loanRequest.getInterestRate()).isEqualTo(RATE.doubleValue());
 
   }
 

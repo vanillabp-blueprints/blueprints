@@ -27,7 +27,7 @@ import jakarta.inject.Inject;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -37,7 +37,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, amount);
+    loanApproval.request(loanRequestId, amount);
 
     return awaitAggregate(
         loanApprovals::findByIdOptional,
@@ -52,14 +52,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void anAcceptableRatingIsApproved() {
 
     // 5000 / 100 is a rating of 50, the configured minimum is 30
-    final var loanApproval = runWith(5000);
+    final var loanRequest = runWith(5000);
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
-    assertThat(loanApproval.getRatingBand()).isEqualTo("acceptable");
-    assertThat(loanApproval.isRatedAcceptable()).isTrue();
-    assertThat(loanApproval.getOutcome()).isEqualTo("approved");
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getRatingBand()).isEqualTo("acceptable");
+    assertThat(loanRequest.isRatedAcceptable()).isTrue();
+    assertThat(loanRequest.getOutcome()).isEqualTo("approved");
     // the second gateway, the one reading the raw amount: 5000 is below its threshold
-    assertThat(loanApproval.getNotifiedBy()).isEqualTo("email");
+    assertThat(loanRequest.getNotifiedBy()).isEqualTo("email");
 
   }
 
@@ -67,10 +67,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @DisplayName("The second gateway sends a letter for a large amount")
   public void aLargeAmountIsAnsweredByLetter() {
 
-    final var loanApproval = runWith(50000);
+    final var loanRequest = runWith(50000);
 
-    assertThat(loanApproval.getOutcome()).isEqualTo("approved");
-    assertThat(loanApproval.getNotifiedBy()).isEqualTo("letter");
+    assertThat(loanRequest.getOutcome()).isEqualTo("approved");
+    assertThat(loanRequest.getNotifiedBy()).isEqualTo("letter");
 
   }
 
@@ -79,10 +79,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void aMiddlingRatingGoesToAManualReview() {
 
     // a rating of 15: below the minimum of 30, at or above the review rating of 10
-    final var loanApproval = runWith(1500);
+    final var loanRequest = runWith(1500);
 
-    assertThat(loanApproval.getRatingBand()).isEqualTo("review");
-    assertThat(loanApproval.getOutcome()).isEqualTo("under-review");
+    assertThat(loanRequest.getRatingBand()).isEqualTo("review");
+    assertThat(loanRequest.getOutcome()).isEqualTo("under-review");
 
   }
 
@@ -91,10 +91,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void aBadRatingIsRejected() {
 
     // a rating of 3: no condition of the gateway holds, so the default flow is taken
-    final var loanApproval = runWith(300);
+    final var loanRequest = runWith(300);
 
-    assertThat(loanApproval.getRatingBand()).isEqualTo("too-low");
-    assertThat(loanApproval.getOutcome()).isEqualTo("rejected");
+    assertThat(loanRequest.getRatingBand()).isEqualTo("too-low");
+    assertThat(loanRequest.getOutcome()).isEqualTo("rejected");
 
   }
 

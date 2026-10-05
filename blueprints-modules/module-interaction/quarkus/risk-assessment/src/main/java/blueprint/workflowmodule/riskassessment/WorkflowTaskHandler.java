@@ -20,7 +20,7 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service riskAssessment;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached.
@@ -31,7 +31,7 @@ public class WorkflowTaskHandler {
   public void evaluateRisk(
       final Aggregate assessment) {
 
-    service.evaluateRisk(assessment);
+    riskAssessment.evaluateRisk(assessment);
 
   }
 
@@ -46,7 +46,7 @@ public class WorkflowTaskHandler {
   public void publishAssessment(
       final Aggregate assessment) {
 
-    service.publishAssessment(assessment);
+    riskAssessment.publish(assessment);
 
   }
 

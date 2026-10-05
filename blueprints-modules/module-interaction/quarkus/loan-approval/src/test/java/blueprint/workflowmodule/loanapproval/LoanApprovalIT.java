@@ -46,7 +46,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     Event<RiskAssessed> events;
 
     @Override
-    public void requestAssessment(
+    public void request(
         final String caseId,
         final int amount) {
 
@@ -80,7 +80,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -93,7 +93,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     final var rated = awaitAggregate(
         loanApprovals::findByIdOptional,

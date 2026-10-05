@@ -36,7 +36,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   private static final String OUTBOX_COLLECTION = "vanillabp-phase-two-outbox";
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   @Autowired
   private AggregateRepository loanApprovals;
@@ -52,14 +52,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals,
         loanRequestId,
         aggregate -> aggregate.getCreditRating() != null);
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
 
   }
 
@@ -76,7 +76,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // application decides the business case does not happen after all.
     assertThatThrownBy(
         () -> transactions.executeWithoutResult(status -> {
-          service.initiateLoanApproval(loanRequestId, 5000);
+          loanApproval.request(loanRequestId, 5000);
           throw new IllegalStateException("the application aborts after the start");
         }))
         .isInstanceOf(IllegalStateException.class);

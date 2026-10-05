@@ -21,7 +21,7 @@ import jakarta.inject.Inject;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -32,9 +32,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getContractSigned()) && Boolean.TRUE
@@ -42,8 +42,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // both happened: the branch behind the escalation ran, and so did the task after the
     // throw event inside the subprocess
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
-    assertThat(loanApproval.getDocumentsRequested()).isNull();
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getDocumentsRequested()).isNull();
 
   }
 
@@ -54,17 +54,17 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequestId = UUID.randomUUID().toString();
 
     // below the configured amount the documents count as incomplete
-    service.initiateLoanApproval(loanRequestId, 500);
+    loanApproval.request(loanRequestId, 500);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getDocumentsRequested()));
 
     // the subprocess was never entered
-    assertThat(loanApproval.getCreditRating()).isNull();
-    assertThat(loanApproval.getContractSigned()).isNull();
-    assertThat(loanApproval.getSupervisorInformed()).isNull();
+    assertThat(loanRequest.getCreditRating()).isNull();
+    assertThat(loanRequest.getContractSigned()).isNull();
+    assertThat(loanRequest.getSupervisorInformed()).isNull();
 
   }
 

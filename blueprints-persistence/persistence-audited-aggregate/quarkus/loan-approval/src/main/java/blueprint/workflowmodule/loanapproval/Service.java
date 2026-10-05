@@ -67,7 +67,7 @@ public class Service {
    * @param requestedBy   Who asks for the loan.
    */
   @Transactional
-  public void initiateLoanApproval(
+  public void request(
       final String loanRequestId,
       final int amount,
       final String requestedBy) {
@@ -204,7 +204,7 @@ public class Service {
    * @return The loan approval, if it exists.
    */
   @Transactional
-  public Optional<Aggregate> getLoanApproval(
+  public Optional<Aggregate> get(
       final String loanRequestId) {
 
     return loanApprovals.findByIdOptional(loanRequestId);

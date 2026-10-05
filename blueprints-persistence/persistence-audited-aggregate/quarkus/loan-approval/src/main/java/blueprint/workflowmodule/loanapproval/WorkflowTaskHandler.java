@@ -33,18 +33,18 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -53,15 +53,15 @@ public class WorkflowTaskHandler {
    * returning from this method - only the application answering it later completes it,
    * and it needs the {@code @TaskId} kept here to do so.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    * @param taskId       The BPMS-side id of this user task.
    */
   @WorkflowTask
   public void assessRisk(
-      final Aggregate loanApproval,
+      final Aggregate loanRequest,
       @TaskId final String taskId) {
 
-    service.riskAssessmentOpened(loanApproval, taskId);
+    loanApproval.riskAssessmentOpened(loanRequest, taskId);
 
   }
 
@@ -69,13 +69,13 @@ public class WorkflowTaskHandler {
    * Called by VanillaBP when the completed user task was followed by the service task of
    * the same name. It is the change which makes the state of the decision a past state.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void payOutLoan(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.payOutLoan(loanApproval);
+    loanApproval.payOutLoan(loanRequest);
 
   }
 

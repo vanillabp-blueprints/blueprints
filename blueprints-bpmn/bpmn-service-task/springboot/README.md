@@ -169,7 +169,7 @@ configures a user for them. Where they are served and how to log in is in the
 | `loan-approval/src/test/.../CreditRatingSimulator.java`                                | the provider as the test needs it: it records requests and can be told to refuse them                                        |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | one test per outcome: rated, retried, rejected                                                                               |
 
-The order of events: `ApiController` calls `Service#initiateLoanApproval`, which builds the
+The order of events: `ApiController` calls `Service#request`, which builds the
 aggregate and tells `Workflow` that a loan was requested. `Workflow#loanRequested` calls
 `ProcessService#startWorkflow`, so aggregate and workflow are created in one transaction.
 The BPMS reaches the service task and calls `WorkflowTaskHandler#retrieveCreditRating` with

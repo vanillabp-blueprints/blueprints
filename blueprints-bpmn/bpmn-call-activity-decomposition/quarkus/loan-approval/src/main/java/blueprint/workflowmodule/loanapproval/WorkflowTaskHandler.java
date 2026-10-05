@@ -61,20 +61,20 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. The
    * aggregate is loaded before and saved after the call, so the business code only has to
    * change it.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -83,26 +83,26 @@ public class WorkflowTaskHandler {
    * the loan approval like every other task, because the called process is a section of
    * the same business case.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void checkCollateral(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.checkCollateral(loanApproval);
+    loanApproval.checkCollateral(loanRequest);
 
   }
 
   /**
    * The second task of the called process.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void checkDebtRatio(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.checkDebtRatio(loanApproval);
+    loanApproval.checkDebtRatio(loanRequest);
 
   }
 
@@ -110,13 +110,13 @@ public class WorkflowTaskHandler {
    * Called after the call activity returned. The aggregate it is handed carries what the
    * called process wrote, because both processes work on the same one.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void decideOnLoan(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.decideOnLoan(loanApproval);
+    loanApproval.decideOnLoan(loanRequest);
 
   }
 

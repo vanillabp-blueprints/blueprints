@@ -17,10 +17,10 @@ One service task, `assessRisk`, and two methods serving it:
 
 ```java
 @WorkflowTask(taskDefinition = "assessRisk", version = "1")
-public void assessRiskManually(final Aggregate loanApproval) { ... }
+public void assessRiskManually(final Aggregate loanRequest) { ... }
 
 @WorkflowTask(taskDefinition = "assessRisk", version = ">1")
-public void assessRiskAutomatically(final Aggregate loanApproval) { ... }
+public void assessRiskAutomatically(final Aggregate loanRequest) { ... }
 ```
 
 Version 1 of the process had a person assess the risk; every version after it computes a

@@ -27,20 +27,20 @@ public class RateWatchIT extends WorkflowModuleTest {
   private static final BigDecimal RATE = new BigDecimal("3.5");
 
   @Inject
-  Service rateWatches;
+  Service rateWatch;
 
   @Inject
   AggregateRepository watches;
 
   @Inject
-  blueprint.workflowmodule.loanapproval.Service loanApprovals;
+  blueprint.workflowmodule.loanapproval.Service loanApproval;
 
   @Test
   @DisplayName("A signal broadcast by one use case reaches the other process of the module")
   public void theBroadcastReachesEveryProcessOfTheModule() {
 
     final var watchId = UUID.randomUUID().toString();
-    rateWatches.startWatching(watchId);
+    rateWatch.startWatching(watchId);
     awaitAggregate(watches::findByIdOptional, watchId);
 
     // the loan approval use case sends it, and it knows nothing about rate watches
@@ -48,7 +48,7 @@ public class RateWatchIT extends WorkflowModuleTest {
         .atMost(TIMEOUT)
         .pollInterval(Duration.ofMillis(500))
         .until(() -> {
-          loanApprovals.publishInterestRate(RATE);
+          loanApproval.publishInterestRate(RATE);
           // Awaitility polls on a thread of its own, which has neither a transaction nor a
           // request context - the same reason the harness reads an aggregate this way.
           return QuarkusTransaction

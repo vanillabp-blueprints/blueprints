@@ -48,7 +48,7 @@ public class Service {
    * @param amount      The amount owed.
    */
   @Transactional
-  public void initiateRepayment(
+  public void initiate(
       final String repaymentId,
       final String customerId,
       final int amount) {
@@ -97,7 +97,7 @@ public class Service {
    * @param repaymentId The natural id of the repayment.
    * @return The repayment, if it exists.
    */
-  public Optional<Aggregate> getRepayment(
+  public Optional<Aggregate> get(
       final String repaymentId) {
 
     return repayments.findById(repaymentId);

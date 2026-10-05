@@ -38,7 +38,7 @@ import io.vanillabp.spi.service.WorkflowTask;
 public class WorkflowTaskHandler {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. It
@@ -52,15 +52,15 @@ public class WorkflowTaskHandler {
    * leaving here is what tells the process to take the error path.
    * </p>
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    * @param provider     The rating provider, mapped in the BPMN as {@code ratingProvider}.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval,
+      final Aggregate loanRequest,
       @TaskParam("ratingProvider") final String provider) {
 
-    service.assessCreditRating(loanApproval, provider);
+    loanApproval.assessCreditRating(loanRequest, provider);
 
   }
 

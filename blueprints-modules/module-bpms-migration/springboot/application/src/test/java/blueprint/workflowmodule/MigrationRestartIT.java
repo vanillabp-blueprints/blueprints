@@ -111,24 +111,24 @@ public class MigrationRestartIT {
         "--vanillabp.workflow-modules.loan-approval.workflows.loan_approval.prioritized-adapters="
             + OLD_BPMS)) {
 
-      final var service = application.getBean(Service.class);
+      final var loanApproval = application.getBean(Service.class);
       final var aggregates = application.getBean(AggregateRepository.class);
 
-      firstOfTheOld = started(service);
-      secondOfTheOld = started(service);
+      firstOfTheOld = started(loanApproval);
+      secondOfTheOld = started(loanApproval);
 
       // one of the two is taken past its user task, so it waits for the message
       final var waiting = await(
           aggregates,
           firstOfTheOld,
           aggregate -> aggregate.getRiskAssessmentTaskId() != null);
-      service.assessRisk(firstOfTheOld, waiting.getRiskAssessmentTaskId());
+      loanApproval.assessRisk(firstOfTheOld, waiting.getRiskAssessmentTaskId());
       await(aggregates, firstOfTheOld, aggregate -> aggregate.getRiskAssessmentTaskId() == null);
 
       // the other one is left at its user task
       await(aggregates, secondOfTheOld, aggregate -> aggregate.getRiskAssessmentTaskId() != null);
 
-      assertThat(service.bpmsHolding(firstOfTheOld)).contains(OLD_BPMS);
+      assertThat(loanApproval.bpmsHolding(firstOfTheOld)).contains(OLD_BPMS);
     }
 
     // AFTER the migration: the migration profile alone, so the priority list of the workflow
@@ -137,19 +137,19 @@ public class MigrationRestartIT {
     // identifiers, the message further down is the operation which notices.
     try (var application = boot()) {
 
-      final var service = application.getBean(Service.class);
+      final var loanApproval = application.getBean(Service.class);
       final var aggregates = application.getBean(AggregateRepository.class);
 
-      final var ofTheNew = started(service);
+      final var ofTheNew = started(loanApproval);
       final var waitingInTheNew = await(
           aggregates,
           ofTheNew,
           aggregate -> aggregate.getRiskAssessmentTaskId() != null);
 
-      assertThat(service.bpmsHolding(ofTheNew))
+      assertThat(loanApproval.bpmsHolding(ofTheNew))
           .describedAs("a new workflow starts in the first adapter of the list")
           .contains(NEW_BPMS);
-      assertThat(service.bpmsHolding(secondOfTheOld))
+      assertThat(loanApproval.bpmsHolding(secondOfTheOld))
           .describedAs("a workflow started before the migration is still held by the old BPMS")
           .contains(OLD_BPMS);
 
@@ -157,11 +157,11 @@ public class MigrationRestartIT {
       final var waitingInTheOld = aggregates
           .findById(secondOfTheOld)
           .orElseThrow();
-      service.assessRisk(secondOfTheOld, waitingInTheOld.getRiskAssessmentTaskId());
+      loanApproval.assessRisk(secondOfTheOld, waitingInTheOld.getRiskAssessmentTaskId());
       await(aggregates, secondOfTheOld, aggregate -> aggregate.getRiskAssessmentTaskId() == null);
 
       // the message for the workflow which was already waiting for it, also in the old BPMS
-      service.contractSigned(firstOfTheOld, "Jane Doe");
+      loanApproval.contractSigned(firstOfTheOld, "Jane Doe");
       final var paidOut = await(
           aggregates,
           firstOfTheOld,
@@ -169,16 +169,16 @@ public class MigrationRestartIT {
       assertThat(paidOut.getContractSignedBy()).isEqualTo("Jane Doe");
 
       // and the same two operations for the workflow of the new BPMS
-      service.assessRisk(ofTheNew, waitingInTheNew.getRiskAssessmentTaskId());
+      loanApproval.assessRisk(ofTheNew, waitingInTheNew.getRiskAssessmentTaskId());
       await(aggregates, ofTheNew, aggregate -> aggregate.getRiskAssessmentTaskId() == null);
-      service.contractSigned(ofTheNew, "John Doe");
+      loanApproval.contractSigned(ofTheNew, "John Doe");
       await(aggregates, ofTheNew, aggregate -> Boolean.TRUE.equals(aggregate.getPaidOut()));
 
       // the second one of the old BPMS is answered last, to show the routing keeps working
-      service.contractSigned(secondOfTheOld, "Jane Doe");
+      loanApproval.contractSigned(secondOfTheOld, "Jane Doe");
       await(aggregates, secondOfTheOld, aggregate -> Boolean.TRUE.equals(aggregate.getPaidOut()));
 
-      assertThat(service.bpmsHolding(secondOfTheOld))
+      assertThat(loanApproval.bpmsHolding(secondOfTheOld))
           .describedAs("it ran to its end where it was started")
           .contains(OLD_BPMS);
     }
@@ -203,10 +203,10 @@ public class MigrationRestartIT {
   }
 
   private static String started(
-      final Service service) {
+      final Service loanApproval) {
 
     final var loanRequestId = UUID.randomUUID().toString();
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
     return loanRequestId;
 
   }
