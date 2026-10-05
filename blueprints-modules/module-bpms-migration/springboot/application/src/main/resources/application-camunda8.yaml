@@ -23,7 +23,7 @@ vanillabp:
       # job. Five minutes of that would be five minutes of watching nothing, and the handlers
       # here finish in milliseconds. The adapter itself keeps a restart from producing that
       # case, by waiting for the cluster to release its workers before it closes the client:
-      # https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next
+      # https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next
       job-timeout: PT20S
       # This adapter leases the jobs it holds from the activation to the answer. The cluster
       # then takes the answer of the current activation only, so a run whose lock ran out
@@ -31,7 +31,7 @@ vanillabp:
       # default, because a lease cannot be taken back. The adapter recommends this value, so
       # the blueprint shows it. On a cluster before 8.10 the key is read and does nothing, so
       # one configuration serves either line:
-      # https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds
+      # https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds
       job-lease: use
     camunda7:
       # The same mode 'application-camunda7.yaml' set before the migration, and repeating it

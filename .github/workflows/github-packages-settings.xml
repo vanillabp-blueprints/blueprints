@@ -74,7 +74,7 @@
                 <!-- the adapter of the '-Pcamunda8' build -->
                 <repository>
                     <id>vanillabp-camunda8-adapter</id>
-                    <url>https://maven.pkg.github.com/vanillabp/camunda8-adapter</url>
+                    <url>https://maven.pkg.github.com/camunda-community-hub/vanillabp-camunda8-adapter</url>
                     <snapshots>
                         <enabled>true</enabled>
                     </snapshots>
