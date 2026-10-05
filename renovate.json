@@ -3,7 +3,7 @@
   "extends": [
     "config:recommended",
     ":dependencyDashboard",
-    "github>vanillabp/camunda8-adapter//renovate/camunda8-lines.json"
+    "github>camunda-community-hub/vanillabp-camunda8-adapter//renovate/camunda8-lines.json"
   ],
   "timezone": "Europe/Vienna",
   "description": [

@@ -215,7 +215,7 @@ blueprints write `use`. That is the value the adapter recommends and the one its
 shows, and a blueprint shows the recommended way. The other value, `do-not-use`, is what every
 release line before 8.10 did. An application which may have to move back to such a line needs it,
 because the cluster never takes a lease off a job again. What a lease costs is in the
-[wiki of the adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds).
+[wiki of the adapter](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds).
 
 ## Rule 5: the aspect is proven by a test
 

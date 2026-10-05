@@ -216,7 +216,7 @@ it is also how long anything behind such a job waits. Five minutes of that is fi
 watching nothing, and the handlers here finish in milliseconds. This blueprint found the case which
 makes it visible, a workflow started right after a restart; the adapter keeps a restart from
 producing it now, by waiting for the cluster to release its workers before it closes the client, and
-[what a restart costs the application which starts next](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next)
+[what a restart costs the application which starts next](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next)
 carries the measurements.
 
 Two things are worth knowing before doing this against a real cluster. A remote BPMS may

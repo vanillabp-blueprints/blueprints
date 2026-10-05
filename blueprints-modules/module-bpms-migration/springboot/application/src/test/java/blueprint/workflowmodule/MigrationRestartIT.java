@@ -64,10 +64,10 @@ public class MigrationRestartIT {
    * is what {@code persistence-flyway} uses for the same reason.
    *
    * @see <a href=
-   *      "https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#how-many-handlers-run-at-once">How
+   *      "https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#how-many-handlers-run-at-once">How
    *      many handlers run at once</a>
    * @see <a href=
-   *      "https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next">What
+   *      "https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next">What
    *      a restart costs the application which starts next</a>
    */
   private static final Duration TIMEOUT = Duration.ofMinutes(2);
