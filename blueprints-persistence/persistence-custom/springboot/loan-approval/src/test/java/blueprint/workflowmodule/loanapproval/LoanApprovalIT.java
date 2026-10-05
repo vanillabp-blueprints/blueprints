@@ -37,7 +37,7 @@ import blueprint.workflowmodule.loanapproval.persistence.UnitOfWork;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   @Autowired
   private AggregateStore loanApprovals;
@@ -56,14 +56,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::find,
         loanRequestId,
         aggregate -> aggregate.getCreditRating() != null);
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
 
   }
 
@@ -73,7 +73,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequestId = UUID.randomUUID().toString();
     unitOfWork.resetCounters();
 
-    service.initiateLoanApproval(loanRequestId, 7000);
+    loanApproval.request(loanRequestId, 7000);
 
     awaitAggregate(
         loanApprovals::find,
@@ -111,7 +111,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // application decides the business case does not happen after all.
     assertThatThrownBy(
         () -> unitOfWork.requireNew(() -> {
-          service.initiateLoanApproval(loanRequestId, 5000);
+          loanApproval.request(loanRequestId, 5000);
           throw new IllegalStateException("the application aborts after the start");
         }))
         .isInstanceOf(IllegalStateException.class);
@@ -130,14 +130,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // the start with it, so nothing deduplicates against an operation which never
     // happened. A store which kept that key would swallow this second attempt without a
     // word, and the loan approval would wait for a workflow nobody ever started.
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::find,
         loanRequestId,
         aggregate -> aggregate.getCreditRating() != null);
 
-    assertThat(loanApproval.getCreditRating())
+    assertThat(loanRequest.getCreditRating())
         .describedAs("the credit rating of the retried loan approval")
         .isEqualTo(50);
 

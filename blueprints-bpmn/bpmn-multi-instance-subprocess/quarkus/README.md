@@ -28,7 +28,7 @@ by a resolver:
 ```java
 @WorkflowTask
 public void requestPartnerOffer(
-    final Aggregate loanApproval,
+    final Aggregate loanRequest,
     @MultiInstanceElement(resolverBean = IterationResolver.class) final Iteration iteration) {
 ```
 

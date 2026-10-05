@@ -173,7 +173,7 @@ keeps that from happening.
 | `src/test/.../WorkflowModuleTest.java`                     | the base class it inherits from: waiting for workflow progress, identical in every blueprint          |
 | `src/test/.../ApplicationSmokeTest.java`                   | boots the application and checks that the workflow module declaring itself is the one VanillaBP wired |
 
-The order of events: `ApiController` calls `Service#initiateLoanApproval`, which builds the
+The order of events: `ApiController` calls `Service#request`, which builds the
 aggregate and tells `Workflow` what happened, namely `loanRequested`, not "start the
 process". `Workflow#loanRequested` calls `ProcessService#startWorkflow`, and VanillaBP
 persists the aggregate and starts the process in the same transaction, so an aggregate

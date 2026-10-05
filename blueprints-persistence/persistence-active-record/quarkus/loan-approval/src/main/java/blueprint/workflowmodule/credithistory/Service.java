@@ -43,7 +43,7 @@ public class Service {
    * @param years           How many years back the customer asked for.
    */
   @Transactional
-  public void requestCreditHistory(
+  public void request(
       final String creditHistoryId,
       final int years) {
 

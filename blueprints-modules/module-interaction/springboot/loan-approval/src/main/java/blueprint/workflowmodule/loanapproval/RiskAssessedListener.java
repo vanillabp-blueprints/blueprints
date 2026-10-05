@@ -27,7 +27,7 @@ import blueprint.api.RiskAssessed;
 public class RiskAssessedListener {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   /**
    * The risk assessment published its verdict.
@@ -38,7 +38,7 @@ public class RiskAssessedListener {
   public void onRiskAssessed(
       final RiskAssessed event) {
 
-    service.riskAssessed(event.caseId(), event.score());
+    loanApproval.riskAssessed(event.caseId(), event.score());
 
   }
 

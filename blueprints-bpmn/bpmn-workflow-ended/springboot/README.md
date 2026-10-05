@@ -19,8 +19,8 @@ application learns about that end just as well:
 
 ```java
 @WorkflowEnded
-public void loanApprovalEnded(final Aggregate loanApproval, final WorkflowEnd end) {
-  service.loanApprovalClosed(loanApproval, end);
+public void loanApprovalEnded(final Aggregate loanRequest, final WorkflowEnd end) {
+  loanApproval.loanApprovalClosed(loanRequest, end);
 }
 ```
 

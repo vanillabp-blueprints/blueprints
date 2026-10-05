@@ -42,7 +42,7 @@ public class Workflow {
    * a signal only decides the workflow module it is broadcast in, not who receives it.
    */
   @Autowired
-  private ProcessService<Aggregate> processService;
+  private ProcessService<Aggregate> bpms;
 
   /**
    * The name of the BPMN signal the waiting loan approvals listen for. The same string is
@@ -60,7 +60,7 @@ public class Workflow {
   public void loanRequested(
       final Aggregate loanApproval) {
 
-    processService.startWorkflow(loanApproval);
+    bpms.startWorkflow(loanApproval);
 
   }
 
@@ -93,7 +93,7 @@ public class Workflow {
    */
   public void interestRatePublished() {
 
-    processService.sendSignal(INTEREST_RATE_PUBLISHED);
+    bpms.sendSignal(INTEREST_RATE_PUBLISHED);
 
   }
 

@@ -19,7 +19,7 @@ import blueprint.workflowmodule.loanrepayment.model.AggregateRepository;
 public class LoanRepaymentIT extends WorkflowModuleTest {
 
   @Autowired
-  private Service service;
+  private Service loanRepayment;
 
   @Autowired
   private AggregateRepository repayments;
@@ -29,7 +29,7 @@ public class LoanRepaymentIT extends WorkflowModuleTest {
 
     final var repaymentId = UUID.randomUUID().toString();
 
-    service.initiateRepayment(repaymentId, "C-1002", 6000);
+    loanRepayment.initiate(repaymentId, "C-1002", 6000);
 
     final var repayment = awaitAggregate(
         repayments,

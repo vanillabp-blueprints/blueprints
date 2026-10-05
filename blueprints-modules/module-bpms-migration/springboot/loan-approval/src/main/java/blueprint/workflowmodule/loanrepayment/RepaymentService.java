@@ -31,7 +31,7 @@ public class RepaymentService {
    * @param amount      The amount owed.
    */
   @Transactional
-  public void initiateRepayment(
+  public void initiate(
       final String repaymentId,
       final int amount) {
 

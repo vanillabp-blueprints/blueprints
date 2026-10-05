@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ApiController {
 
   @Autowired
-  private Service service;
+  private Service rateWatch;
 
   /**
    * Starts a rate watch.
@@ -36,7 +36,7 @@ public class ApiController {
 
     final var watchId = UUID.randomUUID().toString();
 
-    service.startWatching(watchId);
+    rateWatch.startWatching(watchId);
 
     log.info(
         "Show the result -> http://localhost:8080/api/rate-watch/{}",
@@ -56,7 +56,7 @@ public class ApiController {
   public String show(
       @PathVariable final String watchId) {
 
-    return service
+    return rateWatch
         .getRateWatch(watchId)
         .map(Object::toString)
         .orElse("unknown rate watch '"

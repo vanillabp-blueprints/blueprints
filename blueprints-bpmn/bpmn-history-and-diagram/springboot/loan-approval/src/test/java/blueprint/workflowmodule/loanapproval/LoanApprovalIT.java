@@ -32,7 +32,7 @@ import io.vanillabp.spi.process.WorkflowHistory;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   @Autowired
   private AggregateRepository loanApprovals;
@@ -41,7 +41,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     awaitAggregate(
         loanApprovals,
@@ -64,7 +64,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     WorkflowHistory history = null;
     final var deadline = System.currentTimeMillis() + TIMEOUT.toMillis();
     while (System.currentTimeMillis() < deadline) {
-      history = service.getWorkflowHistory(loanRequestId, null);
+      history = loanApproval.getWorkflowHistory(loanRequestId, null);
       if ((history != null) && condition.test(history)) {
         return history;
       }
@@ -101,7 +101,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = startedWorkflow();
 
-    final var definitions = service.getProcessDefinitions(loanRequestId, null);
+    final var definitions = loanApproval.getProcessDefinitions(loanRequestId, null);
     assertThat(definitions)
         .describedAs("a process without call activities uses exactly one definition")
         .hasSize(1);
@@ -113,7 +113,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .isNotBlank();
 
     final String xml;
-    try (var stream = service.getBpmnXml(definitions.getFirst().id())) {
+    try (var stream = loanApproval.getBpmnXml(definitions.getFirst().id())) {
       xml = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
     }
 
@@ -164,7 +164,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = startedWorkflow();
 
-    service.partnerApproved(loanRequestId);
+    loanApproval.partnerApproved(loanRequestId);
 
     final Aggregate decided = awaitAggregate(
         loanApprovals,

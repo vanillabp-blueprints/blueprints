@@ -27,7 +27,7 @@ import jakarta.inject.Inject;
 public class CreditHistoryIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service creditHistory;
 
   @Test
   @DisplayName("The service task fills an aggregate stored in MongoDB")
@@ -35,14 +35,14 @@ public class CreditHistoryIT extends WorkflowModuleTest {
 
     final var creditHistoryId = UUID.randomUUID().toString();
 
-    service.requestCreditHistory(creditHistoryId, 3);
+    creditHistory.request(creditHistoryId, 3);
 
-    final var creditHistory = awaitAggregate(
+    final var historyRequest = awaitAggregate(
         Aggregate::byId,
         creditHistoryId,
         aggregate -> aggregate.getEntriesFound() != null);
 
-    assertThat(creditHistory.getEntriesFound()).isEqualTo(12);
+    assertThat(historyRequest.getEntriesFound()).isEqualTo(12);
 
   }
 
@@ -63,11 +63,11 @@ public class CreditHistoryIT extends WorkflowModuleTest {
 
     final var creditHistoryId = UUID.randomUUID().toString();
 
-    service.requestCreditHistory(creditHistoryId, 5);
+    creditHistory.request(creditHistoryId, 5);
 
-    final var creditHistory = awaitAggregate(Aggregate::byId, creditHistoryId);
+    final var historyRequest = awaitAggregate(Aggregate::byId, creditHistoryId);
 
-    assertThat(creditHistory.getYears()).isEqualTo(5);
+    assertThat(historyRequest.getYears()).isEqualTo(5);
 
   }
 

@@ -26,7 +26,7 @@ import io.vanillabp.spi.process.ProcessService;
 public class Workflow {
 
   @Autowired
-  private ProcessService<Aggregate> processService;
+  private ProcessService<Aggregate> bpms;
 
   /**
    * Somebody wants to be told about the next published rate.
@@ -36,7 +36,7 @@ public class Workflow {
   public void watchRequested(
       final Aggregate rateWatch) {
 
-    processService.startWorkflow(rateWatch);
+    bpms.startWorkflow(rateWatch);
 
   }
 

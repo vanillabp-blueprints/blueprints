@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ApiController {
 
   @Inject
-  Service service;
+  Service riskAssessment;
 
   /**
    * Shows what the assessment worked out.
@@ -35,7 +35,7 @@ public class ApiController {
   public String show(
       @PathParam("caseId") final String caseId) {
 
-    return service
+    return riskAssessment
         .getAssessment(caseId)
         .map(Object::toString)
         .orElse("unknown case '"

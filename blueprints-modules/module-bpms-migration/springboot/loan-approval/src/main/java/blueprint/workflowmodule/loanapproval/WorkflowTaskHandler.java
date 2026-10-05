@@ -36,20 +36,20 @@ import io.vanillabp.spi.service.WorkflowTask;
 public class WorkflowTaskHandler {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. The
    * aggregate is loaded before and saved after the call, so the business code only has to
    * change it.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -65,19 +65,19 @@ public class WorkflowTaskHandler {
    * the BPMS holding the task by itself.
    * </p>
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    * @param taskId       The BPMS-side id of this user task.
    * @param event        Whether the task was created or canceled.
    */
   @WorkflowTask
   public void assessRisk(
-      final Aggregate loanApproval,
+      final Aggregate loanRequest,
       @TaskId final String taskId,
       @TaskEvent final TaskEvent.Event event) {
 
     switch (event) {
-      case CREATED -> service.riskAssessmentOpened(loanApproval, taskId);
-      case CANCELED -> service.riskAssessmentClosed(loanApproval);
+      case CREATED -> loanApproval.riskAssessmentOpened(loanRequest, taskId);
+      case CANCELED -> loanApproval.riskAssessmentClosed(loanRequest);
       default -> throw new IllegalStateException("Unexpected task event '"
           + event
           + "'");
@@ -89,13 +89,13 @@ public class WorkflowTaskHandler {
    * Called by VanillaBP when the service task behind the message event is reached, which is
    * what proves that the message arrived at the BPMS holding this workflow.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void payOut(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.payOut(loanApproval);
+    loanApproval.payOut(loanRequest);
 
   }
 

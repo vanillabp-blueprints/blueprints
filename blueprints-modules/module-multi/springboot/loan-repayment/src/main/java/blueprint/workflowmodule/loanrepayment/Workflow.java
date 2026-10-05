@@ -25,7 +25,7 @@ public class Workflow {
    * process even though both live in one application context.
    */
   @Autowired
-  private ProcessService<Aggregate> processService;
+  private ProcessService<Aggregate> bpms;
 
   /**
    * A repayment was agreed. VanillaBP persists the aggregate and starts the process in the
@@ -36,7 +36,7 @@ public class Workflow {
   public void repaymentAgreed(
       final Aggregate repayment) {
 
-    processService.startWorkflow(repayment);
+    bpms.startWorkflow(repayment);
 
   }
 

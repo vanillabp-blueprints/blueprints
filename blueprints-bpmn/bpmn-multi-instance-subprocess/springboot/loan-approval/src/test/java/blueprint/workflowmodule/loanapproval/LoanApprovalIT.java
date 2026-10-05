@@ -29,7 +29,7 @@ import blueprint.workflowmodule.loanapproval.model.RegionResult;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   @Autowired
   private AggregateRepository loanApprovals;
@@ -39,7 +39,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, amount);
+    loanApproval.request(loanRequestId, amount);
 
     return awaitAggregate(
         loanApprovals,
@@ -52,9 +52,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @DisplayName("the subprocess runs per region and the task inside it per partner")
   public void bothLoopsRun() {
 
-    final var loanApproval = runWith(5000);
+    final var loanRequest = runWith(5000);
 
-    assertThat(loanApproval.getOffers())
+    assertThat(loanRequest.getOffers())
         .describedAs("two regions times two partners, none of them lost to a sibling")
         .hasSize(4)
         .extracting(PartnerOffer::getRegionId, PartnerOffer::getPartnerId, PartnerOffer::getRate)
@@ -71,16 +71,16 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @DisplayName("a plain task inside the subprocess knows which iteration it belongs to")
   public void eachRegionIsSummarisedOnce() {
 
-    final var loanApproval = runWith(5000);
+    final var loanRequest = runWith(5000);
 
-    assertThat(loanApproval.getRegionResults())
+    assertThat(loanRequest.getRegionResults())
         .hasSize(2)
         .extracting(RegionResult::getRegionId, RegionResult::getBestPartnerId, RegionResult::getBestRate)
         .containsExactlyInAnyOrder(
             tuple("north", "northern-bank", 70),
             tuple("south", "northern-bank", 85));
 
-    assertThat(loanApproval.getRegionResults())
+    assertThat(loanRequest.getRegionResults())
         .extracting(RegionResult::getIteration)
         .describedAs("the index of the subprocess iteration, one per region")
         .containsExactlyInAnyOrder(0, 1);
@@ -91,11 +91,11 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @DisplayName("the task after the subprocess decides over all iterations")
   public void theBestRegionWins() {
 
-    final var loanApproval = runWith(5000);
+    final var loanRequest = runWith(5000);
 
-    assertThat(loanApproval.getChosenRegionId()).isEqualTo("north");
-    assertThat(loanApproval.getChosenPartnerId()).isEqualTo("northern-bank");
-    assertThat(loanApproval.getChosenRate()).isEqualTo(70);
+    assertThat(loanRequest.getChosenRegionId()).isEqualTo("north");
+    assertThat(loanRequest.getChosenPartnerId()).isEqualTo("northern-bank");
+    assertThat(loanRequest.getChosenRate()).isEqualTo(70);
 
   }
 

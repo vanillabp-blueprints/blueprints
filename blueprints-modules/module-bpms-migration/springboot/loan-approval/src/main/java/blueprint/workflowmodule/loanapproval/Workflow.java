@@ -37,7 +37,7 @@ public class Workflow {
    * this bean. It is typed by the workflow aggregate, so there is one per workflow.
    */
   @Autowired
-  private ProcessService<Aggregate> processService;
+  private ProcessService<Aggregate> bpms;
 
   /**
    * A loan was requested. The workflow is started in the FIRST adapter of the priority
@@ -48,7 +48,7 @@ public class Workflow {
   public void loanRequested(
       final Aggregate loanApproval) {
 
-    processService.startWorkflow(loanApproval);
+    bpms.startWorkflow(loanApproval);
 
   }
 
@@ -69,7 +69,7 @@ public class Workflow {
       final Aggregate loanApproval,
       final String taskId) {
 
-    processService.completeUserTask(loanApproval, taskId);
+    bpms.completeUserTask(loanApproval, taskId);
 
   }
 
@@ -82,7 +82,7 @@ public class Workflow {
   public void contractSigned(
       final Aggregate loanApproval) {
 
-    processService.correlateMessage(loanApproval, CONTRACT_SIGNED);
+    bpms.correlateMessage(loanApproval, CONTRACT_SIGNED);
 
   }
 
@@ -103,7 +103,7 @@ public class Workflow {
   public List<ProcessDefinition> definitionsOf(
       final Aggregate loanApproval) {
 
-    return processService.getProcessDefinitions(loanApproval, null);
+    return bpms.getProcessDefinitions(loanApproval, null);
 
   }
 

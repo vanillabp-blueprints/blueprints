@@ -30,7 +30,7 @@ import jakarta.inject.Inject;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -40,7 +40,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, amount);
+    loanApproval.request(loanRequestId, amount);
 
     return awaitAggregate(
         loanApprovals::findByIdOptional,
@@ -54,15 +54,15 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void theCallActivityRunsTheRiskAssessmentOnTheSameAggregate() {
 
     // 5000 / 100 is a rating of 50, the configured minimum is 30
-    final var loanApproval = runWith(5000);
+    final var loanRequest = runWith(5000);
 
     // written by the calling process, before the call activity
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
     // written by the called process - on the same aggregate, which is the point
-    assertThat(loanApproval.getCollateralValue()).isEqualTo(3000);
-    assertThat(loanApproval.getDebtRatio()).isEqualTo(10);
+    assertThat(loanRequest.getCollateralValue()).isEqualTo(3000);
+    assertThat(loanRequest.getDebtRatio()).isEqualTo(10);
     // written by the calling process, after the call activity returned
-    assertThat(loanApproval.getDecision()).isEqualTo("approved");
+    assertThat(loanRequest.getDecision()).isEqualTo("approved");
 
   }
 
@@ -71,11 +71,11 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void theResultOfTheCalledProcessIsUsedAfterTheCallActivity() {
 
     // a debt ratio of 60% - above the configured maximum of 40, while the rating is fine
-    final var loanApproval = runWith(30000);
+    final var loanRequest = runWith(30000);
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(100);
-    assertThat(loanApproval.getDebtRatio()).isEqualTo(60);
-    assertThat(loanApproval.getDecision()).isEqualTo("rejected");
+    assertThat(loanRequest.getCreditRating()).isEqualTo(100);
+    assertThat(loanRequest.getDebtRatio()).isEqualTo(60);
+    assertThat(loanRequest.getDecision()).isEqualTo("rejected");
 
   }
 

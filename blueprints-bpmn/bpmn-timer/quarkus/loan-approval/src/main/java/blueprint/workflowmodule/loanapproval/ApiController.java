@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ApiController {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * Starts a loan approval. This is the one URL to remember; the URLs carrying the
@@ -44,7 +44,7 @@ public class ApiController {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, amount);
+    loanApproval.request(loanRequestId, amount);
 
     log.info(
         "Show the result -> http://localhost:8080/api/loan-approval/{}",
@@ -68,7 +68,7 @@ public class ApiController {
       @PathParam("loanRequestId") final String loanRequestId,
       @PathParam("taskId") final String taskId) {
 
-    service.partnerApproved(loanRequestId, taskId);
+    loanApproval.partnerApproved(loanRequestId, taskId);
 
     return "The partner approved loan approval '"
         + loanRequestId
@@ -87,7 +87,7 @@ public class ApiController {
   public String show(
       @PathParam("loanRequestId") final String loanRequestId) {
 
-    return service
+    return loanApproval
         .getLoanApproval(loanRequestId)
         .map(Object::toString)
         .orElse("unknown loan request '"

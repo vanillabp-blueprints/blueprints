@@ -52,20 +52,20 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. The
    * aggregate is loaded before and saved after the call, so the business code only has to
    * change it.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -73,26 +73,26 @@ public class WorkflowTaskHandler {
    * The first task of the first section, which runs in the called process. It creates the
    * sub-object of that section, which is what makes the section visible in the data.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void collectDocuments(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.collectDocuments(loanApproval);
+    loanApproval.collectDocuments(loanRequest);
 
   }
 
   /**
    * The second task of the first section.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void verifySignatures(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.verifySignatures(loanApproval);
+    loanApproval.verifySignatures(loanRequest);
 
   }
 
@@ -101,52 +101,52 @@ public class WorkflowTaskHandler {
    * that section's sub-object, and a workflow which skips the section never calls this
    * method.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void checkCollateral(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.checkCollateral(loanApproval);
+    loanApproval.checkCollateral(loanRequest);
 
   }
 
   /**
    * The second task of the second section.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void checkDebtRatio(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.checkDebtRatio(loanApproval);
+    loanApproval.checkDebtRatio(loanRequest);
 
   }
 
   /**
    * The decision of a loan whose risk was assessed.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void decideWithRiskReport(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.decideWithRiskReport(loanApproval);
+    loanApproval.decideWithRiskReport(loanRequest);
 
   }
 
   /**
    * The decision of a loan which skipped the second section.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void decideOnDocumentsAlone(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.decideOnDocumentsAlone(loanApproval);
+    loanApproval.decideOnDocumentsAlone(loanRequest);
 
   }
 

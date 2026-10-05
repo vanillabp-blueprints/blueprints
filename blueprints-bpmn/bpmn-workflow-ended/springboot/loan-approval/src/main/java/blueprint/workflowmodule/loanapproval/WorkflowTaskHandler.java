@@ -44,18 +44,18 @@ import io.vanillabp.spi.service.WorkflowTask;
 public class WorkflowTaskHandler {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -63,13 +63,13 @@ public class WorkflowTaskHandler {
    * Called on the branch which informs the customer - a task in front of an end event,
    * because informing somebody is work.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void informCustomer(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.informCustomer(loanApproval);
+    loanApproval.informCustomer(loanRequest);
 
   }
 
@@ -84,15 +84,15 @@ public class WorkflowTaskHandler {
    * aggregate, and what the BPMS knows about the end is in this record.
    * </p>
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    * @param end          How and when it ended.
    */
   @WorkflowEnded
   public void loanApprovalEnded(
-      final Aggregate loanApproval,
+      final Aggregate loanRequest,
       final WorkflowEnd end) {
 
-    service.loanApprovalClosed(loanApproval, end);
+    loanApproval.loanApprovalClosed(loanRequest, end);
 
   }
 

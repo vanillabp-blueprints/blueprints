@@ -25,7 +25,7 @@ import jakarta.inject.Inject;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -35,17 +35,17 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> aggregate.getRiskAssessmentTaskId() != null);
 
     // The service task ahead of the user task ran, the one behind it did not: the workflow
     // stays at the user task until the application answers.
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
-    assertThat(loanApproval.getCustomerInformed()).isNull();
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getCustomerInformed()).isNull();
 
   }
 
@@ -54,7 +54,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     final var taskId = awaitAggregate(
         loanApprovals::findByIdOptional,
@@ -62,18 +62,18 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         aggregate -> aggregate.getRiskAssessmentTaskId() != null)
         .getRiskAssessmentTaskId();
 
-    service.assessRisk(loanRequestId, taskId, true);
+    loanApproval.assessRisk(loanRequestId, taskId, true);
 
     // The service task behind the user task ran, so the workflow left the user task
     // through its regular sequence flow.
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getCustomerInformed()));
 
-    assertThat(loanApproval.getRiskAcceptable()).isTrue();
-    assertThat(loanApproval.getWithdrawn()).isNull();
-    assertThat(loanApproval.getRiskAssessmentTaskId()).isNull();
+    assertThat(loanRequest.getRiskAcceptable()).isTrue();
+    assertThat(loanRequest.getWithdrawn()).isNull();
+    assertThat(loanRequest.getRiskAssessmentTaskId()).isNull();
 
   }
 
@@ -89,7 +89,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     final var taskId = awaitAggregate(
         loanApprovals::findByIdOptional,
@@ -97,19 +97,19 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         aggregate -> aggregate.getRiskAssessmentTaskId() != null)
         .getRiskAssessmentTaskId();
 
-    service.withdrawLoanRequest(loanRequestId, taskId);
+    loanApproval.withdrawLoanRequest(loanRequestId, taskId);
 
     // The service task on the error path ran, so the workflow left the user task through
     // the error boundary event.
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getWithdrawn()));
 
-    assertThat(loanApproval.getCustomerInformed()).isNull();
+    assertThat(loanRequest.getCustomerInformed()).isNull();
     // The handler was called a second time, with TaskEvent CANCELED, and dropped the id of
     // the task nobody can answer any more.
-    assertThat(loanApproval.getRiskAssessmentTaskId()).isNull();
+    assertThat(loanRequest.getRiskAssessmentTaskId()).isNull();
 
   }
 

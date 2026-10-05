@@ -45,7 +45,7 @@ public class Workflow {
    * bean. It is typed by the workflow aggregate, so there is one per workflow.
    */
   @Inject
-  ProcessService<Aggregate> processService;
+  ProcessService<Aggregate> bpms;
 
   /**
    * A loan was requested. VanillaBP persists the aggregate and starts the process in the
@@ -56,7 +56,7 @@ public class Workflow {
   public void loanRequested(
       final Aggregate loanApproval) {
 
-    processService.startWorkflow(loanApproval);
+    bpms.startWorkflow(loanApproval);
 
   }
 

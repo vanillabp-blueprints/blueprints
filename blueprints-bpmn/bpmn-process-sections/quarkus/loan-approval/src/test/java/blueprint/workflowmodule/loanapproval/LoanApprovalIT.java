@@ -29,7 +29,7 @@ import jakarta.inject.Inject;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -39,7 +39,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, amount);
+    loanApproval.request(loanRequestId, amount);
 
     return awaitAggregate(
         loanApprovals::findByIdOptional,
@@ -53,18 +53,18 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void aSkippedSectionLeavesItsSubObjectNull() {
 
     // below the configured limit of 10000, so the risk assessment never runs
-    final var loanApproval = runWith(5000);
+    final var loanRequest = runWith(5000);
 
     // the first section ran and left its sub-object behind
-    assertThat(loanApproval.getDocumentCheck()).isNotNull();
-    assertThat(loanApproval.getDocumentCheck().getSignaturesComplete()).isTrue();
+    assertThat(loanRequest.getDocumentCheck()).isNotNull();
+    assertThat(loanRequest.getDocumentCheck().getSignaturesComplete()).isTrue();
 
     // the second section did not, and this is the state every getter has to survive
-    assertThat(loanApproval.getRiskAssessment()).isNull();
-    assertThat(loanApproval.isRiskAssessed()).isFalse();
-    assertThat(loanApproval.isCollateralSufficient()).isFalse();
+    assertThat(loanRequest.getRiskAssessment()).isNull();
+    assertThat(loanRequest.isRiskAssessed()).isFalse();
+    assertThat(loanRequest.isCollateralSufficient()).isFalse();
 
-    assertThat(loanApproval.getDecision()).isEqualTo("approved");
+    assertThat(loanRequest.getDecision()).isEqualTo("approved");
 
   }
 
@@ -73,17 +73,17 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void aSectionWhichRunsFillsItsSubObject() {
 
     // above the limit, and the security covers enough of it
-    final var loanApproval = runWith(12000);
+    final var loanRequest = runWith(12000);
 
     // the first section read its own finding inside its own model: one document is missing
-    assertThat(loanApproval.isSignaturesComplete()).isFalse();
+    assertThat(loanRequest.isSignaturesComplete()).isFalse();
 
-    assertThat(loanApproval.isRiskAssessed()).isTrue();
-    assertThat(loanApproval.getRiskAssessment().getCollateralValue()).isEqualTo(7200);
-    assertThat(loanApproval.getRiskAssessment().getDebtRatio()).isEqualTo(24);
-    assertThat(loanApproval.isCollateralSufficient()).isTrue();
+    assertThat(loanRequest.isRiskAssessed()).isTrue();
+    assertThat(loanRequest.getRiskAssessment().getCollateralValue()).isEqualTo(7200);
+    assertThat(loanRequest.getRiskAssessment().getDebtRatio()).isEqualTo(24);
+    assertThat(loanRequest.isCollateralSufficient()).isTrue();
 
-    assertThat(loanApproval.getDecision()).isEqualTo("approved");
+    assertThat(loanRequest.getDecision()).isEqualTo("approved");
 
   }
 
@@ -92,12 +92,12 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void whatTheSectionFoundDecidesTheLoan() {
 
     // the security is capped at 12000, which does not cover half of this loan
-    final var loanApproval = runWith(30000);
+    final var loanRequest = runWith(30000);
 
-    assertThat(loanApproval.getRiskAssessment().getCollateralValue()).isEqualTo(12000);
-    assertThat(loanApproval.isCollateralSufficient()).isFalse();
+    assertThat(loanRequest.getRiskAssessment().getCollateralValue()).isEqualTo(12000);
+    assertThat(loanRequest.isCollateralSufficient()).isFalse();
 
-    assertThat(loanApproval.getDecision()).isEqualTo("rejected");
+    assertThat(loanRequest.getDecision()).isEqualTo("rejected");
 
   }
 
@@ -106,13 +106,13 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void theSharedGettersSurviveEverySectionBeingAbsent() {
 
     // the state of a workflow which has not reached a single section yet
-    final var loanApproval = new Aggregate();
+    final var loanRequest = new Aggregate();
 
     assertThatCode(() -> {
-      assertThat(loanApproval.isRiskAssessmentRequired()).isFalse();
-      assertThat(loanApproval.isRiskAssessed()).isFalse();
-      assertThat(loanApproval.isSignaturesComplete()).isFalse();
-      assertThat(loanApproval.isCollateralSufficient()).isFalse();
+      assertThat(loanRequest.isRiskAssessmentRequired()).isFalse();
+      assertThat(loanRequest.isRiskAssessed()).isFalse();
+      assertThat(loanRequest.isSignaturesComplete()).isFalse();
+      assertThat(loanRequest.isCollateralSufficient()).isFalse();
     }).doesNotThrowAnyException();
 
   }

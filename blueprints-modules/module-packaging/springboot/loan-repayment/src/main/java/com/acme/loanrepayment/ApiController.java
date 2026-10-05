@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ApiController {
 
   @Autowired
-  private Service service;
+  private Service loanRepayment;
 
   /**
    * Starts a repayment.
@@ -43,7 +43,7 @@ public class ApiController {
 
     final var repaymentId = UUID.randomUUID().toString();
 
-    service.initiateRepayment(repaymentId, customerId, amount);
+    loanRepayment.initiate(repaymentId, customerId, amount);
 
     log.info(
         "Show the result -> http://localhost:8080/api/loan-repayment/{}",
@@ -63,7 +63,7 @@ public class ApiController {
   public String show(
       @PathVariable final String repaymentId) {
 
-    return service
+    return loanRepayment
         .getRepayment(repaymentId)
         .map(Object::toString)
         .orElse("unknown repayment '"

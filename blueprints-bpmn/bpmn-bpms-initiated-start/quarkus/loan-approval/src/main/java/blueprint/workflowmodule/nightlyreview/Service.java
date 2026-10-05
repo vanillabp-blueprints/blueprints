@@ -107,7 +107,7 @@ public class Service {
    * @see Workflow#reviewRequested()
    */
   @Transactional
-  public void requestReview() {
+  public void request() {
 
     workflow.reviewRequested();
 

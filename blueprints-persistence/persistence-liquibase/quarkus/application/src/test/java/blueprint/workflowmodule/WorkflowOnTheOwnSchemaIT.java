@@ -33,18 +33,18 @@ public class WorkflowOnTheOwnSchemaIT {
   private static final Duration TIMEOUT = Duration.ofMinutes(2);
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Test
   public void theProcessRunsThrough() throws Exception {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     final var deadline = Instant.now().plus(TIMEOUT);
     while (Instant.now().isBefore(deadline)) {
-      final var creditRating = service
+      final var creditRating = loanApproval
           .getLoanApproval(loanRequestId)
           .map(aggregate -> aggregate.getCreditRating())
           .orElse(null);
@@ -55,7 +55,7 @@ public class WorkflowOnTheOwnSchemaIT {
       Thread.sleep(200);
     }
 
-    assertThat(service.getLoanApproval(loanRequestId))
+    assertThat(loanApproval.getLoanApproval(loanRequestId))
         .describedAs(
             "The service task did not fill the aggregate within "
                 + TIMEOUT

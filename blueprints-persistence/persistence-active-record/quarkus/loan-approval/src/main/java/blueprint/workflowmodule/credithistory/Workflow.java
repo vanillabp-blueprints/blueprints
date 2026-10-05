@@ -25,7 +25,7 @@ import jakarta.transaction.Transactional;
 public class Workflow {
 
   @Inject
-  ProcessService<Aggregate> processService;
+  ProcessService<Aggregate> bpms;
 
   /**
    * A credit history was requested. VanillaBP persists the aggregate and starts the process in
@@ -36,7 +36,7 @@ public class Workflow {
   public void creditHistoryRequested(
       final Aggregate creditHistory) {
 
-    processService.startWorkflow(creditHistory);
+    bpms.startWorkflow(creditHistory);
 
   }
 

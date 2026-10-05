@@ -21,7 +21,7 @@ import io.vanillabp.spi.service.WorkflowTask;
 public class WorkflowTaskHandler {
 
   @Autowired
-  private Service service;
+  private Service riskAssessment;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached.
@@ -32,7 +32,7 @@ public class WorkflowTaskHandler {
   public void evaluateRisk(
       final Aggregate assessment) {
 
-    service.evaluateRisk(assessment);
+    riskAssessment.evaluateRisk(assessment);
 
   }
 
@@ -47,7 +47,7 @@ public class WorkflowTaskHandler {
   public void publishAssessment(
       final Aggregate assessment) {
 
-    service.publishAssessment(assessment);
+    riskAssessment.publishAssessment(assessment);
 
   }
 

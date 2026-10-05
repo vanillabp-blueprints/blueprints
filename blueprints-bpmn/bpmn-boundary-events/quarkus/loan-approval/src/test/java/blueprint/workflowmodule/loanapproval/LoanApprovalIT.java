@@ -26,7 +26,7 @@ import jakarta.inject.Inject;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -44,7 +44,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   private String startAndAwaitPartnerRequest(
       final String loanRequestId) {
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     // the timer in the sequence flow delays this: the request goes out AFTER the
     // cool-off period, not when the workflow started
@@ -77,14 +77,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(reminded.getPartnerApprovalTaskId()).isEqualTo(taskId);
     assertThat(reminded.getTimedOut()).isNull();
 
-    service.partnerApproved(loanRequestId, taskId);
+    loanApproval.partnerApproved(loanRequestId, taskId);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getCustomerInformed()));
 
-    assertThat(loanApproval.getPartnerApproved()).isTrue();
+    assertThat(loanRequest.getPartnerApproved()).isTrue();
 
   }
 
@@ -95,15 +95,15 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequestId = UUID.randomUUID().toString();
     final var taskId = startAndAwaitPartnerRequest(loanRequestId);
 
-    service.partnerApproved(loanRequestId, taskId);
+    loanApproval.partnerApproved(loanRequestId, taskId);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getCustomerInformed()));
 
-    assertThat(loanApproval.getPartnerApproved()).isTrue();
-    assertThat(loanApproval.getTimedOut()).isNull();
+    assertThat(loanRequest.getPartnerApproved()).isTrue();
+    assertThat(loanRequest.getTimedOut()).isNull();
 
   }
 
@@ -117,21 +117,21 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // nobody answers: the timer boundary event fires, the workflow leaves the task and
     // takes the path behind the timer
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getTimedOut()));
 
-    assertThat(loanApproval.getCustomerInformed()).isNull();
+    assertThat(loanRequest.getCustomerInformed()).isNull();
     // the reminders of the non-interrupting event ran before it, on the same task
-    assertThat(loanApproval.getRemindersSent()).isNotNull();
+    assertThat(loanRequest.getRemindersSent()).isNotNull();
 
     if ("camunda7".equals(System.getProperty("blueprint.bpms"))) {
       // The handler heard about it: an interrupting boundary event cancels the task, and
       // the stored id no longer leads anywhere. Not every BPMS reports that - Camunda 8
       // does not tell a worker that its job was canceled - so an application must not
       // depend on it for correctness. Completing a task that is gone is a no-op anyway.
-      assertThat(loanApproval.getPartnerApprovalTaskId()).isNull();
+      assertThat(loanRequest.getPartnerApprovalTaskId()).isNull();
     }
 
   }

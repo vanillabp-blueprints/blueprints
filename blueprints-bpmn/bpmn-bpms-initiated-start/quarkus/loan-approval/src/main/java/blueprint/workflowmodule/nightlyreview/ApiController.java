@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ApiController {
 
   @Inject
-  Service service;
+  Service nightlyReview;
 
   /**
    * Asks for a review by broadcasting the signal.
@@ -30,7 +30,7 @@ public class ApiController {
   @Path("/request")
   public String request() {
 
-    service.requestReview();
+    nightlyReview.request();
 
     log.info(
         "Show the reviews -> http://localhost:8080/api/nightly-review");
@@ -48,7 +48,7 @@ public class ApiController {
   @GET
   public String list() {
 
-    final var reviews = service.getReviews();
+    final var reviews = nightlyReview.getReviews();
 
     if (reviews.isEmpty()) {
       return "No review ran yet. The timer needs a moment after the application started.";
@@ -72,7 +72,7 @@ public class ApiController {
   public String show(
       @PathParam("reviewId") final String reviewId) {
 
-    return service
+    return nightlyReview
         .getReview(reviewId)
         .map(Object::toString)
         .orElse("unknown review '"

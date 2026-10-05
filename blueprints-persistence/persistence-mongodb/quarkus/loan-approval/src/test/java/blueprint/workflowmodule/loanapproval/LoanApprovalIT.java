@@ -39,7 +39,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   private static final String DATABASE = "loan-approval";
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -52,14 +52,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> aggregate.getCreditRating() != null);
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
 
   }
 
@@ -76,7 +76,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         () -> QuarkusTransaction
             .requiringNew()
             .run(() -> {
-              service.initiateLoanApproval(loanRequestId, 5000);
+              loanApproval.request(loanRequestId, 5000);
               throw new IllegalStateException("the application aborts after the start");
             }))
         .isInstanceOf(IllegalStateException.class);

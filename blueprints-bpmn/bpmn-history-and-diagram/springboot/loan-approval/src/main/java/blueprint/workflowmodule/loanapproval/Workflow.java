@@ -37,7 +37,7 @@ import io.vanillabp.spi.process.WorkflowHistory;
 public class Workflow {
 
   @Autowired
-  private ProcessService<Aggregate> processService;
+  private ProcessService<Aggregate> bpms;
 
   /**
    * A loan was requested. VanillaBP persists the aggregate and starts the process in the
@@ -48,7 +48,7 @@ public class Workflow {
   public void loanRequested(
       final Aggregate loanApproval) {
 
-    processService.startWorkflow(loanApproval);
+    bpms.startWorkflow(loanApproval);
 
   }
 
@@ -62,7 +62,7 @@ public class Workflow {
       final Aggregate loanApproval,
       final String taskId) {
 
-    processService.completeTask(loanApproval, taskId);
+    bpms.completeTask(loanApproval, taskId);
 
   }
 
@@ -85,7 +85,7 @@ public class Workflow {
       final Aggregate loanApproval,
       final String historyContext) {
 
-    return processService.getProcessDefinitions(loanApproval, historyContext);
+    return bpms.getProcessDefinitions(loanApproval, historyContext);
 
   }
 
@@ -104,7 +104,7 @@ public class Workflow {
   public InputStream bpmnXml(
       final String processDefinitionId) {
 
-    return processService.getBpmnXml(processDefinitionId);
+    return bpms.getBpmnXml(processDefinitionId);
 
   }
 
@@ -120,7 +120,7 @@ public class Workflow {
       final Aggregate loanApproval,
       final String historyContext) {
 
-    return processService.getWorkflowHistory(loanApproval, historyContext);
+    return bpms.getWorkflowHistory(loanApproval, historyContext);
 
   }
 

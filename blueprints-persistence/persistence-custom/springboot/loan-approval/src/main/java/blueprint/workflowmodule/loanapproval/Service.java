@@ -65,7 +65,7 @@ public class Service {
    * @param loanRequestId The natural id of the loan request.
    * @param amount        The amount requested.
    */
-  public void initiateLoanApproval(
+  public void request(
       final String loanRequestId,
       final int amount) {
 

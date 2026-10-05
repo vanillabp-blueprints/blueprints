@@ -28,7 +28,7 @@ import jakarta.inject.Inject;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -38,7 +38,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, amount);
+    loanApproval.request(loanRequestId, amount);
 
     return awaitAggregate(
         loanApprovals::findByIdOptional,
@@ -51,15 +51,15 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @DisplayName("Every configured partner is asked exactly once")
   public void oneIterationPerPartner() {
 
-    final var loanApproval = runWith(5000);
+    final var loanRequest = runWith(5000);
 
-    assertThat(loanApproval.getOffers())
+    assertThat(loanRequest.getOffers())
         .describedAs("one row per iteration, none of them lost to a parallel sibling")
         .hasSize(3)
         .extracting(PartnerOffer::getPartnerId)
         .containsExactlyInAnyOrder("northern-bank", "harbour-credit", "alpine-savings");
 
-    assertThat(loanApproval.getOffers())
+    assertThat(loanRequest.getOffers())
         .extracting(PartnerOffer::getIteration)
         .describedAs("the index the BPMS counted, one per iteration")
         .containsExactlyInAnyOrder(0, 1, 2);
@@ -71,11 +71,11 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void theBestOfferWins() {
 
     // a rating of 50 adds 50 basis points to every spread: 95, 70 and 85
-    final var loanApproval = runWith(5000);
+    final var loanRequest = runWith(5000);
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
-    assertThat(loanApproval.getChosenPartnerId()).isEqualTo("harbour-credit");
-    assertThat(loanApproval.getChosenRate()).isEqualTo(70);
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getChosenPartnerId()).isEqualTo("harbour-credit");
+    assertThat(loanRequest.getChosenRate()).isEqualTo(70);
 
   }
 

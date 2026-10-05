@@ -34,7 +34,7 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * The risk assessment as version 1 of the process meant it: a person looks at the request
@@ -46,13 +46,13 @@ public class WorkflowTaskHandler {
    * task.
    * </p>
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask(taskDefinition = "assessRisk", version = "1")
   public void assessRiskManually(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessRiskManually(loanApproval);
+    loanApproval.assessRiskManually(loanRequest);
 
   }
 
@@ -60,13 +60,13 @@ public class WorkflowTaskHandler {
    * The risk assessment as every version after the first one means it: a score, computed
    * from the credit rating.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask(taskDefinition = "assessRisk", version = ">1")
   public void assessRiskAutomatically(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessRiskAutomatically(loanApproval);
+    loanApproval.assessRiskAutomatically(loanRequest);
 
   }
 

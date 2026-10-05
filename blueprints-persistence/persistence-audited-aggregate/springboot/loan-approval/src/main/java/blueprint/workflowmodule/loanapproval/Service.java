@@ -69,7 +69,7 @@ public class Service {
    * @param requestedBy   Who asks for the loan.
    */
   @Transactional
-  public void initiateLoanApproval(
+  public void request(
       final String loanRequestId,
       final int amount,
       final String requestedBy) {

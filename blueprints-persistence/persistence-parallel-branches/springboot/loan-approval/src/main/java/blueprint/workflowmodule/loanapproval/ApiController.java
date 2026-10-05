@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ApiController {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   /**
    * Starts a loan approval. This is the one URL the README names.
@@ -41,7 +41,7 @@ public class ApiController {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, amount);
+    loanApproval.request(loanRequestId, amount);
 
     log.info(
         "Show the result -> http://localhost:8080/api/loan-approval/{}",
@@ -63,7 +63,7 @@ public class ApiController {
       @PathVariable final String loanRequestId,
       @RequestParam(defaultValue = "partner") final String approvedBy) {
 
-    service.approvePartnerRequest(loanRequestId, approvedBy);
+    loanApproval.approvePartnerRequest(loanRequestId, approvedBy);
 
     return "The partner approved loan approval '"
         + loanRequestId
@@ -81,7 +81,7 @@ public class ApiController {
   public String documentsReady(
       @PathVariable final String loanRequestId) {
 
-    service.documentsReady(loanRequestId);
+    loanApproval.documentsReady(loanRequestId);
 
     return "The documents of loan approval '"
         + loanRequestId
@@ -99,7 +99,7 @@ public class ApiController {
   public String show(
       @PathVariable final String loanRequestId) {
 
-    return service
+    return loanApproval
         .getLoanApproval(loanRequestId)
         .map(Object::toString)
         .orElse("unknown loan request '"

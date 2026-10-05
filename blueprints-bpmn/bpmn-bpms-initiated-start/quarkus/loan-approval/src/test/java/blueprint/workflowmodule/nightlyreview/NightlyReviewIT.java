@@ -29,7 +29,7 @@ import jakarta.inject.Inject;
 public class NightlyReviewIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service nightlyReview;
 
   @Inject
   AggregateRepository reviews;
@@ -91,7 +91,7 @@ public class NightlyReviewIT extends WorkflowModuleTest {
         .atMost(TIMEOUT)
         .pollInterval(Duration.ofMillis(500))
         .until(() -> {
-          service.requestReview();
+          nightlyReview.request();
           return !QuarkusTransaction
               .requiringNew()
               .call(() -> reviews.findByStartedBy("SIGNAL"))

@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ApiController {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   @Autowired
   private DatabaseTraffic traffic;
@@ -50,7 +50,7 @@ public class ApiController {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, amount);
+    loanApproval.request(loanRequestId, amount);
 
     log.info(
         "Show the result -> http://localhost:8080/api/loan-approval/{}",
@@ -74,7 +74,7 @@ public class ApiController {
   public String show(
       @PathVariable final String loanRequestId) {
 
-    return service
+    return loanApproval
         .getLoanApproval(loanRequestId)
         .map(Object::toString)
         .orElse("unknown loan request '"

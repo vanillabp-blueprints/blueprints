@@ -26,7 +26,7 @@ import blueprint.workflowmodule.nightlyreview.model.AggregateRepository;
 public class NightlyReviewIT extends WorkflowModuleTest {
 
   @Autowired
-  private Service service;
+  private Service nightlyReview;
 
   @Autowired
   private AggregateRepository reviews;
@@ -84,7 +84,7 @@ public class NightlyReviewIT extends WorkflowModuleTest {
         .atMost(TIMEOUT)
         .pollInterval(Duration.ofMillis(500))
         .until(() -> {
-          service.requestReview();
+          nightlyReview.request();
           return !reviews.findByStartedBy("SIGNAL").isEmpty();
         });
 
