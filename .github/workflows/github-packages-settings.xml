@@ -63,7 +63,7 @@
                 <!-- the adapter of the '-Pcamunda7' build, the default of a blueprint -->
                 <repository>
                     <id>vanillabp-camunda7-adapter</id>
-                    <url>https://maven.pkg.github.com/vanillabp/camunda7-adapter</url>
+                    <url>https://maven.pkg.github.com/camunda-community-hub/vanillabp-camunda7-adapter</url>
                     <snapshots>
                         <enabled>true</enabled>
                     </snapshots>
