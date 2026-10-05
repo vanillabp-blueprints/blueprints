@@ -75,7 +75,7 @@ answer to why nothing changed.
 be declared, a transaction most of all. Without it the application reads through the static
 finder of the aggregate, and that needs a transaction or an active request context of its own:
 
-- `Service#getLoanApproval` and `Service#getCreditHistory` carry `@Transactional`, as they do in
+- The `get` methods of both `Service` classes carry `@Transactional`, as they do in
   the base blueprint. Here it is not a formality but the only place left where the transaction
   can be declared.
 - the integration tests read in a transaction of their own per poll, which is what the shared
@@ -226,7 +226,7 @@ wrote. The two URLs behave identically, and the databases behind them do not.
 | `application/src/main/resources/application.yaml`                            | the two databases, and nothing about the workflows or their persistence                          |
 
 What happens when a loan is requested is the same as in the base blueprint, except for who
-touches the database. `Service#initiateLoanApproval` builds the aggregate and tells `Workflow`
+touches the database. `Service#request` builds the aggregate and tells `Workflow`
 that a loan was requested; `ProcessService#startWorkflow` saves the aggregate through Panache's
 operations rather than through a repository, and starts the workflow in the same transaction.
 When the BPMS reaches the service task, VanillaBP loads the aggregate, calls

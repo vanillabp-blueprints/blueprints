@@ -43,7 +43,7 @@ public class Service {
    * @param amount        The amount requested.
    */
   @Transactional
-  public void initiateLoanApproval(
+  public void request(
       final String loanRequestId,
       final int amount) {
 
@@ -228,7 +228,7 @@ public class Service {
    * @return The state of the loan approval, as far as the process has come.
    */
   @Transactional
-  public Optional<Aggregate> getLoanApproval(
+  public Optional<Aggregate> get(
       final String loanApproval) {
 
     return loanApprovals.findByIdOptional(loanApproval);

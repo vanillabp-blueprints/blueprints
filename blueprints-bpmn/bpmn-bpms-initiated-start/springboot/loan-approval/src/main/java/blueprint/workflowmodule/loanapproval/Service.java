@@ -59,7 +59,7 @@ public class Service {
    * @param amount        The amount requested.
    */
   @Transactional
-  public void initiateLoanApproval(
+  public void request(
       final String loanRequestId,
       final int amount) {
 
@@ -104,7 +104,7 @@ public class Service {
    * @param loanRequestId The natural id of the loan request.
    * @return The loan approval, if it exists.
    */
-  public Optional<Aggregate> getLoanApproval(
+  public Optional<Aggregate> get(
       final String loanRequestId) {
 
     return loanApprovals.findById(loanRequestId);

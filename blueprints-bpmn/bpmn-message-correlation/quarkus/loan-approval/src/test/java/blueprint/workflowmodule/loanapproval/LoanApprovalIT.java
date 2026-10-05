@@ -28,7 +28,7 @@ import jakarta.inject.Inject;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -37,7 +37,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     awaitAggregate(
         loanApprovals::findByIdOptional,
@@ -72,7 +72,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .pollInterval(Duration.ofMillis(500))
         .ignoreException(WorkflowNotFoundException.class)
         .until(() -> {
-          service.contractSigned(loanRequestId, signedBy);
+          loanApproval.contractSigned(loanRequestId, signedBy);
           return true;
         });
 
@@ -86,9 +86,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // the service task behind the message event has not run, so the workflow is standing
     // at the catch event rather than having passed it
-    final var loanApproval = loanApprovals.findByIdOptional(loanRequestId).orElseThrow();
-    assertThat(loanApproval.getPaidOut()).isNull();
-    assertThat(loanApproval.getContractSignedBy()).isNull();
+    final var loanRequest = loanApprovals.findByIdOptional(loanRequestId).orElseThrow();
+    assertThat(loanRequest.getPaidOut()).isNull();
+    assertThat(loanRequest.getContractSignedBy()).isNull();
 
   }
 
@@ -100,14 +100,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     correlateAsSoonAsTheWorkflowIsVisible(loanRequestId, "Jane Doe");
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getPaidOut()));
 
     // what the message carried is on the aggregate, which is where the task behind the
     // message event read it from
-    assertThat(loanApproval.getContractSignedBy()).isEqualTo("Jane Doe");
+    assertThat(loanRequest.getContractSignedBy()).isEqualTo("Jane Doe");
 
   }
 
@@ -126,10 +126,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // VanillaBP does not deduplicate a message without a correlation id, so this is the
     // application's decision - and it keeps the second delivery away from the BPMS, where
     // nothing waits for it any more
-    service.contractSigned(loanRequestId, "Somebody Else");
+    loanApproval.contractSigned(loanRequestId, "Somebody Else");
 
-    final var loanApproval = loanApprovals.findByIdOptional(loanRequestId).orElseThrow();
-    assertThat(loanApproval.getContractSignedBy()).isEqualTo("Jane Doe");
+    final var loanRequest = loanApprovals.findByIdOptional(loanRequestId).orElseThrow();
+    assertThat(loanRequest.getContractSignedBy()).isEqualTo("Jane Doe");
 
   }
 

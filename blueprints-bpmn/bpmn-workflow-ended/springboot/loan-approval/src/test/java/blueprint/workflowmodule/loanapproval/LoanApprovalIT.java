@@ -25,7 +25,7 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   @Autowired
   private AggregateRepository loanApprovals;
@@ -35,7 +35,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, amount);
+    loanApproval.request(loanRequestId, amount);
 
     return awaitAggregate(
         loanApprovals,
@@ -49,15 +49,15 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void theEndOfTheBranchWithATask() {
 
     // 5000 / 100 is a rating of 50, the configured minimum is 30
-    final var loanApproval = runWith(5000);
+    final var loanRequest = runWith(5000);
 
-    assertThat(loanApproval.getCustomerInformed())
+    assertThat(loanRequest.getCustomerInformed())
         .describedAs("the task in front of the end event did its work")
         .isTrue();
-    assertThat(loanApproval.getClosedAt())
+    assertThat(loanRequest.getClosedAt())
         .describedAs("and the end was reported on top of it")
         .isNotNull();
-    assertThat(loanApproval.getClosedBy()).isEqualTo("COMPLETED");
+    assertThat(loanRequest.getClosedBy()).isEqualTo("COMPLETED");
 
   }
 
@@ -66,15 +66,15 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void theEndOfTheBranchWithoutATask() {
 
     // a rating of 3, so the process takes the branch which goes straight to its end event
-    final var loanApproval = runWith(300);
+    final var loanRequest = runWith(300);
 
-    assertThat(loanApproval.getCustomerInformed())
+    assertThat(loanRequest.getCustomerInformed())
         .describedAs("no task ran on this branch")
         .isNull();
-    assertThat(loanApproval.getClosedAt())
+    assertThat(loanRequest.getClosedAt())
         .describedAs("the application still learns that the case is closed")
         .isNotNull();
-    assertThat(loanApproval.getClosedBy()).isEqualTo("COMPLETED");
+    assertThat(loanRequest.getClosedBy()).isEqualTo("COMPLETED");
 
   }
 

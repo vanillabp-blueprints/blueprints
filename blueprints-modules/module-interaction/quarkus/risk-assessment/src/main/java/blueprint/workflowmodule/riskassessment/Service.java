@@ -46,7 +46,7 @@ public class Service implements RiskAssessments {
 
   @Override
   @Transactional
-  public void requestAssessment(
+  public void request(
       final String caseId,
       final int amount) {
 
@@ -91,7 +91,7 @@ public class Service implements RiskAssessments {
    *
    * @param assessment The assessment which is done.
    */
-  public void publishAssessment(
+  public void publish(
       final Aggregate assessment) {
 
     events.fire(new RiskAssessed(assessment.getCaseId(), assessment.getScore()));
@@ -107,7 +107,7 @@ public class Service implements RiskAssessments {
    * @return The assessment, if it exists.
    */
   @Transactional
-  public Optional<Aggregate> getAssessment(
+  public Optional<Aggregate> get(
       final String caseId) {
 
     return assessments.findByIdOptional(caseId);

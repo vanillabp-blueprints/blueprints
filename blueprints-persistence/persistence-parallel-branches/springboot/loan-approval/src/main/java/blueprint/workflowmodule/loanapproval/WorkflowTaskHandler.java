@@ -28,18 +28,18 @@ import io.vanillabp.spi.service.WorkflowTask;
 public class WorkflowTaskHandler {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   /**
    * Called before the process splits, so this is the last task running on its own.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -48,18 +48,18 @@ public class WorkflowTaskHandler {
    * called when the task appears and the workflow stays there until the partner answered
    * through the API. {@code @TaskId} is what the application needs to answer it.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    * @param taskId       The BPMS-side id of this task.
    * @param event        Whether the task was delivered or canceled.
    */
   @WorkflowTask
   public void awaitPartnerApproval(
-      final Aggregate loanApproval,
+      final Aggregate loanRequest,
       @TaskId final String taskId,
       @TaskEvent final TaskEvent.Event event) {
 
     switch (event) {
-      case CREATED -> service.partnerApprovalRequested(loanApproval, taskId);
+      case CREATED -> loanApproval.partnerApprovalRequested(loanRequest, taskId);
       case CANCELED -> {
         // the workflow ended or was canceled while the task was open; nothing to keep
       }
@@ -75,18 +75,18 @@ public class WorkflowTaskHandler {
    * before the application says the documents are there, which is what makes the order of
    * the two branches predictable instead of a matter of which job a worker picks first.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    * @param taskId       The BPMS-side id of this task.
    * @param event        Whether the task was delivered or canceled.
    */
   @WorkflowTask
   public void requestDocuments(
-      final Aggregate loanApproval,
+      final Aggregate loanRequest,
       @TaskId final String taskId,
       @TaskEvent final TaskEvent.Event event) {
 
     switch (event) {
-      case CREATED -> service.documentsRequested(loanApproval, taskId);
+      case CREATED -> loanApproval.documentsRequested(loanRequest, taskId);
       case CANCELED -> {
         // the workflow ended or was canceled while the task was open; nothing to keep
       }
@@ -101,26 +101,26 @@ public class WorkflowTaskHandler {
    * Reads the documents, in the transaction VanillaBP owns. It is called while the other
    * branch may be answered through the API, which is what this blueprint is about.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void recordDocuments(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.recordDocuments(loanApproval);
+    loanApproval.recordDocuments(loanRequest);
 
   }
 
   /**
    * Called after the join, so a single token is left.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void informCustomer(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.informCustomer(loanApproval);
+    loanApproval.informCustomer(loanRequest);
 
   }
 

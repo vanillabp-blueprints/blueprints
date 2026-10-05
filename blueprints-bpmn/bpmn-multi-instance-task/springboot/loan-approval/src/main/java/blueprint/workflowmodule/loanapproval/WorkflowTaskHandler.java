@@ -56,20 +56,20 @@ public class WorkflowTaskHandler {
   private static final String REQUEST_PARTNER_OFFER = "ServiceTask_RequestPartnerOffer";
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. The
    * aggregate is loaded before and saved after the call, so the business code only has to
    * change it.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -84,14 +84,14 @@ public class WorkflowTaskHandler {
    * several nested iterations at once.
    * </p>
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    * @param partnerId    The element of this iteration.
    * @param index        Which iteration this is, counted from zero.
    * @param total        How many iterations there are.
    */
   @WorkflowTask
   public void requestPartnerOffer(
-      final Aggregate loanApproval,
+      final Aggregate loanRequest,
       @MultiInstanceElement(REQUEST_PARTNER_OFFER) final String partnerId,
       @MultiInstanceIndex(REQUEST_PARTNER_OFFER) final int index,
       @MultiInstanceTotal(REQUEST_PARTNER_OFFER) final int total) {
@@ -100,22 +100,22 @@ public class WorkflowTaskHandler {
         "Asking partner {} of {} for loan approval '{}'",
         index + 1,
         total,
-        loanApproval.getLoanRequestId());
+        loanRequest.getLoanRequestId());
 
-    service.requestPartnerOffer(loanApproval, partnerId, index);
+    loanApproval.requestPartnerOffer(loanRequest, partnerId, index);
 
   }
 
   /**
    * Called once, after the last iteration has finished.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void chooseBestOffer(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.chooseBestOffer(loanApproval);
+    loanApproval.chooseBestOffer(loanRequest);
 
   }
 

@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ApiController {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   /**
    * Starts a loan approval. This is the one URL the README names.
@@ -47,7 +47,7 @@ public class ApiController {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, amount);
+    loanApproval.request(loanRequestId, amount);
 
     return loanRequestId;
 
@@ -63,7 +63,7 @@ public class ApiController {
   public String approve(
       @PathVariable final String loanRequestId) {
 
-    service.partnerApproved(loanRequestId);
+    loanApproval.partnerApproved(loanRequestId);
 
     return "the partner approved loan request '"
         + loanRequestId
@@ -81,8 +81,8 @@ public class ApiController {
   public String show(
       @PathVariable final String loanRequestId) {
 
-    return service
-        .getLoanApproval(loanRequestId)
+    return loanApproval
+        .get(loanRequestId)
         .map(Object::toString)
         .orElse("unknown loan request '"
             + loanRequestId
@@ -104,7 +104,7 @@ public class ApiController {
       @PathVariable final String loanRequestId,
       @RequestParam(required = false) final String historyContext) {
 
-    return service.getProcessDefinitions(loanRequestId, historyContext);
+    return loanApproval.getProcessDefinitions(loanRequestId, historyContext);
 
   }
 
@@ -124,13 +124,13 @@ public class ApiController {
 
     final var definitionId = processDefinitionId != null
         ? processDefinitionId
-        : service
+        : loanApproval
             .getProcessDefinitions(loanRequestId, null)
             .getFirst()
             .id();
 
     return ResponseEntity
-        .ok(new InputStreamResource(service.getBpmnXml(definitionId)));
+        .ok(new InputStreamResource(loanApproval.getBpmnXml(definitionId)));
 
   }
 
@@ -148,7 +148,7 @@ public class ApiController {
       @PathVariable final String loanRequestId,
       @RequestParam(required = false) final String historyContext) {
 
-    return service.getWorkflowHistory(loanRequestId, historyContext);
+    return loanApproval.getWorkflowHistory(loanRequestId, historyContext);
 
   }
 

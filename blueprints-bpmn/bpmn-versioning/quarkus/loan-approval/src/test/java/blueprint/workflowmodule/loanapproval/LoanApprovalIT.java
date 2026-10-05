@@ -27,7 +27,7 @@ import jakarta.inject.Inject;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -38,20 +38,20 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> aggregate.getCreditRating() != null);
 
-    assertThat(loanApproval.getAssessedBy())
+    assertThat(loanRequest.getAssessedBy())
         .describedAs("the method serving version 1 ran, because that is what was deployed")
         .isEqualTo("the four eyes principle");
-    assertThat(loanApproval.getRiskScore())
+    assertThat(loanRequest.getRiskScore())
         .describedAs("the method of the later versions did not run")
         .isNull();
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
 
   }
 

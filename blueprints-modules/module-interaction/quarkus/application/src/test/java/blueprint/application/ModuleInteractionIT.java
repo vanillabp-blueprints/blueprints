@@ -30,34 +30,34 @@ public class ModuleInteractionIT {
   private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
   @Inject
-  blueprint.workflowmodule.loanapproval.Service loanApprovals;
+  blueprint.workflowmodule.loanapproval.Service loanApproval;
 
   @Inject
-  AggregateRepository loanApprovalRepository;
+  AggregateRepository loanApprovals;
 
   @Test
   public void theAnswerOfTheOtherModuleReachesTheWaitingProcess() {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    loanApprovals.initiateLoanApproval(loanRequestId, 6000);
+    loanApproval.request(loanRequestId, 6000);
 
     await()
         .atMost(TIMEOUT)
         .pollInterval(Duration.ofMillis(200))
         .until(() -> QuarkusTransaction
             .requiringNew()
-            .call(() -> loanApprovalRepository
+            .call(() -> loanApprovals
                 .findByIdOptional(loanRequestId)
                 .map(aggregate -> aggregate.getRiskScore() != null)
                 .orElse(false)));
 
-    final var loanApproval = QuarkusTransaction
+    final var loanRequest = QuarkusTransaction
         .requiringNew()
-        .call(() -> loanApprovalRepository.findByIdOptional(loanRequestId).orElseThrow());
+        .call(() -> loanApprovals.findByIdOptional(loanRequestId).orElseThrow());
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(60);
-    assertThat(loanApproval.getRiskScore())
+    assertThat(loanRequest.getCreditRating()).isEqualTo(60);
+    assertThat(loanRequest.getRiskScore())
         .describedAs("what the other module worked out, carried by an event and a message")
         .isEqualTo(30);
 

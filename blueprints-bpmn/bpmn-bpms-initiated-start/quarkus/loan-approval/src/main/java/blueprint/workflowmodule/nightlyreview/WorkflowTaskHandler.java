@@ -26,7 +26,7 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service nightlyReview;
 
   /**
    * Called by VanillaBP when the engine started this workflow by itself.
@@ -66,7 +66,7 @@ public class WorkflowTaskHandler {
   public Aggregate reviewDue(
       final BpmsStartTrigger trigger) {
 
-    return service.reviewDue(trigger);
+    return nightlyReview.reviewDue(trigger);
 
   }
 
@@ -82,7 +82,7 @@ public class WorkflowTaskHandler {
       final Aggregate review,
       @TaskParam("reviewedAt") final String reviewedAt) {
 
-    service.reviewPendingApprovals(review, reviewedAt);
+    nightlyReview.reviewPendingApprovals(review, reviewedAt);
 
   }
 

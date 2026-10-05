@@ -27,7 +27,7 @@ public interface RiskAssessments {
    * @param caseId The id of the business case, chosen by the caller and echoed in the answer.
    * @param amount The amount at risk.
    */
-  void requestAssessment(
+  void request(
       String caseId,
       int amount);
 

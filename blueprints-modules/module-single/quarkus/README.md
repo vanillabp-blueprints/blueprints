@@ -147,7 +147,7 @@ Opening that URL shows the aggregate, including the credit rating the service ta
 | `loan-approval/src/test/resources/application.yaml`                                    | the database of the module's own test                                                           |
 | `application/src/test/.../ApplicationSmokeTest.java`                                   | boots the application, which is where VanillaBP validates that every BPMN task is wired to code |
 
-The order of events: `ApiController` calls `Service#initiateLoanApproval`, which builds the
+The order of events: `ApiController` calls `Service#request`, which builds the
 aggregate and tells `Workflow` what happened, namely `loanRequested`, not "start the
 process". `Workflow#loanRequested` calls `ProcessService#startWorkflow`, and VanillaBP
 persists the aggregate and starts the process in the same transaction, so an aggregate

@@ -35,30 +35,30 @@ public class ModuleInteractionIT {
   private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
   @Autowired
-  private blueprint.workflowmodule.loanapproval.Service loanApprovals;
+  private blueprint.workflowmodule.loanapproval.Service loanApproval;
 
   @Autowired
-  private AggregateRepository loanApprovalRepository;
+  private AggregateRepository loanApprovals;
 
   @Test
   public void theAnswerOfTheOtherModuleReachesTheWaitingProcess() {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    loanApprovals.initiateLoanApproval(loanRequestId, 6000);
+    loanApproval.request(loanRequestId, 6000);
 
     await()
         .atMost(TIMEOUT)
         .pollInterval(Duration.ofMillis(200))
-        .until(() -> loanApprovalRepository
+        .until(() -> loanApprovals
             .findById(loanRequestId)
             .map(aggregate -> aggregate.getRiskScore() != null)
             .orElse(false));
 
-    final var loanApproval = loanApprovalRepository.findById(loanRequestId).orElseThrow();
+    final var loanRequest = loanApprovals.findById(loanRequestId).orElseThrow();
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(60);
-    assertThat(loanApproval.getRiskScore())
+    assertThat(loanRequest.getCreditRating()).isEqualTo(60);
+    assertThat(loanRequest.getRiskScore())
         .describedAs("what the other module worked out, carried by an event and a message")
         .isEqualTo(30);
 

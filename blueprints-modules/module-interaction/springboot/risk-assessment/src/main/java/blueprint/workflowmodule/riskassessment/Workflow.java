@@ -24,7 +24,7 @@ import io.vanillabp.spi.process.ProcessService;
 public class Workflow {
 
   @Autowired
-  private ProcessService<Aggregate> processService;
+  private ProcessService<Aggregate> bpms;
 
   /**
    * An assessment was asked for. VanillaBP persists the aggregate and starts the process in
@@ -35,7 +35,7 @@ public class Workflow {
   public void assessmentRequested(
       final Aggregate assessment) {
 
-    processService.startWorkflow(assessment);
+    bpms.startWorkflow(assessment);
 
   }
 

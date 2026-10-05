@@ -25,7 +25,7 @@ import jakarta.inject.Inject;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -36,7 +36,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     final var waitingForAssessment = awaitAggregate(
         loanApprovals::findByIdOptional,
@@ -44,7 +44,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         aggregate -> aggregate.getRiskAssessmentTaskId() != null);
     assertThat(waitingForAssessment.getCreditRating()).isEqualTo(50);
 
-    service.assessRisk(loanRequestId, waitingForAssessment.getRiskAssessmentTaskId());
+    loanApproval.assessRisk(loanRequestId, waitingForAssessment.getRiskAssessmentTaskId());
 
     // the user task is answered, so the workflow waits for the message now
     final var waitingForContract = awaitAggregate(
@@ -54,7 +54,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(waitingForContract.getRiskAcceptable()).isTrue();
     assertThat(waitingForContract.getPaidOut()).isNull();
 
-    service.contractSigned(loanRequestId, "Jane Doe");
+    loanApproval.contractSigned(loanRequestId, "Jane Doe");
 
     final var paidOut = awaitAggregate(
         loanApprovals::findByIdOptional,

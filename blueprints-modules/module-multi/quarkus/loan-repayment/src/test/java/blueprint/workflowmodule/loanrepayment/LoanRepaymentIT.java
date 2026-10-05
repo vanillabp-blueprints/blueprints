@@ -21,7 +21,7 @@ import jakarta.inject.Inject;
 public class LoanRepaymentIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanRepayment;
 
   @Inject
   AggregateRepository repayments;
@@ -31,7 +31,7 @@ public class LoanRepaymentIT extends WorkflowModuleTest {
 
     final var repaymentId = UUID.randomUUID().toString();
 
-    service.initiateRepayment(repaymentId, "C-1002", 6000);
+    loanRepayment.initiate(repaymentId, "C-1002", 6000);
 
     final var repayment = awaitAggregate(
         repayments::findByIdOptional,

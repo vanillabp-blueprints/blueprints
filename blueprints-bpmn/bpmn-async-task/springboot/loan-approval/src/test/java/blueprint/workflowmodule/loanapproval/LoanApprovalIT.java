@@ -42,7 +42,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   @Autowired
   private AggregateRepository loanApprovals;
@@ -60,7 +60,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   private String startAndAwaitPartnerRequest(
       final String loanRequestId) {
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     return awaitAggregate(
         loanApprovals,
@@ -83,9 +83,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // the service task behind the waiting one did not run: returning from the handler
     // did not complete the task
-    final var loanApproval = loanApprovals.findById(loanRequestId).orElseThrow();
-    assertThat(loanApproval.getCustomerInformed()).isNull();
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
+    final var loanRequest = loanApprovals.findById(loanRequestId).orElseThrow();
+    assertThat(loanRequest.getCustomerInformed()).isNull();
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
 
   }
 
@@ -96,16 +96,16 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequestId = UUID.randomUUID().toString();
     final var taskId = startAndAwaitPartnerRequest(loanRequestId);
 
-    service.partnerDecided(loanRequestId, taskId, true);
+    loanApproval.partnerDecided(loanRequestId, taskId, true);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getCustomerInformed()));
 
-    assertThat(loanApproval.getPartnerApproved()).isTrue();
-    assertThat(loanApproval.getRejected()).isNull();
-    assertThat(loanApproval.getPartnerApprovalTaskId()).isNull();
+    assertThat(loanRequest.getPartnerApproved()).isTrue();
+    assertThat(loanRequest.getRejected()).isNull();
+    assertThat(loanRequest.getPartnerApprovalTaskId()).isNull();
 
   }
 
@@ -116,15 +116,15 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequestId = UUID.randomUUID().toString();
     final var taskId = startAndAwaitPartnerRequest(loanRequestId);
 
-    service.partnerDecided(loanRequestId, taskId, false);
+    loanApproval.partnerDecided(loanRequestId, taskId, false);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getRejected()));
 
-    assertThat(loanApproval.getPartnerApproved()).isFalse();
-    assertThat(loanApproval.getCustomerInformed()).isNull();
+    assertThat(loanRequest.getPartnerApproved()).isFalse();
+    assertThat(loanRequest.getCustomerInformed()).isNull();
 
   }
 

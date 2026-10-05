@@ -58,20 +58,20 @@ import io.vanillabp.spi.service.WorkflowTask;
 public class WorkflowTaskHandler {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. The
    * aggregate is loaded before and saved after the call, so the business code only has to
    * change it.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -79,13 +79,13 @@ public class WorkflowTaskHandler {
    * Called by VanillaBP when the service task behind the signal event is reached, which is
    * what proves the broadcast arrived at this workflow.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void applyInterestRate(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.applyInterestRate(loanApproval);
+    loanApproval.applyInterestRate(loanRequest);
 
   }
 

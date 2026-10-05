@@ -55,7 +55,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   @Autowired
   private AggregateRepository loanApprovals;
@@ -74,14 +74,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, 5000);
+    loanApproval.request(loanRequestId, 5000);
 
     awaitAggregate(
         loanApprovals,
         loanRequestId,
-        loanApproval -> (loanApproval.getPartnerApproval() != null) && (loanApproval
+        loanRequest -> (loanRequest.getPartnerApproval() != null) && (loanRequest
             .getPartnerApproval()
-            .getTaskId() != null) && (loanApproval.getDocumentCheck() != null) && (loanApproval
+            .getTaskId() != null) && (loanRequest.getDocumentCheck() != null) && (loanRequest
                 .getDocumentCheck()
                 .getTaskId() != null));
 
@@ -96,30 +96,30 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequestId = startedWorkflowWaitingInBothBranches();
 
     documents.takesAtLeast(DOCUMENT_SERVICE_TAKES);
-    service.documentsReady(loanRequestId);
+    loanApproval.documentsReady(loanRequestId);
 
     // the document branch is inside the transaction VanillaBP owns and stays there ...
     documents.awaitInvocation("collect "
         + loanRequestId);
 
     // ... while the partner branch is answered in a transaction of the application
-    service.approvePartnerRequest(loanRequestId, "partner");
+    loanApproval.approvePartnerRequest(loanRequestId, "partner");
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals,
         loanRequestId,
         candidate -> Boolean.TRUE.equals(candidate.getCustomerInformed()));
 
-    assertThat(loanApproval.getPartnerApproval().getApprovedBy())
+    assertThat(loanRequest.getPartnerApproval().getApprovedBy())
         .describedAs("what the branch of the application wrote")
         .isEqualTo("partner");
-    assertThat(loanApproval.getDocumentCheck().getDocumentsReceived())
+    assertThat(loanRequest.getDocumentCheck().getDocumentsReceived())
         .describedAs("what the branch of the BPMS wrote, committed after the other one")
         .isEqualTo(3);
-    assertThat(loanApproval.getPartnerApproval().getApprovedAt())
+    assertThat(loanRequest.getPartnerApproval().getApprovedAt())
         .describedAs("the answer was written while the other branch was still working")
-        .isBefore(loanApproval.getDocumentCheck().getCollectedAt());
-    assertThat(loanApproval.getCreditRating())
+        .isBefore(loanRequest.getDocumentCheck().getCollectedAt());
+    assertThat(loanRequest.getCreditRating())
         .describedAs("what was written before the split, which neither branch touches")
         .isEqualTo(50);
 
@@ -132,15 +132,15 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequestId = startedWorkflowWaitingInBothBranches();
 
     // no slowing down this time: the branches finish in whatever order the BPMS picks
-    service.approvePartnerRequest(loanRequestId, "partner");
-    service.documentsReady(loanRequestId);
+    loanApproval.approvePartnerRequest(loanRequestId, "partner");
+    loanApproval.documentsReady(loanRequestId);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals,
         loanRequestId,
         candidate -> Boolean.TRUE.equals(candidate.getCustomerInformed()));
 
-    assertThat(loanApproval.getDocumentCheck().getDocumentsReceived())
+    assertThat(loanRequest.getDocumentCheck().getDocumentsReceived())
         .describedAs("the join waits for both branches, so this cannot be empty")
         .isEqualTo(3);
     assertThat(documents.invocations())

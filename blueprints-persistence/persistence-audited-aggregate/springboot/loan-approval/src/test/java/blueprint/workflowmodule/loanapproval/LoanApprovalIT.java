@@ -46,7 +46,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   @Autowired
   private AggregateRepository loanApprovals;
@@ -80,16 +80,16 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     ChangeBeingMade.attributeTo(
         "the customer",
-        () -> service.initiateLoanApproval(loanRequestId, 5000, "the customer"));
+        () -> loanApproval.request(loanRequestId, 5000, "the customer"));
 
     final var waitingForTheDecision = awaitAggregate(
         loanApprovals,
         loanRequestId,
-        loanApproval -> loanApproval.getAssessRiskTaskId() != null);
+        loanRequest -> loanRequest.getAssessRiskTaskId() != null);
 
     ChangeBeingMade.attributeTo(
         "paula",
-        () -> service.assessRisk(
+        () -> loanApproval.assessRisk(
             loanRequestId,
             waitingForTheDecision.getAssessRiskTaskId(),
             true,
@@ -108,7 +108,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var today = awaitAggregate(
         loanApprovals,
         loanRequestId,
-        loanApproval -> loanApproval.getPaidOut() != null);
+        loanRequest -> loanRequest.getPaidOut() != null);
     assertThat(today.getPaidOut())
         .describedAs("the process moved on after the decision")
         .isTrue();
@@ -140,9 +140,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     awaitAggregate(
         loanApprovals,
         loanRequestId,
-        loanApproval -> loanApproval.getPaidOut() != null);
+        loanRequest -> loanRequest.getPaidOut() != null);
 
-    final var trail = service.getTrail(loanRequestId);
+    final var trail = loanApproval.getTrail(loanRequestId);
 
     assertThat(trail)
         .describedAs("the request, the credit rating, the open task, the decision, the payout")
@@ -168,19 +168,19 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     ChangeBeingMade.attributeTo(
         "the customer",
-        () -> service.initiateLoanApproval(loanRequestId, 5000, "the customer"));
+        () -> loanApproval.request(loanRequestId, 5000, "the customer"));
     awaitAggregate(
         loanApprovals,
         loanRequestId,
-        loanApproval -> loanApproval.getCreditRating() != null);
+        loanRequest -> loanRequest.getCreditRating() != null);
 
     // One transaction which asks for the id of the change first and changes the loan
     // approval afterwards - the order an outbox entry forces, because the entry is
     // written before the transaction is flushed.
     final var change = transactions.execute(status -> {
-      final var loanApproval = loanApprovals.findById(loanRequestId).orElseThrow();
+      final var loanRequest = loanApprovals.findById(loanRequestId).orElseThrow();
       final var id = auditedLoanApprovals.idOfTheChangeBeingMade();
-      loanApproval.setAmount(6000);
+      loanRequest.setAmount(6000);
       return id;
     });
 

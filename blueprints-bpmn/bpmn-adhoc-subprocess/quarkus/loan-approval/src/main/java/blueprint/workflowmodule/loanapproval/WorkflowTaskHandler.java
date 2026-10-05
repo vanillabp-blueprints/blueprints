@@ -37,18 +37,18 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -57,19 +57,19 @@ public class WorkflowTaskHandler {
    * the checks. Returning does not complete the task - the id this method keeps is what
    * lets the application answer it later.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    * @param taskId       The BPMS-side id of this user task.
    * @param event        Whether the task was created or canceled.
    */
   @WorkflowTask
   public void selectChecks(
-      final Aggregate loanApproval,
+      final Aggregate loanRequest,
       @TaskId final String taskId,
       @TaskEvent final TaskEvent.Event event) {
 
     switch (event) {
-      case CREATED -> service.checkSelectionOpened(loanApproval, taskId);
-      case CANCELED -> service.checkSelectionClosed(loanApproval);
+      case CREATED -> loanApproval.checkSelectionOpened(loanRequest, taskId);
+      case CANCELED -> loanApproval.checkSelectionClosed(loanRequest);
       default -> throw new IllegalStateException("Unexpected task event '"
           + event
           + "'");
@@ -81,26 +81,26 @@ public class WorkflowTaskHandler {
    * One of the activities of the ad-hoc subprocess. It is called when the list on the
    * aggregate named this activity's element id, and not otherwise.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void checkIncome(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.checkIncome(loanApproval);
+    loanApproval.checkIncome(loanRequest);
 
   }
 
   /**
    * One of the activities of the ad-hoc subprocess.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void checkFraud(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.checkFraud(loanApproval);
+    loanApproval.checkFraud(loanRequest);
 
   }
 
@@ -109,13 +109,13 @@ public class WorkflowTaskHandler {
    * one, so it runs only where a case worker asked for it - and a method has to exist all
    * the same, because the wiring validation reads the model rather than the data.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void checkCollateral(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.checkCollateral(loanApproval);
+    loanApproval.checkCollateral(loanRequest);
 
   }
 
@@ -123,13 +123,13 @@ public class WorkflowTaskHandler {
    * Called by VanillaBP for the service task behind the ad-hoc subprocess, which the
    * workflow reaches once every activated check is done.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void informCustomer(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.informCustomer(loanApproval);
+    loanApproval.informCustomer(loanRequest);
 
   }
 

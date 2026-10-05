@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ApiController {
 
   @Autowired
-  private Service service;
+  private Service riskAssessment;
 
   /**
    * Shows what the assessment worked out.
@@ -35,8 +35,8 @@ public class ApiController {
   public String show(
       @PathVariable final String caseId) {
 
-    return service
-        .getAssessment(caseId)
+    return riskAssessment
+        .get(caseId)
         .map(Object::toString)
         .orElse("unknown case '"
             + caseId

@@ -26,7 +26,7 @@ import jakarta.inject.Inject;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -37,15 +37,15 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequestId = UUID.randomUUID().toString();
 
     // a rating of 8, which the table approves
-    service.initiateLoanApproval(loanRequestId, 2000);
+    loanApproval.request(loanRequestId, 2000);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> aggregate.getApproval() != null);
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(8);
-    assertThat(loanApproval.getApproval()).isEqualTo("APPROVED");
+    assertThat(loanRequest.getCreditRating()).isEqualTo(8);
+    assertThat(loanRequest.getApproval()).isEqualTo("APPROVED");
 
   }
 
@@ -56,15 +56,15 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // a rating of 1 on a loan too big for the small-loan rule: the table declines, and
     // the gateway sends the workflow to the other end event - no Java runs there
-    service.initiateLoanApproval(loanRequestId, 9000);
+    loanApproval.request(loanRequestId, 9000);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         aggregate -> aggregate.getCreditRating() != null);
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(1);
-    assertThat(loanApproval.getApproval()).isNull();
+    assertThat(loanRequest.getCreditRating()).isEqualTo(1);
+    assertThat(loanRequest.getApproval()).isNull();
 
   }
 

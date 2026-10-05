@@ -24,7 +24,7 @@ import com.acme.loanapproval.model.AggregateRepository;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   @Autowired
   private AggregateRepository loanApprovals;
@@ -34,14 +34,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, "C-1001", 5000);
+    loanApproval.request(loanRequestId, "C-1001", 5000);
 
-    final var loanApproval = awaitAggregate(
+    final var loanRequest = awaitAggregate(
         loanApprovals,
         loanRequestId,
         aggregate -> aggregate.getCreditRating() != null);
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
 
   }
 

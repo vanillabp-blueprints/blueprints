@@ -19,7 +19,7 @@ import io.vanillabp.spi.service.WorkflowTask;
 public class RepaymentTaskHandler {
 
   @Autowired
-  private RepaymentService service;
+  private RepaymentService loanRepayment;
 
   /**
    * Called by VanillaBP when the service task of the same name is reached.
@@ -30,7 +30,7 @@ public class RepaymentTaskHandler {
   public void bookInstalment(
       final Repayment repayment) {
 
-    service.bookInstalment(repayment);
+    loanRepayment.bookInstalment(repayment);
 
   }
 

@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ApiController {
 
   @Inject
-  Service service;
+  Service creditHistory;
 
   /**
    * Requests a credit history.
@@ -37,7 +37,7 @@ public class ApiController {
 
     final var creditHistoryId = UUID.randomUUID().toString();
 
-    service.requestCreditHistory(creditHistoryId, years);
+    creditHistory.request(creditHistoryId, years);
 
     log.info(
         "Show the result -> http://localhost:8080/api/credit-history/{}",
@@ -58,8 +58,8 @@ public class ApiController {
   public String show(
       @PathParam("creditHistoryId") final String creditHistoryId) {
 
-    return service
-        .getCreditHistory(creditHistoryId)
+    return creditHistory
+        .get(creditHistoryId)
         .map(Object::toString)
         .orElse("unknown credit history '"
             + creditHistoryId

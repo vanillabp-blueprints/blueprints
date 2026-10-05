@@ -41,7 +41,7 @@ public class Workflow {
    * bean. It is typed by the workflow aggregate, so there is one per workflow.
    */
   @Autowired
-  private ProcessService<Aggregate> processService;
+  private ProcessService<Aggregate> bpms;
 
   /**
    * The name of the BPMN message starting the process. The same string is the name of the
@@ -72,7 +72,7 @@ public class Workflow {
   public void loanRequested(
       final Aggregate loanApproval) {
 
-    processService.startWorkflowByMessage(loanApproval, LOAN_REQUESTED);
+    bpms.startWorkflowByMessage(loanApproval, LOAN_REQUESTED);
 
   }
 

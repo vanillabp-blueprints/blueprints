@@ -98,6 +98,45 @@ replaceable:
 | `loan-approval`            | use case identifier, kebab case (workflow module ID, resources, REST) |
 | `loan_approval`            | BPMN process ID                                                       |
 
+Inside the classes, an injected bean is named after the role it plays there, not after its
+type. A call then reads like a short sentence about the business case:
+
+```java
+// WorkflowTaskHandler.java
+@Autowired
+private Service loanApproval;
+
+@WorkflowTask
+public void retrieveCreditRating(final Aggregate loanRequest) {
+  loanApproval.assessCreditRating(loanRequest);
+}
+
+// Workflow.java
+@Autowired
+private ProcessService<Aggregate> bpms;
+
+public void loanRequested(final Aggregate loanApproval) {
+  bpms.startWorkflow(loanApproval);
+}
+```
+
+The same names are used in every blueprint:
+
+|           Bean           |                  Name                   |
+|--------------------------|-----------------------------------------|
+| the use case's `Service` | the use case, singular: `loanApproval`  |
+| `ProcessService`         | `bpms`                                  |
+| `Workflow`               | `workflow`                              |
+| the aggregate repository | what it stores, plural: `loanApprovals` |
+
+A blueprint with another use case takes its own word, such as `rateWatch` or
+`nightlyReview`. Where a parameter or a local variable would hide the field, give it a name
+from the domain. The aggregate of a loan approval is `loanRequest`. Do not use `request` or
+`application` alone, because both words already mean something else in IT. A method whose
+name would repeat the field drops that part: `loanApproval.request(...)` and
+`loanApproval.get(id)`, not `loanApproval.initiateLoanApproval(...)` and
+`loanApproval.getLoanApproval(id)`.
+
 ## Rule 3: usable in a browser, without tooling
 
 Every blueprint must be operable with a browser alone:

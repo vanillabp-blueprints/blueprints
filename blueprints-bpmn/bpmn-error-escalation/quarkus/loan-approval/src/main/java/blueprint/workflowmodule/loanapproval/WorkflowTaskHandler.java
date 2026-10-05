@@ -51,33 +51,33 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. The
    * aggregate is loaded before and saved after the call, so the business code only has to
    * change it.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void verifyDocuments(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.verifyDocuments(loanApproval);
+    loanApproval.verifyDocuments(loanRequest);
 
   }
 
   /**
    * Called on the path behind the error boundary event.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void requestDocuments(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.requestDocuments(loanApproval);
+    loanApproval.requestDocuments(loanRequest);
 
   }
 
@@ -85,13 +85,13 @@ public class WorkflowTaskHandler {
    * Called inside the subprocess. A task in a subprocess is wired like any other - the
    * nesting is the model's business, not the application's.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void rateRisk(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 
@@ -99,26 +99,26 @@ public class WorkflowTaskHandler {
    * Called inside the subprocess, after the escalation was thrown - the subprocess carries
    * on, which is what separates an escalation from an error.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void signContract(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.signContract(loanApproval);
+    loanApproval.signContract(loanRequest);
 
   }
 
   /**
    * Called on the branch the escalation boundary event leads to, beside the subprocess.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   @WorkflowTask
   public void informSupervisor(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.informSupervisor(loanApproval);
+    loanApproval.informSupervisor(loanRequest);
 
   }
 

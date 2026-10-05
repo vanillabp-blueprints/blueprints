@@ -107,7 +107,7 @@ public class Service {
    * @see Workflow#reviewRequested()
    */
   @Transactional
-  public void requestReview() {
+  public void request() {
 
     workflow.reviewRequested();
 
@@ -120,7 +120,7 @@ public class Service {
    *
    * @return Every review this application has seen.
    */
-  public List<Aggregate> getReviews() {
+  public List<Aggregate> getAll() {
 
     return reviews.listAll();
 
@@ -132,7 +132,7 @@ public class Service {
    * @param reviewId The ID the application gave it.
    * @return The review.
    */
-  public Optional<Aggregate> getReview(
+  public Optional<Aggregate> get(
       final String reviewId) {
 
     return reviews.findByIdOptional(reviewId);

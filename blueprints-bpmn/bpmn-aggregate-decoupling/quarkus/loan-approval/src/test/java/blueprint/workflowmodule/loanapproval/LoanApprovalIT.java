@@ -29,7 +29,7 @@ import jakarta.inject.Inject;
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   @Inject
   AggregateRepository loanApprovals;
@@ -39,7 +39,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, "Alex Customer", amount);
+    loanApproval.request(loanRequestId, "Alex Customer", amount);
 
     return awaitAggregate(
         loanApprovals::findByIdOptional,
@@ -53,12 +53,12 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void aLowRiskIsApproved() {
 
     // 5000 / 100 is a rating of 50, the configured low-risk rating is 30
-    final var loanApproval = runWith(5000);
+    final var loanRequest = runWith(5000);
 
-    assertThat(loanApproval.getCreditRating()).isEqualTo(50);
-    assertThat(loanApproval.getRiskClass()).isEqualTo(RiskClass.LOW);
-    assertThat(loanApproval.isApprovableWithoutReview()).isTrue();
-    assertThat(loanApproval.getOutcome()).isEqualTo("approved");
+    assertThat(loanRequest.getCreditRating()).isEqualTo(50);
+    assertThat(loanRequest.getRiskClass()).isEqualTo(RiskClass.LOW);
+    assertThat(loanRequest.isApprovableWithoutReview()).isTrue();
+    assertThat(loanRequest.getOutcome()).isEqualTo("approved");
 
   }
 
@@ -67,11 +67,11 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void aMediumRiskGoesToAManualReview() {
 
     // a rating of 15: below the low-risk rating of 30, at or above the medium one of 10
-    final var loanApproval = runWith(1500);
+    final var loanRequest = runWith(1500);
 
-    assertThat(loanApproval.getRiskClass()).isEqualTo(RiskClass.MEDIUM);
-    assertThat(loanApproval.isWorthAManualReview()).isTrue();
-    assertThat(loanApproval.getOutcome()).isEqualTo("under-review");
+    assertThat(loanRequest.getRiskClass()).isEqualTo(RiskClass.MEDIUM);
+    assertThat(loanRequest.isWorthAManualReview()).isTrue();
+    assertThat(loanRequest.getOutcome()).isEqualTo("under-review");
 
   }
 
@@ -80,12 +80,12 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void aHighRiskIsRejected() {
 
     // a rating of 3, below both thresholds
-    final var loanApproval = runWith(300);
+    final var loanRequest = runWith(300);
 
-    assertThat(loanApproval.getRiskClass()).isEqualTo(RiskClass.HIGH);
-    assertThat(loanApproval.isApprovableWithoutReview()).isFalse();
-    assertThat(loanApproval.isWorthAManualReview()).isFalse();
-    assertThat(loanApproval.getOutcome()).isEqualTo("rejected");
+    assertThat(loanRequest.getRiskClass()).isEqualTo(RiskClass.HIGH);
+    assertThat(loanRequest.isApprovableWithoutReview()).isFalse();
+    assertThat(loanRequest.isWorthAManualReview()).isFalse();
+    assertThat(loanRequest.getOutcome()).isEqualTo("rejected");
 
   }
 
@@ -93,12 +93,12 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @DisplayName("The customer's name stays in the application")
   public void personalDataIsNotNeededByTheProcess() {
 
-    final var loanApproval = runWith(5000);
+    final var loanRequest = runWith(5000);
 
     // no condition of the model reads it and the aggregate does not share it, so the
     // process ran to its end without the BPMS ever being told who is asking
-    assertThat(loanApproval.getCustomerName()).isEqualTo("Alex Customer");
-    assertThat(loanApproval.getOutcome()).isEqualTo("approved");
+    assertThat(loanRequest.getCustomerName()).isEqualTo("Alex Customer");
+    assertThat(loanRequest.getOutcome()).isEqualTo("approved");
 
   }
 

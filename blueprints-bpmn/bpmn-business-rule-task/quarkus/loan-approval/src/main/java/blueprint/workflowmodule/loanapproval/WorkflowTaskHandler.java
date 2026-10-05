@@ -52,14 +52,14 @@ import jakarta.inject.Inject;
 public class WorkflowTaskHandler {
 
   @Inject
-  Service service;
+  Service loanApproval;
 
   /**
    * Called by VanillaBP when the BPMN service task of the same name is reached. The
    * aggregate is loaded before and saved after the call, so the business code only has to
    * change it.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    */
   /**
    * Called by VanillaBP when the service task behind the business rule task is reached.
@@ -67,23 +67,23 @@ public class WorkflowTaskHandler {
    * input mapping brings it into the task's scope, and {@code @TaskParam} names it. There
    * is nothing DMN-specific in this method, which is the point of the blueprint.
    *
-   * @param loanApproval The workflow's aggregate.
+   * @param loanRequest The workflow's aggregate.
    * @param approval     What the decision table decided.
    */
   @WorkflowTask
   public void recordDecision(
-      final Aggregate loanApproval,
+      final Aggregate loanRequest,
       @TaskParam("approval") final String approval) {
 
-    service.recordDecision(loanApproval, approval);
+    loanApproval.recordDecision(loanRequest, approval);
 
   }
 
   @WorkflowTask
   public void retrieveCreditRating(
-      final Aggregate loanApproval) {
+      final Aggregate loanRequest) {
 
-    service.assessCreditRating(loanApproval);
+    loanApproval.assessCreditRating(loanRequest);
 
   }
 

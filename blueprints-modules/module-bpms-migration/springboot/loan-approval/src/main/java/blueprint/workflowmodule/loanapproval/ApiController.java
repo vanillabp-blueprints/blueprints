@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ApiController {
 
   @Autowired
-  private Service service;
+  private Service loanApproval;
 
   /**
    * Starts a loan approval. This is the one URL the README names.
@@ -41,7 +41,7 @@ public class ApiController {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    service.initiateLoanApproval(loanRequestId, amount);
+    loanApproval.request(loanRequestId, amount);
 
     log.info(
         "Show the result -> http://localhost:8080/api/loan-approval/{}",
@@ -63,7 +63,7 @@ public class ApiController {
       @PathVariable final String loanRequestId,
       @PathVariable final String taskId) {
 
-    service.assessRisk(loanRequestId, taskId);
+    loanApproval.assessRisk(loanRequestId, taskId);
 
     return "risk of '"
         + loanRequestId
@@ -83,7 +83,7 @@ public class ApiController {
       @PathVariable final String loanRequestId,
       @RequestParam(defaultValue = "Jane Doe") final String signedBy) {
 
-    service.contractSigned(loanRequestId, signedBy);
+    loanApproval.contractSigned(loanRequestId, signedBy);
 
     return "contract of '"
         + loanRequestId
@@ -102,7 +102,7 @@ public class ApiController {
   public String bpms(
       @PathVariable final String loanRequestId) {
 
-    return service
+    return loanApproval
         .bpmsHolding(loanRequestId)
         .orElse("unknown loan request '"
             + loanRequestId
@@ -120,8 +120,8 @@ public class ApiController {
   public String show(
       @PathVariable final String loanRequestId) {
 
-    return service
-        .getLoanApproval(loanRequestId)
+    return loanApproval
+        .get(loanRequestId)
         .map(Object::toString)
         .orElse("unknown loan request '"
             + loanRequestId
