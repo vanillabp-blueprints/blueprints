@@ -48,7 +48,7 @@ public class ApiController {
   @GetMapping
   public String list() {
 
-    final var reviews = nightlyReview.getReviews();
+    final var reviews = nightlyReview.getAll();
 
     if (reviews.isEmpty()) {
       return "No review ran yet. The timer needs a moment after the application started.";
@@ -72,7 +72,7 @@ public class ApiController {
       @PathVariable final String reviewId) {
 
     return nightlyReview
-        .getReview(reviewId)
+        .get(reviewId)
         .map(Object::toString)
         .orElse("unknown review '"
             + reviewId

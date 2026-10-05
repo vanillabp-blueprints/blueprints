@@ -86,7 +86,7 @@ public class ApiController {
       @PathParam("loanRequestId") final String loanRequestId) {
 
     return loanApproval
-        .getLoanApproval(loanRequestId)
+        .get(loanRequestId)
         .map(Object::toString)
         .orElse("unknown loan request '"
             + loanRequestId

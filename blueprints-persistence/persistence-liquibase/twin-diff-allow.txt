@@ -10,7 +10,7 @@
 c5a6a041a4709a97  differs  application/src/test/java/blueprint/workflowmodule/SchemaIT.java  # injection annotations only; both twins read the artifact's changelog the same way
 b72c855533968006  differs  application/src/test/java/blueprint/workflowmodule/WorkflowOnTheOwnSchemaIT.java  # injection annotations, and the test class carries the platform's own way of booting the application
 f6e4425d0b9d8fb8  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/ApiController.java  # the same GET endpoints, written with the HTTP annotations of the platform
-d3e240be25066a9f  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/Service.java  # bean and injection annotations, the configuration accessor, and the transaction reading an entity needs on Quarkus
+532d3088d386ddbe  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/Service.java  # bean and injection annotations, the configuration accessor, and the transaction reading an entity needs on Quarkus
 ff41610897ec70b7  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/Workflow.java  # bean and injection annotations only; both inject ProcessService here and nowhere else
 cb521ad0be01d01e  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/WorkflowTaskHandler.java  # bean and injection annotations only; the VanillaBP annotations are identical, which is the point
 4f6d9798ac729e02  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/config/LoanApprovalProperties.java  # configuration is bound to a class on one platform and to an interface on the other

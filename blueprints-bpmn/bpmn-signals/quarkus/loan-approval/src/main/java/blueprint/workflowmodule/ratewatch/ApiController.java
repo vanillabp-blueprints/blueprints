@@ -58,7 +58,7 @@ public class ApiController {
       @PathParam("watchId") final String watchId) {
 
     return rateWatch
-        .getRateWatch(watchId)
+        .get(watchId)
         .map(Object::toString)
         .orElse("unknown rate watch '"
             + watchId

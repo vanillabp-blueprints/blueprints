@@ -73,7 +73,7 @@ public class RepaymentApiController {
       @PathParam("repaymentId") final String repaymentId) {
 
     return loanRepayment
-        .getRepayment(repaymentId)
+        .get(repaymentId)
         .map(Object::toString)
         .orElse("unknown repayment '"
             + repaymentId

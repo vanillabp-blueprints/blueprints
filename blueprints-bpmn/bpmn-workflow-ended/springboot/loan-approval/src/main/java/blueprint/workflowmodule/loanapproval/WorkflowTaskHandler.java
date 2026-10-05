@@ -92,7 +92,7 @@ public class WorkflowTaskHandler {
       final Aggregate loanRequest,
       final WorkflowEnd end) {
 
-    loanApproval.loanApprovalClosed(loanRequest, end);
+    loanApproval.closed(loanRequest, end);
 
   }
 

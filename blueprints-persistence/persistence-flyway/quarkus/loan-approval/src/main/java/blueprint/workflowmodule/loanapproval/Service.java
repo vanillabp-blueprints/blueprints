@@ -104,7 +104,7 @@ public class Service {
    * @return The loan approval, if it exists.
    */
   @Transactional
-  public Optional<Aggregate> getLoanApproval(
+  public Optional<Aggregate> get(
       final String loanRequestId) {
 
     return loanApprovals.findByIdOptional(loanRequestId);

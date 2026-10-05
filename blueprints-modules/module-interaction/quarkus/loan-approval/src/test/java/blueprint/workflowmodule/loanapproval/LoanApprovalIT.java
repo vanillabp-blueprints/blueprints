@@ -46,7 +46,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     Event<RiskAssessed> events;
 
     @Override
-    public void requestAssessment(
+    public void request(
         final String caseId,
         final int amount) {
 

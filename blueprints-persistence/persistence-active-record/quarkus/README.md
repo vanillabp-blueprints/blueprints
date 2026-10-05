@@ -75,7 +75,7 @@ answer to why nothing changed.
 be declared, a transaction most of all. Without it the application reads through the static
 finder of the aggregate, and that needs a transaction or an active request context of its own:
 
-- `Service#getLoanApproval` and `Service#getCreditHistory` carry `@Transactional`, as they do in
+- The `get` methods of both `Service` classes carry `@Transactional`, as they do in
   the base blueprint. Here it is not a formality but the only place left where the transaction
   can be declared.
 - the integration tests read in a transaction of their own per poll, which is what the shared

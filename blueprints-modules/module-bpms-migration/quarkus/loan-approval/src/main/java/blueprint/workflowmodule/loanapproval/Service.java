@@ -228,7 +228,7 @@ public class Service {
    * @return The state of the loan approval, as far as the process has come.
    */
   @Transactional
-  public Optional<Aggregate> getLoanApproval(
+  public Optional<Aggregate> get(
       final String loanApproval) {
 
     return loanApprovals.findByIdOptional(loanApproval);

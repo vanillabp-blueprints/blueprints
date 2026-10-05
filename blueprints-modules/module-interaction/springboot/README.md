@@ -31,7 +31,7 @@ announces the result and is done.
 
 ```java
 public interface RiskAssessments {
-  void requestAssessment(String caseId, int amount);
+  void request(String caseId, int amount);
 }
 
 public record RiskAssessed(String caseId, int score) {}
@@ -169,7 +169,7 @@ log in is in the
 | `risk-assessment/src/test/.../RiskAssessmentIT.java`              | the answering module alone, called exactly as the other module calls it                              |
 
 The order of events: the loan approval's process reaches *Request risk assessment*, its
-handler calls `RiskAssessments#requestAssessment`, and that call ends in the other module,
+handler calls `RiskAssessments#request`, and that call ends in the other module,
 which starts a process of its own. The first process moves on to its message event and stops
 there. Later - a transaction later, a thread later, on a remote engine possibly a second
 later - the second process finishes, publishes `RiskAssessed`, and the listener of the first

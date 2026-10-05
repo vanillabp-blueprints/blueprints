@@ -43,7 +43,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     private ApplicationEventPublisher events;
 
     @Override
-    public void requestAssessment(
+    public void request(
         final String caseId,
         final int amount) {
 

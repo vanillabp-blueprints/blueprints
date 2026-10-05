@@ -45,7 +45,7 @@ public class WorkflowOnTheOwnSchemaIT {
     final var deadline = Instant.now().plus(TIMEOUT);
     while (Instant.now().isBefore(deadline)) {
       final var creditRating = loanApproval
-          .getLoanApproval(loanRequestId)
+          .get(loanRequestId)
           .map(aggregate -> aggregate.getCreditRating())
           .orElse(null);
       if (creditRating != null) {
@@ -55,7 +55,7 @@ public class WorkflowOnTheOwnSchemaIT {
       Thread.sleep(200);
     }
 
-    assertThat(loanApproval.getLoanApproval(loanRequestId))
+    assertThat(loanApproval.get(loanRequestId))
         .describedAs(
             "The service task did not fill the aggregate within "
                 + TIMEOUT

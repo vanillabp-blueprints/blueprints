@@ -97,7 +97,7 @@ public class Service {
    * @param repaymentId The natural id of the repayment.
    * @return The repayment, if it exists.
    */
-  public Optional<Aggregate> getRepayment(
+  public Optional<Aggregate> get(
       final String repaymentId) {
 
     return repayments.findById(repaymentId);

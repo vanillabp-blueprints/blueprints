@@ -77,7 +77,7 @@ public class Service {
    * @param watchId The natural id of the watch.
    * @return The rate watch, if it exists.
    */
-  public Optional<Aggregate> getRateWatch(
+  public Optional<Aggregate> get(
       final String watchId) {
 
     return rateWatches.findById(watchId);

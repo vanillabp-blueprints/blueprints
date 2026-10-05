@@ -87,7 +87,7 @@ public class Service {
    * @return The credit history, if it exists.
    */
   @Transactional
-  public Optional<Aggregate> getCreditHistory(
+  public Optional<Aggregate> get(
       final String creditHistoryId) {
 
     return Aggregate.byId(creditHistoryId);

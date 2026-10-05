@@ -59,7 +59,7 @@ public class ApiController {
       @PathParam("creditHistoryId") final String creditHistoryId) {
 
     return creditHistory
-        .getCreditHistory(creditHistoryId)
+        .get(creditHistoryId)
         .map(Object::toString)
         .orElse("unknown credit history '"
             + creditHistoryId

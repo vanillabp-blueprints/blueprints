@@ -20,7 +20,7 @@ application learns about that end just as well:
 ```java
 @WorkflowEnded
 public void loanApprovalEnded(final Aggregate loanRequest, final WorkflowEnd end) {
-  loanApproval.loanApprovalClosed(loanRequest, end);
+  loanApproval.closed(loanRequest, end);
 }
 ```
 

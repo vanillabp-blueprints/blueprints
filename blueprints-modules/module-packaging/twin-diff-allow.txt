@@ -12,7 +12,7 @@ c7a3077692278339  only-springboot  banking-commons/src/main/java/com/acme/bankin
 0ffe1d4fcd1a733c  differs  loan-approval/src/main/java/com/acme/loanapproval/ApiController.java  # the same GET endpoints, written with the HTTP annotations of the platform
 0d5a642a0a2d0250  only-springboot  loan-approval/src/main/java/com/acme/loanapproval/LoanApprovalAutoConfiguration.java  # a module contributes its beans through an auto-configuration on one platform; on the other its index does it
 f29632e27fbab194  only-springboot  loan-approval/src/main/java/com/acme/loanapproval/LoanApprovalBeanNames.java  # the one line per module saying which module its beans belong to, needed on one platform only
-a19f9a87636b4cfb  differs  loan-approval/src/main/java/com/acme/loanapproval/Service.java  # bean and injection annotations, the configuration accessor, and the transaction reading an entity needs on one platform
+f7f41f077585e5bc  differs  loan-approval/src/main/java/com/acme/loanapproval/Service.java  # bean and injection annotations, the configuration accessor, and the transaction reading an entity needs on one platform
 ff41610897ec70b7  differs  loan-approval/src/main/java/com/acme/loanapproval/Workflow.java  # bean and injection annotations only; both inject ProcessService here and nowhere else
 cb521ad0be01d01e  differs  loan-approval/src/main/java/com/acme/loanapproval/WorkflowTaskHandler.java  # bean and injection annotations only; the VanillaBP annotations are identical, which is the point
 ffd5af58cb78f4f0  differs  loan-approval/src/main/java/com/acme/loanapproval/config/LoanApprovalProperties.java  # configuration is bound to a class on one platform and to an interface on the other
@@ -23,7 +23,7 @@ d7754fc5324fb76c  differs  loan-approval/src/test/java/com/acme/loanapproval/Loa
 1e139fca8cc81019  differs  loan-repayment/src/main/java/com/acme/loanrepayment/ApiController.java  # the same GET endpoints, written with the HTTP annotations of the platform
 390373b8420587a9  only-springboot  loan-repayment/src/main/java/com/acme/loanrepayment/LoanRepaymentAutoConfiguration.java  # a module contributes its beans through an auto-configuration on one platform; on the other its index does it
 9b3822e927b09de0  only-springboot  loan-repayment/src/main/java/com/acme/loanrepayment/LoanRepaymentBeanNames.java  # the one line per module saying which module its beans belong to, needed on one platform only
-31735a9a6eccca48  differs  loan-repayment/src/main/java/com/acme/loanrepayment/Service.java  # bean and injection annotations, the configuration accessor, and the transaction reading an entity needs on one platform
+a0deae8db3218337  differs  loan-repayment/src/main/java/com/acme/loanrepayment/Service.java  # bean and injection annotations, the configuration accessor, and the transaction reading an entity needs on one platform
 bc3eeb09e3b64ce4  differs  loan-repayment/src/main/java/com/acme/loanrepayment/Workflow.java  # bean and injection annotations only; both inject ProcessService here and nowhere else
 0f08b3f0fcf78826  differs  loan-repayment/src/main/java/com/acme/loanrepayment/WorkflowTaskHandler.java  # bean and injection annotations only; the VanillaBP annotations are identical, which is the point
 ba6785db231fbf83  differs  loan-repayment/src/main/java/com/acme/loanrepayment/config/LoanRepaymentProperties.java  # configuration is bound to a class on one platform and to an interface on the other

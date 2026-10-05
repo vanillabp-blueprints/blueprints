@@ -97,7 +97,7 @@ public class Service {
    * @return The repayment, if it exists.
    */
   @Transactional
-  public Optional<Aggregate> getRepayment(
+  public Optional<Aggregate> get(
       final String repaymentId) {
 
     return repayments.findByIdOptional(repaymentId);

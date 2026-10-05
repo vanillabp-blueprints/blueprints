@@ -47,7 +47,7 @@ public class WorkflowTaskHandler {
   public void publishAssessment(
       final Aggregate assessment) {
 
-    riskAssessment.publishAssessment(assessment);
+    riskAssessment.publish(assessment);
 
   }
 

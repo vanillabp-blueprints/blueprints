@@ -22,7 +22,7 @@ import jakarta.inject.Inject;
 /**
  * The integration test of the answering workflow module, and it runs without the module which
  * asks: that is the point of the interface. The test calls
- * {@link RiskAssessments#requestAssessment(String, int)} exactly as the other module does,
+ * {@link RiskAssessments#request(String, int)} exactly as the other module does,
  * and waits for the event this module publishes.
  */
 @QuarkusTest
@@ -73,7 +73,7 @@ public class RiskAssessmentIT extends WorkflowModuleTest {
 
     final var caseId = UUID.randomUUID().toString();
 
-    riskAssessments.requestAssessment(caseId, 6000);
+    riskAssessments.request(caseId, 6000);
 
     final var assessment = awaitAggregate(
         assessments::findByIdOptional,

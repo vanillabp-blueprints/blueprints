@@ -36,7 +36,7 @@ public class ApiController {
       @PathParam("caseId") final String caseId) {
 
     return riskAssessment
-        .getAssessment(caseId)
+        .get(caseId)
         .map(Object::toString)
         .orElse("unknown case '"
             + caseId
