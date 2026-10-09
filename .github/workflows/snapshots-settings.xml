@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Where CI reads the VanillaBP 2.0.0-SNAPSHOT artifacts from.
+
+  Until 2.0.0 is released, the framework repositories and the adapters publish their
+  snapshots to the snapshot repository of Maven Central. One repository serves all of
+  them, and reading it needs no login, so this file carries no credentials and the build
+  of a pull request from a fork reads the same snapshots.
+
+  This file is build infrastructure and deliberately not a <repositories> section of a
+  blueprint POM: a blueprint shows what an application needs, and after the release that
+  is Maven Central and nothing else.
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <activeProfiles>
+        <activeProfile>vanillabp-snapshots</activeProfile>
+    </activeProfiles>
+    <profiles>
+        <profile>
+            <id>vanillabp-snapshots</id>
+            <repositories>
+                <repository>
+                    <id>central-snapshots</id>
+                    <name>Maven Central snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </repository>
+            </repositories>
+        </profile>
+    </profiles>
+</settings>
