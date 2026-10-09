@@ -2,15 +2,16 @@
 <!--
   Where CI reads the VanillaBP 2.0.0-SNAPSHOT artifacts from.
 
-  Until 2.0.0 is released to Maven Central, the framework repositories publish their
-  snapshots to GitHub Packages, one registry per repository. GitHub Packages requires
-  authentication even for public packages, which is why the credentials below are
-  needed; they come from the repository secrets VANILLABP_USER_NAME and
+  Until 2.0.0 is released, spi-for-java and the platform publish their snapshots to the
+  snapshot repository of Maven Central, which needs no login. The two Camunda adapters
+  publish theirs to a GitHub Packages registry each, because their namespace
+  org.camunda.community.vanillabp belongs to the Camunda Community Hub. GitHub Packages
+  requires authentication even for public packages, which is why the credentials below
+  are needed; they come from the repository secrets VANILLABP_USER_NAME and
   VANILLABP_USER_TOKEN (a token carrying 'read:packages').
 
-  The list below is what this repository reads, not what VanillaBP publishes. More
-  repositories publish to GitHub Packages than are named here. A registry is added when a
-  build in this repository starts to resolve an artifact it publishes.
+  The list below is what this repository reads, not what VanillaBP publishes. A repository
+  is added when a build in this repository starts to resolve an artifact it publishes.
 
   This file is build infrastructure and deliberately not a <repositories> section of a
   blueprint POM: a blueprint shows what an application needs, and after the release that
@@ -36,23 +37,12 @@
                         <enabled>true</enabled>
                     </releases>
                 </repository>
-                <!-- io.vanillabp:spi-for-java, which every blueprint gets through the
-                     platform integration it depends on -->
+                <!-- spi-for-java and the platform integrations a blueprint builds on: the
+                     BOM, the Spring Boot and Quarkus support, the schema. They live in the
+                     snapshot repository of Maven Central, which needs no login -->
                 <repository>
-                    <id>vanillabp-spi-for-java</id>
-                    <url>https://maven.pkg.github.com/vanillabp/spi-for-java</url>
-                    <snapshots>
-                        <enabled>true</enabled>
-                    </snapshots>
-                    <releases>
-                        <enabled>false</enabled>
-                    </releases>
-                </repository>
-                <!-- the platform integrations a blueprint builds on: the BOM, the Spring Boot
-                     and Quarkus support, the schema -->
-                <repository>
-                    <id>vanillabp-adapter-platform-integration</id>
-                    <url>https://maven.pkg.github.com/vanillabp/adapter-platform-integration</url>
+                    <id>central-snapshots</id>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
                     <snapshots>
                         <enabled>true</enabled>
                     </snapshots>
@@ -86,16 +76,6 @@
         </profile>
     </profiles>
     <servers>
-        <server>
-            <id>vanillabp-spi-for-java</id>
-            <username>${env.USER_NAME}</username>
-            <password>${env.USER_TOKEN}</password>
-        </server>
-        <server>
-            <id>vanillabp-adapter-platform-integration</id>
-            <username>${env.USER_NAME}</username>
-            <password>${env.USER_TOKEN}</password>
-        </server>
         <server>
             <id>vanillabp-camunda7-adapter</id>
             <username>${env.USER_NAME}</username>

@@ -549,9 +549,11 @@ No CI-specific address is checked in anywhere.
 
 ### Reading the VanillaBP snapshots
 
-Until 2.0.0 is released to Maven Central, the framework repositories publish their
-snapshots to GitHub Packages, which requires a token even for public packages.
-`.github/workflows/github-packages-settings.xml` names the registries; the credentials come
+Until 2.0.0 is released, `spi-for-java` and the platform publish their snapshots to the
+snapshot repository of Maven Central, which needs no login. The two Camunda adapters publish
+theirs to GitHub Packages, because their namespace belongs to the Camunda Community Hub, and
+GitHub Packages requires a token even for public packages.
+`.github/workflows/github-packages-settings.xml` names all three places; the credentials come
 from the repository secrets `VANILLABP_USER_NAME` and `VANILLABP_USER_TOKEN`, a token
 carrying `read:packages`. Locally, the same settings file works with those two variables
 exported. The blueprint POMs stay free of all this: a blueprint shows what an application
@@ -571,7 +573,7 @@ every blueprint job, and each run then has a list like this in its summary:
 - `io.vanillabp:vanillabp-schema` 2.0.0-20260926.082311-203
 ```
 
-The timestamp and the number after it are the build GitHub Packages served, so two runs can be
+The timestamp and the number after it are the build the snapshot repository served, so two runs can be
 read next to each other. The script only names what Maven fetched during the run; if Maven
 refreshed nothing, the report says so instead of passing off the runner's cache as the
 framework of today.

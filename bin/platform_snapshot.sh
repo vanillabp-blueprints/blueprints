@@ -34,17 +34,17 @@ repository="${MAVEN_REPO_LOCAL:-${HOME}/.m2/repository}"
 snapshots="${repository}/io/vanillabp"
 
 # Maven writes one maven-metadata-<repository id>.xml per remote repository a snapshot came
-# from, next to the jar it resolved. The ids of the VanillaBP repositories all begin with
-# 'vanillabp-', see .github/workflows/github-packages-settings.xml, so this reads what came
-# from the platform and skips the modules a build installed itself, which carry no such
+# from, next to the jar it resolved. The platform comes from the repository
+# 'central-snapshots', see .github/workflows/github-packages-settings.xml, so this reads what
+# came from the platform and skips the modules a build installed itself, which carry no such
 # file.
 mapfile -t metadata < <(find "$snapshots" \
-  -path '*-SNAPSHOT/maven-metadata-vanillabp-*.xml' -newer "$marker" 2>/dev/null | sort)
+  -path '*-SNAPSHOT/maven-metadata-central-snapshots.xml' -newer "$marker" 2>/dev/null | sort)
 
 stale=""
 if [ "${#metadata[@]}" -eq 0 ]; then
   mapfile -t metadata < <(find "$snapshots" \
-    -path '*-SNAPSHOT/maven-metadata-vanillabp-*.xml' 2>/dev/null | sort)
+    -path '*-SNAPSHOT/maven-metadata-central-snapshots.xml' 2>/dev/null | sort)
   stale="Maven refreshed none of these while this run was going, so they are what the cache
 of the runner held and not necessarily what was built against."
 fi
@@ -70,9 +70,7 @@ for meta in "${metadata[@]}"; do
   printf -- '- `%s:%s` %s\n' "$group" "$artifact" "$resolved" >> "$out"
 done
 
-# Every VanillaBP repository serves every VanillaBP package, so one artifact is answered by
-# several of the repositories in the settings and written down once per repository. The same
-# line several times says nothing twice.
+# the same line several times says nothing twice
 sort -u -o "$out" "$out"
 
 if [ -n "$stale" ]; then

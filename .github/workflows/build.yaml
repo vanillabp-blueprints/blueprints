@@ -17,8 +17,9 @@ concurrency:
 permissions:
   contents: read
 env:
-  # The VanillaBP artifacts are 2.0.0-SNAPSHOT and live in GitHub Packages until the
-  # release. Reading them needs a token, see .github/workflows/github-packages-settings.xml.
+  # The VanillaBP artifacts are 2.0.0-SNAPSHOT until the release. The two Camunda adapters
+  # live in GitHub Packages, and reading them needs a token, see
+  # .github/workflows/github-packages-settings.xml.
   USER_NAME: "${{ secrets.VANILLABP_USER_NAME }}"
   USER_TOKEN: "${{ secrets.VANILLABP_USER_TOKEN }}"
   # The branch of vanillabp-blueprints/.github the index is read from - it says which

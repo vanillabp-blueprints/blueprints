@@ -59,8 +59,8 @@ jobs:
   # settled once, before a matrix of sixty jobs starts.
   #
   # There are two ways a red night can mean nothing. Without the credentials GitHub
-  # Packages answers 401, every job dies on a POM it could not read, and that reads like
-  # sixty broken blueprints. And a runner which still holds yesterday's snapshot would
+  # Packages answers 401 for the Camunda adapters, every job dies on a POM it could not
+  # read, and that reads like sixty broken blueprints. And a runner which still holds yesterday's snapshot would
   # build against a framework which no longer exists, which is the one thing this workflow
   # is here to notice. So this run restores no Maven cache, every Maven call carries
   # --update-snapshots, and the step below writes down which platform build the night got.
@@ -80,7 +80,7 @@ jobs:
           [ -n "${USER_TOKEN}" ] || missing="${missing:+${missing} and }VANILLABP_USER_TOKEN"
           if [ -n "${missing}" ]; then
             echo "::error::${missing} is empty. Nothing here can then read the published" \
-              "platform snapshots, and a run which resolves nothing proves nothing." \
+              "adapter snapshots, and a run which resolves nothing proves nothing." \
               "Set the repository secrets VANILLABP_USER_NAME and VANILLABP_USER_TOKEN to" \
               "a GitHub user and a token carrying 'read:packages'. The matrix waits for" \
               "this job, so it does not start on credentials which are not there."
@@ -92,10 +92,10 @@ jobs:
           probe="${RUNNER_TEMP}/platform-probe"
           # The BOM, because every blueprint imports it and it carries the platform
           # versions. Asking for it through the settings file the matrix uses proves the
-          # credentials work before sixty jobs rely on them. The adapters are not asked for
-          # here: they live in repositories of their own, with versions of their own, and
-          # the matrix resolves them itself a minute later, fresh, as it does everything
-          # else.
+          # snapshot repository of Maven Central answers before sixty jobs rely on it. The
+          # adapters are not asked for here: they live in repositories of their own, with
+          # versions of their own, and the matrix resolves them itself a minute later,
+          # fresh, as it does everything else.
           mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
             --batch-mode --no-transfer-progress --update-snapshots \
             -Dmaven.repo.local="${probe}" \
@@ -110,8 +110,7 @@ jobs:
             | sed -n 's|^vanillabp-bom-\(2\.0\.0-[0-9.]*-[0-9]*\)\.pom$|\1|p' \
             | head -1)"
           if [ -z "${build}" ]; then
-            # Every registry of the 'vanillabp' account answers with the metadata of all of
-            # them, so these files are copies of each other and the first one will do.
+            # the platform comes from one snapshot repository, so there is one such file
             meta="$(ls "${directory}"/maven-metadata-*.xml 2>/dev/null | head -1 || true)"
             if [ -n "${meta}" ]; then
               stamp="$(sed -n 's|.*<timestamp>\(.*\)</timestamp>.*|\1|p' "${meta}" | head -1)"
@@ -129,7 +128,7 @@ jobs:
               echo "- \`io.vanillabp:vanillabp-bom:2.0.0-SNAPSHOT\` was read, and nothing"
               echo "  Maven left behind names the build it came from"
             fi
-            echo "- asked for at $(date -u '+%Y-%m-%d %H:%M UTC'), from GitHub Packages"
+            echo "- asked for at $(date -u '+%Y-%m-%d %H:%M UTC'), from the snapshot repository of Maven Central"
           } > platform-snapshot.md
           cat platform-snapshot.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
