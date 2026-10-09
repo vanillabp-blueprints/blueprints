@@ -549,12 +549,15 @@ No CI-specific address is checked in anywhere.
 
 ### Reading the VanillaBP snapshots
 
-Until 2.0.0 is released, the framework repositories and the adapters publish their snapshots
-to the snapshot repository of Maven Central. `.github/workflows/snapshots-settings.xml` names
-it. Reading it needs no login, so the file carries no credentials, and the build of a pull
-request from a fork reads the same snapshots. Locally, pass the same settings file with `-s`.
-The blueprint POMs stay free of all this: a blueprint shows what an application needs, and
-after the release that is Maven Central.
+Until 2.0.0 is released, `spi-for-java` and the platform publish their snapshots to the
+snapshot repository of Maven Central, which needs no login. The two Camunda adapters publish
+theirs to GitHub Packages, because their namespace belongs to the Camunda Community Hub, and
+GitHub Packages requires a token even for public packages.
+`.github/workflows/github-packages-settings.xml` names all three places; the credentials come
+from the repository secrets `VANILLABP_USER_NAME` and `VANILLABP_USER_TOKEN`, a token
+carrying `read:packages`. Locally, the same settings file works with those two variables
+exported. The blueprint POMs stay free of all this: a blueprint shows what an application
+needs, and after the release that is Maven Central.
 
 ### Which platform a run built against
 
@@ -599,8 +602,9 @@ release, when several stories a day reach the platform and a break found at two 
 morning arrives together with everything merged since. After the release it goes and the
 early run stays alone; the head of the workflow file says the same thing.
 
-It starts with the job `platform`, which asks the snapshot repository for the BOM before
-sixty jobs rely on it, and writes down which platform build the night got. No job of that run restores the Maven cache and
+It starts with the job `platform`, which stops the run when the two secrets are empty,
+because sixty jobs failing on a 401 read like sixty broken blueprints. That job also writes
+down which platform build the night got. No job of that run restores the Maven cache and
 every Maven call passes `--update-snapshots`, so nothing here can quietly build against
 yesterday's framework.
 
@@ -621,8 +625,9 @@ The same build by hand, which is what to run when the issue names a blueprint. T
 names the BPMS with it, and that is the profile to pass:
 
 ```bash
+export USER_NAME=<github user> USER_TOKEN=<token with read:packages>
 cd <group>/<blueprint-id>/<platform>
-mvn -s ../../../.github/workflows/snapshots-settings.xml \
+mvn -s ../../../.github/workflows/github-packages-settings.xml \
   --update-snapshots -P<bpms> verify
 ```
 

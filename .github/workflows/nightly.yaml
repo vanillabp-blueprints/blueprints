@@ -22,6 +22,8 @@ name: Nightly build
 permissions:
   contents: read
 env:
+  USER_NAME: "${{ secrets.VANILLABP_USER_NAME }}"
+  USER_TOKEN: "${{ secrets.VANILLABP_USER_TOKEN }}"
   # The branch of vanillabp-blueprints/.github the index is read from - it says which
   # BPMS a blueprint is built against, exactly as in build.yaml.
   INDEX_REF: main
@@ -56,7 +58,9 @@ jobs:
   # Where the platform artifacts come from decides what a night is worth, so that is
   # settled once, before a matrix of sixty jobs starts.
   #
-  # A red night can mean nothing: a runner which still holds yesterday's snapshot would
+  # There are two ways a red night can mean nothing. Without the credentials GitHub
+  # Packages answers 401 for the Camunda adapters, every job dies on a POM it could not
+  # read, and that reads like sixty broken blueprints. And a runner which still holds yesterday's snapshot would
   # build against a framework which no longer exists, which is the one thing this workflow
   # is here to notice. So this run restores no Maven cache, every Maven call carries
   # --update-snapshots, and the step below writes down which platform build the night got.
@@ -69,17 +73,30 @@ jobs:
         with:
           java-version: 25
           distribution: temurin
+      - name: The credentials for the published snapshots have to be there
+        run: |
+          missing=""
+          [ -n "${USER_NAME}" ] || missing="VANILLABP_USER_NAME"
+          [ -n "${USER_TOKEN}" ] || missing="${missing:+${missing} and }VANILLABP_USER_TOKEN"
+          if [ -n "${missing}" ]; then
+            echo "::error::${missing} is empty. Nothing here can then read the published" \
+              "adapter snapshots, and a run which resolves nothing proves nothing." \
+              "Set the repository secrets VANILLABP_USER_NAME and VANILLABP_USER_TOKEN to" \
+              "a GitHub user and a token carrying 'read:packages'. The matrix waits for" \
+              "this job, so it does not start on credentials which are not there."
+            exit 1
+          fi
       - name: Which platform build this run resolves
         run: |
           set -o errexit -o nounset -o pipefail
           probe="${RUNNER_TEMP}/platform-probe"
           # The BOM, because every blueprint imports it and it carries the platform
           # versions. Asking for it through the settings file the matrix uses proves the
-          # snapshot repository answers before sixty jobs rely on it. The adapters are not asked for
-          # here: they live in repositories of their own, with versions of their own, and
-          # the matrix resolves them itself a minute later, fresh, as it does everything
-          # else.
-          mvn -s "$GITHUB_WORKSPACE/.github/workflows/snapshots-settings.xml" \
+          # snapshot repository of Maven Central answers before sixty jobs rely on it. The
+          # adapters are not asked for here: they live in repositories of their own, with
+          # versions of their own, and the matrix resolves them itself a minute later,
+          # fresh, as it does everything else.
+          mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
             --batch-mode --no-transfer-progress --update-snapshots \
             -Dmaven.repo.local="${probe}" \
             org.apache.maven.plugins:maven-dependency-plugin:3.9.0:get \
@@ -93,7 +110,7 @@ jobs:
             | sed -n 's|^vanillabp-bom-\(2\.0\.0-[0-9.]*-[0-9]*\)\.pom$|\1|p' \
             | head -1)"
           if [ -z "${build}" ]; then
-            # one snapshot repository, so one metadata file
+            # the platform comes from one snapshot repository, so there is one such file
             meta="$(ls "${directory}"/maven-metadata-*.xml 2>/dev/null | head -1 || true)"
             if [ -n "${meta}" ]; then
               stamp="$(sed -n 's|.*<timestamp>\(.*\)</timestamp>.*|\1|p' "${meta}" | head -1)"
@@ -192,7 +209,7 @@ jobs:
       - name: Build against the current snapshots
         working-directory: "${{ matrix.blueprint }}"
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
-          -s "$GITHUB_WORKSPACE/.github/workflows/snapshots-settings.xml"
+          -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
           -P${{ matrix.bpms }} install
       # A red night used to leave nothing behind but the log of the job, so the issue it
