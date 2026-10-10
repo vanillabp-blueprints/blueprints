@@ -3,6 +3,10 @@
 vanillabp:
   adapters:
     camunda7:
+      # The same mode as in the application's profile file, so this test runs the
+      # configuration the blueprint ships. Without this line the test would fall back to the
+      # default 'by-adapter' and address Camunda 7 differently than the application does.
+      name-clash-avoidance: use-prefix
       # The embedded job executor waits for the next due job instead of asking every 5 to 60
       # seconds. Without this key the test would see those questions in its database.
       sleep-until-something-is-due: true

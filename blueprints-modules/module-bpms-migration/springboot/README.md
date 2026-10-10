@@ -183,16 +183,17 @@ served and how to log in is in the
 
 ## How it works
 
-|                                          File                                          |                                            Role                                            |
-|----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
-| `application/src/main/resources/application-camunda8.yaml`                             | the priority list, both adapters, and the workflow-level list of the repayment             |
-| `application/src/main/resources/application-camunda7.yaml`                             | the same application with one BPMS, which is where a migration starts                      |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process with its two wait states                                                       |
-| `.../loanapproval/Workflow.java`                                                       | `startWorkflow`, `completeUserTask` and `correlateMessage`, none of them naming an adapter |
-| `.../loanapproval/Service.java`                                                        | the business code, plus the one method reading which BPMS holds a workflow                 |
-| `.../loanrepayment/RepaymentWorkflow.java`                                             | the same `startWorkflow`, for the workflow which stays behind                              |
-| `loan-approval/src/test/.../MigrationIT.java`                                          | both BPMS in one boot: where a workflow starts, and that every operation reaches it        |
-| `application/src/test/.../MigrationRestartIT.java`                                     | two boots against one database, which is the migration                                     |
+|                                          File                                          |                                            Role                                             |
+|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| `application/src/main/resources/application-camunda8.yaml`                             | the priority list, both adapters, and the workflow-level list of the repayment              |
+| `application/src/main/resources/application-camunda7.yaml`                             | the same application with one BPMS, which is where a migration starts                       |
+| `loan-approval/src/test/resources/application-camunda7.yaml`                           | the same state for the module's own test, so it runs the scoping mode the application ships |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process with its two wait states                                                        |
+| `.../loanapproval/Workflow.java`                                                       | `startWorkflow`, `completeUserTask` and `correlateMessage`, none of them naming an adapter  |
+| `.../loanapproval/Service.java`                                                        | the business code, plus the one method reading which BPMS holds a workflow                  |
+| `.../loanrepayment/RepaymentWorkflow.java`                                             | the same `startWorkflow`, for the workflow which stays behind                               |
+| `loan-approval/src/test/.../MigrationIT.java`                                          | both BPMS in one boot: where a workflow starts, and that every operation reaches it         |
+| `application/src/test/.../MigrationRestartIT.java`                                     | two boots against one database, which is the migration                                      |
 
 What VanillaBP does with the priority list, in the order it happens:
 
@@ -244,6 +245,10 @@ asks for `ContractSigned` in a tenant, and the message correlates against nothin
 setting out of one profile is enough to do that, because the default is the other mode. So the
 migration profile repeats what the profile before it said, and a change of mode is a migration
 of its own, with a second adapter id for the same engine, which the wiki page above describes.
+
+The module's own test reads profile files of its own, one per BPMS like the application, and
+they name the same mode. Otherwise the test would run the default in one of its profiles and
+test a configuration this blueprint does not ship.
 
 ## Documentation
 
