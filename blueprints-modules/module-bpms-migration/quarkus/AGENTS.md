@@ -37,6 +37,7 @@ they may as well be `old-bpms` and `new-bpms`, which reads better in a priority 
 |----------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
 | `application/src/main/resources/application-camunda8.yaml`     | the migration state: `prioritized-adapters`, both adapters with the same scoping mode, the workflow-level list of the repayment |
 | `application/src/main/resources/application-camunda7.yaml`     | the state before it: one adapter, nothing to prioritize, and the name-clash-avoidance mode                                      |
+| `loan-approval/src/test/resources/application-camunda7.yaml`   | the same state for the module's own test, with the same scoping mode, so the test runs what the application ships               |
 | `loan-approval/.../processes/<adapter-id>/loan_approval.bpmn`  | a user task and a message catch event: two operations which have to find the BPMS holding the workflow                          |
 | `loan-approval/.../processes/<adapter-id>/loan_repayment.bpmn` | the second workflow, the one which stays behind                                                                                 |
 | `loan-approval/src/main/java/.../loanapproval/Workflow.java`   | `startWorkflow`, `completeUserTask`, `correlateMessage`, and the viewer call naming the adapter                                 |

@@ -98,4 +98,7 @@ written to the aggregate. If the task is never executed, the wiring between BPMN
 wrong, and the startup log names which BPMN task has no method or which method has no task.
 `ApplicationSmokeTest` passing means the application boots with the module on the classpath.
 
+There is no second-deployment test on this platform: a test here boots the application once,
+so it cannot deploy a second version of the model.
+
 Do not report success without having run this.

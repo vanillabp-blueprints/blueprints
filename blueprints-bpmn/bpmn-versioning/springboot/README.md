@@ -30,9 +30,10 @@ upwards per BPMN process id. A boundary may also be a version tag from the model
 (`camunda:versionTag`, `zeebe:versionTag`), and ranges are written `1-3`, `v1.0..v2.0`, `>3`
 or `<v2.0`.
 
-The engine of the test is empty, so this model deploys as version 1 and `assessRiskManually`
-is what runs. That is the case the feature exists for, seen from the other side: an
-application which has moved on, and a workflow which has not.
+The engine of the module test is empty, so this model deploys as version 1 and
+`assessRiskManually` is what runs. A second test shows the case the feature exists for: an
+application which has moved on, and a workflow which has not. See
+[the second deployment](#the-second-deployment) below.
 
 What is worth knowing beyond the annotation:
 
@@ -66,13 +67,15 @@ What is worth knowing beyond the annotation:
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|            File            |                                 What is different                                  |
-|----------------------------|------------------------------------------------------------------------------------|
-| `WorkflowTaskHandler.java` | two methods for one task definition, each with the versions it serves              |
-| `Service.java`             | one business method per version of the assessment, neither knowing about the other |
-| `model/Aggregate.java`     | `assessedBy` from version 1 next to `riskScore` of the versions after it           |
-| `loan_approval.bpmn`       | the task is named `assessRisk`, which is the definition both methods refer to      |
-| `LoanApprovalIT.java`      | asserts which of the two methods ran, which is what proves the dispatch            |
+|                  File                   |                                 What is different                                  |
+|-----------------------------------------|------------------------------------------------------------------------------------|
+| `WorkflowTaskHandler.java`              | two methods for one task definition, each with the versions it serves              |
+| `Service.java`                          | one business method per version of the assessment, neither knowing about the other |
+| `model/Aggregate.java`                  | `assessedBy` from version 1 next to `riskScore` of the versions after it           |
+| `loan_approval.bpmn`                    | the task is named `assessRisk`, which is the definition both methods refer to      |
+| `LoanApprovalIT.java`                   | asserts which of the two methods ran, which is what proves the dispatch            |
+| `SecondDeploymentIT.java`               | deploys an older model and then this one, and asserts what each workflow ran       |
+| `version-1/camunda7/loan_approval.bpmn` | the older model that test deploys first                                            |
 
 ## Running it
 
@@ -155,13 +158,14 @@ configures a user for them. Where they are served and how to log in is in the
 
 ## How it works
 
-|                                          File                                          |                                          Role                                           |
-|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: one service task, whose definition both methods refer to                   |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | `@WorkflowTask(taskDefinition = "assessRisk", version = ...)` twice, once per range     |
-| `.../loanapproval/Service.java`                                                        | `assessRiskManually` for version 1, `assessRiskAutomatically` for the versions after it |
-| `.../loanapproval/model/Aggregate.java`                                                | what both of them write, including the attribute only the older version fills           |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a workflow and asserts which method served it                                    |
+|                                          File                                          |                                           Role                                           |
+|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: one service task, whose definition both methods refer to                    |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | `@WorkflowTask(taskDefinition = "assessRisk", version = ...)` twice, once per range      |
+| `.../loanapproval/Service.java`                                                        | `assessRiskManually` for version 1, `assessRiskAutomatically` for the versions after it  |
+| `.../loanapproval/model/Aggregate.java`                                                | what both of them write, including the attribute only the older version fills            |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a workflow and asserts which method served it                                     |
+| `application/src/test/.../SecondDeploymentIT.java`                                     | two boots, two versions: the start message and the old workflow ending on its own method |
 
 The dispatch happens per delivered task, not per workflow: VanillaBP asks the adapter which
 version the workflow runs on and picks the method whose range covers it. A BPMS which does
@@ -178,6 +182,40 @@ editing the existing method, changes it for the running workflows as well. Somet
 what you want - a bug fix usually is. The version range is for the other case, and the
 question to ask is whether a workflow started yesterday should end the way it started or the
 way the application works today.
+
+### The second deployment
+
+`SecondDeploymentIT` plays an upgrade through. It boots the application twice against one
+file database:
+
+1. The first boot deploys the model as it was before the change, from
+   `application/src/test/resources/version-1/`. The engine counts it as version 1. A
+   workflow starts and waits a few seconds before its risk is assessed, and the application
+   stops while it waits.
+2. The second boot deploys the model this blueprint ships. It differs from the old one, so
+   the engine counts it as version 2. The waiting workflow keeps version 1.
+
+Then the test checks what a developer would see. The start of the second boot logs a notice
+like this, and it is a notice, not a warning, because every task of version 1 still has a
+method:
+
+```
+DEPLOYED VERSIONS (1)
+  process 'loan_approval' of workflow module 'loan-approval', adapter 'camunda7'
+      1 workflow(s) of this BPMN process still run on 1 version(s) older than the one
+      the adapter deployed during this boot: 1. They keep being served - this is not a
+      defect - ...
+```
+
+The old workflow then ends through `assessRiskManually`, the method kept for version 1. A
+workflow started in the second boot ends through `assessRiskAutomatically`. Delete the first
+method and the start says so instead: a task definition of a version workflows still run on,
+and no method serving it.
+
+The test runs in the `camunda7` profile only and skips itself in the other one. It checks
+the dispatch by version number, and only an engine which starts empty counts from one. A
+Camunda 8 cluster keeps every version deployed before, so there the older model would not be
+version 1.
 
 ## Documentation
 

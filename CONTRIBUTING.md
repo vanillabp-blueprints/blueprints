@@ -217,8 +217,13 @@ One setting has to say the same thing in every profile which uses an adapter:
 `name-clash-avoidance`. It decides what the adapter calls a process, a message, a signal
 and an error in the BPMS, so changing it while an application runs is a migration and not a
 setting - workflows started before would no longer be found. Leaving it out of one profile
-is enough to change it, because then the default `by-adapter` applies there.
-`bin/check_scoping_modes.py` compares the profiles of each source root and fails on that:
+is enough to change it, because then the default `by-adapter` applies there. The tests are no
+exception. A module test runs under the BPMS profile of the build, but it reads the profile
+files of its own source root. A test root without `application-<bpms>.yaml` runs that profile
+under the default, and then it tests a configuration the blueprint does not ship. So a test
+root has a profile file for every BPMS whose application profile names a mode.
+`bin/check_scoping_modes.py` compares every profile of every source root of a blueprint, main
+and test, and fails on a difference:
 
 ```bash
 python3 bin/check_scoping_modes.py
@@ -226,9 +231,10 @@ python3 bin/check_scoping_modes.py
 
 It found `module-bpms-migration`, whose `camunda7` profile set `use-prefix` while its
 `camunda8` profile named nothing, so the migration the blueprint demonstrates lost the
-message of every loan approval started before the switch. A blueprint which really wants to
-show a change of mode shows it the way the wiki does, as a migration with a second adapter
-id.
+message of every loan approval started before the switch. Later it found 42 test source
+roots running `camunda7` under the default while their applications ran `use-prefix`,
+`module-bpms-migration` among them. A blueprint which really wants to show a change of mode
+shows it the way the wiki does, as a migration with a second adapter id.
 
 A second setting is written out in every `camunda8` profile, for a different reason: `job-lease`.
 The Camunda 8 adapter has no default for it and stops the boot on a cluster of the 8.10 line while
