@@ -31,8 +31,9 @@ upwards per BPMN process id. A boundary may also be a version tag from the model
 or `<v2.0`.
 
 The engine of the test is empty, so this model deploys as version 1 and `assessRiskManually`
-is what runs. That is the case the feature exists for, seen from the other side: an
-application which has moved on, and a workflow which has not.
+is what runs. The case the feature exists for is an application which has moved on, and a
+workflow which has not. A test on this platform boots the application once, so it does not
+deploy a second version.
 
 What is worth knowing beyond the annotation:
 

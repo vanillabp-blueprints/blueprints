@@ -31,13 +31,15 @@ It is never a version the application invents, and it is never stored on the agg
 
 ## Core files
 
-|                                            File                                            |                                                     Why it matters                                                     |
-|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | two methods, one `taskDefinition`, no overlapping version ranges. Overlaps fail the boot                               |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | one business method per version; the older one stays until the last workflow using it ended                            |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | attributes of BOTH versions. Removing what only the old version writes takes the data of the running workflows with it |
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the task definition both methods refer to                                                                              |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | asserts WHICH method ran, which is the only assertion proving the dispatch                                             |
+|                                            File                                            |                                                                        Why it matters                                                                         |
+|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | two methods, one `taskDefinition`, no overlapping version ranges. Overlaps fail the boot                                                                      |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | one business method per version; the older one stays until the last workflow using it ended                                                                   |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | attributes of BOTH versions. Removing what only the old version writes takes the data of the running workflows with it                                        |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the task definition both methods refer to                                                                                                                     |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | asserts WHICH method ran, which is the only assertion proving the dispatch                                                                                    |
+| `application/src/test/java/.../SecondDeploymentIT.java`                                    | two boots on one file database: version 1 from `version-1/`, then the shipped model as version 2; asserts the start notice and which method each workflow ran |
+| `application/src/test/resources/version-1/camunda7/loan_approval.bpmn`                     | the older model the first boot deploys: the shipped one plus a short timer, which keeps a workflow waiting across the restart                                 |
 
 ## Boilerplate files
 
@@ -98,5 +100,11 @@ failure of that profile as a defect of the generated code before having checked 
 written to the aggregate. If the task is never executed, the wiring between BPMN and code is
 wrong, and the startup log names which BPMN task has no method or which method has no task.
 `ApplicationSmokeTest` passing means the application boots with the module on the classpath.
+
+`SecondDeploymentIT` has to pass under `camunda7` and skips itself under `camunda8`. It
+counts versions from one, and only an engine which starts empty does that. If it fails at the
+start notice, read the `DEPLOYED VERSIONS` section of the second boot's log: it names what
+VanillaBP found instead. If it fails waiting for the old workflow, the method kept for
+version 1 did not run.
 
 Do not report success without having run this.
