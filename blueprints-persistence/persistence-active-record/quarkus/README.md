@@ -4,14 +4,14 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-VanillaBP loads and saves the workflow aggregate on the application's behalf, so it has to
-know how that is done. Usually a repository answers that question. This blueprint removes the
-repository twice over: it has two use cases, one aggregate is a JPA entity storing itself, the
-other a MongoDB document storing itself, and both live in the same workflow module. A delta on
-top of `module-single`.
+VanillaBP loads and saves the workflow aggregate for the application, so it has to know how
+that is done. Usually a repository answers that question. This blueprint removes the repository
+twice. It has two use cases. One aggregate is a JPA (Jakarta Persistence) entity which stores
+itself, the other a MongoDB document which stores itself. Both live in the same workflow
+module. A delta on top of `module-single`.
 
 The interesting part of this blueprint is what is not in it. Nothing configures the
-persistence, nothing is injected to reach it, and nothing says which of the two databases an
+persistence. Nothing is injected to reach it. And nothing says which of the two databases an
 aggregate belongs to.
 
 ## What this blueprint shows
@@ -20,9 +20,10 @@ aggregate belongs to.
 
 ![The credit history process](docs/credit_history.png)
 
-Two use cases, each the process of the base blueprint: one service task, started through a GET
-request, and an aggregate the task fills. The processes are not the point here, the way their
-aggregates are stored is, and they are deliberately the same so that the difference is visible.
+Two use cases, each with the process of the base blueprint: one service task, started through a
+GET request, and an aggregate the task fills. The processes are not the point here. The point
+is how their aggregates are stored. The processes are the same on purpose, so that this
+difference shows.
 
 The loan approval extends `PanacheEntityBase` and lives in a relational database:
 
@@ -51,9 +52,9 @@ public class Aggregate extends PanacheMongoEntityBase {
 }
 ```
 
-No repository, no `AggregatePersistenceAware`, no property naming either of them. VanillaBP
-asks each aggregate which idiom it is written in while the application is built, and says what
-it found, one line per aggregate:
+No repository, no `AggregatePersistenceAware`, no property which names either of them. While
+the application is built, VanillaBP asks each aggregate which idiom it is written in. It says
+what it found, one line per aggregate:
 
 ```
 Using VanillaBP's Hibernate ORM Panache active record persistence for workflow aggregate
@@ -62,101 +63,102 @@ Using VanillaBP's MongoDB Panache active record persistence for workflow aggrega
 'blueprint.workflowmodule.credithistory.model.Aggregate'
 ```
 
-That the two lines differ is the claim of this blueprint. **The idiom is resolved per aggregate,
-not per application**, so an application may mix them, and the resolution order applies to each
-aggregate on its own: an `AggregatePersistenceAware` written by the application wins over
-everything, a repository for that aggregate wins over the active record, and Spring Data
-repositories answer last. Adding a repository for one of these aggregates later moves that one
-onto it without a word of configuration and leaves the other where it is. The log line is how
-you see which way it went, and if it names a repository you thought you had deleted, that is the
-answer to why nothing changed.
+The two lines differ, and that is what this blueprint claims. **The idiom is resolved per
+aggregate, not per application.** So an application may mix them. The order of resolution
+applies to each aggregate on its own. An `AggregatePersistenceAware` written by the application
+wins over everything. A repository for that aggregate wins over the active record. Spring Data
+repositories answer last. If you later add a repository for one of these aggregates, that one
+moves onto it without a word of configuration, and the other stays where it is. The log line
+shows which way it went. If it names a repository you thought you had deleted, that explains
+why nothing changed.
 
-**The price, and where it is paid.** A repository is a bean, so it is a place where things can
-be declared, a transaction most of all. Without it the application reads through the static
-finder of the aggregate, and that needs a transaction or an active request context of its own:
+**The price, and where you pay it.** A repository is a bean, so you can declare things on it,
+most of all a transaction. Without it the application reads through the static finder of the
+aggregate. That needs a transaction or an active request context of its own:
 
-- The `get` methods of both `Service` classes carry `@Transactional`, as they do in
-  the base blueprint. Here it is not a formality but the only place left where the transaction
-  can be declared.
-- the integration tests read in a transaction of their own per poll, which is what the shared
-  test harness does anyway. Without it, the finder would have nothing to read from.
+- The `get` methods of both `Service` classes carry `@Transactional`, as they do in the base
+  blueprint. Here it is not a formality. It is the only place left to declare the transaction.
+- the integration tests read in a transaction of their own per poll. The shared test harness
+  does that anyway. Without it, the finder would have nothing to read from.
 
-Nothing changes for the `@WorkflowTask` methods. VanillaBP owns the transaction of a task,
-loads the aggregate before the method and saves it afterwards, so a handler declaring a
-transaction is as wrong here as everywhere else, and VanillaBP still fails the boot over it.
+Nothing changes for the `@WorkflowTask` methods. VanillaBP owns the transaction of a task. It
+loads the aggregate before the method and saves it afterwards. So a handler which declares a
+transaction is as wrong here as everywhere else, and VanillaBP still fails the boot because of
+it.
 
 **Two databases, and what VanillaBP does with them.** Three things need storage: the workflow
 aggregate, the phase-two outbox and the log of delivered tasks. The aggregate is where the
-application put it. The other two belong into the transaction which persists that aggregate,
-otherwise a rollback leaves an outbox entry for a workflow whose aggregate never existed.
+application put it. The other two belong in the transaction which stores that aggregate.
+Otherwise a rollback leaves an outbox entry for a workflow whose aggregate never existed.
 
 In an application with two databases both defaults are active, the relational one and the
-MongoDB one, and VanillaBP attributes them the same way it resolved the persistence: the loan
-approval's entries go into the relational store, the credit history's into MongoDB. There is
-nothing to configure, and the way to overrule it is a `PhaseTwoOutboxAware` or a
-`TaskDeliveryLogAware` bean, which this blueprint has no reason to have.
+MongoDB one. VanillaBP assigns them the same way it resolved the persistence. The entries of
+the loan approval go into the relational store, those of the credit history into MongoDB. There
+is nothing to configure. To overrule it, add a `PhaseTwoOutboxAware` or a
+`TaskDeliveryLogAware` bean. This blueprint has no reason to have one.
 
 **MongoDB writes in a transaction, and that needs a replica set.** MongoDB Panache enlists its
-session in the transaction VanillaBP opens, so aggregate, outbox entry and delivery record commit
-together, and a MongoDB transaction is only available on a replica set or a sharded cluster.
-The dev services start a single-node replica set, so a test needs nothing; a production
-deployment has to be one, and VanillaBP probes for it while starting and warns if it is not.
+session in the transaction VanillaBP opens. So aggregate, outbox entry and delivery record
+commit together. A MongoDB transaction is only available on a replica set or a sharded cluster.
+The dev services start a replica set with one node, so a test needs nothing. A production
+deployment has to be a replica set. VanillaBP checks for it while starting and warns if it is
+not.
 
-**With a MongoDB aggregate an embedded engine is a remote engine, as far as consistency goes.**
-The embedded Camunda 7 stores its own state in the relational database, and no transaction spans
-both databases. What holds the two together is the same mechanism a remote engine needs: VanillaBP
-starts every workflow in two phases, the local transaction stores the aggregate and the intent,
-and the engine is called afterwards. So do not read "embedded" as "one commit" here. For the
-credit history the engine's state and the aggregate are two commits, and the outbox is what makes
-that reliable rather than lucky.
+**With a MongoDB aggregate, an embedded engine behaves like a remote engine as far as
+consistency goes.** The embedded Camunda 7 stores its own state in the relational database, and
+no transaction spans both databases. The two are held together by the same mechanism a remote
+engine needs. VanillaBP starts every workflow in two phases. The local transaction stores the
+aggregate and the intent, and the engine is called afterwards. So do not read "embedded" as
+"one commit" here. For the credit history, the engine's state and the aggregate are two
+commits. The outbox makes that reliable instead of lucky.
 
 **Where the data is stored says nothing about what leaves the application.** Both aggregates
-carry `@NoSyncWithBPMS`, so the BPMS is told only what a model reads, and both models read
-nothing: each is a start event, one service task and an end event, without a condition, a timer
-or a collection. So neither aggregate has an attribute marked `@SyncWithBPMS`, and the amount,
-the rating, the years and the entries found stay where they are stored. What the BPMS holds is
-the ID of each aggregate, which VanillaBP always shares because that is how it finds the
-workflow again. Add a gateway to one of the models and the attribute its condition reads needs
-`@SyncWithBPMS`, or the condition has nothing to read. Sharing is decided per aggregate by its
-annotations, the same as the persistence idiom, and the two databases have no part in it.
+carry `@NoSyncWithBPMS`. So the BPMS (business process management system) learns only what a
+model reads, and both models read nothing. Each is a start event, one service task and an end
+event, without a condition, a timer or a collection. So neither aggregate has an attribute
+marked `@SyncWithBPMS`. The amount, the rating, the years and the entries found stay where they
+are stored. The BPMS holds the ID of each aggregate. VanillaBP always shares it, because it
+needs it to find the workflow again. Add a gateway to one of the models, and the attribute its
+condition reads needs `@SyncWithBPMS`. Otherwise the condition has nothing to read. What is
+shared is decided per aggregate by its annotations, the same as the persistence idiom. The two
+databases play no part in it.
 
 ## Delta to the base blueprint
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                       File                        |                                             What is different                                             |
-|---------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
-| `.../loanapproval/model/AggregateRepository.java` | deleted. There is no repository, and nothing replaces it                                                  |
-| `.../loanapproval/model/Aggregate.java`           | extends `PanacheEntityBase` and carries the one finder the application needs, `byId`                      |
-| `.../loanapproval/Service.java`                   | injects no repository; the reading method calls `Aggregate.byId` inside its own transaction               |
-| `.../credithistory/`                              | the second use case, the same four classes, with an aggregate extending `PanacheMongoEntityBase`          |
-| `loan-approval/pom.xml`                           | both Panache flavours, because the module has an aggregate of each                                        |
-| `application/src/main/resources/application.yaml` | a MongoDB database next to the data source, and no connection string, so the dev services run one         |
-| `loan-approval/src/test/.../*IT.java`             | read through the aggregates' own finders, and assert that a workflow started remotely keeps its aggregate |
+|                       File                        |                                                  What is different                                                  |
+|---------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| `.../loanapproval/model/AggregateRepository.java` | deleted. There is no repository, and nothing replaces it                                                            |
+| `.../loanapproval/model/Aggregate.java`           | extends `PanacheEntityBase` and carries the one finder the application needs, `byId`                                |
+| `.../loanapproval/Service.java`                   | injects no repository. The reading method calls `Aggregate.byId` inside its own transaction                         |
+| `.../credithistory/`                              | the second use case, the same four classes, with an aggregate extending `PanacheMongoEntityBase`                    |
+| `loan-approval/pom.xml`                           | both Panache flavours, because the module has an aggregate of each                                                  |
+| `application/src/main/resources/application.yaml` | a MongoDB database next to the data source, and no connection string, so the dev services run one                   |
+| `loan-approval/src/test/.../*IT.java`             | read through the aggregates' own finders, and assert that a workflow started on a remote engine keeps its aggregate |
 
 Everything else is the base blueprint, file for file: the wiring classes, the API, the module's
 own configuration, the test harness.
 
 ## Running it
 
-Requires a JDK 21 or newer and a running Docker, because the dev services start a MongoDB for the second
-use case. Camunda 7 is embedded, so nothing else has to run:
+Requires a JDK 21 or newer and a running Docker, because the dev services start a MongoDB for
+the second use case. Camunda 7 is embedded, so nothing else has to run:
 
 ```bash
 mvn install verify
 ```
 
-That is not the whole story for this blueprint, though. Both use cases assert that a workflow
-started on a remote engine keeps its aggregate, and that only means something there:
+For this blueprint that is not all, though. Both use cases assert that a workflow started on a
+remote engine keeps its aggregate. That only means something on a remote engine:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Start one. Its address and everything
+else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -171,9 +173,9 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` makes the config profile of the same
-name the parent of whichever profile the application runs in, so the engine is chosen once, on
-the Maven command line, and the build, the tests and `quarkus:dev` all follow it.
+The file is loaded because the Maven profile `camunda8` makes the config profile of the same
+name the parent of the profile the application runs in. So you choose the engine once, on the
+Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
 Start the application:
 
@@ -181,15 +183,15 @@ Start the application:
 mvn -pl application quarkus:dev
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
-Building the application is where the two lines about the persistence appear, so they show up in
+The two lines about the persistence appear while the application is built. So they show up in
 that command as well as in `mvn install`.
 
 Start a loan approval and a credit history. These are the only URLs you need:
@@ -199,7 +201,7 @@ http://localhost:8080/api/loan-approval/start?amount=5000
 http://localhost:8080/api/credit-history/start?years=3
 ```
 
-Each answers with the ID of the case it started and logs the URL showing the result:
+Each answers with the ID of the case it started and logs the URL which shows the result:
 
 ```
 Loan approval '0f7c…' started
@@ -208,7 +210,7 @@ Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 ```
 
 Opening that URL reads the aggregate through its own finder and shows what the service task
-wrote. The two URLs behave identically, and the databases behind them do not.
+wrote. The two URLs behave the same. The databases behind them do not.
 
 ## How it works
 
@@ -222,29 +224,30 @@ wrote. The two URLs behave identically, and the databases behind them do not.
 | `.../<usecase>/ApiController.java`                                           | the GET endpoints operating the process                                                          |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/*.bpmn`   | the two processes: start event, service task, end event                                          |
 | `loan-approval/src/test/.../LoanApprovalIT.java`, `.../CreditHistoryIT.java` | start real workflows, read the aggregates statically, and cover the remote start                 |
-| `loan-approval/src/test/.../WorkflowModuleTest.java`                         | the base class they inherit from: a fresh transaction per poll, identical in every blueprint     |
+| `loan-approval/src/test/.../WorkflowModuleTest.java`                         | their base class: a fresh transaction per poll. The same in every blueprint                      |
 | `application/src/main/resources/application.yaml`                            | the two databases, and nothing about the workflows or their persistence                          |
 
-What happens when a loan is requested is the same as in the base blueprint, except for who
-touches the database. `Service#request` builds the aggregate and tells `Workflow`
-that a loan was requested; `ProcessService#startWorkflow` saves the aggregate through Panache's
-operations rather than through a repository, and starts the workflow in the same transaction.
-When the BPMS reaches the service task, VanillaBP loads the aggregate, calls
-`WorkflowTaskHandler#retrieveCreditRating`, and saves it again, all inside the transaction it
-owns for that task. The credit history does the same, and the only difference is which database
-its transaction reaches.
+When somebody requests a loan, the same happens as in the base blueprint. Only who touches the
+database differs. `Service#request` builds the aggregate and tells `Workflow` that a loan was
+requested. `ProcessService#startWorkflow` saves the aggregate through the operations of
+Panache, not through a repository, and starts the workflow in the same transaction. When the
+BPMS reaches the service task, VanillaBP loads the aggregate, calls
+`WorkflowTaskHandler#retrieveCreditRating`, and saves it again. All of this happens inside the
+transaction VanillaBP owns for that task. The credit history does the same. The only difference
+is which database its transaction reaches.
 
-There is no class of the application involved in any of that, which is the point and also the
-limit of the idiom: everything the application itself wants to read has to bring a transaction
-along. Four places do, and they are the four places which read.
+No class of the application takes part in any of that. That is the point, and also the limit of
+the idiom. Everything the application itself wants to read has to bring a transaction along.
+Four places do, and they are the four places which read.
 
-An active record is an ordinary aggregate in every other respect, including the way two
-branches of one workflow can overwrite each other's writes. That is
+In every other respect an active record is an ordinary aggregate. That includes the way two
+branches of one workflow can overwrite each other's writes.
 [`persistence-parallel-branches`](https://github.com/vanillabp-blueprints/persistence-parallel-branches-quarkus)
-and [the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate),
-not repeated here. The MongoDB repository idiom, and what an application looks like which has no
-relational database at all, is
-[`persistence-mongodb`](https://github.com/vanillabp-blueprints/persistence-mongodb-quarkus).
+and
+[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate)
+cover that, so it is not repeated here.
+[`persistence-mongodb`](https://github.com/vanillabp-blueprints/persistence-mongodb-quarkus)
+shows the MongoDB repository idiom, and an application which has no relational database at all.
 
 ## Documentation
 

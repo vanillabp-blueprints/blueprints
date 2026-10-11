@@ -4,10 +4,10 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-Repeating one task is a multi-instance task. Repeating a whole section of a process - several
-tasks, a flow, maybe a wait state - is a multi-instance subprocess. This blueprint shows one,
-with a second iteration nested inside it, which is where the question "which loop am I in?"
-stops being rhetorical.
+Repeating one task is a multi-instance task. Repeating a whole section of a process, with
+several tasks, a flow and maybe a wait state, is a multi-instance subprocess. This blueprint
+shows one, with a second iteration nested inside it. There the question "which loop am I in?"
+becomes a real question.
 
 ## What this blueprint shows
 
@@ -16,11 +16,11 @@ stops being rhetorical.
 The loan approval is assessed once per region, and inside every region every partner is
 asked for an offer. Two loops, four offers, two region results, one decision.
 
-The subprocess is what repeats: everything drawn inside it runs again per region, and no
-Java says so. The tasks in it are wired like any other, which is the property worth keeping -
-the same handler serves whether the section runs once or fifty times.
+The subprocess is what repeats. Everything drawn inside it runs again per region, and no Java
+says so. The tasks in it are wired like any other. That property is worth keeping: the same
+handler serves whether the section runs once or fifty times.
 
-Three kinds of task appear inside, and they differ in what they need to know:
+Three kinds of task appear inside. They differ in what they need to know:
 
 `requestPartnerOffer` sits in BOTH iterations, so it is handed an `Iteration` record built
 by a resolver:
@@ -32,9 +32,10 @@ public void requestPartnerOffer(
     @MultiInstanceElement(resolverBean = IterationResolver.class) final Iteration iteration) {
 ```
 
-A resolver is handed every active multi-instance context, keyed by the BPMN id of its element
-and ordered outermost first, and returns whatever the method wants. That is the SPI's answer
-to nesting: one object saying what the pair means, instead of six parameters.
+A resolver gets every active multi-instance context, keyed by the BPMN id of its element, the
+outermost first. It returns whatever the method wants. That is how the SPI (service provider
+interface) answers nesting: one object which says what the pair means, instead of six
+parameters.
 
 `summariseRegion` belongs to the outer iteration only, and asks for it by name:
 
@@ -44,18 +45,18 @@ to nesting: one object saying what the pair means, instead of six parameters.
 @MultiInstanceTotal("SubProcess_AssessRegion") final int total
 ```
 
-**The task is not multi-instance itself and still runs inside an iteration.** That is the
-point of a multi-instance subprocess, and it is why every annotation names an element: a
-method has to say which of the active iterations it is asking about.
+**The task is not multi-instance itself, and still runs inside an iteration.** That is the
+point of a multi-instance subprocess. It is also why every annotation names an element. A
+method has to say which of the active iterations it asks about.
 
 `chooseBestOffer` sits after the subprocess and knows nothing about any iteration. A result
-over all regions belongs there, a result over one region's partners belongs at the end of
-that region - `summariseRegion` - and neither belongs into a task which sees one element.
+over all regions belongs there. A result over one region's partners belongs at the end of that
+region, in `summariseRegion`. Neither belongs in a task which sees one element.
 
-What is iterated over comes from the workflow aggregate, one collection per level. Every
-iteration writes ROWS rather than attributes: `PartnerOffer` per region and partner,
-`RegionResult` per region. Instances run next to each other, each of them saves the whole
-aggregate, and two of them writing one attribute means the one committing last wins.
+What the loops go over comes from the workflow aggregate, one collection per level. Every
+iteration writes ROWS, not attributes: `PartnerOffer` per region and partner, `RegionResult`
+per region. Instances run next to each other, and each of them saves the whole aggregate. If
+two of them write one attribute, the one which commits last wins.
 
 ## Delta to the base blueprint
 
@@ -76,8 +77,8 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 
 Compared to
 [`bpmn-multi-instance-task`](https://github.com/vanillabp-blueprints/bpmn-multi-instance-task-springboot),
-which repeats a single task: the iteration moves to a subprocess, a second one is nested
-inside it, and the resolver appears because a method now sits in two loops at once.
+which repeats a single task: the iteration moves to a subprocess, and a second one is nested
+inside it. The resolver appears because a method now sits in two loops at once.
 
 ## Running it
 
@@ -87,16 +88,16 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS (business process management system), pick another Maven profile. Not
+one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Start one. Its address and everything
+else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -111,8 +112,8 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
-name, so the engine is chosen once, on the Maven command line, and the build, the tests and
+The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
+name. So you choose the engine once, on the Maven command line. The build, the tests and
 `spring-boot:run` all follow it.
 
 Start the application:
@@ -121,13 +122,13 @@ Start the application:
 mvn -pl application spring-boot:run
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 This is the URL that starts a loan approval:
 
@@ -135,7 +136,7 @@ This is the URL that starts a loan approval:
 http://localhost:8080/api/loan-approval/start?amount=5000
 ```
 
-The log shows both loops, and which position every call has in them:
+The log shows both loops, and the position of every call in them:
 
 ```
 Loan approval '764f…' started
@@ -155,9 +156,9 @@ The result of a run is at
 http://localhost:8080/api/loan-approval/{loanRequestId}
 ```
 
-Add a region to `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` and the
-subprocess runs three times instead of twice, with every partner asked in each of them. The
-model is not touched, which is why the two lists live in configuration.
+Add a region to `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`, and the
+subprocess runs three times instead of twice. Every partner is asked in each of them. Nobody
+touches the model. That is why the two lists live in configuration.
 
 Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
 configures a user for them. They draw the subprocess with the number of instances it ran and
@@ -177,15 +178,16 @@ outside. Where they are served and how to log in is in the
 | `.../loanapproval/model/PartnerOffer.java`, `RegionResult.java`                            | a row per inner and per outer iteration                                       |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                           | asserts both levels, in no particular order                                   |
 
-The order of events: `retrieveCreditRating` writes the two collections, the engine creates
-one instance of the subprocess per region, each of those creates one instance of the offer
-task per partner, `summariseRegion` runs when a region's offers are in, and
-`chooseBestOffer` when the last region is done.
+The order of events: `retrieveCreditRating` writes the two collections. The engine creates one
+instance of the subprocess per region. Each of those creates one instance of the offer task per
+partner. `summariseRegion` runs when a region's offers are in, and `chooseBestOffer` when the
+last region is done.
 
-A nested iteration is where the BPMS differences would show if the application had to know
-them, so it is worth saying that it does not: Camunda 7 reports the iterations from its
-execution hierarchy, Camunda 8 has none and its adapter prepares the model while deploying
-so the values arrive anyway. The Java above is the same on both.
+If the application had to know the differences between the BPMS (business process management
+systems), they would show in a nested iteration. So it is worth saying that it does not have
+to. Camunda 7 reports the iterations from its execution hierarchy. Camunda 8 has none, and its
+adapter prepares the model while deploying, so the values arrive anyway. The Java above is the
+same on both.
 
 ## Documentation
 

@@ -4,59 +4,60 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-A workflow aggregate looks like it has a single writer, because it belongs to one workflow.
-That holds until the process puts a second token into it. From then on two branches change
-the same business case at the same time, in two transactions nobody coordinates, and a
-persistence layer writing whole records lets the later commit undo the earlier one. Without
-an exception, without a log line, with the process running exactly as modelled.
+A workflow aggregate seems to have a single writer, because it belongs to one workflow. That
+holds until the process puts a second token into it. A token marks where a process instance
+currently is. From then on two branches change the same business case at the same time, in two
+transactions nobody coordinates. A persistence layer which writes whole records lets the later
+commit undo the earlier one. There is no exception and no log line, and the process runs
+exactly as modelled.
 
-This blueprint shows the data model which makes the collision impossible, and a test which
-produces the collision on purpose rather than hoping for it.
+This blueprint shows the data model which makes the collision impossible. It also shows a test
+which causes the collision on purpose instead of hoping for it.
 
 ## What this blueprint shows
 
 ![The loan approval process, splitting into two branches and joining again](docs/loan_approval.png)
 
-The loan approval of the base blueprint, with a parallel gateway after the credit rating.
-One branch waits for a partner to answer through the API, the other collects documents from
-a surrounding system. They run at the same time and join before the customer is informed.
+The loan approval of the base blueprint, with a parallel gateway after the credit rating. One
+branch waits for a partner to answer through the API. The other collects documents from a
+surrounding system. They run at the same time and join before the customer is informed.
 
 The two branches are written by two different transactions:
 
-- the document branch waits for the document service, and once the application says the
-  documents are there, `recordDocuments` reads them. That handler runs in the transaction
-  VanillaBP owns for its task.
+- the document branch waits for the document service. Once the application says the documents
+  are there, `recordDocuments` reads them. That handler runs in the transaction VanillaBP owns
+  for its task.
 - the partner branch waits at a user task, and the answer arrives through the API. That
   transaction belongs to the application.
 
-What keeps them apart is the data model. The aggregate itself carries only what is written
-while a single token exists: the request, the credit rating, and after the join the note
-that the customer was informed. Everything a branch produces lives in an entity of that
-branch, `PartnerApproval` and `DocumentCheck`.
+The data model keeps them apart. The aggregate itself holds only what is written while a single
+token exists: the request, the credit rating, and after the join the note that the customer was
+informed. Everything a branch produces lives in an entity of that branch, `PartnerApproval` and
+`DocumentCheck`.
 
-That was not enough, and it is the part worth reading before copying this model. The two
-`@OneToOne` attributes are two foreign-key columns ON the aggregate, so a branch which
-creates its own entity still writes the aggregate's row to point at it. Without
-`@DynamicUpdate` that write covers every column of the row, the transaction committing second
-puts back the foreign key it read at its start, and the other branch's result is orphaned:
-its row is there and nothing refers to it any more. That is why the aggregate carries
-`@DynamicUpdate`. It is the same mistake as the one two branches make when they write the same
-attribute, one step further out: the row of the aggregate is shared even where the data is not.
+That was not enough, and this part is worth reading before you copy this model. The two
+`@OneToOne` attributes are two foreign-key columns ON the aggregate. So a branch which creates
+its own entity still writes the aggregate's row to point at it. Without `@DynamicUpdate` that
+write covers every column of the row. The transaction which commits second puts back the
+foreign key it read at its start. Then the other branch's result is orphaned: its row is there,
+and nothing refers to it any more. That is why the aggregate carries `@DynamicUpdate`. It is
+the same mistake two branches make when they write the same attribute, one step further out.
+The row of the aggregate is shared even where the data is not.
 
-It only shows on a remote engine, because only there are both branches really delivered at
-the same moment. An embedded engine serializes the jobs of one instance and hides it, which
-is the worst kind of difference between a development machine and production.
+It only shows on a remote engine, because only there both branches are really delivered at the
+same moment. An embedded engine runs the jobs of one instance one after the other and hides it.
+That is the worst kind of difference between a development machine and production.
 
-The cleaner model, for a project rather than a blueprint: let each branch's entity own the
-foreign key (`@OneToOne(mappedBy = ...)` on the aggregate), so a branch never writes the
-aggregate's row at all. It costs a change in both entities and in the business code, and it
-needs no annotation to be remembered.
+The cleaner model, for a project and not for a blueprint: let each branch's entity own the
+foreign key (`@OneToOne(mappedBy = ...)` on the aggregate). Then a branch never writes the
+aggregate's row at all. It costs a change in both entities and in the business code, and there
+is no annotation to remember.
 
-The id of the open task follows the same rule. It sits on `PartnerApproval` rather than on
-the aggregate, because the document branch reads the aggregate's row before that id exists
-and writes it back unchanged afterwards.
+The id of the open task follows the same rule. It is on `PartnerApproval`, not on the
+aggregate. The document branch reads the aggregate's row before that id exists, and writes it
+back unchanged afterwards.
 
-VanillaBP says at startup that this process can hold more than one token while its aggregate
+VanillaBP says at startup that this process can hold more than one token, while its aggregate
 has no version attribute:
 
 ```
@@ -64,25 +65,25 @@ The BPMN process 'loan_approval' of workflow module 'loan-approval' can hold mor
 token at a time (e.g. 'Gateway_Split'), but its workflow aggregate has no version attribute
 ```
 
-The warning is right and it stays, because this blueprint answers the question with the data
-model instead of with a version attribute. The other three ways, and why they are alternatives
-rather than opinions, are in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate).
+The warning is right, and it stays. This blueprint answers the question with the data model
+instead of a version attribute.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate)
+has the other three ways, and why they are real alternatives and not opinions.
 
 ## Delta to the base blueprint
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|             File             |                                     What is different                                      |
-|------------------------------|--------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`         | a parallel gateway splitting into two branches and joining them again                      |
-| `model/Aggregate.java`       | carries only what a single token writes, plus a relation per branch                        |
-| `model/PartnerApproval.java` | what the branch of the application writes, including the id of its open task               |
-| `model/DocumentCheck.java`   | what the branch of the BPMS writes                                                         |
-| `Service.java`               | one method per branch, each touching the entity of its own branch and nothing of the other |
-| `WorkflowTaskHandler.java`   | the branch methods, two of them keeping the id of an open task (`@TaskId`)                 |
-| `DocumentsSimulator.java`    | the surrounding system, and the delay which keeps a branch inside its transaction          |
-| `LoanApprovalIT.java`        | produces the overlap of the two transactions in every run                                  |
+|             File             |                                     What is different                                     |
+|------------------------------|-------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`         | a parallel gateway splitting into two branches and joining them again                     |
+| `model/Aggregate.java`       | carries only what a single token writes, plus a relation per branch                       |
+| `model/PartnerApproval.java` | what the branch of the application writes, including the id of its open task              |
+| `model/DocumentCheck.java`   | what the branch of the BPMS writes                                                        |
+| `Service.java`               | one method per branch. Each touches the entity of its own branch and nothing of the other |
+| `WorkflowTaskHandler.java`   | the branch methods, two of them keeping the id of an open task (`@TaskId`)                |
+| `DocumentsSimulator.java`    | the surrounding system, and the delay which keeps a branch inside its transaction         |
+| `LoanApprovalIT.java`        | produces the overlap of the two transactions in every run                                 |
 
 ## Running it
 
@@ -92,16 +93,15 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Start one. Its address and everything
+else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -116,12 +116,12 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` makes the config profile of the same
-name the parent of whichever profile the application runs in, so the engine is chosen once, on
-the Maven command line, and the build, the tests and `quarkus:dev` all follow it.
+The file is loaded because the Maven profile `camunda8` makes the config profile of the same
+name the parent of the profile the application runs in. So you choose the engine once, on the
+Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
-Take the address out and the application does not boot. That is the normal way to work with
-VanillaBP: configuration is validated while booting, and the message names the property to
+Take the address out and the application does not boot. This is the normal way to work with
+VanillaBP: it checks the configuration while it boots, and the message names the property to
 set.
 
 Start the application:
@@ -130,13 +130,13 @@ Start the application:
 mvn -pl application quarkus:dev
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 Start a loan approval. This is the only URL you need:
 
@@ -156,17 +156,17 @@ Loan approval '0f7c…' waits for the partner. Approve it with:
   http://localhost:8080/api/loan-approval/0f7c…/approve?approvedBy=partner
 ```
 
-Opening the approval URL answers the waiting branch, the join lets the process continue, and
-the last line names what both branches produced:
+Opening the approval URL answers the waiting branch. The join lets the process go on, and the
+last line names what both branches produced:
 
 ```
 The partner approved loan approval '0f7c…'
 The customer of loan approval '0f7c…' was informed: approved by partner, 3 document(s)
 ```
 
-The result URL shows the aggregate with both records, and the document branch usually
-finishes first here: a browser is slower than a service task. In the test it is the other way
-round, on purpose.
+The result URL shows the aggregate with both records. Here the document branch usually finishes
+first, because a browser is slower than a service task. In the test it is the other way round,
+on purpose.
 
 ## How it works
 
@@ -184,26 +184,26 @@ round, on purpose.
 
 The order of events in the test is the whole demonstration. Both branches wait for the
 application first, so nothing runs before the test says so. The test then lets the document
-branch start, and the document service takes a few seconds: that branch has read the
-aggregate and has not written it yet. While it works, the API answers the partner branch,
-whose transaction writes `PartnerApproval` and commits. The document branch commits
-afterwards, which is the moment where a shared record would lose the partner's answer. The
-assertions are that both records are there, that the answer was written before the documents
-were, and that the credit rating from before the split is untouched.
+branch start. The document service takes a few seconds, so that branch has read the aggregate
+and has not written it yet. While it works, the API answers the partner branch. Its transaction
+writes `PartnerApproval` and commits. The document branch commits afterwards. At that moment a
+shared record would lose the partner's answer. The test asserts that both records are there,
+that the answer was written before the documents, and that the credit rating from before the
+split is untouched.
 
-Waiting for that overlap to happen by itself is what makes such a test pass nineteen times
-out of twenty. Ordering the two branches through the application turns it into a test which
-fails when the model is wrong, on every machine and in every run.
+If such a test waits for the overlap to happen by itself, it passes nineteen times out of
+twenty. If the application puts the two branches in order, the test fails whenever the model is
+wrong, on every machine and in every run.
 
-What the test deliberately does not do is block a task handler until it is released. A
-handler holds a thread of the BPMS, and on a remote engine everything one adapter does shares
-few of them - a handler waiting for the test would keep the BPMS from delivering the task the
-test is waiting for. The delay is therefore bounded, and it is the application, not a latch,
-which decides when a branch may run.
+The test does not block a task handler until it is released, on purpose. A handler holds a
+thread of the BPMS (business process management system). On a remote engine, everything one
+adapter does shares only a few of these threads. A handler which waits for the test would keep the
+BPMS from delivering the task the test waits for. So the delay has a limit, and the
+application, not a latch, decides when a branch may run.
 
-What the branches must not do is write the same attribute of the same record. The blueprint
-follows the rule everywhere: while more than one token is in the process, nothing writes the
-aggregate itself.
+The branches must not write the same attribute of the same record. The blueprint follows the
+rule everywhere. While more than one token is in the process, nothing writes the aggregate
+itself.
 
 ## Documentation
 
@@ -214,7 +214,9 @@ aggregate itself.
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why there are no process variables
 - [Wire up a process / Wire up a task](https://github.com/vanillabp/spi-for-java#usage): the annotations used in `WorkflowTaskHandler.java`
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how a BPMN task has to be modelled for that engine
-- [What becomes of a shared value on Camunda 7](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/What-becomes-of-a-shared-value): the two branch entities go into one object variable each, and what to configure so Cockpit shows them instead of a base64 blob
+- [What becomes of a shared value on Camunda 7](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/What-becomes-of-a-shared-value):
+  each of the two branch entities goes into one object variable, and what to configure so
+  Cockpit shows them instead of a base64 blob
 
 This blueprint is developed in the monorepo
 [`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a

@@ -4,14 +4,15 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-The scenario is the one larger organisations actually run: teams publish their workflow
-modules as JARs, and somebody assembles a runtime from them without having their sources.
-This blueprint is that somebody's project. Its application is a POM, a configuration file and
-two tests - no Java code wiring anything, because it has nothing to wire with.
+This is the setup larger organisations really run. Teams publish their workflow modules as
+JARs. Somebody else assembles a runtime from them without having their sources. This blueprint
+is the project of that somebody. Its application is a POM, a configuration file and two tests.
+There is no Java code which wires anything, because it has nothing to wire with.
 
-A delta on top of [`module-multi`](https://github.com/vanillabp-blueprints/module-multi-springboot),
-whose modules these are. What changes is where they come from: their own group, their own
-version, their own package, and no relationship to this project other than a dependency.
+A delta on top of
+[`module-multi`](https://github.com/vanillabp-blueprints/module-multi-springboot), whose
+modules these are. What changes is where they come from. They have their own group, their own
+version, their own package, and no relation to this project except a dependency.
 
 ## What this blueprint shows
 
@@ -19,30 +20,29 @@ version, their own package, and no relationship to this project other than a dep
 
 ![The loan repayment process](docs/loan_repayment.png)
 
-Two use cases, two JARs, published by their teams as `com.acme.lending:loan-approval:1.4.0`
-and `com.acme.lending:loan-repayment:2.1.0`. This project has neither their sources nor a say
-in their versions; it collects them, configures the environment they run in, and ships the
-result.
+Two use cases, two JARs, published by their teams as `com.acme.lending:loan-approval:1.4.0` and
+`com.acme.lending:loan-repayment:2.1.0`. This project has neither their sources nor a say in
+their versions. It collects them, configures the environment they run in, and ships the result.
 
 ### Discovery: what it takes to pick up a foreign module
 
-Nothing, and that is the point. The application's package is `blueprint.application`, the
-modules live in `com.acme.*`, and no scan of this application would ever reach them - yet all
-it takes is the dependency, because each module brings the wiring only it can know. The smoke
-test is what proves it: it holds every workflow module declaring itself on the classpath
-against the ones VanillaBP actually wired.
+Nothing, and that is the point. The application's package is `blueprint.application`, and the
+modules live in `com.acme.*`. No scan of this application would ever reach them. Still, the
+dependency is all it takes, because each module brings the wiring only it can know. The smoke
+test proves it. It compares every workflow module which declares itself on the classpath with
+the ones VanillaBP really wired.
 
-**Where that comes from** is `module-multi`: a module registers an auto-configuration in
-`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`, and the
-recipe is in
+**This comes from** `module-multi`. A module registers an auto-configuration in
+`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`. The recipe
+is in
 [the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules-in-Spring-Boot#publishing-a-workflow-module-it-brings-its-own-wiring).
 
-**And what to do with a module which does not**, because that one shows up in practice: the
-application declares `@ComponentScan`, `@EntityScan` and `@EnableJpaRepositories` with the
-module's package names. It works, and it means this project knows things about a foreign
-module which it should not - the packages of its beans, its entities and its repositories,
-all of them free to change in the next version. Ask the team for an auto-configuration
-instead; this is the fallback, not the way.
+**And what to do with a module which does not.** You will meet one in practice. The application
+declares `@ComponentScan`, `@EntityScan` and `@EnableJpaRepositories` with the module's package
+names. It works. But then this project knows things about a foreign module which it should not:
+the packages of its beans, its entities and its repositories. All of them may change in the
+next version. Ask the team for an auto-configuration instead. This is the fallback, not the
+way.
 
 ### Versioning: a module update is a dependency update
 
@@ -58,16 +58,16 @@ Every module carries its own version, and the application pins them in one place
   ...
 ```
 
-Taking a new version of a module is a line changed there and nothing else. Its BPMN models
-come along in the JAR, and what happens to workflows already running under the old models is
-not this project's decision either: VanillaBP deploys what it finds at startup, and how a BPMS
-treats instances of an older version is
-[`bpmn-versioning`](https://github.com/vanillabp-blueprints/bpmn-versioning-springboot).
+To take a new version of a module, change one line there and nothing else. Its BPMN models come
+along in the JAR. What happens to workflows which already run under the old models is not this
+project's decision either. VanillaBP deploys what it finds at startup.
+[`bpmn-versioning`](https://github.com/vanillabp-blueprints/bpmn-versioning-springboot) shows
+how a BPMS (business process management system) treats instances of an older version.
 
 ### Configuration: three places, and which one wins
 
-The same value can be set by the module, by this application and by the environment, and the
-order is the one an assembling project needs:
+The module, this application and the environment can all set the same value. The order is the
+one an assembling project needs:
 
 |                 Set in                 |                 Wins over                 |
 |----------------------------------------|-------------------------------------------|
@@ -75,18 +75,18 @@ order is the one an assembling project needs:
 | `application.yaml` of this application | the file a module brings along            |
 | the module's own file                  | nothing, it carries the module's defaults |
 
-`application.yaml` of this blueprint sets both values a module ships, and `ConfigurationLevelsIT`
-reads what arrived: `rating-scale` becomes the 42 set here rather than the module's 100, and
-`rating-provider` takes the value the build passes in from outside.
+`application.yaml` of this blueprint sets both values a module ships, and
+`ConfigurationLevelsIT` reads what arrived. `rating-scale` becomes the 42 set here, not the
+module's 100. `rating-provider` takes the value which the build passes in from outside.
 
-What that means for assembling modules you do not own: **their configuration is yours to
-decide**. A module's file says what it needs to run at all, and the project which collects it
-says what its environment needs. The one exception is a module's profile-specific file, which
-beats its plain one, because that is still the module talking about itself.
+What that means when you assemble modules you do not own: **you decide their configuration**. A
+module's file says what it needs to run at all. The project which collects it says what its
+environment needs. The one exception is a module's profile-specific file. It beats the module's
+plain file, because there the module still talks about itself.
 
-Early snapshots of VanillaBP 2 had it the other way round, so a project written against one of
-them may rely on a module winning; it does not any more. The framework documents the order and that
-correction in
+Early snapshots of VanillaBP 2 had it the other way round. So a project written against one of
+them may rely on a module winning. It does not win any more. The framework documents the order
+and that correction in
 [Workflow modules in Spring Boot](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules-in-Spring-Boot#configuration)
 and in
 [Migrating from Version 1](https://github.com/vanillabp/adapter-platform-integration/wiki/Migrating-from-version-1#a-workflow-modules-own-files-are-still-defaults).
@@ -100,20 +100,20 @@ mvn install                       # the executable JAR: application/target/onlin
 mvn -pl application spring-boot:build-image   # the image: online-banking:1.0.0-SNAPSHOT
 ```
 
-The image is built by the platform's own tooling, from the same JAR, and it carries the
-version of the *application*: which module versions went in is the POM's business. Building it
-is not part of `verify` and not part of CI - an image build downloads a builder and takes
-minutes, and a test which starts a container tests Docker rather than this blueprint.
+The platform's own tooling builds the image, from the same JAR. The image carries the version
+of the *application*. Which module versions went in is the business of the POM. Building it is
+not part of `verify` and not part of CI. An image build downloads a builder and takes minutes,
+and a test which starts a container tests Docker, not this blueprint.
 
-The engine stays a Maven profile through all of it: `-Pcamunda8` changes what is packaged, what
-the tests run against and what the image contains, without one line of Java moving.
+Through all of it the engine stays a Maven profile. `-Pcamunda8` changes what is packaged, what
+the tests run against and what the image contains. Not one line of Java changes.
 
 ### What comes from `module-multi` unchanged
 
-Everything about having two workflow modules is that blueprint's subject and is not repeated
-here: each module brings an auto-configuration, names its beans after itself, keeps its
-resources below a directory of its own, and the application sets
-`name-clash-avoidance: use-prefix` so the modules cannot collide inside the engine.
+Having two workflow modules is the subject of that blueprint, so it is not repeated here. Each
+module brings an auto-configuration, names its beans after itself and keeps its resources below
+a directory of its own. The application sets `name-clash-avoidance: use-prefix`, so the modules
+cannot collide inside the engine.
 
 ## Delta to the base blueprint
 
@@ -127,11 +127,11 @@ whose modules this project collects:
 | `application/pom.xml`                                                        | pins the module versions in `dependencyManagement` and names the image        |
 | `application/src/main/resources/application.yaml`                            | tries to override two module values, and the test reads which attempt arrives |
 | `application/src/test/.../ConfigurationLevelsIT.java`                        | new: which of the three configuration levels wins                             |
-| `application/src/test/.../ApplicationSmokeTest.java`                         | unchanged, but here it is the test of the discovery rather than a formality   |
+| `application/src/test/.../ApplicationSmokeTest.java`                         | unchanged, but here it tests the discovery and is more than a formality       |
 | `ModuleConfigurationPerProfileIT`, `BeanNamesPerModuleIT`                    | gone: profiles and bean names are `module-multi`'s subject                    |
 
 Everything inside the modules is `module-multi`, file for file. Only their coordinates, their
-packages and their build are those of somebody else's release.
+packages and their build belong to somebody else's release.
 
 ## Running it
 
@@ -141,15 +141,15 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run; its address lives in
-`application/src/main/resources/application-camunda8.yaml`, with a copy for each module's own
-test.
+Camunda 8 is a remote engine, so a cluster has to run. Its address is in
+`application/src/main/resources/application-camunda8.yaml`, and the test of each module has a
+copy.
 
 Start the application:
 
@@ -164,7 +164,7 @@ http://localhost:8080/api/loan-approval/start?customerId=C-1001&amount=5000
 http://localhost:8080/api/loan-repayment/start?customerId=C-1002&amount=6000
 ```
 
-Each answers with the ID of the case it started and logs the URL showing the result:
+Each answers with the ID of the case it started and logs the URL which shows the result:
 
 ```
 Loan approval '0f7c…' started: Ada Lovelace asks for 5,000 EUR
@@ -172,8 +172,8 @@ Credit rating of loan approval '0f7c…' is 50
 Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 ```
 
-Both URLs are a module's own, published by that module, and this project neither knows nor
-declares them.
+Both URLs belong to a module, which publishes them. This project neither knows nor declares
+them.
 
 Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
 configures a user for them. They show what was deployed, which is the shortest answer to what
@@ -188,8 +188,8 @@ mvn -pl application spring-boot:build-image
 docker run --rm -p 8080:8080 -e LOAN_APPROVAL_RATING_PROVIDER=schufa online-banking:1.0.0-SNAPSHOT
 ```
 
-The environment variable is the third configuration level from above, and the log line naming
-the rating provider is where it becomes visible.
+The environment variable is the third configuration level from above. You see it in the log
+line which names the rating provider.
 
 ## How it works
 
@@ -206,13 +206,13 @@ the rating provider is where it becomes visible.
 | `loan-approval/src/test/java/com/acme/...`                    | the module's own test, owned by the module's team and running without this application       |
 
 What happens at startup: Spring Boot reads the auto-configuration imports of every JAR on the
-classpath, so both modules contribute their beans, entities and repositories. VanillaBP finds
+classpath. So both modules contribute their beans, entities and repositories. VanillaBP finds
 the two `META-INF/workflow-module` markers, deploys the BPMN files each JAR brought, and
 creates one `ProcessService` per aggregate. The application contributed the database, the
-adapter and the environment - nothing else, and nothing module-specific.
+adapter and the environment. Nothing else, and nothing specific to a module.
 
-Adding a third module is one dependency and one version. Removing one is deleting both lines.
-That is the whole promise of this blueprint, and the smoke test is what keeps it honest.
+Adding a third module takes one dependency and one version. Removing one means deleting both
+lines. That is the whole promise of this blueprint, and the smoke test keeps it.
 
 ## Documentation
 

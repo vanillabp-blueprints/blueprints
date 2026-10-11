@@ -4,46 +4,45 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-Every other workflow begins with a call: the application has a business case, hands
-VanillaBP its aggregate and a workflow starts. Here nobody calls. A timer fires, or a
-broadcast signal arrives, and the engine begins a process for which no data exists yet.
+Every other workflow begins with a call. The application has a business case, hands VanillaBP
+its aggregate, and a workflow starts. Here nobody calls. A timer fires, or a broadcast signal
+arrives, and the engine begins a process for which no data exists yet.
 
 ## What this blueprint shows
 
 ![The nightly review, started by a timer or by a signal](docs/nightly_review.png)
 
-A second process next to the loan approval of the base blueprint: a review that looks at the
-loan approvals piled up so far. It has two start events, and neither of them can be
-triggered by a call.
+A second process next to the loan approval of the base blueprint: a review which looks at the
+loan approvals collected so far. It has two start events, and no call can trigger either of
+them.
 
-- **There is no `startWorkflow`.** Look at `nightlyreview/Workflow.java`: the class that
-  owns `ProcessService` for this workflow has no method starting one, because there is
-  nothing to start. That absence is the blueprint.
-- **You still build the aggregate.** A workflow needs one - tasks are routed by its ID and
-  expressions read its attributes - and the application builds it, exactly as it does for a
-  workflow it starts itself. `@WorkflowStartedByBpms` returns the aggregate, VanillaBP saves
-  it before anything else of the process runs, and no object of yours comes into existence
-  without your code.
+- **There is no `startWorkflow`.** Look at `nightlyreview/Workflow.java`. The class which owns
+  `ProcessService` for this workflow has no method which starts one, because there is nothing
+  to start. That missing method is the blueprint.
+- **You still build the aggregate.** A workflow needs one: tasks are routed by its ID, and
+  expressions read its attributes. The application builds it, exactly as for a workflow it
+  starts itself. `@WorkflowStartedByBpms` returns the aggregate. VanillaBP saves it before
+  anything else of the process runs. No object of yours comes into existence without your code.
 - **You name the workflow.** The ID of a workflow is the ID of its aggregate, and the method
-  picks it. The BPMS is told about it afterwards and holds it: Camunda 7 as the business key,
-  Camunda 8 as a process variable. That is also what makes a repeated notification find the
-  aggregate instead of building a second one.
+  picks it. The BPMS (business process management system) learns it afterwards and holds it:
+  Camunda 7 as the business key, Camunda 8 as a process variable. That is also why a repeated
+  notification finds the aggregate instead of building a second one.
 
 The method is **required** for this process. A timer or a signal may fire for it, and an
-application without the method does not boot - the message names the process and the method
-to write. You learn that while the models are deployed, not when the timer fires at three in
-the morning.
+application without the method does not boot. The message names the process and the method to
+write. You learn that while the models are deployed, not when the timer fires at three in the
+morning.
 
 The signal start event is the one place where the application has a say. It can broadcast
-`ReviewRequested` and thereby ask for a review, but it still does not start one: a broadcast
-is a name, and what listens for it is the engine's business. That is also what makes this
-blueprint compose with
-[`bpmn-signals`](https://github.com/vanillabp-blueprints/bpmn-signals-quarkus), which
-shows the other half - a signal caught by workflows that already run.
+`ReviewRequested` and so ask for a review. But it still does not start one. A broadcast is a
+name, and what listens for it is the engine's business. That is also why this blueprint
+combines with [`bpmn-signals`](https://github.com/vanillabp-blueprints/bpmn-signals-quarkus).
+That one shows the other half: a signal caught by workflows which already run.
 
-Message start events are **not** part of this. Those are triggered by the application
-through `startWorkflowByMessage`, which carries your aggregate, and they are shown in
-[`bpmn-message-start`](https://github.com/vanillabp-blueprints/bpmn-message-start-quarkus).
+Message start events are **not** part of this. The application triggers those through
+`startWorkflowByMessage`, which carries your aggregate.
+[`bpmn-message-start`](https://github.com/vanillabp-blueprints/bpmn-message-start-quarkus)
+shows them.
 
 ## Delta to the base blueprint
 
@@ -56,7 +55,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `nightlyreview/Service.java`             | builds the aggregate of a start nobody asked for, and names it                    |
 | `nightlyreview/Workflow.java`            | `sendSignal` and, deliberately, no `startWorkflow`                                |
 | `nightlyreview/model/Aggregate.java`     | the aggregate of a workflow nobody started, built by the application all the same |
-| `NightlyReviewIT.java`                   | a test that cannot start anything and waits for an aggregate to appear            |
+| `NightlyReviewIT.java`                   | a test which cannot start anything and waits for an aggregate to appear           |
 
 ## Running it
 
@@ -66,16 +65,15 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Start one. Its address and everything
+else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -90,13 +88,13 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` makes the config profile of the same
-name the parent of whichever profile the application runs in, so the engine is chosen once, on
-the Maven command line, and the build, the tests and `quarkus:dev` all follow it.
+The file is loaded because the Maven profile `camunda8` makes the config profile of the same
+name the parent of the profile the application runs in. So you choose the engine once, on the
+Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
-The Process-Engine-API adapter cannot run this blueprint, and says so rather than starting
-badly: that API never reports a start the application did not ask for, so deploying such a
-process fails with a message naming the element.
+The Process-Engine-API adapter cannot run this blueprint, and it says so instead of starting
+badly. That API never reports a start the application did not ask for. So deploying such a
+process fails with a message which names the element.
 
 Start the application:
 
@@ -104,16 +102,16 @@ Start the application:
 mvn -pl application quarkus:dev
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 Then do nothing. Five seconds after the model was deployed the timer fires, and a workflow
-exists that nobody asked for:
+exists which nobody asked for:
 
 ```
 A nightly review 'a41f…' was started by the BPMS: TIMER, from start event 'StartEvent_ScheduledReview'. Nobody called startWorkflow
@@ -126,7 +124,7 @@ The reviews are listed at
 http://localhost:8080/api/nightly-review
 ```
 
-Asking for one instead of waiting broadcasts the signal:
+To ask for one instead of waiting, broadcast the signal:
 
 ```
 http://localhost:8080/api/nightly-review/request
@@ -137,8 +135,8 @@ A review was requested. Whether one starts is the engine's decision
 A nightly review '7c02…' was started by the BPMS: SIGNAL, from start event 'StartEvent_ReviewRequested'. Nobody called startWorkflow
 ```
 
-The loan approval of the base blueprint is still there, started the ordinary way, and gives
-the review something to count:
+The loan approval of the base blueprint is still there, started the ordinary way. It gives the
+review something to count:
 
 ```
 http://localhost:8080/api/loan-approval/start?amount=5000
@@ -150,47 +148,46 @@ http://localhost:8080/api/loan-approval/start?amount=5000
 |------------------------------------------------------------|--------------------------------------------------------------------------|
 | `.../loan-approval/processes/camunda7/nightly_review.bpmn` | the process: a timer start event, a signal start event, one service task |
 | `.../nightlyreview/WorkflowTaskHandler.java`               | `@WorkflowStartedByBpms`, the hook into a start nobody triggered         |
-| `.../nightlyreview/Service.java`                           | builds and names the aggregate; contains no way to start a review        |
+| `.../nightlyreview/Service.java`                           | builds and names the aggregate. It has no way to start a review          |
 | `.../nightlyreview/Workflow.java`                          | `sendSignal` for asking, and no `startWorkflow` at all                   |
 | `.../nightlyreview/model/Aggregate.java`                   | the aggregate the application builds for a start it did not ask for      |
 | `loan-approval/src/test/.../NightlyReviewIT.java`          | waits for a workflow to appear, because it cannot start one              |
 
-The order of events: the model is deployed while the application boots, the engine
-schedules the timer, and five seconds later it fires. VanillaBP is notified, opens a
-transaction, calls the `@WorkflowStartedByBpms` method, takes the aggregate it returns and
-saves it. Only then does the process continue to its service task, which is an ordinary
-`@WorkflowTask` - from there nothing about this workflow is special.
+The order of events: the model is deployed while the application boots. The engine schedules
+the timer, and five seconds later it fires. VanillaBP is notified and opens a transaction. It
+calls the `@WorkflowStartedByBpms` method, takes the aggregate it returns and saves it. Only
+then does the process go on to its service task, which is an ordinary `@WorkflowTask`. From
+there on nothing about this workflow is special.
 
 ### The trigger says what fired, not when
 
-`BpmsStartTrigger` carries the kind of the start event and the BPMN ID of the event that
-fired, and for a signal its name. It carries no time, because no BPMS tells a start listener
-the moment it scheduled the start for, and an adapter would have to invent one.
+`BpmsStartTrigger` carries the kind of the start event, the BPMN ID of the event which fired,
+and for a signal its name. It carries no time. No BPMS tells a start listener the moment it
+scheduled the start for, so an adapter would have to invent one.
 
 Where the moment matters, the model writes it. The service task of this process fills a
-variable of its own by an expression - `${now().toInstant().toString()}` on Camunda 7,
-`=string(now())` on Camunda 8 - and `reviewPendingApprovals` reads it as a `@TaskParam`:
+variable of its own by an expression: `${now().toInstant().toString()}` on Camunda 7,
+`=string(now())` on Camunda 8. `reviewPendingApprovals` reads it as a `@TaskParam`:
 
 ```java
 @WorkflowTask
 public void reviewPendingApprovals(final Aggregate review, @TaskParam("reviewedAt") final String reviewedAt) {
 ```
 
-It arrives as a text, and the aggregate keeps it as one. What a moment looks like is the
-expression language's business: Camunda 7 writes `2026-08-14T09:12:31.884Z`, Camunda 8
-writes `2026-08-14T09:12:31.884@GMT`. That the two differ is the reason VanillaBP hands out
-no time of its own.
+It arrives as a text, and the aggregate keeps it as one. The expression language decides what a
+moment looks like. Camunda 7 writes `2026-08-14T09:12:31.884Z`, Camunda 8 writes
+`2026-08-14T09:12:31.884@GMT`. Because the two differ, VanillaBP hands out no time of its own.
 
-How the two engines arrange that differs, and it is worth knowing which part is theirs.
-Camunda 7 runs an execution listener on the start event inside its own transaction, so the
-aggregate and the process instance commit together, and the aggregate's ID becomes the
-instance's business key. Camunda 8 has VanillaBP add an execution listener whose job asks
-your method for the aggregate and writes its ID into the instance; the listener gates the
-workflow, so nothing runs before the aggregate exists.
+The two engines arrange that differently, and it is worth knowing which part is theirs. Camunda
+7 runs an execution listener on the start event inside its own transaction. So the aggregate
+and the process instance commit together, and the aggregate's ID becomes the instance's
+business key. On Camunda 8 VanillaBP adds an execution listener. Its job asks your method for
+the aggregate and writes its ID into the instance. The listener holds the workflow back, so
+nothing runs before the aggregate exists.
 
-The test is the unusual part. It has no call to make, so it waits for an aggregate with the
-expected trigger kind to appear. For the signal it broadcasts in a poll loop rather than
-once: a signal is not buffered, and a subscription that is a moment late gets nothing.
+The test is the unusual part. It has no call to make. So it waits for an aggregate with the
+expected trigger kind to appear. For the signal it broadcasts in a poll loop, not once. A
+signal is not buffered, and a subscription which is a moment late gets nothing.
 
 ## Documentation
 

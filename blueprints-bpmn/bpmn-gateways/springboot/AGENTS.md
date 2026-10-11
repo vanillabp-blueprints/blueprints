@@ -1,15 +1,15 @@
 # bpmn-gateways
 
-Adds a decision to the process: an exclusive gateway routing on an attribute of the
+Adds a decision to the process: an exclusive gateway which routes on an attribute of the
 workflow aggregate, with a default flow. A delta on top of `module-single`.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
-first. It carries the procedure, the reference structure and the list of things never to do.
+first. It has the procedure, the reference structure and the list of things never to do.
 
 ## Placeholders
 
-Replace all of these consistently; they are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint.
 
 |        Placeholder         |                                                          Meaning                                                          |
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------|
@@ -26,19 +26,19 @@ Blueprint-specific names, each occurring in more than one place:
 | `acceptable`, `review`, `too-low`                                                  | the values `Service#bandOf` returns and the values those getters compare against                     |
 | `approveLoan`, `requestManualReview`, `rejectLoan`, `sendPaperLetter`, `sendEmail` | one `@WorkflowTask` method and one task definition per branch                                        |
 
-A getter's name is the contract between code and model. Renaming one without the condition
-sends every workflow down the default flow, which looks like a business decision rather than
+A getter's name is the contract between code and model. If you rename one but not the
+condition, every workflow takes the default flow. That looks like a business decision, not like
 a defect.
 
 ## Core files
 
 |                                            File                                            |                                                                             Why it matters                                                                             |
 |--------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | two exclusive gateways, each with conditional flows and a `default` one: the first asks the aggregate, the second reads a raw attribute and is the version NOT to copy |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | two exclusive gateways, each with conditional flows and a `default` one. The first asks the aggregate. The second reads a raw attribute and is the version NOT to copy |
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `ratingBand` plus the two intention-revealing getters the first gateway asks                                                                                           |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `bandOf` turns the rating into a band using the configured thresholds; one method per branch                                                                           |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `bandOf` turns the rating into a band using the configured thresholds. One method per branch                                                                           |
 | `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | one `@WorkflowTask` method per branch                                                                                                                                  |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the thresholds; a number a condition would otherwise carry                                                                                                             |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the thresholds. Otherwise a condition would carry these numbers                                                                                                        |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | one test per branch, each steered by the amount alone                                                                                                                  |
 
 ## Boilerplate files
@@ -58,43 +58,42 @@ a defect.
 | `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model                       |
 
 `TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
-blueprint - copy them unchanged.
+blueprint. Copy them unchanged.
 
 ## Adding this blueprint to an existing project
 
-1. Decide what the process may branch on and add ONE attribute for it to the workflow
-   aggregate, holding a small set of allowed values.
-2. Add a getter per branch which answers the question the gateway asks, e.g.
-   `isRatedAcceptable()`. **The conditions reference those getters, never the attribute.**
-   This is the pattern the wiki calls
+1. Decide what the process may branch on. Add ONE attribute for it to the workflow aggregate,
+   with a small set of allowed values.
+2. Add a getter per branch which answers the question the gateway asks, for example
+   `isRatedAcceptable()`. **The conditions refer to those getters, never to the attribute.**
+   The wiki calls this pattern
    [Decoupling BPMN from the data model](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#decoupling-bpmn-from-the-data-model)
-   and strongly recommends: the data model may then change without touching the BPMN and
-   without migrating running workflows. Getters derived this way cannot overlap either,
-   which a boolean per branch can.
-3. Let the business code derive the attribute. Thresholds, tables and rules belong into
-   `Service` and into configuration, never into a condition of the model - a changed number
-   would otherwise be a new process version with instances left on the old one.
-4. Add the gateway to the BPMN and one conditional sequence flow per branch, in the
-   expression language of the engine: `${ratedAcceptable}` for Camunda 7, `=ratedAcceptable`
-   for Camunda 8. The Java code is the same for both.
-5. Annotate the aggregate class `@NoSyncWithBPMS` and put `@SyncWithBPMS` on exactly what
-   the conditions read, which is the getters of step 2 and any raw attribute a condition
-   still names. A condition can only read what was shared, so a missing annotation shows up
-   as a workflow taking the wrong branch, not as a message at startup.
-6. Give the gateway a `default` flow. Without one a workflow whose value fits no condition
-   stops at the gateway, and on some engines that is an incident nobody expects.
-7. Add a `@WorkflowTask` method per branch, each forwarding to `Service` as everywhere else.
-8. Copy `LoanApprovalIT` and write one test per branch, including the default flow. The
-   default flow is the branch most likely to be wrong, because nothing names it in the code.
+   and strongly recommends it. The data model may then change without touching the BPMN and
+   without migrating running workflows. Getters derived this way cannot overlap either. A
+   boolean per branch can.
+3. Let the business code derive the attribute. Thresholds, tables and rules belong in `Service`
+   and in configuration, never in a condition of the model. Otherwise a changed number would be
+   a new process version, with instances left on the old one.
+4. Add the gateway to the BPMN, and one conditional sequence flow per branch, in the expression
+   language of the engine: `${ratedAcceptable}` for Camunda 7, `=ratedAcceptable` for Camunda
+   8. The Java code is the same for both.
+5. Annotate the aggregate class with `@NoSyncWithBPMS`. Put `@SyncWithBPMS` on exactly what the
+   conditions read: the getters of step 2, and any raw attribute a condition still names. A
+   condition can only read what was shared. So a missing annotation shows up as a workflow
+   which takes the wrong branch, not as a message at startup.
+6. Give the gateway a `default` flow. Without one, a workflow whose value fits no condition
+   stops at the gateway. On some engines that is an incident nobody expects.
+7. Add a `@WorkflowTask` method per branch. Each forwards to `Service`, as everywhere else.
+8. Copy `LoanApprovalIT` and write one test per branch, including the default flow. The default
+   flow is the branch which is most likely wrong, because nothing in the code names it.
 
 The second gateway of this blueprint (`Gateway_Notification`, condition `${amount >= 10000}`)
-does none of that on purpose: it reads a raw attribute and carries its threshold in the
-model. It is in the blueprint to be recognized in an existing process, not to be copied into
-a new one, and both the model and the README say so.
+does none of that, on purpose. It reads a raw attribute and carries its threshold in the model.
+It is in the blueprint so that you recognize it in an existing process, not so that you copy it
+into a new one. Both the model and the README say so.
 
-If the value a condition needs is not on the aggregate, that is the finding: put it there
-rather than pushing a process variable, and it stays visible to every other part of the
-application.
+If the value a condition needs is not on the aggregate, that is the finding. Put it there
+instead of pushing a process variable. Then every other part of the application can see it too.
 
 ## Verifying
 
@@ -103,12 +102,12 @@ mvn install verify
 ```
 
 That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamunda8` needs a
-running cluster and `vanillabp.adapters.camunda8.rest-address` configured; do not report a
-failure of that profile as a defect of the generated code before having checked it.
+running cluster and a configured `vanillabp.adapters.camunda8.rest-address`. Check both before
+you report a failure of that profile as a defect of the generated code.
 
-`LoanApprovalIT` proves the aspect and has to pass: three amounts, three branches, one
-outcome each. Run it on both BPMS if you touched a condition - the expression languages
-differ, and a condition that never holds sends every workflow down the default flow, which
-no build tells you about unless a test asks for the other branches.
+`LoanApprovalIT` proves the aspect and has to pass: three amounts, three branches, one outcome
+each. Run it on both BPMS (business process management systems) if you touched a condition. The
+expression languages differ. A condition which is never true sends every workflow down the
+default flow. No build tells you about that, unless a test asks for the other branches.
 
 Do not report success without having run this.

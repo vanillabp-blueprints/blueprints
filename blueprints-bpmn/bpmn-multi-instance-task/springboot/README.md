@@ -5,18 +5,18 @@
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 Sometimes a task has to run once per something: per partner asked, per document to check, per
-customer to inform. A multi-instance task is how the model says so, and this blueprint shows
-what the business code sees of it, which is one element at a time.
+customer to inform. A multi-instance task is how the model says so. This blueprint shows what
+the business code sees of it: one element at a time.
 
 ## What this blueprint shows
 
 ![The loan approval process, asking every partner for an offer](docs/loan_approval.png)
 
-The loan approval of the base blueprint asks several partner banks for an offer, one
-instance of the task per partner, and takes the cheapest one afterwards.
+The loan approval of the base blueprint asks several partner banks for an offer, one instance
+of the task per partner. Afterwards it takes the cheapest one.
 
-The BPMS hands three things to a `@WorkflowTask` method, and each of them names the
-multi-instance element in the model:
+The BPMS (business process management system) hands three things to a `@WorkflowTask` method.
+Each of them names the multi-instance element in the model:
 
 ```java
 @WorkflowTask
@@ -27,45 +27,45 @@ public void requestPartnerOffer(
     @MultiInstanceTotal("ServiceTask_RequestPartnerOffer") final int total) {
 ```
 
-The name is the ID of the multi-instance element rather than the name of the element
-variable in the model, and it has to be given: a method may sit inside several iterations at
-once, a multi-instance task within a multi-instance subprocess, and then it matters which of
-them a parameter asks about.
+The name is the ID of the multi-instance element, not the name of the element variable in the
+model. You have to give it. A method may sit inside several iterations at once, for example a
+multi-instance task within a multi-instance subprocess. Then it matters which of them a
+parameter asks about.
 
-What is iterated over comes from the workflow aggregate. The model reads the attribute
-`partnerIds`, and the business code fills it before the task is reached. The class is
-annotated `@NoSyncWithBPMS` and that one attribute `@SyncWithBPMS`, so the list is the only
-thing of the aggregate which reaches the BPMS. It has to reach it, because the engine makes
-one instance per element and hands that element over. Keep such a collection to identifiers, because
-an identifier is the smallest thing which names an iteration, and the business code looks up
+What the loop goes over comes from the workflow aggregate. The model reads the attribute
+`partnerIds`, and the business code fills it before the workflow reaches the task. The class is
+annotated `@NoSyncWithBPMS`, and that one attribute `@SyncWithBPMS`. So the list is the only
+part of the aggregate which reaches the BPMS. It has to reach it, because the engine makes one
+instance per element and hands that element over. Keep such a collection to identifiers. An
+identifier is the smallest thing which names an iteration, and the business code looks up
 whatever else it needs. The offers the iterations write stay in the application, because no
 expression in the model reads them.
 
-Every instance is a token of its own, and a remote engine really does run them next to each
-other. Each of them loads the workflow aggregate, runs the method and saves it again, so an
-attribute written by all of them would end up holding what the instance committing last read
-at its start. This blueprint therefore adds a row per offer, `PartnerOffer`, which is a
-modelling decision rather than a JPA trick: an offer of one partner is a thing of its own and
-several of them do not compete. The other ways out are in the wiki under
+Every instance is a token of its own, and a remote engine really runs them next to each other.
+Each of them loads the workflow aggregate, runs the method and saves it again. So an attribute
+written by all of them would end up holding what the instance which commits last read at its
+start. That is why this blueprint adds a row per offer, `PartnerOffer`. This is a decision of
+the model, not a JPA (Jakarta Persistence) trick. An offer of one partner is a thing of its
+own, and several of them do not compete. The wiki has the other ways out under
 [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates).
 
 Anything computed over all iterations belongs after the multi-instance task. `chooseBestOffer`
-is a plain service task which runs once, when the last instance has finished, and it reads the
-rows the iterations left.
+is a plain service task which runs once, when the last instance has finished. It reads the rows
+the iterations left.
 
 ## Delta to the base blueprint
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|            File            |                                                      What is different                                                       |
-|----------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a multi-instance service task iterating over an attribute of the aggregate, and a task after it                              |
-| `Aggregate.java`           | `partnerIds`, which the model iterates over and which is therefore shared with the BPMS, and `offers`, one row per iteration |
-| `PartnerOffer.java`        | new: what one iteration found                                                                                                |
-| `WorkflowTaskHandler.java` | `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`                                                     |
-| `Service.java`             | a method taking ONE partner, and a second one choosing between the results                                                   |
-| `loan-approval.yaml`       | the partners, which is what decides how many iterations there are                                                            |
-| `LoanApprovalIT.java`      | asserts the rows of all iterations, without relying on the order they arrived in                                             |
+|            File            |                                                     What is different                                                     |
+|----------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`       | a multi-instance service task iterating over an attribute of the aggregate, and a task after it                           |
+| `Aggregate.java`           | `partnerIds`, which the model loops over and which is therefore shared with the BPMS, and `offers`, one row per iteration |
+| `PartnerOffer.java`        | new: what one iteration found                                                                                             |
+| `WorkflowTaskHandler.java` | `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`                                                  |
+| `Service.java`             | a method taking ONE partner, and a second one choosing between the results                                                |
+| `loan-approval.yaml`       | the partners, which is what decides how many iterations there are                                                         |
+| `LoanApprovalIT.java`      | asserts the rows of all iterations, without relying on the order they arrived in                                          |
 
 ## Running it
 
@@ -75,16 +75,15 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Start one. Its address and everything
+else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -99,13 +98,13 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
-name, so the engine is chosen once, on the Maven command line, and the build, the tests and
+The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
+name. So you choose the engine once, on the Maven command line. The build, the tests and
 `spring-boot:run` all follow it.
 
-That engine has no loop cardinality and reports neither the number of instances nor, to a
-nested task, the iteration around it. The adapter fills those gaps while deploying, so the
-same Java code and the same annotations work here; the
+That engine has no loop cardinality. It reports neither the number of instances nor, to a
+nested task, the iteration around it. The adapter fills those gaps while deploying. So the same
+Java code and the same annotations work here. The
 [adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Deviations)
 says what it does.
 
@@ -115,13 +114,13 @@ Start the application:
 mvn -pl application spring-boot:run
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 This is the URL that starts a loan approval:
 
@@ -149,9 +148,9 @@ The result of a run is at
 http://localhost:8080/api/loan-approval/{loanRequestId}
 ```
 
-Add a partner to `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` and the
-task runs four times instead of three, without the model being touched and without a
-deployment. That is the reason the list lives in configuration.
+Add a partner to `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`, and the
+task runs four times instead of three. Nobody touches the model, and there is no deployment.
+That is why the list lives in configuration.
 
 Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
 configures a user for them. They draw the multi-instance task with the number of instances that
@@ -161,23 +160,23 @@ to log in is in the
 
 ## How it works
 
-|                                            File                                            |                                      Role                                      |
-|--------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance task, what it iterates over and what each instance is given |
-| `.../loanapproval/WorkflowTaskHandler.java`                                                | turns the element, the index and the total into a call naming one partner      |
-| `.../loanapproval/Service.java`                                                            | asks one partner, and picks the best offer once all of them answered           |
-| `.../loanapproval/model/Aggregate.java`                                                    | the collection the model iterates over, and the offers written into it         |
-| `.../loanapproval/model/PartnerOffer.java`                                                 | one row per iteration, which is what makes concurrent instances harmless       |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the partners, so the number of iterations is configuration rather than model   |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                           | asserts the rows of all iterations and the choice made from them               |
+|                                            File                                            |                                   Role                                    |
+|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance task, what it loops over and what each instance gets   |
+| `.../loanapproval/WorkflowTaskHandler.java`                                                | turns the element, the index and the total into a call naming one partner |
+| `.../loanapproval/Service.java`                                                            | asks one partner, and picks the best offer once all of them answered      |
+| `.../loanapproval/model/Aggregate.java`                                                    | the collection the model iterates over, and the offers written into it    |
+| `.../loanapproval/model/PartnerOffer.java`                                                 | one row per iteration, which is what makes concurrent instances harmless  |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the partners. So the number of iterations is configuration, not model     |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                           | asserts the rows of all iterations and the choice made from them          |
 
-The order of events: `retrieveCreditRating` writes the rating and the partners, the engine
-evaluates the collection and creates one instance per element, each instance runs the handler
-in a transaction of its own, and `chooseBestOffer` runs when the last of them has finished.
+The order of events: `retrieveCreditRating` writes the rating and the partners. The engine
+evaluates the collection and creates one instance per element. Each instance runs the handler
+in a transaction of its own. `chooseBestOffer` runs when the last of them has finished.
 
 The test says `containsExactlyInAnyOrder`, and that is not laziness. The instances have no
-order among themselves, and a test which expects one passes on an embedded engine and fails
-on a remote one.
+order among themselves. A test which expects one passes on an embedded engine and fails on a
+remote one.
 
 ## Documentation
 

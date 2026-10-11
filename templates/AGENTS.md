@@ -1,16 +1,17 @@
 # <blueprint-id>
 
 <!--
-Template for the AGENTS.md of a blueprint. This file is for AI AGENTS: it says what to
-replace, which files carry the aspect, how to graft it onto an existing project and how
-to verify the result. Explanations for humans belong into README.md.
+Template for the AGENTS.md of a blueprint. This file is for AI AGENTS. It says what to replace,
+which files carry the aspect, how to add it to an existing project, and how to check the
+result. Explanations for humans belong in README.md. Write it in the plain English the section
+"How we write" of the monorepo's AGENTS.md asks for.
 
-The '##' headings below are checked by bin/check_docs_structure.py - keep them verbatim,
-in this order. Remove these comments in a real blueprint.
+bin/check_docs_structure.py checks the '##' headings below. Keep them word for word, in this
+order. Remove these comments in a real blueprint.
 
-Keep it short. The rules valid for all blueprints are in
-https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md
-and must not be repeated here.
+Keep it short. The rules for all blueprints are in
+https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md. Do not repeat
+them here.
 
 Never mention the other platform.
 
@@ -23,11 +24,11 @@ role, as CONTRIBUTING.md describes: `loanApproval` for the `Service`, `bpms` for
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
-first. It carries the procedure, the reference structure and the list of things never to do.
+first. It has the procedure, the reference structure and the list of things never to do.
 
 ## Placeholders
 
-Replace all of these consistently; they are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint.
 
 |        Placeholder         |                                      Meaning                                       |
 |----------------------------|------------------------------------------------------------------------------------|
@@ -36,7 +37,7 @@ Replace all of these consistently; they are the same in every blueprint.
 | `loan-approval`            | use case identifier, kebab case: workflow module ID, resource directory, REST path |
 | `loan_approval`            | BPMN process ID                                                                    |
 
-<Add blueprint-specific placeholders here, e.g. the name of a BPMN task, and say where
+<Add placeholders of this blueprint here, for example the name of a BPMN task, and say where
 each occurs.>
 
 ## Core files
@@ -54,8 +55,8 @@ The files carrying the aspect. Read these, adapt them, keep their structure.
 
 ## Boilerplate files
 
-Present so the blueprint runs on its own. Copy them unchanged or use what the target
-project already has.
+They are here so that the blueprint runs on its own. Copy them unchanged, or use what the
+target project already has.
 
 |                  File                  |                       Purpose                       |
 |----------------------------------------|-----------------------------------------------------|
@@ -66,8 +67,8 @@ project already has.
 
 ## Adding this blueprint to an existing project
 
-<Numbered steps, precise enough to be followed without reading the README. Name the target
-file for every step and say what to do if the project already has that file.>
+<Numbered steps, precise enough to follow without reading the README. Name the target file for
+every step. Say what to do if the project already has that file.>
 
 1. Add the BPMN model to the workflow module's resource directory.
 2. Add the `@WorkflowTask` methods to `WorkflowTaskHandler`, the business methods they call
@@ -82,6 +83,6 @@ file for every step and say what to do if the project already has that file.>
 mvn verify
 ```
 
-<Name what has to be true afterwards: which test proves the aspect, and which startup
-message appears when the BPMN and the code do not match. Do not report success without
-having run this.>
+<Name what has to be true afterwards: which test proves the aspect, and which startup message
+appears when the BPMN and the code do not match. Do not report success without having run
+this.>

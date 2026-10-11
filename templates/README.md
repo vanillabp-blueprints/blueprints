@@ -5,38 +5,37 @@
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 <!--
-Template for the README.md of a blueprint. This file is for HUMANS: it explains the
-aspect the blueprint shows and how to run it. Everything a machine has to know goes
-into AGENTS.md.
+Template for the README.md of a blueprint. This file is for HUMANS. It explains the aspect the
+blueprint shows and how to run it. Everything a machine has to know goes into AGENTS.md. Write
+it in the plain English the section "How we write" of the monorepo's AGENTS.md asks for.
 
-The '##' headings below are checked by bin/check_docs_structure.py - keep them
-verbatim, in this order. Remove these comments in a real blueprint.
+bin/check_docs_structure.py checks the '##' headings below. Keep them word for word, in this
+order. Remove these comments in a real blueprint.
 
-Never mention the other platform. A Spring Boot blueprint does not know that Quarkus
-exists, and the other way round.
+Never mention the other platform. A Spring Boot blueprint does not know that Quarkus exists,
+and the other way round.
 -->
 
-<One paragraph: which question this blueprint answers, in the words of somebody who has
-that question. No more than four sentences.>
+<One paragraph: which question this blueprint answers, in the words of somebody who has that
+question. No more than four sentences.>
 
 ## What this blueprint shows
 
 ![<What the picture shows, in one line>](docs/<process-id>.png)
 
 <!--
-The picture of the process comes first: a reader wants to see the model before reading
-about it. Render it with bin/render_bpmn_images.sh and commit it.
+The picture of the process comes first. A reader wants to see the model before reading about
+it. Render it with bin/render_bpmn_images.sh and commit it.
 -->
 
-<The aspect, explained. Name the BPMN elements and the SPI involved and say why it is done
-this way - the "why" is the part no reference documentation carries. Do not repeat the
-reference documentation, link it in "Documentation" instead.>
+<The aspect, explained. Name the BPMN elements and the SPI involved, and say why it is done
+this way. No reference documentation has the "why". Do not repeat the reference documentation.
+Link it in "Documentation" instead.>
 
 ## Delta to the base blueprint
 
-<Only what is different from the base blueprint (see the index entry's 'base'), file by
-file. A reader who knows the base blueprint should be able to stop reading after this
-section.
+<Only what is different from the base blueprint (see the index entry's 'base'), file by file. A
+reader who knows the base blueprint should be able to stop reading after this section.
 
 Omit this section if this blueprint is a base itself.>
 
@@ -61,14 +60,14 @@ Start the process:
 http://localhost:8080/api/loan-approval/<...>
 ```
 
-<Then describe the walk-through. At every wait state the application logs one clickable
-URL per possible continuation - show an example of that log output here. A browser is the
-only tool needed: no curl, no request body.>
+<Then describe the walk-through. At every wait state the application logs one clickable URL for
+each possible next step. Show an example of that log output here. A browser is the only tool
+needed: no curl, no request body.>
 
 ## How it works
 
-<The walk-through of the code: which file does what, in the order the process passes them.
-Keep it to the files that matter; the boilerplate is listed in AGENTS.md.>
+<The walk-through of the code: which file does what, in the order the process passes them. Keep
+it to the files which matter. AGENTS.md lists the boilerplate.>
 
 ## Documentation
 

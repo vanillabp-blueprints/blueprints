@@ -5,42 +5,40 @@
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 Waiting is part of most business processes: a cool-off period before something is sent, a
-deadline after which a request is chased or dropped. A BPMS does that waiting for you, and
-this blueprint shows both shapes of it - one that delays the process, and one that takes
-work away.
+deadline after which a request is chased or dropped. A BPMS (business process management
+system) does that waiting for you. This blueprint shows two kinds of it: one delays the
+process, the other takes work away.
 
 ## What this blueprint shows
 
 ![The loan approval process, with a timer in the sequence flow and a deadline on a task](docs/loan_approval.png)
 
-The loan approval of the base blueprint, with a partner who has to approve the loan and two
+The loan approval of the base blueprint, with a partner who has to approve the loan, and two
 timers around that:
 
-- **A timer in the sequence flow.** After the rating the workflow simply waits, and only
-  then is the partner asked. Nothing of the application runs meanwhile: no thread, no
-  scheduler, no `sleep`. The BPMS holds the instance and wakes it up.
-- **A deadline on the waiting task.** The task that asks the partner carries an
-  interrupting timer boundary event. If no answer arrives in time, the workflow leaves the
-  task and takes the path behind the timer, where the process decides what a missed
-  deadline means.
+- **A timer in the sequence flow.** After the rating the workflow just waits. Only then is the
+  partner asked. Nothing of the application runs in the meantime: no thread, no scheduler, no
+  `sleep`. The BPMS holds the instance and wakes it up.
+- **A deadline on the waiting task.** The task which asks the partner carries an interrupting
+  timer boundary event. If no answer arrives in time, the workflow leaves the task and takes
+  the path behind the timer. There the process decides what a missed deadline means.
 
-The second one is where the application notices something: an interrupting boundary event
-cancels the open task, and the handler is called once more with `@TaskEvent CANCELED` so it
-can drop the task id it kept. **Not every BPMS reports that**, so an application must not
-depend on it for correctness - answering a task that is gone is a no-op either way. Which
-engines deliver cancellations is on
-[the adapter's wiki page](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters),
-and the test of this blueprint asserts the cleared id only where it is delivered.
+With the second one the application notices something. An interrupting boundary event cancels
+the open task. The handler is called once more with `@TaskEvent CANCELED`, so it can drop the
+task id it kept. **Not every BPMS reports that**, so an application must not rely on it.
+Answering a task that is gone does nothing either way.
+[The adapter's wiki page](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters)
+says which engines deliver cancellations. The test of this blueprint asserts the cleared id
+only where it is delivered.
 
-The durations live in the model (`PT1S` and `PT3S` here), which is a decision, not a
-detail: a timer belongs to the process, so changing it is a new process version with
-instances still running on the old one. A deadline that belongs to a contract or a customer
-is better read from the aggregate - both Camunda engines support an expression instead of a
-literal.
+The durations are in the model (`PT1S` and `PT3S` here). That is a decision, not a detail. A
+timer belongs to the process. So changing it means a new process version, with instances still
+running on the old one. A deadline which belongs to a contract or a customer is better read
+from the aggregate. Both Camunda engines support an expression instead of a literal.
 
-Because both durations are literals, nothing of the aggregate has to travel. The class
-carries `@NoSyncWithBPMS` and no attribute carries `@SyncWithBPMS`, so the engine holds the
-aggregate's ID and nothing else. Read a deadline from an expression instead, and the
+Both durations are literals, so no part of the aggregate has to travel. The class carries
+`@NoSyncWithBPMS`, and no attribute carries `@SyncWithBPMS`. So the engine holds the
+aggregate's ID and nothing else. If you read a deadline from an expression instead, the
 attribute that expression names has to be shared.
 
 ## Delta to the base blueprint
@@ -65,16 +63,15 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Start one. Its address and everything
+else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -89,9 +86,9 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` makes the config profile of the same
-name the parent of whichever profile the application runs in, so the engine is chosen once, on
-the Maven command line, and the build, the tests and `quarkus:dev` all follow it.
+The file is loaded because the Maven profile `camunda8` makes the config profile of the same
+name the parent of the profile the application runs in. So you choose the engine once, on the
+Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
 Start the application:
 
@@ -99,13 +96,13 @@ Start the application:
 mvn -pl application quarkus:dev
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 Start a loan approval. This is the only URL you need:
 
@@ -113,7 +110,7 @@ Start a loan approval. This is the only URL you need:
 http://localhost:8080/api/loan-approval/start?amount=5000
 ```
 
-The rating is done at once, the partner is asked a second later, and from then on the clock
+The rating is done at once. The partner is asked a second later, and from then on the clock
 runs:
 
 ```
@@ -124,7 +121,7 @@ Loan approval '0f7c…' waits for the partner, but not forever - the task carrie
   Approved -> http://localhost:8080/api/loan-approval/0f7c…/partner-approved/1a2b…
 ```
 
-Open that URL quickly and the answer is accepted:
+Open that URL quickly, and the answer is accepted:
 
 ```
 The partner approved loan approval '0f7c…'
@@ -138,9 +135,9 @@ The partner request of loan approval '4b21…' was canceled
 Nobody answered for loan approval '4b21…' in time
 ```
 
-The first of those two lines is the cancellation reaching the same handler that sent the
-request - on a BPMS that reports cancellations. Opening the URL afterwards answers that this
-request is not open any more, which the application decides on its own.
+The first of those two lines is the cancellation. It reaches the same handler that sent the
+request, on a BPMS that reports cancellations. If you open the URL afterwards, the answer is
+that this request is not open any more. The application decides that on its own.
 
 ## How it works
 
@@ -153,14 +150,13 @@ request is not open any more, which the application decides on its own.
 | `.../loanapproval/model/Aggregate.java`                                                | the task id, the answer and whether the deadline ran out                                        |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | answered in time, and not answered at all                                                       |
 
-Neither timer costs the application anything while it runs. The BPMS persists the due date,
-wakes the instance up and delivers the next task - which is the reason to model waiting
-instead of building it: a restart, a deployment or a night without traffic changes nothing
-about a due date.
+Neither timer costs the application anything while it runs. The BPMS stores the due date, wakes
+the instance up and delivers the next task. That is the reason to model waiting instead of
+building it. A restart, a deployment or a night without traffic changes nothing about a due
+date.
 
-The tests wait for the aggregate rather than for a clock. A timer fires when the BPMS gets
-to it, so a test that sleeps for exactly three seconds is a test that fails on a slow
-machine.
+The tests wait for the aggregate, not for a clock. A timer fires when the BPMS gets to it. So a
+test that sleeps for exactly three seconds fails on a slow machine.
 
 ## Documentation
 

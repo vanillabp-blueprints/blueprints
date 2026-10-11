@@ -4,10 +4,10 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-A process gets changed while workflows are running on the model it had yesterday. Those
-workflows keep the version they were started on, and they reach their next task expecting the
-behaviour of that version. This blueprint shows how an application serves both without a flag
-on the aggregate and without an `if` in the business code.
+A process gets changed while workflows still run on the model it had yesterday. Those workflows
+keep the version they were started on. They reach their next task and expect the behaviour of
+that version. This blueprint shows how an application serves both, without a flag on the
+aggregate and without an `if` in the business code.
 
 ## What this blueprint shows
 
@@ -23,34 +23,33 @@ public void assessRiskManually(final Aggregate loanRequest) { ... }
 public void assessRiskAutomatically(final Aggregate loanRequest) { ... }
 ```
 
-Version 1 of the process had a person assess the risk; every version after it computes a
-score. Which method is called is decided by the version of the process definition the
-workflow runs on, and that version comes from the BPMS: both Camunda engines count integers
-upwards per BPMN process id. A boundary may also be a version tag from the model
-(`camunda:versionTag`, `zeebe:versionTag`), and ranges are written `1-3`, `v1.0..v2.0`, `>3`
-or `<v2.0`.
+In version 1 of the process a person assessed the risk. Every version after it computes a
+score. The version of the process definition the workflow runs on decides which method is
+called. That version comes from the BPMS (business process management system). Both Camunda
+engines count integers upwards per BPMN process id. A boundary may also be a version tag from
+the model (`camunda:versionTag`, `zeebe:versionTag`). Ranges are written `1-3`, `v1.0..v2.0`,
+`>3` or `<v2.0`.
 
-The engine of the test is empty, so this model deploys as version 1 and `assessRiskManually`
-is what runs. The case the feature exists for is an application which has moved on, and a
-workflow which has not. A test on this platform boots the application once, so it does not
-deploy a second version.
+The engine of the test is empty. So this model deploys as version 1, and `assessRiskManually`
+runs. The feature exists for an application which has moved on, and a workflow which has not. A
+test on this platform boots the application once, so it does not deploy a second version.
 
 What is worth knowing beyond the annotation:
 
 - **Two methods may not serve overlapping versions.** VanillaBP reports that while the
-  application starts, naming both methods, rather than letting the first task of the wrong
+  application starts, and names both methods. It does not let the first task of the wrong
   version find out.
-- **The old method is not dead code.** Deleting it while workflows still run on that version
-  turns their next task into an incident. VanillaBP says so at startup: it asks the BPMS which
-  versions still have running workflows and reports every task definition of such a version
-  which no method serves.
-- **The old attributes stay on the aggregate.** `assessedBy` is written by no new workflow,
-  and removing it would take the data of the running ones with it. The aggregate is the state
-  of the business case, not of the current release. Neither it nor `riskScore` reaches the
-  BPMS: the class carries `@NoSyncWithBPMS` and no attribute takes that back, because no
-  expression in the model reads one. The version a workflow runs on comes from the BPMS
-  itself, so the dispatch needs nothing shared either.
-- **A version nobody runs on any more can be declared obsolete** instead of being served
+- **The old method is not dead code.** If you delete it while workflows still run on that
+  version, their next task becomes an incident. VanillaBP says so at startup. It asks the BPMS
+  which versions still have running workflows. It reports every task definition of such a
+  version which no method serves.
+- **The old attributes stay on the aggregate.** No new workflow writes `assessedBy`. Removing
+  it would take the data of the running ones with it. The aggregate is the state of the
+  business case, not of the current release. Neither it nor `riskScore` reaches the BPMS. The
+  class carries `@NoSyncWithBPMS`, and no attribute takes that back, because no expression in
+  the model reads one. The version a workflow runs on comes from the BPMS itself. So choosing
+  the method needs nothing shared either.
+- **You can declare a version obsolete once nobody runs on it any more**, instead of serving it
   forever:
 
   ```yaml
@@ -60,8 +59,8 @@ What is worth knowing beyond the annotation:
         outfaded-versions: 1
   ```
 
-  This is a statement about workflows, not about deployments: the definition stays in the
-  engine, and VanillaBP stops asking for methods serving it.
+  This is a statement about workflows, not about deployments. The definition stays in the
+  engine, and VanillaBP stops asking for methods which serve it.
 
 ## Delta to the base blueprint
 
@@ -83,21 +82,20 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-The test asserts which of the two methods ran, so it needs an engine which does not know
-this process yet: the deployment is version 1 there, and version 1 is what the first method
-serves. An embedded Camunda 7 starts empty every time. A Camunda 8 cluster does not, so use a
-fresh one when you run the test twice.
+The test asserts which of the two methods ran. So it needs an engine which does not know this
+process yet. There the deployment is version 1, and the first method serves version 1. An
+embedded Camunda 7 starts empty every time. A Camunda 8 cluster does not, so use a fresh one
+when you run the test twice.
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Start one. Its address and everything
+else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -112,12 +110,12 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` makes the config profile of the same
-name the parent of whichever profile the application runs in, so the engine is chosen once, on
-the Maven command line, and the build, the tests and `quarkus:dev` all follow it.
+The file is loaded because the Maven profile `camunda8` makes the config profile of the same
+name the parent of the profile the application runs in. So you choose the engine once, on the
+Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
-Take the address out and the application does not boot. That is the normal way to work with
-VanillaBP: configuration is validated while booting, and the message names the property to
+Take the address out and the application does not boot. This is the normal way to work with
+VanillaBP: it checks the configuration while it boots, and the message names the property to
 set.
 
 Start the application:
@@ -126,13 +124,13 @@ Start the application:
 mvn -pl application quarkus:dev
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 Start a loan approval. This is the only URL you need:
 
@@ -140,7 +138,7 @@ Start a loan approval. This is the only URL you need:
 http://localhost:8080/api/loan-approval/start?amount=5000
 ```
 
-It answers with the ID of the loan request and logs the URL showing the result:
+It answers with the ID of the loan request and logs the URL which shows the result:
 
 ```
 Loan approval '0f7c…' started
@@ -160,21 +158,21 @@ Opening that URL shows the aggregate, including the credit rating the service ta
 | `.../loanapproval/model/Aggregate.java`                                                | what both of them write, including the attribute only the older version fills           |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a workflow and asserts which method served it                                    |
 
-The dispatch happens per delivered task, not per workflow: VanillaBP asks the adapter which
-version the workflow runs on and picks the method whose range covers it. A BPMS which does
-not report a version serves every method regardless of the annotation, and a range naming a
+The method is chosen per delivered task, not per workflow. VanillaBP asks the adapter which
+version the workflow runs on, and picks the method whose range covers it. A BPMS which does not
+report a version serves every method, whatever the annotation says. A range which names a
 version tag needs a BPMS which can be asked about its tags.
 
 What this means for a deployment: put the new model and the new method in one release. The
-running workflows keep their version and their method, new workflows get the new one, and
-nothing has to be migrated. What it costs is an old method per version still in use, which is
-the honest price of not migrating running instances.
+running workflows keep their version and their method. New workflows get the new one. Nothing
+has to be migrated. It costs one old method per version still in use. That is the honest price
+of not migrating running instances.
 
-The reverse is worth stating too. Changing the behaviour of a task without a new version, by
-editing the existing method, changes it for the running workflows as well. Sometimes that is
-what you want - a bug fix usually is. The version range is for the other case, and the
-question to ask is whether a workflow started yesterday should end the way it started or the
-way the application works today.
+The reverse is worth saying too. If you change the behaviour of a task without a new version,
+by editing the existing method, it changes for the running workflows as well. Sometimes that is
+what you want, and for a bug fix it usually is. The version range is for the other case. Ask
+yourself: should a workflow started yesterday end the way it started, or the way the
+application works today?
 
 ## Documentation
 

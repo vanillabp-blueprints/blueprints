@@ -1,15 +1,15 @@
 # bpmn-user-task
 
-Adds a user task: the workflow waits for a person, the application keeps the task's id and
+Adds a user task. The workflow waits for a person. The application keeps the task's id, and
 later completes or cancels the task with it. A delta on top of `module-single`.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
-first. It carries the procedure, the reference structure and the list of things never to do.
+first. It has the procedure, the reference structure and the list of things never to do.
 
 ## Placeholders
 
-Replace all of these consistently; they are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint.
 
 |        Placeholder         |                                                          Meaning                                                          |
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------|
@@ -27,10 +27,10 @@ Blueprint-specific names, each occurring in more than one place:
 | `informCustomer` | the `@WorkflowTask` method behind the user task and the task definition of that service task                           |
 | `noteWithdrawal` | the `@WorkflowTask` method on the error path and the task definition of that service task                              |
 
-Which BPMN attribute of a user task carries the task definition is BPMS-specific, so the two
-models name it differently while both mean `assessRisk`. The error code is the contract
-between code and model: if the two drift apart, the canceled task is not caught by the
-boundary event and the workflow ends as an incident.
+Which BPMN attribute of a user task carries the task definition depends on the BPMS (business
+process management system). So the two models name it differently, and both mean `assessRisk`.
+The error code is the contract between code and model. If the two drift apart, the boundary
+event does not catch the canceled task, and the workflow ends as an incident.
 
 ## Core files
 
@@ -57,40 +57,41 @@ boundary event and the workflow ends as an incident.
 | `application/src/test/java/.../ApplicationSmokeTest.java` | boots the application, which validates the BPMN-to-code wiring                       |
 | `docs/loan_approval.png`                                  | the picture of the process the README shows, rendered from the BPMN model            |
 
-`WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint - copy
-them unchanged. Every test class carries `@QuarkusTest` itself; inheriting it from the
-base class is not enough to make the test a bean.
+`WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint. Copy them
+unchanged. Every test class carries `@QuarkusTest` itself. Inheriting it from the base class
+does not make the test a bean.
 
 ## Adding this blueprint to an existing project
 
-1. Add the user task to the BPMN and give it the task definition the BPMS reads it from
+1. Add the user task to the BPMN, and give it the task definition the BPMS reads it from
    (`camunda:formKey` for Camunda 7, `zeebe:formDefinition externalReference` together with
-   `zeebe:userTask` for Camunda 8, see the adapter's wiki). If the application has to be
-   able to cancel the task, attach an error boundary event and declare a `bpmn:error` whose
-   `errorCode` is the string the code will pass.
+   `zeebe:userTask` for Camunda 8, see the adapter's wiki). If the application has to be able
+   to cancel the task, attach an error boundary event. Declare a `bpmn:error` whose `errorCode`
+   is the string the code will pass.
 2. Add an attribute for the task id to the workflow aggregate. Without it the task cannot
    be answered later, because its id is the only handle to it.
 3. Add a `@WorkflowTask` method named after the task definition to `WorkflowTaskHandler`. It
-   takes the aggregate, `@TaskId` for the id and `@TaskEvent` to tell creation from
-   cancellation, and it calls `Service` for each of the two. Do not complete the task there
-   and never throw `TaskException` in it: there is nothing to complete by BPMN error at
-   creation time.
-4. Add the business methods to `Service`: one storing the id and doing whatever notifies the
-   people who have to act, one dropping the id when the task was canceled, and one per
-   answer the API accepts. Annotate the API-facing ones with `@Transactional`, never the
+   takes the aggregate, `@TaskId` for the id, and `@TaskEvent` to tell creation from
+   cancellation. It calls `Service` for each of the two. Do not complete the task there, and
+   never throw `TaskException` in it. When the task is created, there is nothing to complete by
+   BPMN error.
+4. Add the business methods to `Service`. The first stores the id and does whatever notifies
+   the people who have to act. The second drops the id when the task was canceled. Then add one
+   per answer the API accepts. Annotate the ones the API calls with `@Transactional`, never the
    ones the task handler calls.
-5. Have the answering methods reject a task id which is not the one stored on the aggregate.
-   A task id reaches the application as a link somebody kept, so it outlives the task.
+5. Let the answering methods reject a task id which is not the one stored on the aggregate. A
+   task id reaches the application as a link somebody kept. So it can live longer than the
+   task.
 6. Add `completeUserTask` and `cancelUserTask` calls to `Workflow`, one method per business
    event, and keep the BPMN error code there as a constant.
-7. Add GET endpoints for the answers, carrying the task id in the path, and log the URLs
-   continuing the process when the task is created.
+7. Add GET endpoints for the answers, with the task id in the path. When the task is created,
+   log the URLs which continue the process.
 8. Copy `LoanApprovalIT` and write one test per way the task ends.
 
-A user task without a handler is allowed: the wiring validation does not ask for one,
-because such a task is meant to be worked on through a form or a task list. Add the handler
-when the application has to know about the task, which is the case as soon as it wants to
-complete it itself.
+A user task without a handler is allowed. The check of the wiring does not ask for one, because
+such a task is meant to be worked on through a form or a task list. Add the handler when the
+application has to know about the task. That is the case as soon as it wants to complete it
+itself.
 
 ## Verifying
 
@@ -99,24 +100,23 @@ mvn install verify
 ```
 
 That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamunda8` needs a
-running cluster and `vanillabp.adapters.camunda8.rest-address` configured; do not report a
-failure of that profile as a defect of the generated code before having checked it.
+running cluster and a configured `vanillabp.adapters.camunda8.rest-address`. Check both before
+you report a failure of that profile as a defect of the generated code.
 
 `LoanApprovalIT` proves the aspect and has to pass:
 
-- the aggregate carries the task id, and the service task behind the user task has not run,
-  so the workflow really waits,
+- the aggregate holds the task id, and the service task behind the user task has not run. So
+  the workflow really waits,
 - after `completeUserTask` the service task behind the user task has run,
-- after `cancelUserTask` the service task on the error path has run and the stored id is
-  gone, which is the cancellation notification having arrived.
+- after `cancelUserTask` the service task on the error path has run, and the stored id is gone.
+  That shows the cancellation notification arrived.
 
-The third one only runs where the BPMS supports canceling a user task. The root POM hands
-the BPMS of the build to the tests as the system property `blueprint.bpms`, and the test is
-annotated accordingly; a build reporting it as skipped is not a defect.
+The third one only runs where the BPMS supports canceling a user task. The root POM hands the
+BPMS of the build to the tests as the system property `blueprint.bpms`, and the test is
+annotated for it. A build which reports it as skipped is not a defect.
 
-If a task is never executed, the wiring between BPMN and code is wrong, and the startup log
-names which BPMN task has no method or which method has no task. If the workflow ends in an
-incident instead of taking the error path, the error code in the code and the one in the
-model differ.
+If a task never runs, the wiring between BPMN and code is wrong. The startup log then names the
+BPMN task without a method, or the method without a task. If the workflow ends in an incident
+instead of taking the error path, the error code in the code differs from the one in the model.
 
 Do not report success without having run this.

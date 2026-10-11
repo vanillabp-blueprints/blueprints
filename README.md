@@ -2,29 +2,30 @@
 
 # VanillaBP blueprints
 
-Development monorepo of the [VanillaBP](https://www.vanillabp.io) blueprints: many small
-projects, each showing and explaining one aspect of building a business process application
-with VanillaBP.
+The development monorepo of the [VanillaBP](https://www.vanillabp.io) blueprints. A monorepo is
+one repository which holds many projects. Here these are many small projects. Each one shows
+and explains one aspect of building a business process application with VanillaBP.
 
 [![Build](https://github.com/vanillabp-blueprints/blueprints/actions/workflows/build.yaml/badge.svg)](https://github.com/vanillabp-blueprints/blueprints/actions/workflows/build.yaml)
 [![Nightly build](https://github.com/vanillabp-blueprints/blueprints/actions/workflows/nightly.yaml/badge.svg)](https://github.com/vanillabp-blueprints/blueprints/actions/workflows/nightly.yaml)
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-**This README is for contributors.** If you are looking for a blueprint to use, start at the
+**This README is for contributors.** If you look for a blueprint to use, start at the
 [organisation page](https://github.com/vanillabp-blueprints). It lists all blueprints by
 platform and links the repository of each.
 
 ## How blueprints are developed and delivered
 
-Blueprints are *developed* in this monorepo and *delivered* as one repository per blueprint
-and platform:
+Blueprints are *developed* in this monorepo. They are *delivered* as one repository per
+blueprint and platform:
 
 |             |                                                                                          |
 |-------------|------------------------------------------------------------------------------------------|
 | Development | this repository: one build, one PR for a version bump, one CI run for all blueprints     |
 | Delivery    | `vanillabp-blueprints/<blueprint-id>-<platform>`, pushed by CI using `git subtree split` |
 
-The delivered repositories are read-only mirrors. **Issues and pull requests belong here.**
+The delivered repositories are read-only copies, called mirrors. **Issues and pull requests
+belong here.**
 
 ## Repository layout
 
@@ -41,22 +42,22 @@ blueprints/
 ...
 ```
 
-Blueprint IDs are `<category>-<aspect>` in lower case, the category being one of `module-`,
+Blueprint IDs are `<category>-<aspect>` in lower case. The category is one of `module-`,
 `persistence-`, `bpmn-` or `showcase-`. `<platform>` is `springboot` or `quarkus`.
 
 So far the blueprints here are `module-single`, the `bpmn-*` family and
 `persistence-parallel-branches`, each for both platforms, plus `persistence-active-record` for
-Quarkus alone - the first blueprint whose subject one platform does not have, which the index
-records as `not-applicable` with a reason rather than as a gap. They live in a directory per
-category (`blueprints-modules`, `blueprints-persistence`, `blueprints-bpmn`, later
-`showcases`), so the top level stays readable however many of them there are. The rest of this
+Quarkus alone. That is the first blueprint whose subject one platform does not have. The index
+records it as `not-applicable` with a reason, not as a gap. The blueprints live in a directory
+per category (`blueprints-modules`, `blueprints-persistence`, `blueprints-bpmn`, later
+`showcases`). So the top level stays readable, however many of them there are. The rest of this
 repository is the build, the formatting rules and the conventions the others follow.
 
 ## Building
 
-Requires a JDK 21 or newer; Maven comes with the wrapper. The workflows build with the JDK
-named in `.github/workflows`, currently 25. Every blueprint compiles for Java 21 either way,
-so a copy of it runs on a Java 21 runtime.
+Requires a JDK 21 or newer. Maven comes with the wrapper. The workflows build with the JDK
+named in `.github/workflows`, currently 25. Every blueprint compiles for Java 21 either way, so
+a copy of it runs on a Java 21 runtime.
 
 ```bash
 ./mvnw install verify                    # all blueprints, on the default BPMS
@@ -65,10 +66,10 @@ so a copy of it runs on a Java 21 runtime.
 ./mvnw -N spotless:apply                 # fix formatting violations
 ```
 
-`install` is needed alongside `verify` because Quarkus integration tests resolve modules from
+`install` is needed next to `verify`, because Quarkus integration tests resolve modules from
 the local Maven repository.
 
-Each blueprint also builds on its own, which is what a user gets after cloning a delivered
+Each blueprint also builds on its own. That is what a user gets after cloning a delivered
 repository:
 
 ```bash
@@ -77,26 +78,26 @@ cd blueprints-modules/module-single/springboot && mvn verify
 
 ## The BPMS is a Maven profile
 
-VanillaBP application code is BPMS-invariant, so a blueprint runs on every BPMS it declares
-without a single line changing. Which one a build uses is a Maven profile named on the
-command line, and one of them is active by default.
+VanillaBP application code is the same for every BPMS (business process management system). So
+a blueprint runs on every BPMS it declares, and not a single line changes. A Maven profile
+named on the command line decides which one a build uses. One of the profiles is active by
+default.
 
-Each blueprint declares its profiles in its own POM, so that POM is the list. The `bpms`
-entry of the blueprint in `blueprints.yaml` names the same set, and that entry is what CI
-builds against.
+Each blueprint declares its profiles in its own POM, so that POM is the list. The `bpms` entry
+of the blueprint in `blueprints.yaml` names the same set. CI builds against that entry.
 
-What a BPMS does behind its profile is not explained here but in the wiki of its adapter,
-which `Documentation of VanillaBP itself` below links. A blueprint which needed that knowledge would
-prove the opposite of what a blueprint is for.
+What a BPMS does behind its profile is not explained here. The wiki of its adapter explains it,
+and `Documentation of VanillaBP itself` below links it. A blueprint which needed that knowledge
+would prove the opposite of what a blueprint is for.
 
 ## Contributing
 
-Conventions for adding a blueprint, the self-containment rule for blueprint POMs and the
-versions currently targeted are described in [CONTRIBUTING.md](CONTRIBUTING.md).
+[CONTRIBUTING.md](CONTRIBUTING.md) describes the conventions for adding a blueprint, the rule
+that a blueprint POM builds on its own, and the versions currently targeted.
 
 ## Documentation of VanillaBP itself
 
-Blueprints do not repeat the reference documentation, they link it:
+Blueprints do not repeat the reference documentation. They link it:
 
 - [spi-for-java](https://github.com/vanillabp/spi-for-java): using the SPI
 - [adapter-platform-integration wiki](https://github.com/vanillabp/adapter-platform-integration/wiki): concepts, platforms, configuration

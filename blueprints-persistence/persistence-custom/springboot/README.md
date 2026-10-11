@@ -4,26 +4,26 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-VanillaBP serves the persistence technologies the platform knows. This blueprint is for the case
-it does not know yours: an event store, a ledger, a message producer, a service behind an API.
-The application then answers four questions itself, and this is what the answers look like. A
-delta on top of `module-single`.
+VanillaBP serves the persistence technologies the platform knows. This blueprint is for the
+case where it does not know yours: an event store, a ledger, a message producer, a service
+behind an API. The application then answers four questions itself. This is what the answers
+look like. A delta on top of `module-single`.
 
-There is no database here at all, not even for the framework. The store is a map, so the code
-stays about the contract instead of about a technology.
+There is no database here at all, not even for the framework. The store is a map. So the code
+is about the contract and not about a technology.
 
 ## What this blueprint shows
 
 ![The loan approval process](docs/loan_approval.png)
 
 The loan approval of the base blueprint, unchanged: one service task, started through a GET
-request, and an aggregate the task fills. What changed is everything below it - and the fact
-that the aggregate class names no persistence at all is the first thing to look at. The one
-annotation it does carry, `@NoSyncWithBPMS`, is about the BPMS and not about storage: no
-expression in this model reads the aggregate, so nothing of it is handed over but the loan
-request id VanillaBP needs to find the workflow again.
+request, and an aggregate the task fills. Everything below it changed. The first thing to look
+at: the aggregate class names no persistence at all. Its one annotation, `@NoSyncWithBPMS`, is
+about the BPMS (business process management system), not about storage. No expression in this
+model reads the aggregate. So only the loan request id is handed over, which VanillaBP needs to
+find the workflow again.
 
-Four beans, and none of them is optional:
+Four beans, and you need all of them:
 
 |             Bean             |                          What it answers                          |           The SPI           |
 |------------------------------|-------------------------------------------------------------------|-----------------------------|
@@ -33,11 +33,11 @@ Four beans, and none of them is optional:
 | `persistence/DeliveryLog`    | which task deliveries were already processed                      | `TaskDeliveryLog`           |
 
 **Start with the unit of work, because without it nothing else runs.** The platform contributes
-a transaction manager as long as it manages the persistence. Here it does not, and on a platform
-which has no manager at all the application would not even boot - the message says so and names
-the three ways out, this bean being one of them. VanillaBP resolves it per aggregate: a
-`TransactionRunnerAware` bean for a specific aggregate first, a plain `TransactionRunner` bean
-second, the platform's own runner last. Booting names the winner:
+a transaction manager as long as it manages the persistence. Here it does not. On a platform
+which has no manager at all, the application would not even boot. The message says so and names
+the three ways out, and this bean is one of them. VanillaBP resolves it per aggregate: first a
+`TransactionRunnerAware` bean for a specific aggregate, second a plain `TransactionRunner`
+bean, last the platform's own runner. The boot names the winner:
 
 ```
 Workflow aggregate 'blueprint.workflowmodule.loanapproval.model.Aggregate' (BPMN process
@@ -45,36 +45,36 @@ Workflow aggregate 'blueprint.workflowmodule.loanapproval.model.Aggregate' (BPMN
 the TransactionRunner bean 'unitOfWork' of the application
 ```
 
-**VanillaBP may ask the unit of work to run something right before it commits.** A remote BPMS
-is asked in phase one whether an operation still makes sense - is the task still there - and that
-answer can go stale before VanillaBP acts on it, so the adapter hands the check to the runner of
-the aggregate. `TransactionRunner#beforeCommit` has a default which runs the check immediately,
-which is what this blueprint's `UnitOfWork` uses: correct, with a window as wide as it was before.
-A unit of work with its own pre-commit hook implements the method and registers the check there.
+**VanillaBP may ask the unit of work to run something right before it commits.** In phase one a
+remote BPMS is asked whether an operation still makes sense, for example whether the task is
+still there. That answer can be out of date before VanillaBP acts on it. So the adapter hands
+the check to the runner of the aggregate. `TransactionRunner#beforeCommit` has a default which
+runs the check at once. This blueprint's `UnitOfWork` uses that default. It is correct, and the
+window stays as wide as it was before. A unit of work with its own pre-commit hook implements
+the method and registers the check there.
 
-**The three stores enlist in that unit of work**, and that is the part which is easy to get
-wrong. A write goes into a buffer of the running unit of work and reaches the store itself when
-that unit of work commits. Writing straight into the map would look correct until the first
-rollback: an aggregate of a business case which never happened, an outbox entry for a workflow
-nobody wanted, a delivery record for work which was undone - and that last one is the worst,
-because the repetition which would have fixed it is answered from the record and never runs.
+**The three stores enlist in that unit of work**, and that part is easy to get wrong. A write
+goes into a buffer of the running unit of work. It reaches the store itself when that unit of
+work commits. Writing straight into the map would look correct until the first rollback. Then
+you get an aggregate of a business case which never happened, an outbox entry for a workflow
+nobody wanted, and a delivery record for work which was undone. The last one is the worst. The
+repetition which would have fixed it is answered from the record and never runs.
 
 **Where the other blueprints write `@Transactional`, this one opens the unit of work itself.**
-An annotation of the platform would open a transaction this application's store is not part of,
-and VanillaBP refuses to start a workflow when the unit of work it asks about is not open. So
-`Service#request` brackets its work with `UnitOfWork`, and the methods a task
-handler calls bracket nothing, exactly as everywhere else.
+An annotation of the platform would open a transaction which this application's store is not
+part of. And VanillaBP refuses to start a workflow when the unit of work it asks about is not
+open. So `Service#request` wraps its work in `UnitOfWork`. The methods a task handler calls
+wrap nothing, exactly as everywhere else.
 
-**In memory means: gone after a restart.** That is deliberate. This blueprint is the reference
-for the contract, not for operations, and the test proves the contract. What a durable store
-adds is named where it belongs, in the javadoc of each bean: retrying a failed dispatch with a
-backoff, dispatching entries again after a restart, keeping dispatched entries for a while
-instead of deleting them, blocking an entry which keeps failing, and dropping delivery records
-after a retention period.
+**In memory means: gone after a restart.** That is on purpose. This blueprint is the reference
+for the contract, not for operations, and the test proves the contract. The javadoc of each
+bean names what a durable store adds: retrying a failed dispatch with a backoff, dispatching
+entries again after a restart, keeping dispatched entries for a while instead of deleting them,
+blocking an entry which keeps failing, and dropping delivery records after a retention period.
 
 **Camunda 7 is missing on purpose.** Its engine is embedded and needs a relational database,
-which is exactly what this blueprint does not have. So this is one of two blueprints with a
-single engine, and a cluster has to run for every build.
+and this blueprint has none. So this is one of two blueprints with a single engine, and a
+cluster has to run for every build.
 
 ## Delta to the base blueprint
 
@@ -104,9 +104,8 @@ engine:
 mvn install verify
 ```
 
-The cluster's address, and everything else specific to that engine, lives in
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+The address of the cluster and everything else specific to that engine are in
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -121,11 +120,11 @@ vanillabp:
       job-lease: use
 ```
 
-`camunda8` is the only profile and it is active by default, so there is no `-P` to
-remember. That profile is also what loads `application-camunda8.yaml`: the Maven profile sets
-the Spring profile of the same name, so the engine is named once and the build, the tests and
-running the application all follow it.
-There is nothing else to install: no database, no container beyond the cluster.
+`camunda8` is the only profile, and it is active by default, so there is no `-P` to remember.
+That profile also loads `application-camunda8.yaml`. The Maven profile sets the Spring profile
+of the same name. So the engine is named once, and the build, the tests and running the
+application all follow it. There is nothing else to install: no database, and no container
+except the cluster.
 
 Start the application:
 
@@ -133,13 +132,13 @@ Start the application:
 mvn -pl application spring-boot:run
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 Start a loan approval. This is the only URL you need:
 
@@ -147,7 +146,7 @@ Start a loan approval. This is the only URL you need:
 http://localhost:8080/api/loan-approval/start?amount=5000
 ```
 
-It answers with the ID of the loan request and logs the URL showing the result:
+It answers with the ID of the loan request and logs the URL which shows the result:
 
 ```
 Loan approval '0f7c…' started
@@ -155,8 +154,8 @@ Credit rating of loan approval '0f7c…' is 50
 Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 ```
 
-Restart the application and the loan approval is gone, which is the honest consequence of a
-store in memory.
+Restart the application and the loan approval is gone. That is the honest result of a store in
+memory.
 
 ## How it works
 
@@ -172,17 +171,18 @@ store in memory.
 | `.../loanapproval/WorkflowTaskHandler.java`        | what the process tells the application: `@WorkflowService`, `@WorkflowTask`          |
 | `loan-approval/src/test/.../LoanApprovalIT.java`   | three tests: the happy path, the counters, and the rollback                          |
 
-What happens when a loan is requested: `Service` opens a unit of work and tells `Workflow` that
-a loan was requested. Inside it, VanillaBP saves the aggregate through `AggregateStore` and
-schedules the second phase of the start through `PhaseTwoStore`, because the engine is remote
-and cannot join a transaction here. The commit makes both visible and hands the scheduled call
-back to VanillaBP, which talks to the engine and writes the result - in a unit of work it opens
-itself, on its own thread. When the BPMS then delivers the service task, VanillaBP opens another
-one, records the delivery, loads the aggregate, calls the handler and saves the aggregate again.
+What happens when somebody requests a loan: `Service` opens a unit of work and tells `Workflow`
+that a loan was requested. Inside it, VanillaBP saves the aggregate through `AggregateStore`.
+It schedules the second phase of the start through `PhaseTwoStore`, because the engine is
+remote and cannot join a transaction here. The commit makes both visible and hands the
+scheduled call back to VanillaBP. VanillaBP talks to the engine and writes the result, in a
+unit of work it opens itself, on its own thread. When the BPMS then delivers the service task,
+VanillaBP opens another one. It records the delivery, loads the aggregate, calls the handler
+and saves the aggregate again.
 
-Three units of work for one workflow, all of them this application's. The test counts them,
-which is the only way to see the difference: a workflow which simply works looks the same when
-something else is committing.
+Three units of work for one workflow, all of them owned by this application. The test counts
+them. That is the only way to see the difference, because a workflow which simply works looks
+the same when something else commits.
 
 ## Documentation
 

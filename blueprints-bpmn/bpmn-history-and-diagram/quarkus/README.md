@@ -4,16 +4,16 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-Sooner or later somebody asks to see the process: the diagram, and on top of it what this
-one case has done so far. This blueprint serves both from the application, through three
-methods which read and change nothing.
+Sooner or later somebody asks to see the process: the diagram, and on top of it what this one
+case has done so far. This blueprint serves both from the application, through three methods
+which only read and change nothing.
 
 ## What this blueprint shows
 
 ![The loan approval process, waiting for a partner](docs/loan_approval.png)
 
-The loan approval of the base blueprint with one wait state added, so there is something to
-look at while the workflow is still running. Three endpoints answer what a viewer needs:
+The loan approval of the base blueprint with one wait state added. So there is something to
+look at while the workflow still runs. Three endpoints answer what a viewer needs:
 
 ```
 GET /api/loan-approval/{id}/definitions   which process definitions this workflow uses
@@ -22,31 +22,31 @@ GET /api/loan-approval/{id}/history       what this workflow has done, element b
 ```
 
 They map one to one onto `ProcessService#getProcessDefinitions`, `#getBpmnXml` and
-`#getWorkflowHistory`, and all three live in `Workflow.java` next to `startWorkflow` - the
-one class allowed to touch `ProcessService`. They are the only part of the SPI which does not
-change a thing: no transaction, no progress, nothing persisted.
+`#getWorkflowHistory`. All three live in `Workflow.java` next to `startWorkflow`, because that
+is the one class allowed to touch `ProcessService`. They are the only part of the SPI (service
+provider interface) which changes nothing: no transaction, no progress, nothing stored.
 
-**The element ids are the point.** A `WorkflowHistory` holds when the workflow started, when
-it ended if it did, and its elements in execution order with their start and end times. An
-element which has started and not ended is where the workflow stands, which is what a viewer
-like [bpmn.io](https://bpmn.io/) colours. Feed it the XML from `/diagram` and the ids from
-`/history` and the picture draws itself; this blueprint stops at the API, because a UI is not
-what a blueprint should teach.
+**The element ids are the point.** A `WorkflowHistory` holds when the workflow started, when it
+ended if it did, and its elements in the order they ran, with their start and end times. An
+element which has started and not ended is where the workflow stands. A viewer like
+[bpmn.io](https://bpmn.io/) colours it. Feed it the XML from `/diagram` and the ids from
+`/history`, and the picture draws itself. This blueprint stops at the API, because a blueprint
+should not teach a UI (user interface).
 
 **A process definition id is opaque.** It looks like something you could take apart, and you
-must not: VanillaBP prefixes the BPMS' own id with the adapter that can resolve it, because a
-workflow may run in any configured BPMS and `getBpmnXml` has no aggregate to derive one from.
-Pass it back exactly as it came.
+must not. VanillaBP puts the adapter which can resolve it in front of the BPMS' own id. A
+workflow may run in any configured BPMS (business process management system), and `getBpmnXml`
+has no aggregate to derive one from. Pass the id back exactly as it came.
 
-**Not every BPMS records the same.** Some report every flow node, some only activities, and a
-remote engine reports with a delay because its history is fed by an exporter. The test of this
-blueprint is written accordingly: it waits for the history rather than asserting it right
-away, and it checks that the elements it drove through are in there, not that they are the
-only ones.
+**Not every BPMS records the same.** Some report every flow node, some only activities. A
+remote engine reports with a delay, because an exporter feeds its history. The test of this
+blueprint is written with that in mind. It waits for the history instead of asserting it right
+away. It checks that the elements it drove through are in there, not that they are the only
+ones.
 
 **Ended workflows can be shown too**, as long as the BPMS still holds them. Once its history
-retention cleaned up, `getWorkflowHistory` says so with a guiding
-`WorkflowNotFoundException` rather than an empty answer.
+retention cleaned up, `getWorkflowHistory` says so with a `WorkflowNotFoundException` which
+tells you what to do, instead of an empty answer.
 
 ## Delta to the base blueprint
 
@@ -56,16 +56,16 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 |----------------------------|------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`       | a task the workflow waits at, so a running workflow has something to show, and a task after it |
 | `Workflow.java`            | the three viewer methods next to `startWorkflow` and `completeTask`                            |
-| `Service.java`             | passes them through, and says in its log where to look                                         |
+| `Service.java`             | passes them through, and its log says where to look                                            |
 | `ApiController.java`       | `/definitions`, `/diagram` and `/history`                                                      |
 | `Aggregate.java`           | the id of the task the workflow waits at, so the wait can be answered                          |
 | `WorkflowTaskHandler.java` | the `@TaskId` handler of that task                                                             |
 | `LoanApprovalIT.java`      | asks what a viewer asks, while the workflow runs and after it ended                            |
 
-The wait state is not the subject here. It exists because a history of a workflow which
-finished in twenty milliseconds shows nothing worth looking at. How an asynchronous task
-works is
-[`bpmn-async-task`](https://github.com/vanillabp-blueprints/bpmn-async-task-quarkus).
+The wait state is not the subject here. It exists because the history of a workflow which
+finished in twenty milliseconds shows nothing worth looking at.
+[`bpmn-async-task`](https://github.com/vanillabp-blueprints/bpmn-async-task-quarkus) shows how
+an asynchronous task works.
 
 ## Running it
 
@@ -75,20 +75,19 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run, and it has to be one the adapter can
-search: secondary storage configured, and credentials allowed to read it. What the three
-endpoints answer is read from the query API. On a cluster which refuses a search the workflow
-module does not deploy, and the message says which of the two is missing.
+Camunda 8 is a remote engine, so a cluster has to run, and the adapter has to be able to search
+it. That needs secondary storage configured, and credentials which may read it. The three
+endpoints answer from the query API. On a cluster which refuses a search, the workflow module
+does not deploy, and the message says which of the two is missing.
 
-Start one; its address, and everything else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Start one. Its address and everything else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -103,9 +102,9 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` makes the config profile of the same
-name the parent of whichever profile the application runs in, so the engine is chosen once, on
-the Maven command line, and the build, the tests and `quarkus:dev` all follow it.
+The file is loaded because the Maven profile `camunda8` makes the config profile of the same
+name the parent of the profile the application runs in. So you choose the engine once, on the
+Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
 Start the application:
 
@@ -113,13 +112,13 @@ Start the application:
 mvn -pl application quarkus:dev
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 This is the URL that starts a loan approval:
 
@@ -135,7 +134,7 @@ Loan approval '4d0e…' waits for the partner. Look at it while it waits:
 Approve -> http://localhost:8080/api/loan-approval/4d0e…/approve
 ```
 
-The history of the waiting workflow names the element it stands at, without an end time:
+The history of the waiting workflow names the element where it stands, without an end time:
 
 ```json
 {
@@ -149,36 +148,36 @@ The history of the waiting workflow names the element it stands at, without an e
 }
 ```
 
-The diagram behind it is the BPMN the BPMS holds, which is the model VanillaBP deployed:
+The diagram behind it is the BPMN the BPMS holds. That is the model VanillaBP deployed:
 
 ```
 http://localhost:8080/api/loan-approval/{loanRequestId}/diagram
 ```
 
-Answer the wait with the `approve` URL and ask again: the last element has an end time, the
-task after it appears, and the workflow itself has one.
+Answer the wait with the `approve` URL and ask again. The last element has an end time, the
+task after it appears, and the workflow itself has an end time too.
 
 ## How it works
 
-|                                            File                                            |                                  Role                                  |
-|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------|
-| `.../loanapproval/Workflow.java`                                                           | the three viewer methods, where `ProcessService` is injected           |
-| `.../loanapproval/ApiController.java`                                                      | the GET endpoints a UI would call                                      |
-| `.../loanapproval/Service.java`                                                            | passes the calls through, without a transaction - nothing is changed   |
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the process, with one wait state so a running workflow shows something |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                           | asks the BPMS what a viewer asks, while running and after the end      |
+|                                            File                                            |                                    Role                                     |
+|--------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| `.../loanapproval/Workflow.java`                                                           | the three viewer methods, where `ProcessService` is injected                |
+| `.../loanapproval/ApiController.java`                                                      | the GET endpoints a UI would call                                           |
+| `.../loanapproval/Service.java`                                                            | passes the calls through, without a transaction, because nothing is changed |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the process, with one wait state so a running workflow shows something      |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                           | asks the BPMS what a viewer asks, while running and after the end           |
 
-The order of events: `getProcessDefinitions` locates the workflow in whichever BPMS holds it
-and reports the definition it runs on, `getBpmnXml` resolves an id to its model, and
-`getWorkflowHistory` reads the elements. Which BPMS answers is VanillaBP's business, and the
-opaque definition id is what carries that decision from one call to the next.
+The order of events: `getProcessDefinitions` finds the workflow in whichever BPMS holds it, and
+reports the definition it runs on. `getBpmnXml` resolves an id to its model.
+`getWorkflowHistory` reads the elements. VanillaBP decides which BPMS answers. The opaque
+definition id carries that decision from one call to the next.
 
-A process with call activities returns more than one definition, each naming the elements
-that call it, and the history of an executed call activity carries a
-`secondaryWorkflowHistoryContext` to dig one level down. This blueprint has no call activity,
-so both endpoints take the context as an optional parameter and pass it on -
-[`bpmn-call-activity-decomposition`](https://github.com/vanillabp-blueprints/bpmn-call-activity-decomposition-quarkus)
-is the model to try that with.
+A process with call activities returns more than one definition, and each names the elements
+which call it. The history of a call activity which ran carries a
+`secondaryWorkflowHistoryContext`, to dig one level down. This blueprint has no call activity.
+So both endpoints take the context as an optional parameter and pass it on. Try that with the
+model of
+[`bpmn-call-activity-decomposition`](https://github.com/vanillabp-blueprints/bpmn-call-activity-decomposition-quarkus).
 
 ## Documentation
 

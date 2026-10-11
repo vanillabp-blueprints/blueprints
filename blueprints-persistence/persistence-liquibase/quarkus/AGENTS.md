@@ -1,16 +1,16 @@
 # persistence-liquibase
 
-`module-single` with the database schema taken out of the runtime's hands: Liquibase creates
-every table, including the ones VanillaBP and an embedded engine would create themselves. Two
-owners bring changelogs, the workflow module and the application, and one migration run applies
-them; who owns which changeset is decided by the `logicalFilePath` its changelog declares.
+`module-single`, but the runtime no longer creates the database schema. Liquibase creates every
+table, including the ones VanillaBP and an embedded engine would create themselves. Two owners
+bring changelogs, the workflow module and the application, and one migration run applies them.
+The `logicalFilePath` a changelog declares decides who owns which changeset.
 
-Build `module-single` first and apply this delta; nothing about the process, the aggregate or
-the BPMN wiring differs.
+Build `module-single` first and apply this delta. Nothing about the process, the aggregate or
+the BPMN wiring is different.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
-first. It carries the procedure, the reference structure and the list of things never to do.
+first. It has the procedure, the reference structure and the list of things never to do.
 
 ## Placeholders
 
@@ -25,53 +25,54 @@ Replace all of these consistently; they are the same in every blueprint.
 | `LOAN_APPROVAL`            | the aggregate's table, in the entity AND in the module's changelog                                                        |
 
 Four names are not placeholders and must not be renamed here: `VANILLABP_PHASE_TWO_OUTBOX`,
-`VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD`, `VANILLABP_TASK_DELIVERY` and `VANILLABP_HOUSEKEEPING` are
-VanillaBP's tables. Each of the four can be given a name of its own at runtime, with
+`VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD`, `VANILLABP_TASK_DELIVERY` and `VANILLABP_HOUSEKEEPING`
+are VanillaBP's tables. Each of the four can be given a name of its own at runtime, with
 `vanillabp.outbox.jdbc.table`, `vanillabp.outbox.jdbc.payload-table`,
-`vanillabp.outbox.jdbc.delivery-table` and `vanillabp.outbox.jdbc.housekeeping-table`. The changelog
-takes the same names through its properties `vanillabp.outbox.table`, `vanillabp.payload.table`,
-`vanillabp.delivery.table` and `vanillabp.housekeeping.table`, set before the include. Write a name
-on one side only and it is a table nobody reads. This blueprint keeps the default names.
+`vanillabp.outbox.jdbc.delivery-table` and `vanillabp.outbox.jdbc.housekeeping-table`. The
+changelog takes the same names through its properties `vanillabp.outbox.table`,
+`vanillabp.payload.table`, `vanillabp.delivery.table` and `vanillabp.housekeeping.table`, set
+before the include. If you write a name on one side only, nobody reads that table. This
+blueprint keeps the default names.
 
 `loan-approval` is also the `logicalFilePath` of the module's changelog. Renaming the module
-means renaming that path, and a changelog already applied somewhere must not have its path
-changed: Liquibase would no longer recognize its rows and would run every changeset again.
+means renaming that path. But never change the path of a changelog which was already applied
+somewhere. Liquibase would no longer recognize its rows and would run every changeset again.
 
 ## Core files
 
-|                               File                                |                                                        Why it matters                                                         |
-|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/db/changelog.xml` | the module's schema: its aggregate table. Inside the module's resource directory, because modules share one classpath         |
-| `application/src/main/resources/db/changelog.xml`                 | what the application owns: `<include>` of `vanillabp/schema/changelog.xml` from the artifact                                  |
-| `application/src/main/resources/db/changelog-camunda7.xml`        | the same plus `<include>` of Camunda's changelog from the engine JAR                                                          |
-| `application/src/main/resources/db/changelog-camunda8.xml`        | the same alone: a remote engine has no tables here                                                                            |
-| `application/src/main/resources/application.yaml`                 | the changelog to apply, `strategy: validate`, `vanillabp.outbox.create-schema: false`                                         |
-| `application/src/main/resources/application-camunda7.yaml`        | `database-schema-update: false`, so the embedded engine leaves its tables to Liquibase                                        |
-| `loan-approval/src/test/resources/application.yaml`               | the module's own changelog and `validate`: its test is an application which applies it                                        |
-| `application/src/test/java/.../SchemaIT.java`                     | reads the artifact's changelog, asserts the tables it describes exist and that every owner is recognizable in the one history |
-| `application/src/test/java/.../WorkflowOnTheOwnSchemaIT.java`     | runs a workflow in the application, which is the only place where two datasources and a migrated schema meet                  |
+|                               File                                |                                                            Why it matters                                                             |
+|-------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/db/changelog.xml` | the module's schema: its aggregate table. It is inside the module's resource directory, because modules share one classpath           |
+| `application/src/main/resources/db/changelog.xml`                 | what the application owns: `<include>` of `vanillabp/schema/changelog.xml` from the artifact                                          |
+| `application/src/main/resources/db/changelog-camunda7.xml`        | the same plus `<include>` of Camunda's changelog from the engine JAR                                                                  |
+| `application/src/main/resources/db/changelog-camunda8.xml`        | the same alone: a remote engine has no tables here                                                                                    |
+| `application/src/main/resources/application.yaml`                 | the changelog to apply, `strategy: validate`, `vanillabp.outbox.create-schema: false`                                                 |
+| `application/src/main/resources/application-camunda7.yaml`        | `database-schema-update: false`, so the embedded engine leaves its tables to Liquibase                                                |
+| `loan-approval/src/test/resources/application.yaml`               | the module's own changelog and `validate`: its test is an application which applies it                                                |
+| `application/src/test/java/.../SchemaIT.java`                     | reads the artifact's changelog, asserts that the tables it describes exist, and that every owner can be told apart in the one history |
+| `application/src/test/java/.../WorkflowOnTheOwnSchemaIT.java`     | runs a workflow in the application, which is the only place where two datasources and a migrated schema meet                          |
 
 Rules which hold beyond this blueprint:
 
-- A changeset which was applied somewhere is never edited. Liquibase compares checksums and
-  refuses to run, and repairing that means manual work in a production database. Add a new
-  changeset instead, with the version which introduces it in its id.
+- Never edit a changeset which was applied somewhere. Liquibase compares checksums and refuses
+  to run, and repairing that means manual work in a production database. Add a new changeset
+  instead, with the version which introduces it in its id.
 - Never copy VanillaBP's or the engine's statements into the application. Both ship them, and
   both decide by their version what is correct. `<include>` reaches into a JAR on the
   classpath.
-- Ownership is identity, not a table. A changelog declares its own `logicalFilePath`, and
-  Liquibase records its changesets under that path rather than under the file which included
-  them. One history therefore holds every owner, and a module stays upgradable on its own. A
-  changelog without that attribute is recorded under whatever file included it, which is the
-  mistake this rule exists for. It is also what keeps the application to ONE datasource: the
-  extension applies one changelog per datasource, and a second owner would otherwise need a
-  second datasource, whereupon an embedded engine asks which of them it belongs in.
-- The changelog to apply is BUILD time configuration, so the engine's variant is filled in by
-  the build (`change-log: db/changelog-@bpms@.xml`) rather than named in a profile file, which
-  is read at runtime.
-- Name every column explicitly in the entity. The migration and the entity have to agree, and
-  a naming strategy deciding the names means they depend on a default instead of on something
-  written down.
+- Ownership is identity, not a table. A changelog declares its own `logicalFilePath`. Liquibase
+  records its changesets under that path, not under the file which included them. So one
+  history holds every owner, and a module can still be upgraded on its own. A changelog without
+  that attribute is recorded under whatever file included it. This rule exists to prevent that
+  mistake. It also keeps the application at ONE datasource. The extension applies one changelog
+  per datasource. Otherwise a second owner would need a second datasource, and then an embedded
+  engine asks which of them it belongs in.
+- The changelog to apply is configured at BUILD time. So the build fills in the engine's
+  variant (`change-log: db/changelog-@bpms@.xml`). A profile file would not work, because it is
+  read at runtime.
+- Name every column explicitly in the entity. The migration and the entity have to agree. If a
+  naming strategy decides the names, they depend on a default instead of on something written
+  down.
 
 ## Boilerplate files
 
@@ -88,27 +89,27 @@ Rules which hold beyond this blueprint:
 ## Adding this blueprint to an existing project
 
 1. Build the project as described in `module-single`, then apply the following.
-2. Add `io.quarkus:quarkus-liquibase` to the application and `io.vanillabp:vanillabp-schema`
-   to it as well. The latter contains no class, only the changelog and the SQL generated from
-   it.
+2. Add `io.quarkus:quarkus-liquibase` and `io.vanillabp:vanillabp-schema` to the application.
+   The second contains no class, only the changelog and the SQL generated from it.
 3. Give the workflow module a changelog below its own resource directory,
-   `<workflow-module-id>/db/changelog.xml`, describing the tables of its aggregates and
-   declaring `logicalFilePath="<workflow-module-id>"`.
+   `<workflow-module-id>/db/changelog.xml`. It describes the tables of its aggregates and
+   declares `logicalFilePath="<workflow-module-id>"`.
 4. Give the application a changelog which includes `vanillabp/schema/changelog.xml` from the
-   classpath plus one line per workflow module. A renamed outbox table
-   (`vanillabp.outbox.jdbc.table`) is set as the changelog property `vanillabp.outbox.table`
-   before the include, and the payload table and the delivery table the same way, through
+   classpath, plus one line per workflow module. If you rename the outbox table
+   (`vanillabp.outbox.jdbc.table`), set the changelog property `vanillabp.outbox.table` before
+   the include. Do the same for the payload table and the delivery table, through
    `vanillabp.payload.table` and `vanillabp.delivery.table`.
 5. Point `quarkus.liquibase.change-log` at that changelog and set `migrate-at-start`. One
    datasource, one run.
-6. Switch the runtime creators off: `quarkus.hibernate-orm.schema-management.strategy:
-   validate` and `vanillabp.outbox.create-schema: false`. With an embedded Camunda 7 engine
-   also `vanillabp.adapters.<adapter-id>.database-schema-update: false`, and include
+6. Switch off everything which creates tables at runtime:
+   `quarkus.hibernate-orm.schema-management.strategy: validate` and
+   `vanillabp.outbox.create-schema: false`. With an embedded Camunda 7 engine also
+   `vanillabp.adapters.<adapter-id>.database-schema-update: false`, and include
    `org/camunda/bpm/engine/db/liquibase/camunda-changelog.xml` in the application's changelog.
-   Since that include is only resolvable where the engine is on the classpath, keep one
-   changelog per engine and let the build name the file.
-7. If the project's database is not H2, nothing changes: the changelogs describe columns
-   database independently, and Liquibase writes the statements for the database in use.
+   That include only resolves where the engine is on the classpath. So keep one changelog per
+   engine and let the build name the file.
+7. If the project's database is not H2, nothing changes. The changelogs describe columns
+   independently of the database, and Liquibase writes the statements for the database in use.
 
 ## Verifying
 
@@ -117,16 +118,17 @@ mvn install verify
 ```
 
 That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamunda8` needs a
-running cluster and `vanillabp.adapters.camunda8.rest-address` configured; do not report a
-failure of that profile as a defect of the generated code before having checked it.
+running cluster and a configured `vanillabp.adapters.camunda8.rest-address`. Check both before
+you report a failure of that profile as a defect of the generated code.
 
-Four tests have to pass. `LoanApprovalIT` and `WorkflowOnTheOwnSchemaIT` run a real workflow,
-the second one in the application, where the whole schema came from a migration. `SchemaIT` reads
-the artifact's changelog to know which tables to expect.
-`ApplicationSmokeTest` proves the application boots with the module on the classpath.
+Four tests have to pass. `LoanApprovalIT` and `WorkflowOnTheOwnSchemaIT` run a real workflow.
+The second one runs in the application, where the whole schema came from a migration.
+`SchemaIT` reads the artifact's changelog to know which tables to expect.
+`ApplicationSmokeTest` proves that the application boots with the module on the classpath.
 
-A missing table or column reported by Hibernate or by VanillaBP is not a defect of the
-framework: it means a changelog was not applied, was applied too late, or does not describe
-that table. A missing column is usually the entity and the changelog disagreeing about a name.
+If Hibernate or VanillaBP reports a missing table or column, that is not a defect of the
+framework. It means a changelog was not applied, was applied too late, or does not describe
+that table. A missing column usually means that the entity and the changelog disagree about a
+name.
 
 Do not report success without having run this.

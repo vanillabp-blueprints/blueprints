@@ -4,13 +4,13 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-One workflow module is a JAR. Two are an application built out of parts, and that changes
-three things: the modules need namespaces of their own, their identifiers have to be kept
-apart inside the BPMS, and each of them has to make its own classes visible to the build of
-the application. A delta on top of `module-single`.
+One workflow module is a JAR. Two make an application built out of parts, and that changes
+three things. The modules need namespaces of their own. Their identifiers have to be kept apart
+inside the BPMS (business process management system). And each of them has to make its own
+classes visible to the build of the application. A delta on top of `module-single`.
 
-The application in this blueprint contains no code at all. It is a POM with two
-dependencies, and everything else the modules bring themselves.
+The application in this blueprint contains no code at all. It is a POM with two dependencies.
+The modules bring everything else themselves.
 
 ## What this blueprint shows
 
@@ -18,17 +18,17 @@ dependencies, and everything else the modules bring themselves.
 
 ![The loan repayment process](docs/loan_repayment.png)
 
-Two use cases of an online banking application: a loan is approved, and later it is paid
-back. Each is a workflow module of its own, with its own process, its own aggregate and its
-own configuration, and neither imports a class of the other.
+Two use cases of an online banking application: a loan is approved, and later it is paid back.
+Each is a workflow module of its own, with its own process, its own aggregate and its own
+configuration. Neither imports a class of the other.
 
 ### Each module makes itself visible
 
 The build of the application processes the application's own sources. A workflow module is a
-Maven module of its own, so its classes are not among them, and a bean nobody knows about is
-a bean that does not exist.
+Maven module of its own, so its classes are not among them. And a bean nobody knows about does
+not exist.
 
-That is what the index is for, and every module carries the plugin building it:
+That is what the index is for. Every module carries the plugin which builds it:
 
 ```xml
 <plugin>
@@ -38,21 +38,21 @@ That is what the index is for, and every module carries the plugin building it:
 </plugin>
 ```
 
-The library `banking-commons` carries it as well, for exactly the same reason: it is a JAR
-with beans in it.
+The library `banking-commons` carries it as well, for the same reason: it is a JAR with beans
+in it.
 
-**What happens without it** is worth knowing, because the symptom does not name the cause.
-The marker file `META-INF/workflow-module` is enough for the module itself to be detected,
-so its BPMN files are deployed; the classes are not found, so the process has no
-`@WorkflowService` behind it and the build ends there. A module which is only resources
-therefore needs no index at all, and one with classes always does.
+**What happens without it** is worth knowing, because the symptom does not name the cause. The
+marker file `META-INF/workflow-module` is enough to detect the module itself, so its BPMN files
+are deployed. But the classes are not found. So the process has no `@WorkflowService` behind
+it, and the build ends there. A module which has only resources therefore needs no index at
+all. A module with classes always does.
 
-**And that is all a module contributes.** There is no configuration class collecting the
-beans of a module: a bean is a class with a scope annotation, the index makes it visible, and
-injection resolves it by type, so two modules with a class called `Service` each never notice
-one another. Where a module has to build something itself rather than let the container do
-it - a client which needs a configured URL, an object from a library which carries no
-annotations - it writes a producer:
+**And that is all a module contributes.** No configuration class collects the beans of a
+module. A bean is a class with a scope annotation, the index makes it visible, and injection
+resolves it by type. So two modules with a class called `Service` each never notice one
+another. Sometimes a module has to build something itself instead of letting the container do
+it. Examples are a client which needs a configured URL, or an object from a library which has
+no annotations. Then the module writes a producer:
 
 ```java
 @ApplicationScoped
@@ -67,37 +67,37 @@ public class LoanApprovalProducers {
 }
 ```
 
-Add `@DefaultBean` to such a producer and an application which brings its own bean of that
-type wins over it. Anything beyond that - contributing at build time rather than at runtime,
-adding build steps, generating classes - is what a Quarkus extension is for, and a workflow
-module is not one.
+Add `@DefaultBean` to such a producer, and an application which brings its own bean of that
+type wins over it. Anything beyond that is what a Quarkus extension is for: contributing at
+build time instead of at runtime, adding build steps, generating classes. A workflow module is
+not an extension.
 
 ### Two modules, one classpath, one engine
 
 Nothing isolates two workflow modules from each other. They share a classpath, a database, an
-HTTP port and a BPMS, so everything they name has to be unique, and this blueprint shows
-where that bites:
+HTTP port and a BPMS. So everything they name has to be unique. This blueprint shows where that
+hurts:
 
 - **Java packages and resources.** `blueprint.workflowmodule.loanapproval` and
   `blueprint.workflowmodule.loanrepayment`, and below `src/main/resources` one directory per
-  module ID. A resource at the classpath root works in a single-module application and
-  collides in this one, which is why the rule exists before it hurts.
-- **Bean types.** Beans are resolved by type here, so two classes called `Service` in two
-  packages are two beans and nothing collides. What does collide is anything sharing a name
-  outside the type system, which is what the rest of this list is about.
+  module ID. A resource at the classpath root works in an application with one module and
+  collides in this one. That is why the rule exists before it hurts.
+- **Bean types.** Here beans are resolved by type. So two classes called `Service` in two
+  packages are two beans, and nothing collides. What does collide is anything which shares a
+  name outside the type system. The rest of this list is about that.
 - **JPA entities.** Both aggregates are called `Aggregate`, and one persistence unit cannot
-  hold two entities of that name: `@Entity(name = "LoanRepayment")` gives the second one a
-  name of its own, and the tables differ anyway.
+  hold two entities of that name. `@Entity(name = "LoanRepayment")` gives the second one a name
+  of its own. The tables differ anyway.
 - **HTTP paths.** `/api/loan-approval/...` and `/api/loan-repayment/...`, each named after
   its module.
-- **Identifiers inside the BPMS.** Two modules may legitimately use the same BPMN process ID
-  or message name. What keeps them apart is `name-clash-avoidance`, and this is the blueprint
-  where it stops being a footnote.
+- **Identifiers inside the BPMS.** Two modules may use the same BPMN process ID or message
+  name, and that is allowed. `name-clash-avoidance` keeps them apart. In this blueprint it
+  stops being a footnote.
 
 ### Keeping identifiers apart in the BPMS
 
-This blueprint sets one mode and explains the others, because the choice belongs to the
-operator rather than to the code:
+This blueprint sets one mode and explains the others, because the operator makes this choice,
+not the code:
 
 ```yaml
 vanillabp:
@@ -108,31 +108,32 @@ vanillabp:
 
 (and the same for the other engine in its own profile file)
 
-- `use-prefix`: VanillaBP prefixes every identifier with the workflow module ID before it
-  reaches the engine and strips it off again on the way back. Nothing else notices:
-  the BPMN files, the business code and the configuration all keep the plain names. No
-  tenant is involved, which matters on a BPMS licensed per tenant.
-- `by-adapter`: the engine's own isolation, a tenant per workflow module. The stronger
-  separation, and the more expensive one.
-- `none`: nothing is scoped, and the application promises that its identifiers are unique.
-  The adapter warns about it at startup, and
-  `vanillabp.adapters.<id>.accept-unscoped-identifiers: true` is how that promise is given.
+- `use-prefix`: VanillaBP puts the workflow module ID in front of every identifier before it
+  reaches the engine, and strips it off again on the way back. Nothing else notices. The BPMN
+  files, the business code and the configuration all keep the plain names. No tenant is
+  involved, which matters on a BPMS licensed per tenant.
+- `by-adapter`: the engine's own isolation, a tenant per workflow module. This separation is
+  stronger, and it costs more.
+- `none`: nothing is scoped, and the application promises that its identifiers are unique. The
+  adapter warns about it at startup. You give that promise with
+  `vanillabp.adapters.<id>.accept-unscoped-identifiers: true`.
 
-**Changing the mode later is a migration, not a setting.** The identifiers a running workflow
-was started with are the ones it is found by, so a switch leaves them unreachable. The way
-across is a second adapter ID differing only in this setting, put first in
-`vanillabp.prioritized-adapters`: new workflows start in the new mode, the running ones are
-finished in the old one. [The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+**Changing the mode later is a migration, not a setting.** A running workflow is found by the
+identifiers it was started with. So a switch makes running workflows unreachable. The way
+across is a second adapter ID which differs only in this setting, put first in
+`vanillabp.prioritized-adapters`. New workflows start in the new mode, and the running ones
+finish in the old one.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
 has the details.
 
 ### Shared code, and what must never be shared
 
 `banking-commons` is a library JAR both modules depend on. It holds a value object (`Money`)
-and a client for a system next door (`CustomerDirectory`), and it carries an index of its
-classes the same way a module does, for the same reason.
+and a client for a system next door (`CustomerDirectory`). It carries an index of its classes
+the same way a module does, for the same reason.
 
-What belongs in there is what has no opinion about a business case: technical helpers, value
-objects, clients for systems both use cases talk to.
+It holds what has no opinion about a business case: technical helpers, value objects, and
+clients for systems both use cases talk to.
 
 **What must never be shared:**
 
@@ -144,27 +145,27 @@ objects, clients for systems both use cases talk to.
 | a `@WorkflowTask` handler   | it implements a task of one process, and that process belongs to one module |
 | an entity of another module | it makes one module's schema the other one's contract                       |
 
-Two modules needing the same aggregate are one module, not two. Two modules needing to talk
-to each other is a different blueprint,
-[`module-interaction`](https://github.com/vanillabp-blueprints/module-interaction-quarkus),
-and the answer there is an API, never a shared class.
+Two modules which need the same aggregate are one module, not two. Two modules which need to
+talk to each other are a different blueprint,
+[`module-interaction`](https://github.com/vanillabp-blueprints/module-interaction-quarkus). The
+answer there is an API, never a shared class.
 
 ### A module brings its configuration per environment
 
-Next to `loan-approval/loan-approval.yaml` sit `loan-approval-test.yaml` and
-`loan-approval-prod.yaml`, and the active profile decides which of them applies on top of the
-base file. Values only the module knows stay with the module; the application contributes the
-things an environment really determines, and secrets come from outside the JAR entirely.
+Next to `loan-approval/loan-approval.yaml` are `loan-approval-test.yaml` and
+`loan-approval-prod.yaml`. The active profile decides which of them applies on top of the base
+file. Values only the module knows stay with the module. The application adds what really
+depends on the environment. Secrets come from outside the JAR.
 
-The profile lives in the **file name**, and a test sees it without any setup: a test runs in
-the profile `test`, so `loan-approval-test.yaml` applies, while the BPMS profile of the build
-keeps applying underneath it as the parent profile.
-`ModuleConfigurationPerProfileIT` is the test which would notice if it did not.
+The profile is part of the **file name**, and a test sees it without any setup. A test runs in
+the profile `test`, so `loan-approval-test.yaml` applies. The BPMS profile of the build still
+applies underneath it, as the parent profile. `ModuleConfigurationPerProfileIT` is the test
+which would notice if it did not.
 
-Schema ownership belongs into this list and is deliberately missing from this blueprint: a
-module which needs tables should manage them itself, initialized by its auto-configuration.
-Showing it means bringing a migration tool in, which shifts what this blueprint is about, so
-it stays with `ddl-auto` and the topic gets blueprints of its own.
+Who owns the schema belongs in this list, and this blueprint leaves it out on purpose. A module
+which needs tables should manage them itself, set up by its auto-configuration. Showing that
+means bringing in a migration tool, which changes what this blueprint is about. So it stays
+with `ddl-auto`, and the topic gets blueprints of its own.
 
 ## Delta to the base blueprint
 
@@ -190,15 +191,15 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run; its address lives in
-`application/src/main/resources/application-camunda8.yaml`, with a copy for each module's own
-test.
+Camunda 8 is a remote engine, so a cluster has to run. Its address is in
+`application/src/main/resources/application-camunda8.yaml`, and the test of each module has a
+copy.
 
 Start the application:
 
@@ -213,7 +214,7 @@ http://localhost:8080/api/loan-approval/start?customerId=C-1001&amount=5000
 http://localhost:8080/api/loan-repayment/start?customerId=C-1002&amount=6000
 ```
 
-Each answers with the ID of the case it started and logs the URL showing the result:
+Each answers with the ID of the case it started and logs the URL which shows the result:
 
 ```
 Loan approval '0f7c…' started: Ada Lovelace asks for 5,000 EUR
@@ -221,12 +222,12 @@ Credit rating of loan approval '0f7c…' is 50
 Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 ```
 
-The names in those lines come from `banking-commons`, which is the shortest demonstration of
-what a shared library is for: both modules ask the same directory the same question.
+The names in those lines come from `banking-commons`. This is the shortest way to show what a
+shared library is for: both modules ask the same directory the same question.
 
-Prefixing becomes visible wherever the engine shows its deployments: the processes are named
-`loan-approval-loan_approval` and `loan-repayment-loan_repayment` there, while everything in
-this repository keeps calling them `loan_approval` and `loan_repayment`.
+You see the prefix wherever the engine shows its deployments. There the processes are named
+`loan-approval-loan_approval` and `loan-repayment-loan_repayment`. Everything in this
+repository keeps calling them `loan_approval` and `loan_repayment`.
 
 ## How it works
 
@@ -242,15 +243,15 @@ this repository keeps calling them `loan_approval` and `loan_repayment`.
 | `application/src/test/.../ModuleConfigurationPerProfileIT.java`      | proves the module file of the active profile wins over the module's base file                 |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                     | the module's own test, against the module alone, exactly as in the base blueprint             |
 
-The order of events inside a module is the one of the base blueprint and does not change with
-the second module: the API calls `Service`, `Service` tells `Workflow` what happened,
-VanillaBP persists the aggregate and starts the process in the same transaction, and the
-service task arrives in `WorkflowTaskHandler`.
+The order of events inside a module is the one of the base blueprint. The second module does
+not change it. The API calls `Service`, and `Service` tells `Workflow` what happened. VanillaBP
+stores the aggregate and starts the process in the same transaction. The service task arrives
+in `WorkflowTaskHandler`.
 
-What is new is what happens before any of that: the build reads the index of every JAR, the
-beans of both modules and of the library become known, and VanillaBP finds two workflow
-modules, deploys the BPMN files of both, and creates one `ProcessService` per aggregate. Add
-a third module and none of the existing files change.
+What is new happens before any of that. The build reads the index of every JAR, and the beans
+of both modules and of the library become known. VanillaBP finds two workflow modules, deploys
+the BPMN files of both, and creates one `ProcessService` per aggregate. Add a third module, and
+none of the existing files change.
 
 ## Documentation
 

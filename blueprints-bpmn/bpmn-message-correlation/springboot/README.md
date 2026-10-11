@@ -4,43 +4,43 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-A running workflow waits for something that happens elsewhere: a contract comes back
-signed, a payment arrives, a partner answers. This blueprint shows how that news reaches
-the workflow - and what of it reaches the BPMS, which is less than most people expect.
+A running workflow waits for something which happens elsewhere: a contract comes back signed, a
+payment arrives, a partner answers. This blueprint shows how that news reaches the workflow. It
+also shows which part of it reaches the BPMS (business process management system), and that is
+less than most people expect.
 
 ## What this blueprint shows
 
 ![The loan approval process, waiting at a message catch event](docs/loan_approval.png)
 
-The loan approval of the base blueprint, waiting for the signed contract before the money
-is paid out. Three things are worth looking at:
+The loan approval of the base blueprint. It waits for the signed contract before the money is
+paid out. Three things are worth looking at:
 
-- **Nothing about the correlation is modelled.** The catch event names a message and that
-  is all. VanillaBP correlates by the workflow aggregate's id, so no correlation key, no
-  business key and no expression appears in the BPMN.
+- **Nothing about the correlation is modelled.** The catch event names a message, and that is
+  all. VanillaBP correlates by the workflow aggregate's id. So no correlation key, no business
+  key and no expression appears in the BPMN.
 - **The aggregate shares nothing.** It carries `@NoSyncWithBPMS` and not a single
-  `@SyncWithBPMS`, because the correlation reads the aggregate's id, which every BPMS is
-  given anyway. A correlation key is a thing the BPMS must know, so a model naming a key of
-  its own is the case where the attribute behind that key has to be shared.
-- **The message's content never reaches the BPMS.** `Service#contractSigned` writes who
-  signed onto the aggregate FIRST and correlates afterwards. The engine learns the name of
-  the message and nothing else, so everything downstream - a gateway, a later task, a
-  report - reads the aggregate instead of a payload nobody can query.
-- **The application decides what a second message means.** VanillaBP does not deduplicate a
-  message without a correlation id, deliberately: the same message may legitimately arrive
-  several times over a workflow's lifetime. Here the early return in `Service` is that
-  decision, and it keeps the second delivery away from a BPMS where nothing waits for it any
-  more.
+  `@SyncWithBPMS`. The correlation reads the aggregate's id, and every BPMS gets that id
+  anyway. The BPMS must know a correlation key. So if a model names a key of its own, the
+  attribute behind that key has to be shared.
+- **The message's content never reaches the BPMS.** `Service#contractSigned` writes who signed
+  onto the aggregate FIRST, and correlates afterwards. The engine learns the name of the
+  message and nothing else. So everything later in the flow, like a gateway, a later task or a
+  report, reads the aggregate, not a payload nobody can query.
+- **The application decides what a second message means.** Without a correlation id, VanillaBP
+  does not drop a repeated message, on purpose. The same message may arrive several times
+  during a workflow's life, and that can be correct. Here the early return in `Service` is that
+  decision. It keeps the second delivery away from a BPMS where nothing waits for it any more.
 
-Two things this blueprint deliberately does not show, and where to find them:
+Two things this blueprint leaves out on purpose, and where to find them:
 
-- **Correlation ids.** `correlateMessage(aggregate, messageName, correlationId)` tells
-  several waiting occurrences of the same message apart, one per ordered item for example,
-  and it deduplicates the correlations which have not reached the BPMS yet: the same id again
-  after the first one was dispatched is a new correlation, while a repeating scope planning two of
-  them in one unit of work loses the second one and is warned about it. One catch event needs none,
-  and
-  [the wiki explains the rest](https://github.com/vanillabp/adapter-platform-integration/wiki/Message-correlation#correlation-ids-several-occurrences-of-the-same-message).
+- **Correlation ids.** `correlateMessage(aggregate, messageName, correlationId)` tells several
+  waiting occurrences of the same message apart, for example one per ordered item. It also
+  drops repeats among the correlations which have not reached the BPMS yet. The same id again,
+  after the first one was dispatched, is a new correlation. But if a repeating scope plans two
+  of them in one unit of work, it loses the second one, and a warning says so. One catch event
+  needs none.
+  [The wiki explains the rest](https://github.com/vanillabp/adapter-platform-integration/wiki/Message-correlation#correlation-ids-several-occurrences-of-the-same-message).
 - **Starting a workflow by message**, which is `bpmn-message-start`.
 
 ## Delta to the base blueprint
@@ -51,7 +51,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 |-----------------------|----------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`  | a message catch event the workflow waits at, and a service task behind it                          |
 | `Workflow.java`       | `correlateMessage`, plus the message name as a constant                                            |
-| `Service.java`        | writes what the message carried onto the aggregate, then correlates; refuses a repeat              |
+| `Service.java`        | writes what the message carried onto the aggregate, then correlates. Refuses a repeat              |
 | `ApiController.java`  | the callback the message arrives at                                                                |
 | `Aggregate.java`      | `contractSignedBy`, which is where the message's content ends up, `paidOut`, and `@NoSyncWithBPMS` |
 | `LoanApprovalIT.java` | waiting, continuing, and a message arriving twice                                                  |
@@ -64,21 +64,20 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run, and it has to be one the adapter can
-search: secondary storage configured, and credentials allowed to read it. Correlating finds the
-workflow by the process variable holding the aggregate's ID, and that is a search. On a cluster
-which refuses one the workflow module does not deploy, and the message says which of the two is
-missing.
+Camunda 8 is a remote engine, so a cluster has to run, and the adapter has to be able to search
+it. That needs secondary storage configured, and credentials which may read it. Correlating
+finds the workflow by the process variable which holds the aggregate's ID, and that is a
+search. On a cluster which refuses a search, the workflow module does not deploy, and the
+message says which of the two is missing.
 
-Start one; its address, and everything else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Start one. Its address and everything else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -93,8 +92,8 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
-name, so the engine is chosen once, on the Maven command line, and the build, the tests and
+The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
+name. So you choose the engine once, on the Maven command line. The build, the tests and
 `spring-boot:run` all follow it.
 
 Start the application:
@@ -103,13 +102,13 @@ Start the application:
 mvn -pl application spring-boot:run
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 Start a loan approval. This is the only URL you need:
 
@@ -117,8 +116,7 @@ Start a loan approval. This is the only URL you need:
 http://localhost:8080/api/loan-approval/start?amount=5000
 ```
 
-The process rates the request and then waits. What it logs is the URL the message arrives
-at:
+The process rates the request and then waits. It logs the URL the message arrives at:
 
 ```
 Loan approval '0f7c…' started
@@ -126,15 +124,15 @@ Credit rating of loan approval '0f7c…' is 50. The workflow now waits for the s
   Signed -> http://localhost:8080/api/loan-approval/0f7c…/contract-signed?signedBy=Jane%20Doe
 ```
 
-Opening it correlates the message and the process runs to its end:
+Opening it correlates the message, and the process runs to its end:
 
 ```
 The contract of loan approval '0f7c…' was signed by 'Jane Doe'
 Loan approval '0f7c…' was paid out to 'Jane Doe'
 ```
 
-Opening the same URL a second time answers that the contract was signed already. That is the
-application's decision, taken before the BPMS is asked - and the log line says so.
+If you open the same URL a second time, the answer is that the contract was signed already. The
+application decides that before it asks the BPMS, and the log line says so.
 
 Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
 configures a user for them. They show the instance standing at the message event, which is the
@@ -149,26 +147,25 @@ quickest way to see what waiting means. Where they are served and how to log in 
 | `.../loanapproval/Service.java`                                                        | writes the message's content onto the aggregate, correlates, and refuses a repeated message |
 | `.../loanapproval/Workflow.java`                                                       | `correlateMessage`, the only place `ProcessService` is used                                 |
 | `.../loanapproval/ApiController.java`                                                  | the endpoint the message arrives at                                                         |
-| `.../loanapproval/model/Aggregate.java`                                                | `contractSignedBy`: the single source of truth for what the message brought                 |
+| `.../loanapproval/model/Aggregate.java`                                                | `contractSignedBy`: the one place which says what the message brought                       |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | the workflow waits, the message lets it continue, a repeat is refused                       |
 
-The order of events: the service task fills in the rating, the BPMS reaches the catch event
+The order of events: the service task fills in the rating. The BPMS reaches the catch event,
 and the workflow stops there. Whenever the answer arrives, `ApiController` calls
-`Service#contractSigned`, which loads the aggregate, writes what the message carried and
-tells `Workflow` what happened. `Workflow#contractSigned` calls
-`ProcessService#correlateMessage` with the aggregate and the message name, in a transaction:
-on a remote BPMS the correlation is sent only after that transaction committed, so a
-rollback takes it with it.
+`Service#contractSigned`. It loads the aggregate, writes what the message carried, and tells
+`Workflow` what happened. `Workflow#contractSigned` calls `ProcessService#correlateMessage`
+with the aggregate and the message name, in a transaction. On a remote BPMS the correlation is
+sent only after that transaction committed. So a rollback takes it with it.
 
 VanillaBP finds the workflow itself. It asks the configured adapters in their order of
-priority and caches the answer, which is what makes the migration feature work for messages
-too. If no BPMS knows the workflow, a guiding `WorkflowNotFoundException` names the likely
-causes rather than losing the message silently.
+priority, and caches the answer. That is why the migration feature works for messages too. If
+no BPMS knows the workflow, a `WorkflowNotFoundException` names the likely causes and tells you
+what to do. The message is not lost without a word.
 
-The test correlating the message retries while the BPMS does not know the workflow yet. A
-remote engine answers "which workflow belongs to this aggregate?" from an index it fills
-asynchronously, so a message arriving seconds after the start may find nothing although the
-workflow is there. An embedded engine answers immediately and the loop runs once.
+The test which correlates the message retries while the BPMS does not know the workflow yet. A
+remote engine answers "which workflow belongs to this aggregate?" from an index it fills in the
+background. So a message which arrives seconds after the start may find nothing, although the
+workflow is there. An embedded engine answers at once, and the loop runs once.
 
 ## Documentation
 

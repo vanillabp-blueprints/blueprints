@@ -4,21 +4,22 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-Moving to another BPMS is not a big-bang. Workflows are running, some of them for weeks, and
-they were started in an engine which knows nothing about the one you are moving to. This
-blueprint shows the answer VanillaBP gives: configure both, start new workflows in the new
-one, and let every operation on an existing workflow find the engine holding it.
+Moving to another BPMS (business process management system) does not happen in one big step.
+Workflows are running, some of them for weeks. They were started in an engine which knows
+nothing about the one you are moving to. This blueprint shows the answer VanillaBP gives:
+configure both engines and start new workflows in the new one. Every operation on an existing
+workflow then finds the engine which holds it.
 
 ## What this blueprint shows
 
 ![The loan approval process, waiting at a user task and at a message](docs/loan_approval.png)
 
-A loan approval which waits twice: at a user task, and behind it at a message. Two wait
-states are the smallest model that shows the point, because answering either of them is an
-operation which has to find the BPMS holding that workflow.
+A loan approval which waits twice: at a user task, and after it at a message. Two wait states
+are the smallest model which shows the point. Answering either of them is an operation which
+has to find the BPMS that holds the workflow.
 
-The module carries a second, much smaller workflow, and it is here for its configuration
-rather than for its model:
+The module has a second, much smaller workflow. It is here for its configuration, not for its
+model:
 
 ![The loan repayment process, one service task](docs/loan_repayment.png)
 
@@ -32,7 +33,7 @@ vanillabp:
       # settings of that engine
 ```
 
-During it, both are, in the order which decides where new workflows start:
+During the migration both are configured. Their order decides where new workflows start:
 
 ```yaml
 vanillabp:
@@ -52,50 +53,50 @@ vanillabp:
             - camunda7      # this one stays behind
 ```
 
-Two rules route everything from there, and neither of them is visible in the code:
+From there, two rules route everything. Neither of them shows in the code:
 
-**A new workflow starts in the first adapter of the list.** Nobody is asked, because a
-workflow which does not exist yet cannot be known to anybody.
+**A new workflow starts in the first adapter of the list.** No adapter is asked, because nobody
+can know a workflow which does not exist yet.
 
-**An operation on an existing workflow goes to the BPMS holding it.** Completing the user
-task and correlating the message both ask the adapters in the order of the list, and the
-first one which knows the workflow performs the operation. A loan approval started in the
-old BPMS is therefore answered there, weeks after the new one became first priority.
+**An operation on an existing workflow goes to the BPMS holding it.** Completing the user task
+and correlating the message both ask the adapters in the order of the list. The first one which
+knows the workflow performs the operation. So a loan approval started in the old BPMS is
+answered there, weeks after the new one became first priority.
 
-The priority list exists on three levels, and the most specific non-empty one wins: per
-adapter set, per workflow module, and per workflow. The repayment above uses the finest of
-them, which is what makes a migration a workflow at a time instead of all at once.
+The priority list exists on three levels: per adapter set, per workflow module, and per
+workflow. The most specific list which is not empty wins. The repayment above uses the finest
+level. This lets you migrate one workflow at a time instead of all at once.
 
-Nothing in the Java code of this blueprint names an adapter, with one exception:
-`/api/loan-approval/{id}/bpms` answers which BPMS runs a workflow, because showing the
-routing is what this blueprint is for. It reads the id of the process definition the
-workflow runs on, which is `<adapter-id>#<id of the BPMS>`, and returns its first part. An
-application normally has no reason to ask.
+Nothing in the Java code of this blueprint names an adapter, with one exception.
+`/api/loan-approval/{id}/bpms` answers which BPMS runs a workflow, because this blueprint is
+about showing the routing. It reads the id of the process definition the workflow runs on,
+which is `<adapter-id>#<id of the BPMS>`, and returns the first part. An application normally
+has no reason to ask.
 
 ## Delta to the base blueprint
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|            File             |                                              What is different                                               |
-|-----------------------------|--------------------------------------------------------------------------------------------------------------|
-| `application/pom.xml`       | the second profile brings BOTH adapters, because a migration is a state in which the old BPMS is still there |
-| `application-camunda7.yaml` | the state before the migration: one adapter, nothing to prioritize                                           |
-| `application-camunda8.yaml` | the state during it: the priority list, both adapters, and the workflow which stays behind                   |
-| `application.yaml`          | a FILE database, because the scenario restarts the application                                               |
-| `loan_approval.bpmn`        | a user task and a message catch event, the two wait states the election is shown with                        |
-| `loan_repayment.bpmn`       | the second workflow, whose priority list names the old BPMS alone                                            |
-| `loanrepayment/`            | its use case: the classes carry its name, because two use cases in one application would otherwise collide   |
-| `MigrationIT.java`          | starts, routes and finishes workflows in both BPMS                                                           |
-| `MigrationRestartIT.java`   | the migration itself: two boots, one database, the workflows of the first boot finished in the second        |
+|            File             |                                             What is different                                              |
+|-----------------------------|------------------------------------------------------------------------------------------------------------|
+| `application/pom.xml`       | the second profile brings BOTH adapters, because during a migration the old BPMS is still there            |
+| `application-camunda7.yaml` | the state before the migration: one adapter, nothing to prioritize                                         |
+| `application-camunda8.yaml` | the state during it: the priority list, both adapters, and the workflow which stays behind                 |
+| `application.yaml`          | a FILE database, because the scenario restarts the application                                             |
+| `loan_approval.bpmn`        | a user task and a message catch event, the two wait states the election is shown with                      |
+| `loan_repayment.bpmn`       | the second workflow, whose priority list names the old BPMS alone                                          |
+| `loanrepayment/`            | its use case: the classes carry its name, because otherwise two use cases in one application would collide |
+| `MigrationIT.java`          | starts, routes and finishes workflows in both BPMS                                                         |
+| `MigrationRestartIT.java`   | the migration itself: two boots, one database, the workflows of the first boot finished in the second      |
 
 The user task alone is [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user-task-springboot),
 the message alone is [`bpmn-message-correlation`](https://github.com/vanillabp-blueprints/bpmn-message-correlation-springboot).
 Here they are the two wait states a migration has to survive.
 
-Two use cases in one application need distinct bean names, which is why the repayment
-classes are called `RepaymentService` and so on rather than `Service`. The general answer,
-one bean-name generator per workflow module, is what
-[`module-multi`](https://github.com/vanillabp-blueprints/module-multi-springboot) shows.
+Two use cases in one application need different bean names. That is why the repayment classes
+are called `RepaymentService` and so on, not `Service`. The general answer is one bean-name
+generator per workflow module, and
+[`module-multi`](https://github.com/vanillabp-blueprints/module-multi-springboot) shows it.
 
 ## Running it
 
@@ -105,26 +106,26 @@ Requires a JDK 21 or newer. The state before the migration needs nothing but the
 mvn install verify
 ```
 
-The migration state needs the remote engine, so a cluster has to run, and the profile brings
-both adapters:
+The migration state needs the remote engine, so a cluster has to run. The profile brings both
+adapters:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-The address of the cluster, and everything else specific to that engine, is in
+The address of the cluster and everything else specific to that engine are in
 `application/src/main/resources/application-camunda8.yaml`.
 
-The database is a file, `target/database/loan-approval`, and that is the one place where
-this blueprint differs from every other one in the catalogue. The scenario stops the
-application, changes which BPMS are configured and starts it again, so the aggregates and
-the tables of the embedded engine have to outlive the first run. `mvn clean` throws the
-database away, which is how you start over.
+The database is a file, `target/database/loan-approval`. In this one point the blueprint
+differs from every other one in the catalogue. The scenario stops the application, changes
+which BPMS are configured and starts it again. So the aggregates and the tables of the embedded
+engine have to survive the first run. `mvn clean` throws the database away, and that is how you
+start over.
 
 ### Walking through a migration
 
-This is the sequence to show it to somebody, and it is what `MigrationRestartIT` does
-without a browser.
+This is the sequence to show it to somebody. `MigrationRestartIT` does the same without a
+browser.
 
 Start with the old BPMS alone:
 
@@ -138,10 +139,9 @@ Start a loan approval and take it past its user task:
 http://localhost:8080/api/loan-approval/start
 ```
 
-The log names the URL to answer the risk assessment, and after that the one to report the
-signed contract. Answer the assessment and leave the workflow waiting for the message.
-Start a second loan approval and leave that one at its user task. Both live in the old
-BPMS:
+The log names the URL to answer the risk assessment, and after that the URL to report the
+signed contract. Answer the assessment and leave the workflow waiting for the message. Start a
+second loan approval and leave that one at its user task. Both are in the old BPMS:
 
 ```
 http://localhost:8080/api/loan-approval/<id>/bpms
@@ -162,13 +162,13 @@ http://localhost:8080/api/loan-approval/<id>/bpms
 camunda8
 ```
 
-Then answer the user task of the workflow left waiting in the old BPMS, and report the
-signed contract for the one which was already waiting for it. Both finish, in the old BPMS,
-while the two new ones finish in the new one. The URLs are the same for all four, and so is
-the code behind them.
+Then answer the user task of the workflow left waiting in the old BPMS. Report the signed
+contract for the one which was already waiting for it. Both finish in the old BPMS, and the two
+new ones finish in the new one. The URLs are the same for all four, and so is the code behind
+them.
 
-A repayment shows the finest level of the priority list. It starts in the old BPMS even
-though loan approvals already start in the new one:
+A repayment shows the finest level of the priority list. It starts in the old BPMS, although
+loan approvals already start in the new one:
 
 ```
 http://localhost:8080/api/loan-repayment/start
@@ -177,9 +177,9 @@ camunda7
 ```
 
 Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
-configures a user for them. They are a second way to see where a workflow lives. Where they are
-served and how to log in is in the
-[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
+configures a user for them. They are a second way to see where a workflow lives. The
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin)
+says where they are served and how to log in.
 
 ## How it works
 
@@ -197,58 +197,58 @@ served and how to log in is in the
 
 What VanillaBP does with the priority list, in the order it happens:
 
-1. **Deployment.** The BPMN models of a workflow module are deployed to every adapter its
-   lists name, so both engines are ready to serve their workflows.
+1. **Deployment.** The BPMN models of a workflow module are deployed to every adapter its lists
+   name. So both engines are ready to serve their workflows.
 2. **Start.** The first adapter of the list applicable to that workflow gets it.
 3. **Every later operation.** VanillaBP asks the adapters in order whether they know the
-   workflow. The first one saying yes performs the operation. An adapter which does not know
-   it passes; an adapter which cannot be reached stops the operation with an error rather
-   than letting the next one answer, because the unreachable one might be the one holding
-   the workflow. A workflow already completed makes the operation a no-op with a warning,
-   and if nobody knows it, a guiding exception says so.
-4. **Remembering.** Successful elections are cached, and so is what VanillaBP knows without
+   workflow. The first one which says yes performs the operation. An adapter which does not
+   know it passes. An adapter which cannot be reached stops the operation with an error, and
+   the next one does not get to answer, because the unreachable one might be the one which
+   holds the workflow. If the workflow is already completed, the operation does nothing and
+   logs a warning. If nobody knows it, an exception says so and tells you what to do.
+4. **Remembering.** VanillaBP caches successful elections. It also caches what it knows without
    asking: after a start, and whenever a BPMS delivers something of that workflow. The cache
-   is bounded and expiring, needs no configuration, and a lost record costs one extra round
-   of asking rather than a wrong answer.
+   has a size limit and its entries expire. It needs no configuration. A lost record costs one
+   more round of asking, never a wrong answer.
 
-One setting of this blueprint is not a default and has a reason: `job-timeout: PT20S` on the
-Camunda 8 adapter. The lock is how long a job stays reserved for a worker which does not answer, so
-it is also how long anything behind such a job waits. Five minutes of that is five minutes of
-watching nothing, and the handlers here finish in milliseconds. This blueprint found the case which
-makes it visible, a workflow started right after a restart; the adapter keeps a restart from
-producing it now, by waiting for the cluster to release its workers before it closes the client, and
-[what a restart costs the application which starts next](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next)
-carries the measurements.
+One setting of this blueprint is not a default, and it has a reason: `job-timeout: PT20S` on
+the Camunda 8 adapter. The lock is how long a job stays reserved for a worker which does not
+answer. So it is also how long anything behind such a job waits. Five minutes of that means
+five minutes of watching nothing, and the handlers here finish in milliseconds. This blueprint
+found the case which makes it visible: a workflow started right after a restart. The adapter
+now keeps a restart from causing it. It waits for the cluster to release its workers before it
+closes the client. The measurements are in
+[what a restart costs the application which starts next](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next).
 
-Two things are worth knowing before doing this against a real cluster. A remote BPMS may
-answer from an eventually consistent read model, so a workflow started moments ago can be
-unknown to it for a few seconds; VanillaBP keeps asking the adapter it recorded for as long
-as that adapter says it may need. And two adapter ids of the same embedded engine would be
-two engines, which must not share one set of engine tables: that needs a table prefix or a
-data source of its own. This blueprint configures one instance per engine, so neither
-applies here.
+Two things are worth knowing before you do this against a real cluster. First, a remote BPMS
+may answer from a read model which is only eventually consistent, that is, it catches up after
+a delay. So it may not know a workflow started moments ago for a few seconds. VanillaBP keeps
+asking the adapter it recorded for as long as that adapter says it may need. Second, two
+adapter ids of the same embedded engine are two engines, and they must not share one set of
+engine tables. One of them needs a table prefix or a data source of its own. This blueprint
+configures one instance per engine, so neither applies here.
 
 ### Keeping identifiers apart in the BPMS
 
-The BPMS profiles of this blueprint set `name-clash-avoidance: use-prefix`, so VanillaBP puts
-the workflow module ID in front of every identifier before it reaches the engine and takes it
+The BPMS profiles of this blueprint set `name-clash-avoidance: use-prefix`. So VanillaBP puts
+the workflow module ID in front of every identifier before it reaches the engine, and takes it
 off again on the way back. The BPMN files, the business code and the rest of the configuration
-keep the plain names, which is why nothing here mentions the prefix twice. What the modes are
-and what each of them costs is explained on the wiki page
-[Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+keep the plain names, which is why nothing here mentions the prefix twice. The wiki page
+[Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
-Both profiles say it for `camunda7`, and that repetition is the point of this section. The
-mode decides what the engine calls a process, a message, a signal and an error, so a migration
-which changes it renames everything the old BPMS already holds: the loan approval waiting for
-`ContractSigned` would be waiting under `loan-approval__ContractSigned` while the application
-asks for `ContractSigned` in a tenant, and the message correlates against nothing. Leaving the
-setting out of one profile is enough to do that, because the default is the other mode. So the
-migration profile repeats what the profile before it said, and a change of mode is a migration
-of its own, with a second adapter id for the same engine, which the wiki page above describes.
+Both profiles say it for `camunda7`, and this repetition is the point of this section. The mode
+decides what the engine calls a process, a message, a signal and an error. So a migration which
+changes it renames everything the old BPMS already holds. The loan approval waiting for
+`ContractSigned` would wait under `loan-approval__ContractSigned`, while the application asks
+for `ContractSigned` in a tenant, and the message correlates with nothing. Leaving the setting
+out of one profile is enough for that, because the default is the other mode. So the migration
+profile repeats what the profile before it said. A change of mode is a migration of its own,
+with a second adapter id for the same engine. The wiki page above describes it.
 
 The module's own test reads profile files of its own, one per BPMS like the application, and
-they name the same mode. Otherwise the test would run the default in one of its profiles and
-test a configuration this blueprint does not ship.
+they name the same mode. Otherwise the test would run the default in one of its profiles. It
+would then test a configuration this blueprint does not ship.
 
 ## Documentation
 
