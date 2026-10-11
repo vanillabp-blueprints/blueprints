@@ -4,19 +4,19 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-In a project past its first prototype nothing creates a table at runtime. The schema is a
-reviewed, versioned artifact, applied by the deployment pipeline, often by a database user
-the application itself does not even have. This blueprint is `module-single` with that
-constraint added: Liquibase creates every table, including the ones VanillaBP and the
-embedded engine would otherwise create themselves.
+Once a project is past its first prototype, nothing creates a table at runtime. The schema is a
+reviewed, versioned artifact. The deployment pipeline applies it, often with a database user
+which the application itself does not even have. This blueprint is `module-single` with that
+rule added. Liquibase creates every table, including the ones VanillaBP and the embedded engine
+would otherwise create themselves.
 
 ## What this blueprint shows
 
 ![The loan approval process](docs/loan_approval.png)
 
-The process is the one from `module-single` and nothing about it changed: a loan approval
-with a single service task. What changed is who creates the tables it needs, and who owns
-which of them.
+The process is the one from `module-single`, and nothing about it changed: a loan approval with
+a single service task. What changed is who creates the tables it needs, and who owns which of
+them.
 
 |                                                          Table                                                          |           Created by            |                                   From                                   |
 |-------------------------------------------------------------------------------------------------------------------------|---------------------------------|--------------------------------------------------------------------------|
@@ -25,26 +25,26 @@ which of them.
 | `LOAN_APPROVAL`                                                                                                         | the workflow module's Liquibase | `loan-approval/.../loan-approval/db/changelog.xml`                       |
 | `DATABASECHANGELOG`                                                                                                     | Liquibase                       | the bookkeeping, one row per changeset and owner                         |
 
-Three settings are what make this real, and all three are in the configuration rather than
-in code: the schema management strategy `validate` has Hibernate check the result instead of
-building it, `vanillabp.outbox.create-schema: false` takes VanillaBP's tables out of its own
-hands, and `database-schema-update: false` does the same for the engine.
+Three settings make this real, and all three are in the configuration, not in code. The schema
+management strategy `validate` makes Hibernate check the result instead of building it.
+`vanillabp.outbox.create-schema: false` stops VanillaBP from creating its own tables.
+`database-schema-update: false` does the same for the engine.
 
 ### Two owners, one history
 
 A workflow module is a JAR which several applications may use, and it owns the tables of its
-workflow aggregate. So it brings its changelog along, in its own resource directory, and the
+workflow aggregate. So it brings its changelog along, in its own resource directory. The
 application applies it with one line:
 
 ```xml
 <include file="loan-approval/db/changelog.xml" />
 ```
 
-Ownership is not a matter of who runs Liquibase, it is a matter of identity. Liquibase records
-a changeset under the `logicalFilePath` its changelog declares, plus its id and author, never
-under the file which included it. The module's changelog declares `logicalFilePath="loan-approval"`,
-so its rows in `DATABASECHANGELOG` are its own and a later version of the module finds its own
-history:
+Who owns a changeset does not depend on who runs Liquibase. It depends on identity. Liquibase
+records a changeset under the `logicalFilePath` its changelog declares, plus its id and author.
+It never records it under the file which included it. The module's changelog declares
+`logicalFilePath="loan-approval"`. So its rows in `DATABASECHANGELOG` are its own, and a later
+version of the module finds its own history:
 
 ```
 FILENAME          | ID
@@ -52,64 +52,65 @@ vanillabp/schema  | vanillabp-task-delivery-2.0.0
 loan-approval     | loan-approval-aggregate-1.0.0
 ```
 
-That is why one migration run and one bookkeeping table are enough, and it is what VanillaBP's
-own changelog does as well. `SchemaIT` asserts both owners are recognizable in that history,
-because a module whose changelog forgot its logical path would be recorded under the
-application's file name, and nothing else would notice.
+That is why one migration run and one bookkeeping table are enough. VanillaBP's own changelog
+does the same. `SchemaIT` asserts that both owners can be told apart in that history. A module
+whose changelog forgot its logical path would be recorded under the application's file name,
+and nothing else would notice.
 
-It also keeps the application simple. The extension applies one changelog per datasource, so
-giving the module a Liquibase of its own would mean a second datasource on the same database,
-and an embedded engine would then ask which of the two it belongs in. None of that is needed:
-one datasource, one changelog, one include line per module.
+It also keeps the application simple. The extension applies one changelog per datasource. A
+Liquibase of the module's own would mean a second datasource on the same database. An embedded
+engine would then ask which of the two it belongs in. None of that is needed: one datasource,
+one changelog, one include line per module.
 
 ### The tables VanillaBP needs
 
 VanillaBP ships them as a Liquibase changelog in an artifact of its own,
-`io.vanillabp:vanillabp-schema`. It contains no class, only the changelog and the SQL
-generated from it, so a schema repository can depend on it without pulling the runtime. The
+`io.vanillabp:vanillabp-schema`. It contains no class, only the changelog and the SQL generated
+from it. So a schema repository can depend on it without pulling in the runtime. The
 application includes it from the classpath:
 
 ```xml
 <include file="vanillabp/schema/changelog.xml" />
 ```
 
-An update of VanillaBP brings new changesets along in the artifact and this application's
-changelog stays as it is. That works because a changeset which was applied somewhere is
-never edited: Liquibase compares checksums and refuses to run when one changed, and getting
-an installation out of that state is manual work in somebody's production database. VanillaBP
-keeps each released version in a file of its own and pins it with a checksum for exactly that
-reason, and the changelogs here follow the same rule. Their changeset ids carry the version
-which introduced them, and a later change is a new changeset, always.
+An update of VanillaBP brings new changesets along in the artifact, and this application's
+changelog stays as it is. That works because nobody ever edits a changeset which was applied
+somewhere. Liquibase compares checksums and refuses to run when one changed. Getting an
+installation out of that state is manual work in somebody's production database. For exactly
+that reason VanillaBP keeps each released version in a file of its own and pins it with a
+checksum. The changelogs here follow the same rule. Their changeset ids carry the version which
+introduced them, and a later change is always a new changeset.
 
-Three tables are described. The phase-two outbox holds what may only reach a remote BPMS after
-the caller's transaction committed. A call which carries a payload stores it in a table of its own,
-and the entry names the row. The log of processed task deliveries is what a BPMS repeating a
-delivery is answered from, instead of the handler running twice. Each of them is described database
-independently, so the statements for a database nobody tested are still Liquibase's own rather than
-somebody's guess. H2 and PostgreSQL are covered by tests of the framework; MySQL, MariaDB, SQL
-Server, Oracle and DB2 are shipped without one.
+Three tables are described. The phase-two outbox holds what may reach a remote BPMS (business
+process management system) only after the caller's transaction committed. A call which carries
+a payload stores it in a table of its own, and the entry names the row. When a BPMS repeats a
+delivery, VanillaBP answers it from the log of processed task deliveries, and the handler does
+not run twice. Each table is described independently of the database. So the statements for a
+database nobody tested still come from Liquibase and are not somebody's guess. Tests of the
+framework cover H2 and PostgreSQL. MySQL, MariaDB, SQL Server, Oracle and DB2 ship without a
+test.
 
-`SchemaIT` does not take that count on trust. It has Liquibase parse the artifact's changelog,
-which follows every include and fills the table names in, and compares the result with the names
-written down in the test. A VanillaBP release which adds a table therefore fails the build here,
-and the new name is carried into the test, into this README and into `AGENTS.md` in one go. A list
-which nobody compares falls behind, and this one did: the payload table of the phase-two outbox
-travelled in the artifact for months while no test and no document here knew it.
+`SchemaIT` does not take that count on trust. It lets Liquibase parse the artifact's changelog,
+which follows every include and fills in the table names. It compares the result with the names
+written down in the test. So a VanillaBP release which adds a table fails the build here. The
+new name then goes into the test, into this README and into `AGENTS.md` in one step. A list
+which nobody compares falls behind, and this one did. The payload table of the phase-two outbox
+was in the artifact for months, and no test and no document here knew about it.
 
 ### The engine's tables
 
 Camunda ships its schema in the engine JAR, as a changelog with a 7.16 baseline plus one
-changeset per upgrade, whose `db.name` properties pick the right statements for the database
-in use. It is included, never copied, because the engine version on the classpath decides
-what is correct:
+changeset per upgrade. Their `db.name` properties pick the right statements for the database in
+use. It is included, never copied, because the engine version on the classpath decides what is
+correct:
 
 ```xml
 <include file="org/camunda/bpm/engine/db/liquibase/camunda-changelog.xml" />
 ```
 
-Which changelog the application applies therefore depends on the engine, and this is the one
-engine specific setting which cannot live in the engine's profile file. The extension reads
-the changelog while the application is built, so the build fills the name in:
+So the engine decides which changelog the application applies. This is the one setting specific
+to the engine which cannot be in the engine's profile file. The extension reads the changelog
+while the application is built, so the build fills in the name:
 
 ```yaml
 quarkus:
@@ -117,17 +118,17 @@ quarkus:
     change-log: db/changelog-@bpms@.xml
 ```
 
-`db/changelog-camunda7.xml` includes the shared changelog plus Camunda's,
+`db/changelog-camunda7.xml` includes the shared changelog plus Camunda's.
 `db/changelog-camunda8.xml` includes the shared one alone, because a remote engine has no
-tables here. The engine's own version table, `ACT_GE_SCHEMA_LOG`, stays the engine's business,
-and a configured table prefix does not work with Camunda's artifacts, since their statements
+tables here. The engine's own version table, `ACT_GE_SCHEMA_LOG`, stays the engine's business.
+A configured table prefix does not work with Camunda's artifacts, because their statements
 carry fixed table names.
 
 ### When the migration was not applied
 
-With creation switched off, a forgotten migration used to surface at the first workflow,
-hours after the deployment. It does not any more: VanillaBP checks its tables while the
-application starts and ends the boot with the table, the property which would have created
+With creation switched off, a forgotten migration used to show up at the first workflow, hours
+after the deployment. That is over. VanillaBP checks its tables while the application starts.
+If one is missing, it stops the boot and names the table, the property which would have created
 it and the artifact to apply.
 
 ```
@@ -141,13 +142,13 @@ it instead of running the handler twice. Either
   (the default).
 ```
 
-The phase-two outbox table is checked the same way. To see either message, comment the
-include out of `db/changelog.xml` and start the application.
+The phase-two outbox table is checked the same way. To see either message, comment out the
+include in `db/changelog.xml` and start the application.
 
 ## Delta to the base blueprint
 
-Everything about the process, the aggregate and the wiring is `module-single`. What was added
-or changed:
+Everything about the process, the aggregate and the wiring comes from `module-single`. What was
+added or changed:
 
 |                            File                            |                                          Change                                          |
 |------------------------------------------------------------|------------------------------------------------------------------------------------------|
@@ -157,15 +158,15 @@ or changed:
 | `application/src/main/resources/db/changelog-camunda8.xml` | new: the same alone, since a remote engine has no tables here                            |
 | `application/src/main/resources/application.yaml`          | the changelog to apply, `validate`, `create-schema: false`                               |
 | `application/src/main/resources/application-camunda7.yaml` | new: `database-schema-update: false` and the datasource the engine runs on               |
-| `loan-approval/.../model/Aggregate.java`                   | every column named explicitly, so the entity and the migration cannot drift apart        |
+| `loan-approval/.../model/Aggregate.java`                   | every column has an explicit name, so the entity and the migration cannot drift apart    |
 | `loan-approval/src/test/resources/application.yaml`        | the module's changelog and `validate`: its test builds its table from it                 |
 | `application/src/test/.../SchemaIT.java`                   | new: the tables the artifact's changelog describes are there, one history for all owners |
 | `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | new: a workflow runs through on the migrated schema, across both datasources             |
 | both POMs                                                  | `quarkus-liquibase`; the application also `vanillabp-schema`                             |
 
-The entity naming its columns is worth a word: as long as a runtime creates the tables, a
-naming strategy decides what they are called, and it is right by definition. Once a migration
-creates them, the two have to agree, and a name written down beats a default nobody looked up.
+Why the entity names its columns: as long as a runtime creates the tables, a naming strategy
+decides their names, and it is right by definition. Once a migration creates them, the two have
+to agree. A name written down is better than a default nobody looked up.
 
 ## Running it
 
@@ -176,7 +177,7 @@ mvn verify
 mvn -Pcamunda8 verify        # the BPMS is a Maven profile, never a code change
 ```
 
-Camunda 8 is remote, so a cluster has to run and its address has to be configured, exactly as
+Camunda 8 is remote, so a cluster has to run and you have to configure its address, exactly as
 in `module-single`.
 
 Start the application:
@@ -200,7 +201,7 @@ Start a loan approval. This is the only URL you need:
 http://localhost:8080/api/loan-approval/start?amount=5000
 ```
 
-It answers with the ID of the loan request and logs the URL showing the result:
+It answers with the ID of the loan request and logs the URL which shows the result:
 
 ```
 Loan approval '0f7c…' started
@@ -210,9 +211,9 @@ Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 
 ## How it works
 
-The order at startup is what matters here, and the extension takes care of it: the migration
-runs while the application starts, before the first bean touches a table, and VanillaBP checks
-its tables in a startup observer afterwards. Nothing in this blueprint arranges that order by
+The order at startup is what matters here, and the extension takes care of it. The migration
+runs while the application starts, before the first bean touches a table. VanillaBP checks its
+tables afterwards, in a startup observer. Nothing in this blueprint arranges that order by
 hand.
 
 |                            File                            |                                                Role                                                 |
@@ -230,12 +231,12 @@ Everything else, from `ApiController` through `Service`, `Workflow` and
 
 ### Keeping identifiers apart in the BPMS
 
-The BPMS profiles of this blueprint set `name-clash-avoidance: use-prefix`, so VanillaBP puts
-the workflow module ID in front of every identifier before it reaches the engine and takes it
+The BPMS profiles of this blueprint set `name-clash-avoidance: use-prefix`. So VanillaBP puts
+the workflow module ID in front of every identifier before it reaches the engine, and takes it
 off again on the way back. The BPMN files, the business code and the rest of the configuration
-keep the plain names, which is why nothing here mentions the prefix twice. What the modes are
-and what each of them costs is explained on the wiki page
-[Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+keep the plain names, which is why nothing here mentions the prefix twice. The wiki page
+[Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 ## Documentation
 

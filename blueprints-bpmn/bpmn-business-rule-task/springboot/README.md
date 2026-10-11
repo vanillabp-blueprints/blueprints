@@ -5,69 +5,69 @@
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 A decision does not have to be Java. This blueprint takes the base blueprint and lets a DMN
-decision table decide whether a loan is approved: the table is deployed with the process,
-the BPMS evaluates it, and what it decided steers the model and reaches the application.
+(Decision Model and Notation) decision table decide whether a loan is approved. The table is
+deployed with the process, and the BPMS (business process management system) evaluates it. Its
+decision steers the model and reaches the application.
 
 ## What this blueprint shows
 
 ![The loan approval process](docs/loan_approval.png)
 
-The loan approval of the base blueprint, with a business rule task after the service task.
-The service task rates the request, the decision table turns the amount and that rating into
-an approval, and what it produced is used twice: the gateway routes on it, and the task
-behind the gateway hands it to the application.
+The loan approval of the base blueprint, with a business rule task after the service task. The
+service task rates the request. The decision table turns the amount and that rating into an
+approval. Its result is used twice: the gateway routes on it, and the task behind the gateway
+hands it to the application.
 
 What is worth looking at:
 
-- The decision table lives next to the BPMN files, in `processes/<adapter-id>/`, and is
-  deployed with them by the boot. Nothing deploys it separately, and no property switches it
-  on. It is adapter-specific for the same reason a BPMN file is: how a business rule task
-  names its decision is the engine's business.
-- **No `@WorkflowTask` method serves the business rule task.** The engine evaluates the
-  table; VanillaBP knows that and does not ask for a handler. This is the one BPMN task type
-  where the wiring validation stays silent on purpose.
-- **A decision table reads what the BPMS holds.** The aggregate is annotated
-  `@NoSyncWithBPMS`, so nothing is shared by default, and the two attributes the inputs of
-  the table name, `amount` and `creditRating`, carry `@SyncWithBPMS`. An input whose
-  attribute is not shared reads nothing, and the rule it belongs to never matches, so this
-  is what to look at first when a table gets a new input.
-- What the decision produced is a variable of the workflow, so reading it needs nothing new:
-  the task's input mapping brings it into the task's scope and `@TaskParam` names it
-  (`WorkflowTaskHandler.recordDecision`). There is not one DMN-specific line of Java in this
-  blueprint.
+- The decision table lives next to the BPMN files, in `processes/<adapter-id>/`, and the boot
+  deploys it with them. Nothing deploys it separately, and no property switches it on. It is
+  specific to the adapter for the same reason a BPMN file is: how a business rule task names
+  its decision is the engine's business.
+- **No `@WorkflowTask` method serves the business rule task.** The engine evaluates the table.
+  VanillaBP knows that and does not ask for a handler. For this one BPMN task type, the check
+  of the wiring stays silent on purpose.
+- **A decision table reads what the BPMS holds.** The aggregate is annotated `@NoSyncWithBPMS`,
+  so nothing is shared by default. The two attributes the inputs of the table name, `amount`
+  and `creditRating`, carry `@SyncWithBPMS`. An input whose attribute is not shared reads
+  nothing, and its rule never matches. So look at this first when a table gets a new input.
+- The result of the decision is a variable of the workflow, so reading it needs nothing new.
+  The task's input mapping brings it into the task's scope, and `@TaskParam` names it
+  (`WorkflowTaskHandler.recordDecision`). Not one line of Java in this blueprint is specific to
+  DMN.
 - **A decision can also work without any Java.** The gateway behind the business rule task
-  reads the result straight from the workflow, and the declined branch ends the process
-  without the application hearing about it. `LoanApprovalIT` runs both outcomes, and the
-  declined one asserts that the aggregate stays untouched.
-- The rules themselves are where a business person can read them. Changing when a loan is
-  approved is a change to `loan_approval.dmn`, not to the application.
+  reads the result straight from the workflow. The declined branch ends the process, and the
+  application does not hear about it. `LoanApprovalIT` runs both outcomes. The declined one
+  asserts that the aggregate stays untouched.
+- The rules themselves are in a place where a business person can read them. To change when a
+  loan is approved, change `loan_approval.dmn`, not the application.
 - The workflow module is a JAR of its own (`loan-approval/`) and cannot be started alone. It
-  declares itself by the marker file `META-INF/workflow-module` containing its ID.
-- Everything it owns is named after that ID. There is no classloader isolation between
-  workflow modules, they share one classpath, so each module needs a namespace of its own in
-  two places: a unique Java package (`blueprint.workflowmodule.loanapproval`) and a single
-  resource subdirectory (`src/main/resources/loan-approval/`) holding *all* of its resources.
-  The marker file is the one exception; it has to sit at `META-INF/`.
+  declares itself by the marker file `META-INF/workflow-module`, which contains its ID.
+- Everything it owns is named after that ID. Workflow modules are not isolated by classloaders.
+  They share one classpath. So each module needs a namespace of its own in two places: a unique
+  Java package (`blueprint.workflowmodule.loanapproval`) and a single resource subdirectory
+  (`src/main/resources/loan-approval/`) which holds *all* of its resources. The marker file is
+  the one exception. It has to be in `META-INF/`.
 - It knows no BPMS. Its only VanillaBP dependency is `vanillabp-spring-boot-support`, which
-  deliberately exposes no engine API. The adapter is a dependency of the application
-  (`application/`). BPMN files are the only thing that differs between engines, which is why
-  they live in `processes/<adapter-id>/`.
+  exposes no engine API on purpose. The adapter is a dependency of the application
+  (`application/`). BPMN files are the only thing that differs between engines. That is why
+  they are in `processes/<adapter-id>/`.
 - It brings its own configuration. `loan-approval/loan-approval.yaml` inside the module is
-  loaded automatically and takes precedence over `application.yaml`. Configuration a module
-  needs stays with the module instead of scattering across the project.
-- One class per direction of the BPMN wiring. `Service` is the business code and never
-  touches VanillaBP. `Workflow` is what the application tells the process and the only place
+  loaded automatically and wins over `application.yaml`. So the configuration a module needs
+  stays with the module and is not spread across the project.
+- One class per direction of the BPMN wiring. `Service` is the business code and never touches
+  VanillaBP. `Workflow` is what the application tells the process and the only place
   `ProcessService` is injected. `WorkflowTaskHandler` is what the process tells the
-  application: it carries `@WorkflowService` and every `@WorkflowTask` method and calls
-  `Service`. Here each of them forwards a single line, which is exactly why it is worth
-  seeing: the shape stays the same once a process needs messages correlated or tasks
-  completed, and it is what keeps the two beans from depending on each other.
-- It is tested on its own. The integration test lives in the workflow module and brings a
-  minimal application with it; the application only carries a smoke test.
+  application. It carries `@WorkflowService` and every `@WorkflowTask` method, and it calls
+  `Service`. Here each of them forwards a single line, and that is exactly why it is worth
+  seeing. The shape stays the same once a process needs to correlate messages or complete
+  tasks. And it keeps the two beans from depending on each other.
+- It is tested on its own. The integration test is in the workflow module and brings a minimal
+  application with it. The application only has a smoke test.
 
-There is no `vanillabp.*` property anywhere: with one adapter on the classpath and one
-workflow module, VanillaBP derives the adapter, the module and the location of the BPMN
-files by convention.
+There is no `vanillabp.*` property anywhere. With one adapter on the classpath and one workflow
+module, VanillaBP finds the adapter, the module and the location of the BPMN files by
+convention.
 
 ## Delta to the base blueprint
 
@@ -77,16 +77,16 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 |----------------------------|-------------------------------------------------------------------------------------------------------|
 | `loan_approval.dmn`        | new: the decision table, one per adapter id, deployed with the process by the boot                    |
 | `loan_approval.bpmn`       | a business rule task calling that decision, a gateway routing on its result, and a second end event   |
-| `Aggregate.java`           | `approval`, what the decision decided, and the annotations sharing what the table reads               |
+| `Aggregate.java`           | `approval`, what the decision decided, and the annotations which share what the table reads           |
 | `Service.java`             | keeps that result, and rates a request the other way round: the bigger the loan, the lower the rating |
 | `WorkflowTaskHandler.java` | a `@WorkflowTask` method reading the result through `@TaskParam`                                      |
 | `LoanApprovalIT.java`      | one test per outcome of the table, steered by the amount                                              |
 
-The decision table differs between the two BPMS in the same way the BPMN does, and for the
-same reason: how a business rule task names its decision is the engine's business
-(`camunda:decisionRef` against `zeebe:calledDecision`), and so is the language a rule is
-written in. Not one line of Java knows about either, and nothing in the blueprint deploys
-the table: the boot deploys a module's DMN files with its processes.
+The decision table differs between the two BPMS in the same way the BPMN does, and for the same
+reason. How a business rule task names its decision is the engine's business
+(`camunda:decisionRef` against `zeebe:calledDecision`). So is the language a rule is written
+in. Not one line of Java knows about either. Nothing in the blueprint deploys the table,
+because the boot deploys a module's DMN files with its processes.
 
 ## Running it
 
@@ -96,16 +96,15 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Start one. Its address and everything
+else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -120,12 +119,12 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
-name, so the engine is chosen once, on the Maven command line, and the build, the tests and
+The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
+name. So you choose the engine once, on the Maven command line. The build, the tests and
 `spring-boot:run` all follow it.
 
-Without it the application does not boot. That is the normal way to work with VanillaBP:
-configuration is validated while booting, and the message names the property to set.
+Without it the application does not boot. This is the normal way to work with VanillaBP: it
+checks the configuration while it boots, and the message names the property to set.
 
 Start the application:
 
@@ -133,13 +132,13 @@ Start the application:
 mvn -pl application spring-boot:run
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 Start a loan approval. This is the only URL you need:
 
@@ -147,7 +146,7 @@ Start a loan approval. This is the only URL you need:
 http://localhost:8080/api/loan-approval/start?amount=2000
 ```
 
-It answers with the ID of the loan request and logs the URL showing the result:
+It answers with the ID of the loan request and logs the URL which shows the result:
 
 ```
 Loan approval '0f7c…' started
@@ -158,52 +157,53 @@ Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 
 Opening that URL shows the aggregate, including what the decision table decided.
 
-Ask for more money and the same table declines it, which the log does not report at all,
-the declined branch of the gateway ends the process without calling the application:
+Ask for more money, and the same table declines it. The log does not report that at all. The
+declined branch of the gateway ends the process without calling the application:
 
 ```
 http://localhost:8080/api/loan-approval/start?amount=9000
 ```
 
 Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
-configures a user for them. Where they are served and how to log in is in the
-[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
+configures a user for them. The
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin)
+says where they are served and how to log in.
 
 ## How it works
 
-|                                          File                                          |                                                         Role                                                         |
-|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/META-INF/workflow-module`                            | contains `loan-approval` and thereby declares this JAR to be a workflow module                                       |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: start event, service task, end event. The task names the method implementing it                         |
-| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, a normal JPA entity keyed by the loan request ID, sharing the two attributes the table reads |
-| `.../loanapproval/Service.java`                                                        | the business code: builds the aggregate and tells `Workflow` that a loan was requested                               |
-| `.../loanapproval/Workflow.java`                                                       | what the application tells the process; the only class using `ProcessService`                                        |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | what the process tells the application: `@WorkflowService`, `@WorkflowTask`, calls `Service`                         |
-| `.../loanapproval/ApiController.java`                                                  | the GET endpoints operating the process                                                                              |
-| `.../loanapproval/config/LoanApprovalProperties.java`                                  | the module's own configuration                                                                                       |
-| `application/.../Application.java`                                                     | the Spring Boot application; its package is the parent of the module's, so scanning finds everything                 |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a real workflow and waits for the aggregate to have been filled                                               |
-| `loan-approval/src/test/.../WorkflowModuleTest.java`                                   | the base class it inherits from: booting the module and waiting for workflow progress, identical in every blueprint  |
-| `application/src/test/.../ApplicationSmokeTest.java`                                   | boots the application, which is where VanillaBP validates that every BPMN task is wired to code                      |
+|                                          File                                          |                                                          Role                                                          |
+|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/META-INF/workflow-module`                            | contains `loan-approval`, which makes this JAR a workflow module                                                       |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: start event, service task, end event. The task names the method implementing it                           |
+| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, a normal JPA entity keyed by the loan request ID. It shares the two attributes the table reads |
+| `.../loanapproval/Service.java`                                                        | the business code: builds the aggregate and tells `Workflow` that somebody requested a loan                            |
+| `.../loanapproval/Workflow.java`                                                       | what the application tells the process; the only class using `ProcessService`                                          |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | what the process tells the application: `@WorkflowService`, `@WorkflowTask`, calls `Service`                           |
+| `.../loanapproval/ApiController.java`                                                  | the GET endpoints operating the process                                                                                |
+| `.../loanapproval/config/LoanApprovalProperties.java`                                  | the module's own configuration                                                                                         |
+| `application/.../Application.java`                                                     | the Spring Boot application; its package is the parent of the module's, so scanning finds everything                   |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a real workflow and waits for the aggregate to have been filled                                                 |
+| `loan-approval/src/test/.../WorkflowModuleTest.java`                                   | its base class: boots the module and waits for the workflow to make progress. The same in every blueprint              |
+| `application/src/test/.../ApplicationSmokeTest.java`                                   | boots the application, which is where VanillaBP validates that every BPMN task is wired to code                        |
 
-The order of events: `ApiController` calls `Service#request`, which builds the
-aggregate and tells `Workflow` what happened, namely `loanRequested`, not "start the
-process". `Workflow#loanRequested` calls `ProcessService#startWorkflow`, and VanillaBP
-persists the aggregate and starts the process in the same transaction, so an aggregate
-without a workflow, or the other way round, cannot happen. The BPMS then reaches the service
-task and calls `WorkflowTaskHandler#retrieveCreditRating`, which does nothing but hand over
-to `Service#assessCreditRating`, with the aggregate loaded before and saved after the call.
-VanillaBP shares what the annotations allow when it saves, which is why the decision
-table finds the amount and the rating when the engine evaluates it a moment later.
-That happens in a transaction VanillaBP owns, which is why neither of the two classes
-declares one of its own. Only the method the API calls does, since starting a workflow has
-to run in a transaction. Putting `@Transactional` on a task handler anyway fails the boot
-with a message naming the method, and putting it on a bean the handler calls fails the task
-while it runs, so this is a rule VanillaBP enforces rather than one to remember.
+The order of events: `ApiController` calls `Service#request`. That method builds the aggregate
+and tells `Workflow` what happened, namely `loanRequested`, not "start the process".
+`Workflow#loanRequested` calls `ProcessService#startWorkflow`. VanillaBP stores the aggregate
+and starts the process in the same transaction, so you never get an aggregate without a
+workflow, or the other way round. The BPMS then reaches the service task and calls
+`WorkflowTaskHandler#retrieveCreditRating`. That method only hands over to
+`Service#assessCreditRating`. VanillaBP loads the aggregate before the call and saves it after.
+VanillaBP shares what the annotations allow when it saves. That is why the decision table finds
+the amount and the rating when the engine evaluates it a moment later. This happens in a
+transaction VanillaBP owns, so neither of the two classes declares one of its own. Only the
+method the API calls does, because starting a workflow has to run in a transaction. If you put
+`@Transactional` on a task handler anyway, the boot fails with a message naming the method. If
+you put it on a bean the handler calls, the task fails while it runs. So VanillaBP enforces
+this rule, and you do not have to remember it.
 
-That the test waits instead of asserting immediately is not accidental: a BPMS runs tasks in
-its own transactions, and a remote one does so eventually. A test assuming otherwise passes
-on one engine and fails on the next.
+The test waits instead of asserting at once, and that is on purpose. A BPMS runs tasks in its
+own transactions, and a remote one runs them some time later. A test which assumes otherwise
+passes on one engine and fails on the next.
 
 ## Documentation
 

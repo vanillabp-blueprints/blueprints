@@ -1,12 +1,12 @@
 # module-idle-application
 
-Makes an application stop asking its database for work while a workflow waits in a timer:
-two configuration keys, and an endpoint which counts what the database did so nobody has to
-take the saving on trust. A delta on top of `module-single`.
+Makes an application stop asking its database for work while a workflow waits in a timer. It
+takes two configuration keys. An endpoint counts what the database did, so nobody has to take
+the saving on trust. A delta on top of `module-single`.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
-first. It carries the procedure, the reference structure and the list of things never to do.
+first. It has the procedure, the reference structure and the list of things never to do.
 
 ## Placeholders
 
@@ -31,7 +31,7 @@ Blueprint-specific names, each occurring in more than one place:
 |                                            File                                            |                                          Why it matters                                           |
 |--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the timer catch event the workflow waits in, and the service task behind it                       |
-| `application/src/main/resources/application.yaml`                                          | `vanillabp.outbox.poll-interval`, the longest an outbox poller may rest while nothing is owed     |
+| `application/src/main/resources/application.yaml`                                          | `vanillabp.outbox.poll-interval`, the longest an outbox poller may rest while nothing is due      |
 | `application/src/main/resources/application-camunda7.yaml`                                 | `sleep-until-something-is-due`, which stops the embedded engine from asking every 5 to 60 seconds |
 | `loan-approval/src/main/java/.../loanapproval/DatabaseTraffic.java`                        | counts the statements H2 wrote into its trace file, which is how the saving is seen               |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java`                          | the endpoint returning that number                                                                |
@@ -53,34 +53,33 @@ Blueprint-specific names, each occurring in more than one place:
 | `docs/loan_approval.png`                                            | the picture of the process the README shows                     |
 
 `TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
-blueprint - copy them unchanged.
+blueprint. Copy them unchanged.
 
 ## Adding this blueprint to an existing project
 
-1. Put `vanillabp.outbox.poll-interval` into `application.yaml` and give it a value which
-   matches your deployment. The poller waits for the earliest entry which is owed something
-   and this key bounds that wait, so it is how long an entry another node wrote down before
-   it went away may lie there. It is not a notification between nodes, and reading it as one
-   is what makes people set it to seconds and give the whole saving back.
+1. Put `vanillabp.outbox.poll-interval` into `application.yaml` and give it a value which fits
+   your deployment. The poller waits for the earliest entry which is due, and this key limits
+   that wait. So it is how long an entry may lie there which another node wrote down before it
+   went away. It is not a notification between nodes. People who read it as one set it to
+   seconds and give the whole saving back.
 2. Put `sleep-until-something-is-due: true` under the adapter id of your embedded Camunda 7
-   engine, in that engine's profile file. Leave it out for a remote BPMS, where the polling
-   happens in the cluster rather than in your database.
-3. Read the startup messages once. They name what is still awake in your application, and
-   the engine one asks for a database index on the due date of `ACT_RU_JOB`, which only an
-   operator can create.
-4. Model the waiting as a timer in the process rather than as a scheduler in the
-   application. A scheduler loses its state on a restart, a due date does not.
-5. Take `DatabaseTraffic` and the endpoint calling it only if you want to see the numbers.
-   They are measuring equipment, not application code: the JDBC URL has H2 write every
-   statement into a file and the class counts its lines. On another database it is that
+   engine, in that engine's profile file. Leave it out for a remote BPMS (business process
+   management system). There the polling happens in the cluster, not in your database.
+3. Read the startup messages once. They name what is still awake in your application. The
+   message of the engine asks for a database index on the due date of `ACT_RU_JOB`. Only an
+   operator can create it.
+4. Model the waiting as a timer in the process, not as a scheduler in the application. A
+   scheduler loses its state on a restart, a due date does not.
+5. Take `DatabaseTraffic` and the endpoint which calls it only if you want to see the numbers.
+   They are measuring equipment, not application code. The JDBC URL makes H2 write every
+   statement into a file, and the class counts its lines. On another database, use that
    database's own way of writing statements down.
-6. Copy `LoanApprovalIT` and keep the shape of its assertion: measure what asking costs,
-   then measure a window in which nothing may happen, then assert that the workflow went on
+6. Copy `LoanApprovalIT` and keep the shape of its assertion. First measure what asking costs.
+   Then measure a window in which nothing may happen. Then assert that the workflow went on
    anyway.
 
-Never take the quiet half without the second assertion. An application which sleeps through
-its own timers looks exactly like one which saves money, and the test is what tells the two
-apart.
+Never take the quiet half without the second assertion. An application which sleeps through its
+own timers looks exactly like one which saves money. The test tells the two apart.
 
 ## Verifying
 
@@ -89,8 +88,8 @@ mvn install verify
 ```
 
 That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamunda8` needs a
-running cluster and `vanillabp.adapters.camunda8.rest-address` configured; do not report a
-failure of that profile as a defect of the generated code before having checked it.
+running cluster and a configured `vanillabp.adapters.camunda8.rest-address`. Check both before
+you report a failure of that profile as a defect of the generated code.
 
 `LoanApprovalIT` proves the aspect and has to pass:
 
@@ -98,9 +97,8 @@ failure of that profile as a defect of the generated code before having checked 
   questions the test itself asks,
 - the loan is paid out after the timer is due, which is the workflow going on.
 
-A test which fails on the first assertion means a poller is still running: check that both
-keys arrived, and that the profile file carrying the engine key is loaded by the profile the
-test runs in. A test which fails on the second means the engine was left waiting, which is
-the serious one.
+If the test fails on the first assertion, a poller is still running. Check that both keys
+arrived, and that the profile the test runs in loads the profile file with the engine key. If
+it fails on the second, the engine was left waiting. That is the serious case.
 
 Do not report success without having run this.

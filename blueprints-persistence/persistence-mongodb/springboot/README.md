@@ -4,11 +4,11 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-An application does not need a relational database to run VanillaBP. This blueprint is the
-proof: the same loan approval as the base blueprint, with the workflow aggregate in MongoDB and
+An application does not need a relational database to run VanillaBP. This blueprint proves it.
+It is the same loan approval as the base blueprint, with the workflow aggregate in MongoDB and
 no data source anywhere in the project. A delta on top of `module-single`.
 
-What makes it more than a swapped repository is the count: a workflow needs **three** stores,
+It is more than a swapped repository, because of the count. A workflow needs **three** stores,
 and all three of them move.
 
 ## What this blueprint shows
@@ -16,28 +16,29 @@ and all three of them move.
 ![The loan approval process](docs/loan_approval.png)
 
 The loan approval of the base blueprint, unchanged: one service task, started through a GET
-request, and an aggregate the task fills. The process is not the point here, the database is.
+request, and an aggregate the task fills. The point here is not the process. It is the
+database.
 
 The three stores of a workflow, and where they are:
 
-|           Store            |                     What it is for                      |        Where it lives        |
-|----------------------------|---------------------------------------------------------|------------------------------|
-| the workflow aggregate     | the state of the business case, your own data           | collection `LOAN_APPROVAL`   |
-| the phase-two outbox       | makes a workflow start on a remote BPMS survive a crash | `vanillabp-phase-two-outbox` |
-| the log of delivered tasks | keeps a repeated delivery from running a handler twice  | `vanillabp-task-deliveries`  |
+|           Store            |                                        What it is for                                        |        Where it lives        |
+|----------------------------|----------------------------------------------------------------------------------------------|------------------------------|
+| the workflow aggregate     | the state of the business case, your own data                                                | collection `LOAN_APPROVAL`   |
+| the phase-two outbox       | makes a workflow start on a remote BPMS (business process management system) survive a crash | `vanillabp-phase-two-outbox` |
+| the log of delivered tasks | keeps a repeated delivery from running a handler twice                                       | `vanillabp-task-deliveries`  |
 
-Only the first one is written by this application's code. The other two are VanillaBP's, and
-they follow the aggregate: declaring the repository as a MongoDB one is what moves them, no
-property says it. That is why an application which stores its aggregate in MongoDB but keeps a
-data source around for "the framework" has misunderstood something - there is nothing left to
-put in there.
+Only the first one is written by this application's code. The other two belong to VanillaBP,
+and they follow the aggregate. Declaring the repository as a MongoDB one moves them. No
+property says it. So an application which stores its aggregate in MongoDB but keeps a data
+source around for "the framework" has misunderstood something. There is nothing left to put in
+there.
 
 **One class more than the base blueprint, and it is the interesting one.**
 `config/MongoTransactions` defines a `MongoTransactionManager`. With a relational database the
-platform contributes a manager itself, for MongoDB it deliberately does not: a MongoDB
+platform contributes a manager itself. For MongoDB it does not, on purpose. A MongoDB
 transaction requires the deployment to be a **replica set**, and no framework can know whether
 yours is one. So the application says it, and VanillaBP asks for it while starting up instead
-of assuming it. Booting names the answer, one line per aggregate:
+of assuming it. The boot names the answer, one line per aggregate:
 
 ```
 Workflow aggregate 'blueprint.workflowmodule.loanapproval.model.Aggregate' (BPMN process
@@ -46,22 +47,22 @@ transaction manager of the application ('org.springframework.data.mongodb.MongoT
 ```
 
 Read that line. It says which transaction everything VanillaBP does with this aggregate runs
-in: loading it, the `@WorkflowTask` method, saving it, the outbox entry and the delivery record
+in. Loading it, the `@WorkflowTask` method, saving it, the outbox entry and the delivery record
 either all commit or none of them do. Without the manager the application does not start, and
 the message names the ways out. On a standalone MongoDB it starts and warns, because every
 transactional write will fail there.
 
 **Camunda 7 is missing on purpose.** Its engine is embedded and needs a relational database,
-which is exactly what this blueprint does not have. Running the two together is possible, and
-then the engine and the aggregate commit separately - a compromise worth knowing about, but not
-what a blueprint about MongoDB should demonstrate. So this is the first blueprint with a single
-engine, and a cluster has to run for every build.
+and this blueprint has none. You can run the two together, and then the engine and the
+aggregate commit separately. That compromise is worth knowing about, but a blueprint about
+MongoDB should not show it. So this is the first blueprint with a single engine, and a cluster
+has to run for every build.
 
-**The counter-check is in the test**, because the happy path proves nothing here:
-`LoanApprovalIT#aFailedStartLeavesNothingBehind` rolls the transaction back after a workflow was
-started and asserts that neither the aggregate nor the outbox entry survived. Before the
-framework taught its MongoDB stores to write through the same session, that assertion failed on
-its second half.
+**The counter-check is in the test**, because the happy path proves nothing here.
+`LoanApprovalIT#aFailedStartLeavesNothingBehind` rolls the transaction back after a workflow
+was started. It asserts that neither the aggregate nor the outbox entry survived. Before the
+framework's MongoDB stores learned to write through the same session, the second half of that
+assertion failed.
 
 ## Delta to the base blueprint
 
@@ -70,7 +71,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 |                            File                            |                                     What is different                                     |
 |------------------------------------------------------------|-------------------------------------------------------------------------------------------|
 | `.../loanapproval/model/Aggregate.java`                    | a document in a collection instead of an entity in a table, and no column declarations    |
-| `.../loanapproval/model/AggregateRepository.java`          | a MongoDB repository; this is what attributes the other two stores as well                |
+| `.../loanapproval/model/AggregateRepository.java`          | a MongoDB repository. It also moves the other two stores to MongoDB                       |
 | `.../loanapproval/config/MongoTransactions.java`           | new: the transaction manager MongoDB needs and the platform does not define               |
 | `application/src/main/resources/application.yaml`          | a MongoDB URI instead of a data source                                                    |
 | `application/src/main/resources/application-camunda8.yaml` | new: the address of the cluster, loaded by the profile of that engine                     |
@@ -90,9 +91,8 @@ engine:
 mvn install verify
 ```
 
-The cluster's address, and everything else specific to that engine, lives in
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+The address of the cluster and everything else specific to that engine are in
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -107,24 +107,23 @@ vanillabp:
       job-lease: use
 ```
 
-`camunda8` is the only profile and it is active by default, so there is no `-P` to
-remember. That profile is also what loads `application-camunda8.yaml`: the Maven profile sets
-the Spring profile of the same name, so the engine is named once and the build, the tests and
-running the application all follow it.
-The tests bring their own MongoDB: a container, started as a replica set, which is why nothing
-in the test configuration says where the database is. `MongoDbForTests` names the image it
-runs, `mongo:8.2`, so a test run says which MongoDB it ran against. The version is not 8.0
-because MongoDB 8.0 refuses to start on a Linux kernel 6.19 or newer
-([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)); the container stops at once
-and the failing test says nothing about the reason. Where your machine wants another version,
-name it on the command line rather than in the file:
+`camunda8` is the only profile, and it is active by default, so there is no `-P` to remember.
+That profile also loads `application-camunda8.yaml`. The Maven profile sets the Spring profile
+of the same name. So the engine is named once, and the build, the tests and running the
+application all follow it. The tests bring their own MongoDB: a container, started as a replica
+set. That is why nothing in the test configuration says where the database is.
+`MongoDbForTests` names the image it runs, `mongo:8.2`, so a test run says which MongoDB it ran
+against. The version is not 8.0, because MongoDB 8.0 refuses to start on a Linux kernel 6.19 or
+newer ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)). The container stops at
+once, and the failing test says nothing about the reason. If your machine needs another
+version, name it on the command line, not in the file:
 
 ```bash
 mvn -Dmongodb.image=mongo:7.0 install verify
 ```
 
-To run the application against a MongoDB of your own, point `spring.data.mongodb.uri` at it and
-make sure it is a replica set:
+To run the application against a MongoDB of your own, point `spring.data.mongodb.uri` at it.
+Make sure it is a replica set:
 
 ```yaml
 spring:
@@ -139,13 +138,13 @@ Start the application:
 mvn -pl application spring-boot:run
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 Start a loan approval. This is the only URL you need:
 
@@ -153,7 +152,7 @@ Start a loan approval. This is the only URL you need:
 http://localhost:8080/api/loan-approval/start?amount=5000
 ```
 
-It answers with the ID of the loan request and logs the URL showing the result:
+It answers with the ID of the loan request and logs the URL which shows the result:
 
 ```
 Loan approval '0f7c…' started
@@ -161,10 +160,10 @@ Credit rating of loan approval '0f7c…' is 50
 Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 ```
 
-The collections are worth a look while it runs. `LOAN_APPROVAL` holds the aggregate,
-`vanillabp-phase-two-outbox` the entry which made the start crash-safe, marked `DONE` after it
-was dispatched and deleted later, and `vanillabp-task-deliveries` the record of the task the
-BPMS handed over.
+The collections are worth a look while it runs. `LOAN_APPROVAL` holds the aggregate.
+`vanillabp-phase-two-outbox` holds the entry which made the start safe against a crash. It is
+marked `DONE` after it was dispatched, and deleted later. `vanillabp-task-deliveries` holds the
+record of the task the BPMS handed over.
 
 ## How it works
 
@@ -183,15 +182,15 @@ BPMS handed over.
 | `application/src/main/resources/application-camunda8.yaml`                             | the address of the cluster, loaded by the profile of that engine              |
 
 The order of events is the one of the base blueprint. What changed is who owns the transaction
-around it. Starting a workflow on a remote BPMS happens in two phases: the application's
-transaction stores the aggregate and an outbox entry, and after the commit VanillaBP tells the
+around it. Starting a workflow on a remote BPMS happens in two phases. The application's
+transaction stores the aggregate and an outbox entry. After the commit, VanillaBP tells the
 engine and writes the result back, on a thread of its own where it opens a transaction itself.
-Both of those transactions are the MongoDB one now, so the atomicity the outbox promises holds
-in a MongoDB application as well - which is what the second test pins down.
+Both of those transactions are now the MongoDB one. So the outbox keeps its promise of all or
+nothing in a MongoDB application as well. The second test holds this in place.
 
-A detail worth copying: the container of the tests is a plain `@Configuration` class in the base
-package, so component scanning hands it to every test of its Maven module. The shared harness
-classes know nothing about MongoDB, and they do not have to.
+A detail worth copying: the container of the tests is a plain `@Configuration` class in the
+base package. So component scanning hands it to every test of its Maven module. The shared
+harness classes know nothing about MongoDB, and they do not have to.
 
 ## Documentation
 

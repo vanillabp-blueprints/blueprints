@@ -4,48 +4,48 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-A workflow application spends most of its life waiting. Waiting used to cost money: the
+A workflow application spends most of its life waiting. Waiting used to cost money. The
 application asked its database every few seconds whether anything had turned up, all day and
-all night, and a database billed by what it does bills for that. Two configuration keys stop
-the asking. This blueprint sets them, and it counts the statements so nobody has to take the
+all night. A database billed by what it does bills for that. Two configuration keys stop the
+asking. This blueprint sets them. It also counts the statements, so nobody has to take the
 saving on trust.
 
 ## What this blueprint shows
 
 ![The loan approval process, waiting in a timer before the money is paid out](docs/loan_approval.png)
 
-The loan approval of the base blueprint with one step added: the money is paid out when the
-withdrawal period of the contract is over, so the workflow waits in a timer between the
-rating and the payment. Thirty seconds here, because the test of this blueprint has to
-finish. Two weeks in a real contract, and nothing written below changes with that number.
+The loan approval of the base blueprint with one step added. The money is paid out when the
+withdrawal period of the contract is over. So the workflow waits in a timer between the rating
+and the payment. Here it waits thirty seconds, because the test of this blueprint has to
+finish. In a real contract it would be two weeks, and nothing written below changes with that
+number.
 
 While the workflow waits, this application sends its database nothing at all.
 
-`vanillabp.outbox.poll-interval` in `application/src/main/resources/application.yaml` is the
-first of the two keys. VanillaBP dispatches an outbox entry right after the transaction which
-wrote it, and it polls the store as the safety net for what no such notification reached. The
-poller waits for the earliest entry which is owed something, and this key says how long it
-may wait when nothing is owed at all. Ten seconds is the default, which is 8640 questions a
-day about work nobody created. This blueprint sets an hour.
+The first of the two keys is `vanillabp.outbox.poll-interval` in
+`application/src/main/resources/application.yaml`. VanillaBP dispatches an outbox entry right
+after the transaction which wrote it. It also polls the store, as a safety net for entries no
+such notification reached. The poller waits for the earliest entry which is due. This key says
+how long it may wait when nothing is due at all. The default is ten seconds, which makes 8640
+questions a day about work nobody created. This blueprint sets an hour.
 
-`vanillabp.adapters.camunda7.sleep-until-something-is-due` in
-`application/src/main/resources/application-camunda7.yaml` is the second, and it belongs to
-the embedded engine. Without it the engine keeps asking its database for work while nothing
-happens. With it, a cycle which found nothing asks once when the next job is due and waits for
-that moment, and any transaction which writes a job wakes it again. What the key costs, and
-the one database index it asks of you, is in the adapter's
-[wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Configuration#letting-an-idle-engine-go-quiet).
+The second is `vanillabp.adapters.camunda7.sleep-until-something-is-due` in
+`application/src/main/resources/application-camunda7.yaml`, and it belongs to the embedded
+engine. Without it the engine keeps asking its database for work while nothing happens. With
+it, a cycle which found nothing asks once when the next job is due and waits for that moment.
+Any transaction which writes a job wakes it again. The adapter's
+[wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Configuration#letting-an-idle-engine-go-quiet)
+says what the key costs and which database index it needs from you.
 
-One key without the other buys nothing. Let the engine wait but leave the outbox at its
-default, and the database is asked every ten seconds, which is what it was asked before. That
-is why this blueprint names both, and why somebody who sets one of them and sees no saving
-has not found a broken feature.
+One key without the other saves nothing. If the engine waits but the outbox stays at its
+default, the database is still asked every ten seconds, just as before. That is why this
+blueprint names both. And if you set one of them and see no saving, the feature is not broken.
 
 ### Counting it yourself
 
-`GET /api/loan-approval/statements` returns how many SQL statements the database has been
-asked. Open it, wait, open it again, and the difference is what this application costs while
-nothing happens.
+`GET /api/loan-approval/statements` returns how many SQL statements the database has received.
+Open it, wait, and open it again. The difference is what this application costs while nothing
+happens.
 
 Measured on this blueprint with both keys set, an application waiting with nothing to do:
 
@@ -55,7 +55,7 @@ Measured on this blueprint with both keys set, an application waiting with nothi
 640 statements so far
 ```
 
-The same application with the two keys taken out, which is what an application which sets
+The same application with the two keys taken out. This is what an application which sets
 nothing does:
 
 ```
@@ -64,34 +64,32 @@ nothing does:
 712 statements so far
 ```
 
-Seventy-two statements a minute is what an application costs which has been idle long enough
-for the engine to widen its cycle to the full minute. Right after it did something the same
-minute costs more, 167 here in the minute after the loan was paid out, because the engine
-starts its backoff at five seconds again. A day of doing nothing is therefore a hundred
-thousand statements and upwards, and on a database billed by what it does, every one of them
-is paid for.
+Seventy-two statements a minute is the cost once the application has been idle long enough for
+the engine to widen its cycle to the full minute. Right after some work the same minute costs
+more: 167 here in the minute after the loan was paid out. The reason is that the engine starts
+its backoff at five seconds again. So a day of doing nothing costs a hundred thousand
+statements or more. On a database billed by what it does, you pay for every one of them.
 
-Almost all of those are the outbox poller rather than the engine: six polls a minute, each
+Almost all of those come from the outbox poller, not from the engine: six polls a minute, each
 one a select, a delete and the commits around them. The engine's share is one statement a
-minute once it has backed off, and the bigger half in the minutes after some work.
+minute once it has backed off. In the minutes after some work it is the bigger half.
 
 The number is the number of lines in `target/loan-approval.trace.db`. H2 writes that file
-because the JDBC URL says `TRACE_LEVEL_FILE=2`, one line per statement, and opening it shows
-what the database was asked rather than how often. Counting lines in a file costs the
-database nothing, so asking does not disturb what it measures. `DatabaseTraffic` is the only
-class here which another database would change, and it is measuring equipment rather than
-something an application needs.
+because the JDBC URL says `TRACE_LEVEL_FILE=2`, one line per statement. Open it to see what the
+database was asked, not only how often. Counting lines in a file costs the database nothing, so
+asking does not disturb the measurement. `DatabaseTraffic` is the only class here which another
+database would change. It is measuring equipment, not something an application needs.
 
 ### Which engine shows which half
 
-The outbox half is the same on every BPMS: it is VanillaBP's own machinery, in the database
-of the application.
+The outbox half is the same on every BPMS (business process management system). It is
+VanillaBP's own machinery, in the database of the application.
 
-The engine half exists only where the engine runs inside the application, which of the
-supported ones is Camunda 7. A remote BPMS does its polling in its own cluster, so on
-Camunda 8 the second key has no place to go and there is nothing of the engine in your
-database to save. Running this blueprint with `-Pcamunda8` therefore shows one half, and the
-number it prints is the outbox half alone.
+The engine half exists only where the engine runs inside the application. Of the supported
+engines, that is Camunda 7. A remote BPMS does its polling in its own cluster. So on Camunda 8
+the second key has no place to go, and there is nothing of the engine in your database to save.
+Running this blueprint with `-Pcamunda8` therefore shows one half. The number it prints is the
+outbox half alone.
 
 ## Delta to the base blueprint
 
@@ -117,16 +115,15 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Its address, and everything else
-specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Its address and everything else specific
+to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -141,11 +138,10 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` sets the profile of the same
-name, so the engine is chosen once, on the Maven command line, and the build, the tests
-and the run all follow it. The file with the engine key of this blueprint,
-`application-camunda7.yaml`, is loaded the same way and only while Camunda 7 is the
-engine.
+The file is loaded because the Maven profile `camunda8` sets the profile of the same name. So
+you choose the engine once, on the Maven command line, and the build, the tests and the run all
+follow it. The file with the engine key of this blueprint, `application-camunda7.yaml`, is
+loaded the same way, and only while Camunda 7 is the engine.
 
 Start the application:
 
@@ -153,7 +149,7 @@ Start the application:
 mvn -pl application spring-boot:run
 ```
 
-The startup says what this application still costs while it is quiet, and it is worth reading
+The startup log says what this application still costs while it is quiet. It is worth reading
 once:
 
 ```
@@ -188,8 +184,8 @@ Credit rating of loan approval '0f7c…' is 50
 The loan is paid out after the withdrawal period. Until then nothing of this application runs, which this URL shows -> http://localhost:8080/api/loan-approval/statements
 ```
 
-Thirty seconds later the timer is due and the task behind it runs, which is the half nobody
-may trade away for the quiet:
+Thirty seconds later the timer is due and the task behind it runs. This is the half nobody may
+trade away for the quiet:
 
 ```
 Loan approval '0f7c…' was paid out
@@ -202,31 +198,32 @@ http://localhost:8080/api/loan-approval/statements
 ```
 
 Wait a minute, ask again, and compare the two numbers. The file behind them is
-`application/target/loan-approval.trace.db`, and opening it is worth a minute of its own:
-every line is one statement, and without the two keys the same handful of them repeats every
-ten seconds for as long as the application runs.
+`application/target/loan-approval.trace.db`. It is worth a look: every line is one statement.
+Without the two keys the same handful of them repeats every ten seconds for as long as the
+application runs.
 
-Measure after the application has settled rather than in its first minute. A start finishes
-for a while after it says it is ready: the schema, the deployment and the first look at the
-retention of the delivery records are all work, and counting them as traffic of an idle
-application would be counting the wrong thing.
+Measure after the application has settled, not in its first minute. A start goes on for a while
+after it says it is ready. The schema, the deployment and the first check of the retention of
+the delivery records are all work. They are not traffic of an idle application, so do not count
+them.
 
-To see the other side, put `poll-interval: PT10S` back into `application.yaml`, set
-`sleep-until-something-is-due: false` in `application-camunda7.yaml` and start the
-application again. Ask the same question twice a minute apart, and the number grows by what
-the two pollers do.
+To see the other side, put `poll-interval: PT10S` back into `application.yaml`. Set
+`sleep-until-something-is-due: false` in `application-camunda7.yaml` and start the application
+again. Ask the same question twice, a minute apart. The number grows by what the two pollers
+do.
 
 Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
-configures a user for them. A browser looking at them is traffic of its own: they ask the
-database on every page, so a dashboard left open in front of a sleeping application is a poller
-with a person behind it. Where they are served and how to log in is in the
-[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
+configures a user for them. A browser looking at them causes traffic of its own. They ask the
+database on every page. So a dashboard left open in front of a sleeping application is a poller
+with a person behind it. The
+[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin)
+says where they are served and how to log in.
 
 ## How it works
 
 |                                          File                                          |                                    Role                                     |
 |----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| `application/src/main/resources/application.yaml`                                      | the cap on how long an outbox poller may wait while nothing is owed         |
+| `application/src/main/resources/application.yaml`                                      | the limit on how long an outbox poller may wait while nothing is due        |
 | `application/src/main/resources/application-camunda7.yaml`                             | the key which lets the embedded engine wait for the next due job            |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the timer the workflow waits in                                             |
 | `.../loanapproval/DatabaseTraffic.java`                                                | counts the lines H2 wrote into its trace file, which is measuring equipment |
@@ -234,41 +231,39 @@ with a person behind it. Where they are served and how to log in is in the
 | `.../loanapproval/WorkflowTaskHandler.java`                                            | the method behind the timer, called when the due date has come              |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | the proof: nothing while it waits, and the payment afterwards               |
 
-The saving is a property and a deployment shape rather than a line of code, so there is
-almost nothing to read in the Java. What is worth reading is what the two keys do not do.
+The saving comes from a property and the shape of the deployment, not from a line of code. So
+there is almost nothing to read in the Java. What is worth reading is what the two keys do not
+do.
 
-The cap on the outbox is not a notification between nodes, and nothing in VanillaBP wakes
-another node for ordinary work. The node which writes an entry is awake by definition,
-because its own commit dispatches it, and a resting node which never hears about that write
-loses nothing. What the cap covers is the one case which is left: a node which wrote work
-down and then went away before doing it. An hour is a sensible value for that, seconds are
-not, and a reader who takes the key for a heartbeat sets it to seconds and gives the whole
-saving away.
+The limit on the outbox is not a notification between nodes. Nothing in VanillaBP wakes another
+node for ordinary work. The node which writes an entry is awake anyway, because its own commit
+dispatches the entry. A resting node which never hears about that write loses nothing. The
+limit covers the one case which is left: a node which wrote work down and then went away before
+doing it. An hour is a sensible value for that, seconds are not. If you take the key for a
+heartbeat, you set it to seconds and give the whole saving away.
 
-The engine key has no cap, because the due date answers the question exactly. A job another
-application wrote into the same engine is the exception: that commit happens in another
-process and reaches nothing here, so two applications on one engine is not a setup this
-covers.
+The engine key has no limit, because the due date answers the question exactly. The exception
+is a job which another application wrote into the same engine. That commit happens in another
+process and reaches nothing here. So this does not cover two applications on one engine.
 
-Something is still awake, and the startup message says so rather than promising silence. The
-retention cleanup of the task delivery records runs once an hour where a delivery was
-recorded since the last run. A monitoring system scraping the gauge of the entries waiting in
-an outbox asks the database for that number. The engine's own metrics reporter would write
-its counters every 900 seconds, which is why it stops writing them where the engine is
-allowed to wait; an application which wants them in its database says so with
-`db-metrics-reporting: true` and pays four wake-ups an hour for it.
+Something is still awake, and the startup message says so instead of promising silence. The
+retention cleanup of the task delivery records runs once an hour, if a delivery was recorded
+since the last run. A monitoring system which reads the gauge of the entries waiting in an
+outbox asks the database for that number. The engine's own metrics reporter would write its
+counters every 900 seconds. So it stops writing them where the engine may wait. An application
+which wants them in its database sets `db-metrics-reporting: true` and pays four wake-ups an
+hour for it.
 
-One thing is left to whoever owns the database. Where the engine waits for due dates it also
-acquires jobs by due date, and that order wants an index on the due date of `ACT_RU_JOB`. The
-startup message asks for it. An in-memory database does not care; a production one does.
+One thing is left to whoever owns the database. Where the engine waits for due dates, it also
+acquires jobs by due date. That order needs an index on the due date of `ACT_RU_JOB`. The
+startup message asks for it. An in-memory database does not care, a production one does.
 
-The application itself keeps running while it waits. Nothing here makes the process go away,
-and what it would take to let a workload of this kind scale down to nothing is a question of
-its own.
+The application itself keeps running while it waits. Nothing here makes the process go away.
+What it would take to scale a workload of this kind down to nothing is a separate question.
 
-Telling a quiet application from a stalled one gets harder the longer the pollers rest, and
-the metrics are what tells them apart. The wiki page about observability says which counter
-answers which question.
+The longer the pollers rest, the harder it gets to tell a quiet application from a stuck one.
+The metrics tell them apart. The wiki page about observability says which counter answers which
+question.
 
 ## Documentation
 

@@ -1,17 +1,16 @@
 # bpmn-process-sections
 
-Cuts a process into two sections and gives each of them a sub-object of the workflow
-aggregate. One section is skipped for part of the workflows, so its sub-object stays absent,
-and the model asks about it through a boolean getter on the top level. A delta on top of
-`module-single`.
+Cuts a process into two sections and gives each of them a sub-object of the workflow aggregate.
+Some workflows skip one section, so its sub-object stays absent. The model asks about it
+through a boolean getter on the top level. A delta on top of `module-single`.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
-first. It carries the procedure, the reference structure and the list of things never to do.
+first. It has the procedure, the reference structure and the list of things never to do.
 
 ## Placeholders
 
-Replace all of these consistently; they are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint.
 
 |        Placeholder         |                                                          Meaning                                                          |
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------|
@@ -65,33 +64,33 @@ project already has.
 | `docs/loan_approval.png`, `docs/document_check.png`                 | the pictures of the two processes the README shows, rendered from the BPMN models |
 
 `TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
-blueprint - copy them unchanged.
+blueprint. Copy them unchanged.
 
 ## Adding this blueprint to an existing project
 
 1. Decide where the sections are. A section is a part of the process whose steps belong
-   together. Draw it as an embedded subprocess when it stays inside this model, and as a call
-   activity when it deserves a model of its own.
-2. Give every section a class of its own and hold it as one attribute on the workflow
-   aggregate. Do not spread a section's findings over the top level of the aggregate, and do
-   not give a section a workflow aggregate of its own.
-3. Let the first task of a section create that object and the later tasks fill it in. Before
-   that first task the attribute is absent, and for a section the process skips it stays
-   absent until the workflow ends.
-4. **Never let a BPMN expression read a path into a section object**, so no
-   `${riskAssessment.collateralSufficient}` and no entry of that shape in the sync
-   configuration. For a workflow which skipped the section the path does not resolve, and
-   VanillaBP stops that workflow naming the path and the part of it which is empty.
+   together. Draw it as an embedded subprocess when it stays inside this model. Draw it as a
+   call activity when it deserves a model of its own.
+2. Give every section a class of its own, and hold it as one attribute on the workflow
+   aggregate. Do not spread a section's findings over the top level of the aggregate. Do not
+   give a section a workflow aggregate of its own.
+3. Let the first task of a section create that object, and the later tasks fill it in. Before
+   that first task the attribute is absent. If the process skips the section, it stays absent
+   until the workflow ends.
+4. **Never let a BPMN expression read a path into a section object.** So no
+   `${riskAssessment.collateralSufficient}`, and no entry of that shape in the sync
+   configuration. For a workflow which skipped the section, the path does not resolve.
+   VanillaBP stops that workflow and names the path and the part of it which is empty.
 5. Write one getter on the aggregate per question the model asks. Return `boolean`, not
-   `Boolean`, and check the section object for null in the first line. A question about
-   whether a section ran is `sectionObject != null` and nothing more.
-6. Where a model really needs a value which only exists after a section, and a getter cannot
-   answer it, declare a substitute for that path in the configuration of the workflow. That
-   is a decision somebody writes down rather than a value the framework invents.
-7. A model inside a section may read that section's findings. Keep the null check in the
-   getter anyway: one aggregate serves every model of the workflow module.
-8. Extend the integration test by one run per path through the sections, and by one case
-   which asks every shared getter on an aggregate that reached no section at all.
+   `Boolean`, and check the section object for null in the first line. The question whether a
+   section ran is `sectionObject != null` and nothing more.
+6. A model may really need a value which only exists after a section, and a getter cannot
+   answer it. Then declare a substitute for that path in the configuration of the workflow.
+   That is a decision somebody writes down, not a value the framework invents.
+7. A model inside a section may read that section's findings. Keep the null check in the getter
+   anyway, because one aggregate serves every model of the workflow module.
+8. Extend the integration test by one run per path through the sections. Add one case which
+   asks every shared getter on an aggregate which reached no section at all.
 
 ## Verifying
 
@@ -100,13 +99,13 @@ mvn install verify
 ```
 
 That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamunda8` needs a
-running cluster and `vanillabp.adapters.camunda8.rest-address` configured; do not report a
-failure of that profile as a defect of the generated code before having checked it.
+running cluster and a configured `vanillabp.adapters.camunda8.rest-address`. Check both before
+you report a failure of that profile as a defect of the generated code.
 
-`LoanApprovalIT` proves the aspect and has to pass. The run which matters most is the one
-below the limit: it goes through to a decision while the second section never ran, and a
-workflow which stops instead is the mistake this blueprint exists for. A BPMN expression
-reading into a section object fails while the workflow runs, not while the application
-starts, so the test is the only thing that finds it.
+`LoanApprovalIT` proves the aspect and has to pass. The run which matters most is the one below
+the limit. It goes through to a decision, although the second section never ran. A workflow
+which stops instead is the mistake this blueprint exists for. A BPMN expression which reads
+into a section object fails while the workflow runs, not while the application starts. So only
+the test finds it.
 
 Do not report success without having run this.

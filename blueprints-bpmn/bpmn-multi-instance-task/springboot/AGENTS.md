@@ -1,15 +1,15 @@
 # bpmn-multi-instance-task
 
-Runs one task once per element of a collection and hands each instance its element, its index
-and the total. A delta on top of `module-single`.
+Runs one task once per element of a collection. Hands each instance its element, its index and
+the total. A delta on top of `module-single`.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
-first. It carries the procedure, the reference structure and the list of things never to do.
+first. It has the procedure, the reference structure and the list of things never to do.
 
 ## Placeholders
 
-Replace all of these consistently; they are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint.
 
 |        Placeholder         |                                                          Meaning                                                          |
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------|
@@ -27,20 +27,20 @@ Blueprint-specific names, each occurring in more than one place:
 | `partnerId`                       | the element variable of the model and the parameter the handler is given                               |
 
 The value of the annotations is the ID of the multi-instance ELEMENT, not the name of the
-element variable. Getting it wrong fails the task while it runs, with a message naming the
-contexts the BPMS did supply.
+element variable. If it is wrong, the task fails while it runs. The message names the contexts
+the BPMS (business process management system) did supply.
 
 ## Core files
 
-|                                            File                                            |                                                    Why it matters                                                     |
-|--------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance element: what is iterated over, what each instance is given, and whether they run at the same time |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | `@MultiInstanceElement`, `@MultiInstanceIndex`, `@MultiInstanceTotal`                                                 |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the collection the model iterates over, and the rows the iterations write                                             |
-| `loan-approval/src/main/java/.../loanapproval/model/PartnerOffer.java`                     | a row per iteration, which is what makes concurrent instances harmless                                                |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | one method per iteration and one for the result over all of them                                                      |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the elements, so the number of iterations is configuration rather than model                                          |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | asserts every row, in no particular order                                                                             |
+|                                            File                                            |                                                 Why it matters                                                 |
+|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance element: what it loops over, what each instance gets, and whether they run at the same time |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | `@MultiInstanceElement`, `@MultiInstanceIndex`, `@MultiInstanceTotal`                                          |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the collection the model iterates over, and the rows the iterations write                                      |
+| `loan-approval/src/main/java/.../loanapproval/model/PartnerOffer.java`                     | a row per iteration, which is what makes concurrent instances harmless                                         |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | one method per iteration and one for the result over all of them                                               |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the elements. So the number of iterations is configuration, not model                                          |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | asserts every row, in no particular order                                                                      |
 
 ## Boilerplate files
 
@@ -60,32 +60,32 @@ contexts the BPMS did supply.
 | `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model                       |
 
 `TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
-blueprint - copy them unchanged.
+blueprint. Copy them unchanged.
 
 ## Adding this blueprint to an existing project
 
-1. Put what is iterated over onto the workflow aggregate, as identifiers rather than objects,
-   and let the business code fill it in a task BEFORE the multi-instance one. The collection
-   has to exist when the engine reaches the task.
+1. Put what the loop goes over onto the workflow aggregate, as identifiers, not objects. Let
+   the business code fill it in a task BEFORE the multi-instance one. The collection has to
+   exist when the engine reaches the task.
 2. Add the multi-instance element to the BPMN and let it read that attribute
    (`camunda:collection="${partnerIds}"` on Camunda 7, `inputCollection="=partnerIds"` on
    Camunda 8). Never push a collection into the process as a variable.
 3. Annotate the parameters of the `@WorkflowTask` method with `@MultiInstanceElement`,
-   `@MultiInstanceIndex` or `@MultiInstanceTotal`, whichever the business code needs, and give
-   each of them **the ID of the multi-instance element**.
-4. Write the result of an iteration as a ROW OF ITS OWN, never into an attribute all
-   iterations share. Instances run at the same time on a remote engine, each of them saves the
-   whole aggregate, and the one committing last would put back what it read at its start.
+   `@MultiInstanceIndex` or `@MultiInstanceTotal`, whichever the business code needs. Give each
+   of them **the ID of the multi-instance element**.
+4. Write the result of an iteration as a ROW OF ITS OWN, never into an attribute all iterations
+   share. On a remote engine the instances run at the same time, and each of them saves the
+   whole aggregate. The one which commits last would put back what it read at its start.
    Nothing reports that.
 5. Put anything computed over all iterations into a task AFTER the multi-instance one. An
    iteration sees one element and cannot know whether it is the last.
-6. Keep the number of iterations out of the model. A list in configuration or in the data
-   means adding an element is not a deployment.
-7. Extend `LoanApprovalIT` with assertions that do not depend on the order of the iterations.
-   `containsExactlyInAnyOrder` rather than `containsExactly`, because there is no order.
+6. Keep the number of iterations out of the model. With a list in configuration or in the data,
+   adding an element needs no deployment.
+7. Extend `LoanApprovalIT` with assertions which do not depend on the order of the iterations.
+   Use `containsExactlyInAnyOrder`, not `containsExactly`, because there is no order.
 
-Nested iterations, a multi-instance task inside a multi-instance subprocess, are what the
-`resolverBean` of `@MultiInstanceElement` is for. This blueprint does not need it; the
+The `resolverBean` of `@MultiInstanceElement` is for nested iterations, like a multi-instance
+task inside a multi-instance subprocess. This blueprint does not need it. The
 [SPI documentation](https://github.com/vanillabp/spi-for-java#multi-instance) shows it.
 
 ## Verifying
@@ -95,8 +95,8 @@ mvn install verify
 ```
 
 That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamunda8` needs a
-running cluster and `vanillabp.adapters.camunda8.rest-address` configured; do not report a
-failure of that profile as a defect of the generated code before having checked it.
+running cluster and a configured `vanillabp.adapters.camunda8.rest-address`. Check both before
+you report a failure of that profile as a defect of the generated code.
 
 `LoanApprovalIT` proves the aspect and has to pass: one row per element, the index each
 iteration was given, and the result computed after the last of them.

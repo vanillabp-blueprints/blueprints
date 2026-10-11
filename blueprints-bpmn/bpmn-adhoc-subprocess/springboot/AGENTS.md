@@ -1,17 +1,17 @@
 # bpmn-adhoc-subprocess
 
-Adds an ad-hoc subprocess: activities drawn side by side without sequence flows, of which the
-workflow runs the ones somebody picked. Two decision makers are shown, a case worker answering
-a user task and a decision table, because the element does not know which of them filled the
-list. A delta on top of `module-single`, Camunda 8 only.
+Adds an ad-hoc subprocess: activities drawn side by side without sequence flows. The workflow
+runs the ones somebody picked. Two decision makers are shown, a case worker who answers a user
+task and a decision table, because the element does not know which of them filled the list. A
+delta on top of `module-single`, Camunda 8 only.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
-first. It carries the procedure, the reference structure and the list of things never to do.
+first. It has the procedure, the reference structure and the list of things never to do.
 
 ## Placeholders
 
-Replace all of these consistently; they are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint.
 
 |        Placeholder         |                                                          Meaning                                                          |
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------|
@@ -29,10 +29,10 @@ Blueprint-specific names, each occurring in more than one place:
 | `selectChecks`                                    | the `@WorkflowTask` method and the `zeebe:formDefinition externalReference` of the user task                  |
 | `checks_to_run`                                   | the `decisionId` of the DMN and the `zeebe:calledDecision` of the business rule task                          |
 
-The element ids are the part which is easy to get wrong. The model activates elements by their
-id, so a check renamed in the BPMN and not in `Check.java` leaves the workflow standing in the
-subprocess with nothing to do, and the same holds for the output column of the decision table.
-The ids are not touched by name-clash avoidance, so they are the same string everywhere.
+The element ids are easy to get wrong. The model activates elements by their id. So if you
+rename a check in the BPMN and not in `Check.java`, the workflow stands in the subprocess with
+nothing to do. The same holds for the output column of the decision table. Name-clash avoidance
+does not touch the ids, so they are the same string everywhere.
 
 ## Core files
 
@@ -44,7 +44,7 @@ The ids are not touched by name-clash avoidance, so they are the same string eve
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                    | `checksToRun`, the version attribute the concurrent checks need, and one flag per check                                                |
 | `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                | one `@WorkflowTask` method per check, and NO method for the ad-hoc subprocess itself                                                   |
 | `loan-approval/src/main/java/.../loanapproval/Service.java`                            | the checks as business methods, and the two halves of the user task picking them                                                       |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                           | `completeUserTask`, and nothing about the subprocess: the choice travels on the aggregate                                              |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                           | `completeUserTask`, and nothing about the subprocess. The choice travels on the aggregate                                              |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java`                      | the GET endpoint carrying the task id and the names of the checks                                                                      |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                  | one test per decision maker                                                                                                            |
 
@@ -64,33 +64,33 @@ The ids are not touched by name-clash avoidance, so they are the same string eve
 | `docs/loan_approval.png`                                   | the picture of the process the README shows, rendered from the BPMN model  |
 
 `TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
-blueprint - copy them unchanged.
+blueprint. Copy them unchanged.
 
 ## Adding this blueprint to an existing project
 
 1. Draw the ad-hoc subprocess and put the activities inside it, each one an ordinary task with
-   its own task definition. Set *Active elements collection* to a FEEL expression naming an
-   attribute of your workflow aggregate, `=checksToRun` here. Do not set a task definition on
-   the subprocess itself: that is the other flavour of the element, where a worker decides
-   round by round which activities to activate, and VanillaBP does not serve it.
+   its own task definition. Set *Active elements collection* to a FEEL expression which names
+   an attribute of your workflow aggregate, `=checksToRun` here. Do not set a task definition
+   on the subprocess itself. That is the other kind of this element, where a worker decides
+   round by round which activities to activate. VanillaBP does not serve it.
 2. Add a `List<String>` attribute to the workflow aggregate. VanillaBP shares the aggregate
-   with the BPMS on every command and a collection travels as a list, so nothing else is
-   needed to get the choice into the model.
+   with the BPMS (business process management system) on every command, and a collection
+   travels as a list. So nothing else is needed to get the choice into the model.
 3. Write down the element ids once, as an enum or as constants. Everything else in the
-   application speaks about a check by its name, and only that one place knows which BPMN
-   element each of them is.
+   application talks about a check by its name. Only that one place knows which BPMN element
+   each of them is.
 4. Add a `@WorkflowTask` method per activity inside the element, exactly as for a task on a
    sequence flow. Add none for the subprocess.
-5. Decide where the list comes from. A user task plus `completeUserTask` puts a person in
-   charge; a business rule task whose `resultVariable` is the same name puts a decision table
-   in charge and needs no Java at all. Both can sit in one model behind a gateway.
+5. Decide where the list comes from. A user task plus `completeUserTask` lets a person decide.
+   A business rule task whose `resultVariable` has the same name lets a decision table decide,
+   and needs no Java at all. Both can sit in one model behind a gateway.
 6. Give the aggregate a version attribute if more than one activity can run at a time. Two
-   activated activities are two branches writing the same row, and without it the branch
-   committing second silently overwrites the other.
+   activated activities are two branches which write the same row. Without it, the branch which
+   commits second overwrites the other without a word.
 7. Copy `LoanApprovalIT` and write one test per way the list is filled.
 
-A completion condition is optional. Without one the workflow leaves the element when
-everything it activated is done, which is what this blueprint shows.
+A completion condition is optional. Without one, the workflow leaves the element when
+everything it activated is done. This blueprint shows that.
 
 ## Verifying
 
@@ -98,20 +98,21 @@ everything it activated is done, which is what this blueprint shows.
 mvn install verify
 ```
 
-That needs a running Camunda 8 cluster and `vanillabp.adapters.camunda8.rest-address`
-configured; do not report a failure as a defect of the generated code before having checked
-that. Camunda 7 is not an option here, because it does not execute the element.
+That needs a running Camunda 8 cluster and a configured
+`vanillabp.adapters.camunda8.rest-address`. Check both before you report a failure as a defect
+of the generated code. Camunda 7 is not an option here, because it does not execute the
+element.
 
 `LoanApprovalIT` proves the aspect and has to pass:
 
-- the case worker picks two of the three checks, those two ran, the third did not, and the
-  service task behind the subprocess ran, which is what says the workflow left the element,
-- the decision table picks for a request nobody looked at, and the aggregate's own list stayed
-  empty because no Java was involved on that path.
+- the case worker picks two of the three checks. Those two ran, the third did not, and the
+  service task behind the subprocess ran. That shows the workflow left the element,
+- the decision table picks for a request nobody looked at. The aggregate's own list stayed
+  empty, because no Java took part on that path.
 
 If a check never runs, the element id in the code or in the decision table does not match the
-BPMN. If the workflow stops inside the subprocess, the list named an id which is not an element
-of it. If a check runs but its result is gone, the aggregate lost the version attribute and the
-two branches overwrote each other.
+BPMN. If the workflow stops inside the subprocess, the list named an id which is not one of its
+elements. If a check runs but its result is gone, the aggregate lost the version attribute, and
+the two branches overwrote each other.
 
 Do not report success without having run this.

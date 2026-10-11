@@ -4,10 +4,10 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-Some processes are modelled to begin with a message rather than with somebody pressing a
-button: an order arrives, a file is delivered, another system reports something. This
-blueprint shows what that changes for the application, which is one method name and one
-thing to understand about what travels.
+Some processes are modelled to begin with a message, not with somebody pressing a button: an
+order arrives, a file is delivered, another system reports something. This blueprint shows what
+that changes for the application. It is one method name, and one thing to understand about what
+travels.
 
 ## What this blueprint shows
 
@@ -22,25 +22,25 @@ bpms.startWorkflowByMessage(loanApproval, "LoanRequested");
 
 and that is the whole difference in code. What is worth understanding:
 
-- **The aggregate comes first.** The application creates it, gives it its natural id and
-  persists it - VanillaBP starts the workflow in the same transaction, so a workflow without
-  its aggregate cannot happen here either. A message start event does not mean the process
-  invents the business case; it means the process is addressed by a message.
-- **Only the id travels.** As with every message in VanillaBP, no payload reaches the BPMS:
-  the message carries the name it is published under and the aggregate's id, which is how
-  the workflow is addressed from then on. Everything the process may need belongs onto the
-  aggregate before the call. The aggregate says the same thing in code: it carries
-  `@NoSyncWithBPMS`, and no attribute takes that back, because no expression in this model
-  reads one. If a condition or a timer read an attribute, that attribute would carry
-  `@SyncWithBPMS`, and nothing else would.
-- **The model decides, not the code.** Whether a process starts by message is a modelling
-  decision, and the application follows it. Using `startWorkflow` on a process modelled this
-  way is what VanillaBP would have to reject, and the other way round.
+- **The aggregate comes first.** The application creates it, gives it its natural id and stores
+  it. VanillaBP starts the workflow in the same transaction. So here, too, you never get a
+  workflow without its aggregate. A message start event does not mean the process invents the
+  business case. It means a message addresses the process.
+- **Only the id travels.** As with every message in VanillaBP, no payload reaches the BPMS
+  (business process management system). The message carries the name it is published under and
+  the aggregate's id. From then on, the workflow is addressed by that id. Everything the
+  process may need belongs on the aggregate before the call. The aggregate says the same in
+  code. It carries `@NoSyncWithBPMS`, and no attribute takes that back, because no expression
+  in this model reads one. If a condition or a timer read an attribute, that attribute would
+  carry `@SyncWithBPMS`. No other attribute would.
+- **The model decides, not the code.** Whether a process starts by message is a decision of the
+  model, and the application follows it. VanillaBP would have to reject `startWorkflow` on a
+  process modelled this way, and the other way round.
 
-When to model it: a process that is triggered by something arriving rather than by your own
-application usually reads better as a message start event, and it composes with
-`bpmn-message-correlation` - the same message name may start a workflow and, later, be
-correlated with a running one.
+When to model it: a process which is triggered by something arriving, not by your own
+application, usually reads better as a message start event. It also combines with
+`bpmn-message-correlation`. The same message name may start a workflow, and later be correlated
+with a running one.
 
 ## Delta to the base blueprint
 
@@ -51,9 +51,9 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `loan_approval.bpmn` | the start event carries a `bpmn:messageEventDefinition`, plus the `bpmn:message`         |
 | `Workflow.java`      | `startWorkflowByMessage` instead of `startWorkflow`, with the message name as a constant |
 
-Nothing else changes: the aggregate, the service, the task handler and the API are those of
-the base blueprint. That is the point worth taking away - a message start event is a
-modelling decision, not an architecture.
+Nothing else changes. The aggregate, the service, the task handler and the API are those of the
+base blueprint. That is the point to take away: a message start event is a decision of the
+model, not an architecture.
 
 ## Running it
 
@@ -63,16 +63,15 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Start one. Its address and everything
+else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -87,12 +86,12 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` makes the config profile of the same
-name the parent of whichever profile the application runs in, so the engine is chosen once, on
-the Maven command line, and the build, the tests and `quarkus:dev` all follow it.
+The file is loaded because the Maven profile `camunda8` makes the config profile of the same
+name the parent of the profile the application runs in. So you choose the engine once, on the
+Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
-Take the address out and the application does not boot. That is the normal way to work with
-VanillaBP: configuration is validated while booting, and the message names the property to
+Take the address out and the application does not boot. This is the normal way to work with
+VanillaBP: it checks the configuration while it boots, and the message names the property to
 set.
 
 Start the application:
@@ -101,13 +100,13 @@ Start the application:
 mvn -pl application quarkus:dev
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 Start a loan approval. This is the only URL you need:
 
@@ -127,36 +126,36 @@ Opening that URL shows the aggregate, including the credit rating the service ta
 
 ## How it works
 
-|                                          File                                          |                                                        Role                                                         |
-|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/META-INF/workflow-module`                            | contains `loan-approval` and thereby declares this JAR to be a workflow module                                      |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: start event, service task, end event. The task names the method implementing it                        |
-| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, a normal JPA entity keyed by the loan request ID                                            |
-| `.../loanapproval/Service.java`                                                        | the business code: builds the aggregate and tells `Workflow` that a loan was requested                              |
-| `.../loanapproval/Workflow.java`                                                       | what the application tells the process; the only class using `ProcessService`                                       |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | what the process tells the application: `@WorkflowService`, `@WorkflowTask`, calls `Service`                        |
-| `.../loanapproval/ApiController.java`                                                  | the GET endpoints operating the process                                                                             |
-| `.../loanapproval/config/LoanApprovalProperties.java`                                  | the module's own configuration                                                                                      |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a real workflow and waits for the aggregate to have been filled                                              |
-| `loan-approval/src/test/.../WorkflowModuleTest.java`                                   | the base class it inherits from: booting the module and waiting for workflow progress, identical in every blueprint |
-| `application/src/test/.../ApplicationSmokeTest.java`                                   | boots the application, which is where VanillaBP validates that every BPMN task is wired to code                     |
+|                                          File                                          |                                                   Role                                                    |
+|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/META-INF/workflow-module`                            | contains `loan-approval`, which makes this JAR a workflow module                                          |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: start event, service task, end event. The task names the method implementing it              |
+| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, a normal JPA entity keyed by the loan request ID                                  |
+| `.../loanapproval/Service.java`                                                        | the business code: builds the aggregate and tells `Workflow` that somebody requested a loan               |
+| `.../loanapproval/Workflow.java`                                                       | what the application tells the process; the only class using `ProcessService`                             |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | what the process tells the application: `@WorkflowService`, `@WorkflowTask`, calls `Service`              |
+| `.../loanapproval/ApiController.java`                                                  | the GET endpoints operating the process                                                                   |
+| `.../loanapproval/config/LoanApprovalProperties.java`                                  | the module's own configuration                                                                            |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a real workflow and waits for the aggregate to have been filled                                    |
+| `loan-approval/src/test/.../WorkflowModuleTest.java`                                   | its base class: boots the module and waits for the workflow to make progress. The same in every blueprint |
+| `application/src/test/.../ApplicationSmokeTest.java`                                   | boots the application, which is where VanillaBP validates that every BPMN task is wired to code           |
 
-The order of events: `ApiController` calls `Service#request`, which builds the
-aggregate and tells `Workflow` what happened, namely `loanRequested`, not "start the
-process". `Workflow#loanRequested` publishes the message, and VanillaBP persists the
-aggregate and starts the workflow in the same transaction, so an aggregate without a
-workflow, or the other way round, cannot happen. The BPMS then reaches the service
-task and calls `WorkflowTaskHandler#retrieveCreditRating`, which does nothing but hand over
-to `Service#assessCreditRating`, with the aggregate loaded before and saved after the call.
-That happens in a transaction VanillaBP owns, which is why neither of the two classes
-declares one of its own. Only the method the API calls does, since starting a workflow has
-to run in a transaction. Putting `@Transactional` on a task handler anyway fails the boot
-with a message naming the method, and putting it on a bean the handler calls fails the task
-while it runs, so this is a rule VanillaBP enforces rather than one to remember.
+The order of events: `ApiController` calls `Service#request`, which builds the aggregate and
+tells `Workflow` what happened, namely `loanRequested`, not "start the process".
+`Workflow#loanRequested` publishes the message, and VanillaBP persists the aggregate and starts
+the workflow in the same transaction, so an aggregate without a workflow, or the other way
+round, cannot happen. The BPMS then reaches the service task and calls
+`WorkflowTaskHandler#retrieveCreditRating`, which does nothing but hand over to
+`Service#assessCreditRating`, with the aggregate loaded before and saved after the call. This
+happens in a transaction VanillaBP owns, so neither of the two classes declares one of its own.
+Only the method the API calls does, because starting a workflow has to run in a transaction. If
+you put `@Transactional` on a task handler anyway, the boot fails with a message naming the
+method. If you put it on a bean the handler calls, the task fails while it runs. So VanillaBP
+enforces this rule, and you do not have to remember it.
 
-That the test waits instead of asserting immediately is not accidental: a BPMS runs tasks in
-its own transactions, and a remote one does so eventually. A test assuming otherwise passes
-on one engine and fails on the next.
+The test waits instead of asserting at once, and that is on purpose. A BPMS runs tasks in its
+own transactions, and a remote one runs them some time later. A test which assumes otherwise
+passes on one engine and fails on the next.
 
 ## Documentation
 

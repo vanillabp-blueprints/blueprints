@@ -4,18 +4,18 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-An application usually wants to know when a business case is closed. The usual way to find
-out is a service task in front of the end event, and then a second one in front of the next
-end event, and so on. This blueprint shows the other way: one method, called whichever end
-the workflow reaches.
+An application usually wants to know when a business case is closed. The usual way to find out
+is a service task in front of the end event, then a second one in front of the next end event,
+and so on. This blueprint shows the other way: one method, called at whichever end the workflow
+reaches.
 
 ## What this blueprint shows
 
 ![The loan approval process, with two ends](docs/loan_approval.png)
 
 The loan approval ends in two places. One end has a task in front of it, because telling the
-customer is work somebody has to do. The other has nothing in front of it - and the
-application learns about that end just as well:
+customer is work somebody has to do. The other has nothing in front of it. The application
+learns about that end just as well:
 
 ```java
 @WorkflowEnded
@@ -25,57 +25,57 @@ public void loanApprovalEnded(final Aggregate loanRequest, final WorkflowEnd end
 ```
 
 The method sits in the same class as the `@WorkflowTask` methods, because it is the same
-direction: the BPMS calling in. VanillaBP loads the aggregate, calls the method and saves the
-aggregate, exactly as it does for a task. It may take the aggregate, the `WorkflowEnd`, or
-both in either order.
+direction: the BPMS (business process management system) calls in. VanillaBP loads the
+aggregate, calls the method and saves the aggregate, exactly as for a task. It may take the
+aggregate, the `WorkflowEnd`, or both in either order.
 
-**When to use which.** A task in front of an end event is for WORK: sending a letter,
-charging a card, calling a neighbouring system. It belongs in the model because it belongs to
-the process, and it has to be visible there. `@WorkflowEnded` is for the FACT that the case is
-closed: writing a closing time, releasing a reservation, letting a list of open cases shrink.
-Modelling a task for that means adding a box to the diagram for something the engine already
-knows, and repeating it in front of every end event you add later.
+**When to use which.** A task in front of an end event is for WORK: sending a letter, charging
+a card, calling a system next door. It belongs in the model because it belongs to the process,
+and it has to be visible there. `@WorkflowEnded` is for the FACT that the case is closed:
+writing a closing time, releasing a reservation, letting a list of open cases shrink. A task
+for that adds a box to the diagram for something the engine already knows. You would also have
+to repeat it in front of every end event you add later.
 
 **What the record tells you.** `WorkflowEnd` carries how the workflow ended, when, and which
 end event it reached:
 
-|         Value         |                                                    What it means                                                     |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------|
-| `kind() == COMPLETED` | the workflow reached an end event                                                                                    |
-| `kind() == CANCELED`  | it ended without reaching one. Which modelled paths lead there is up to the BPMS, and its adapter says which ones do |
-| `time()`              | when it ended, as the BPMS reports it, or when VanillaBP was told where it does not                                  |
-| `endEventId()`        | the BPMN id of the end event, or `null` where the BPMS does not report it                                            |
+|         Value         |                                                    What it means                                                    |
+|-----------------------|---------------------------------------------------------------------------------------------------------------------|
+| `kind() == COMPLETED` | the workflow reached an end event                                                                                   |
+| `kind() == CANCELED`  | it ended without reaching one. The BPMS decides which modelled paths lead there, and its adapter says which ones do |
+| `time()`              | when it ended, as the BPMS reports it, or when VanillaBP was told, where the BPMS does not report it                |
+| `endEventId()`        | the BPMN id of the end event, or `null` where the BPMS does not report it                                           |
 
-**Not every BPMS reports the same.** Camunda 7 names the end event; Camunda 8 does not, so
-`endEventId()` is `null` there and this blueprint's test does not assert it. Whether a
-cancelled workflow is reported at all differs too, and the adapter of each engine says what
-its own does, for
+**Not every BPMS reports the same.** Camunda 7 names the end event. Camunda 8 does not, so
+`endEventId()` is `null` there, and this blueprint's test does not assert it. Whether a
+cancelled workflow is reported at all differs too. The adapter of each engine says what its own
+does, for
 [Camunda 8](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Deviations#a-cancelled-workflow-reports-no-end-before-line-810).
-Write code which survives every case: a `null` end event is normal, and a business decision must not hang on the
-distinction a BPMS may not make. What a model looks like decides nothing here: a terminate end
-event and an interrupting event subprocess read like a cancelation and are reported as
-`COMPLETED` by both Camunda engines.
+Write code which works in every case. A `null` end event is normal. A business decision must
+not rely on a difference which a BPMS may not make. What a model looks like decides nothing
+here. A terminate end event and an interrupting event subprocess look like a cancelation, but
+both Camunda engines report them as `COMPLETED`.
 
-**The notification is at-least-once.** After a crash it may arrive twice, so what the method
-does has to tolerate that. Writing a closing time and a status does. Sending a letter does
+**The notification arrives at least once.** After a crash it may arrive twice, so the method
+has to cope with that. Writing a closing time and a status copes with it. Sending a letter does
 not, and that is what a task in front of the end event is for.
 
 ## Delta to the base blueprint
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                  What is different                                   |
-|----------------------------|--------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | two end events, one with a task in front of it and one without                       |
-| `WorkflowTaskHandler.java` | the `@WorkflowEnded` method next to the `@WorkflowTask` methods                      |
-| `Service.java`             | closes the business case, and does the work of the task in front of the other end    |
-| `Aggregate.java`           | when the case was closed, how, and at which end event                                |
-| `loan-approval.yaml`       | the threshold the gateway routes on                                                  |
-| `LoanApprovalIT.java`      | one test per end, and the interesting one is the end nothing is modelled in front of |
+|            File            |                                   What is different                                   |
+|----------------------------|---------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`       | two end events, one with a task in front of it and one without                        |
+| `WorkflowTaskHandler.java` | the `@WorkflowEnded` method next to the `@WorkflowTask` methods                       |
+| `Service.java`             | closes the business case, and does the work of the task in front of the other end     |
+| `Aggregate.java`           | when the case was closed, how, and at which end event                                 |
+| `loan-approval.yaml`       | the threshold the gateway routes on                                                   |
+| `LoanApprovalIT.java`      | one test per end. The interesting one is the end with nothing modelled in front of it |
 
-The gateway is not the subject here. It exists so the process has two ends;
-[`bpmn-gateways`](https://github.com/vanillabp-blueprints/bpmn-gateways-quarkus) is where
-decisions are explained.
+The gateway is not the subject here. It exists so that the process has two ends.
+[`bpmn-gateways`](https://github.com/vanillabp-blueprints/bpmn-gateways-quarkus) explains
+decisions.
 
 ## Running it
 
@@ -85,16 +85,15 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Start one. Its address and everything
+else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -109,9 +108,9 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` makes the config profile of the same
-name the parent of whichever profile the application runs in, so the engine is chosen once, on
-the Maven command line, and the build, the tests and `quarkus:dev` all follow it.
+The file is loaded because the Maven profile `camunda8` makes the config profile of the same
+name the parent of the profile the application runs in. So you choose the engine once, on the
+Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
 Start the application:
 
@@ -119,22 +118,22 @@ Start the application:
 mvn -pl application quarkus:dev
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
-The amount decides which end the workflow reaches, so this is the URL to play with:
+The amount decides which end the workflow reaches. So this is the URL to play with:
 
 ```
 http://localhost:8080/api/loan-approval/start?amount=5000
 ```
 
-An amount of 5000 is a rating of 50, above the configured minimum of 30, so the customer is
-informed and the workflow ends there:
+An amount of 5000 gives a rating of 50, above the configured minimum of 30. So the customer is
+informed, and the workflow ends there:
 
 ```
 Credit rating of loan approval '1e2f…' is 50, which counts as 'acceptable'
@@ -142,16 +141,16 @@ The customer of loan approval '1e2f…' was informed
 Loan approval '1e2f…' is closed (COMPLETED at 2026-08-15T13:52:01.774Z, end event 'EndEvent_LoanApproved')
 ```
 
-An amount of 300 takes the other branch, where nothing is modelled at all - and the
-application is told anyway:
+An amount of 300 takes the other branch, where nothing is modelled at all. The application is
+told anyway:
 
 ```
 Credit rating of loan approval 'e0f5…' is 3, which counts as 'too-low'
 Loan approval 'e0f5…' is closed (COMPLETED at 2026-08-15T13:52:02.154Z, end event 'EndEvent_LoanRejected')
 ```
 
-On Camunda 8 the same two runs report `end event 'null'`, because that engine does not name
-the end event. Everything else is identical, and no Java differs.
+On Camunda 8 the same two runs report `end event 'null'`, because that engine does not name the
+end event. Everything else is the same, and no Java differs.
 
 The result of a run is at
 
@@ -169,13 +168,13 @@ http://localhost:8080/api/loan-approval/{loanRequestId}
 | `.../loanapproval/model/Aggregate.java`                                                    | when, how and where the workflow ended                       |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                           | one test per end, including the end nothing precedes         |
 
-The order of events: the workflow reaches an end event, the BPMS reports the end, VanillaBP
+The order of events: the workflow reaches an end event, and the BPMS reports the end. VanillaBP
 loads the aggregate and calls the method, and the aggregate is saved. On an embedded engine
-that happens in the transaction which ends the workflow; on a remote one the notification
-arrives afterwards, which is why it is at-least-once and why nothing in the model waits for
-it.
+that happens in the transaction which ends the workflow. On a remote one the notification
+arrives afterwards. That is why it arrives at least once, and why nothing in the model waits
+for it.
 
-The annotation is optional, and a model without it pays nothing: an adapter attaches its
+The annotation is optional, and a model without it pays nothing. An adapter attaches its
 listener only where a method exists.
 
 ## Documentation

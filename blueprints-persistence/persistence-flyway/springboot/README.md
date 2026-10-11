@@ -4,18 +4,19 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-In a project past its first prototype nothing creates a table at runtime. The schema is a
-reviewed, versioned artifact, applied by the deployment pipeline, often by a database user the
-application itself does not even have. This blueprint is `module-single` with that constraint
-added: Flyway creates every table, including the ones VanillaBP and the embedded engine would
-otherwise create themselves.
+Once a project is past its first prototype, nothing creates a table at runtime. The schema is a
+reviewed, versioned artifact. The deployment pipeline applies it, often with a database user
+which the application itself does not even have. This blueprint is `module-single` with that
+rule added. Flyway creates every table, including the ones VanillaBP and the embedded engine
+would otherwise create themselves.
 
 ## What this blueprint shows
 
 ![The loan approval process](docs/loan_approval.png)
 
-The process is the one from `module-single` and nothing about it changed: a loan approval with a
-single service task. What changed is who creates the tables it needs, and who owns which of them.
+The process is the one from `module-single`, and nothing about it changed: a loan approval with
+a single service task. What changed is who creates the tables it needs, and who owns which of
+them.
 
 |                                                          Table                                                          |          Created by          |                               From                                |
 |-------------------------------------------------------------------------------------------------------------------------|------------------------------|-------------------------------------------------------------------|
@@ -24,17 +25,17 @@ single service task. What changed is who creates the tables it needs, and who ow
 | `LOAN_APPROVAL`                                                                                                         | Flyway, the module's history | `loan-approval/.../loan-approval/db/migration`                    |
 | `FLYWAY_SCHEMA_HISTORY*`                                                                                                | Flyway                       | one history table per owner, see below                            |
 
-Three settings are what make this real, and all three are in the configuration rather than in
-code: `ddl-auto: validate` has Hibernate check the result instead of building it,
-`vanillabp.outbox.create-schema: false` takes VanillaBP's tables out of its own hands, and
+Three settings make this real, and all three are in the configuration, not in code.
+`ddl-auto: validate` makes Hibernate check the result instead of building it.
+`vanillabp.outbox.create-schema: false` stops VanillaBP from creating its own tables.
 `database-schema-update: false` does the same for the engine.
 
 ### Three owners, three histories
 
-Flyway keeps one timeline per history table, and it knows nothing else about a migration: not who
-wrote it, not which artifact it came from. Two owners in one history therefore compete for version
-numbers. VanillaBP ships `V2.0.0`; the day an application picks that number for a migration of its
-own, one of the two loses. So every owner gets a history table of its own:
+Flyway keeps one timeline per history table, and it knows nothing else about a migration: not
+who wrote it, not which artifact it came from. So two owners in one history compete for version
+numbers. VanillaBP ships `V2.0.0`. The day an application picks that number for a migration of
+its own, one of the two loses. So every owner gets a history table of its own:
 
 |        Owner        |             History table             |         Migrations         |
 |---------------------|---------------------------------------|----------------------------|
@@ -43,11 +44,11 @@ own, one of the two loses. So every owner gets a history table of its own:
 | the application     | `flyway_schema_history`               | its own, plus the engine's |
 
 The blueprint `persistence-liquibase` does it the other way round, with one history for every
-owner, because there a changeset carries the logical path of the changelog which declared it.
-Flyway has no such identity, so here the table is the boundary. `SchemaIT` asserts all three exist and that each of them counts
-its own migrations.
+owner. There a changeset carries the logical path of the changelog which declared it. Flyway
+has no such identity, so here the table is the border. `SchemaIT` asserts that all three exist
+and that each of them counts its own migrations.
 
-Two settings go with that, and without them the second history does not work at all. Flyway refuses
+Two settings go with that. Without them the second history does not work at all. Flyway refuses
 to migrate a schema which already holds tables it has no history for:
 
 ```
@@ -55,16 +56,16 @@ Found non-empty schema(s) "PUBLIC" but no schema history table. Use baseline() o
 baselineOnMigrate to true to initialize the schema history table.
 ```
 
-So each instance sets `baselineOnMigrate(true)`, and with it `baselineVersion("0")`, because
-Flyway's default baseline is version 1 and every migration numbered `1.0.0` would be marked as
-already applied and silently skipped.
+So each instance sets `baselineOnMigrate(true)`, and with it `baselineVersion("0")`. Flyway's
+default baseline is version 1. With it, every migration numbered `1.0.0` would be marked as
+already applied and skipped without a word.
 
 ### The SQL VanillaBP needs
 
-VanillaBP ships it in an artifact of its own, `io.vanillabp:vanillabp-schema`, generated from a
-Liquibase changelog so that no hand-written statement is in it. It contains no class, so a schema
-repository can depend on it without pulling the runtime. The location names the database, because
-Flyway has no abstraction over dialects:
+VanillaBP ships it in an artifact of its own, `io.vanillabp:vanillabp-schema`. It is generated
+from a Liquibase changelog, so no statement in it is written by hand. It contains no class, so
+a schema repository can depend on it without pulling in the runtime. The location names the
+database, because Flyway does not hide the differences between SQL dialects:
 
 ```yaml
 blueprint:
@@ -72,27 +73,27 @@ blueprint:
     vanillabp-location: classpath:vanillabp/schema/flyway/h2
 ```
 
-H2 and PostgreSQL are covered by tests of the framework; MySQL, MariaDB, SQL Server, Oracle and
-DB2 ship without one. An update of VanillaBP brings its new SQL along in the artifact, numbered in
-VanillaBP's own timeline, which is exactly why that timeline has a history table to itself.
+Tests of the framework cover H2 and PostgreSQL. MySQL, MariaDB, SQL Server, Oracle and DB2 ship
+without a test. An update of VanillaBP brings its new SQL along in the artifact, numbered in
+VanillaBP's own timeline. That is exactly why that timeline has a history table to itself.
 
 `SchemaIT` does not take that on trust. It asks Flyway which migrations it found in VanillaBP's
-location, reads the `CREATE TABLE` statements out of them and compares the result with the names
-written down in the test. A VanillaBP release which adds a table therefore fails the build here,
-and the new name is carried into the test, into this README and into `AGENTS.md` in one go. A list
-which nobody compares falls behind, and this one did: the payload table of the phase-two outbox
-travelled in the artifact for months while no test and no document here knew it.
+location. It reads the `CREATE TABLE` statements out of them and compares the result with the
+names written down in the test. So a VanillaBP release which adds a table fails the build here.
+The new name then goes into the test, into this README and into `AGENTS.md` in one step. A list
+which nobody compares falls behind, and this one did. The payload table of the phase-two outbox
+was in the artifact for months, and no test and no document here knew about it.
 
-A migration which was applied somewhere must never be edited afterwards: Flyway compares
-checksums and refuses to run when one changed, and getting an installation out of that state is
-manual work in somebody's production database. A later change is a new migration, always.
+A migration which was applied somewhere must never be edited afterwards. Flyway compares
+checksums and refuses to run when one changed. Getting an installation out of that state is
+manual work in somebody's production database. A later change is always a new migration.
 
 ### The engine's tables, without copying them
 
-Camunda ships its schema as plain scripts in the engine JAR, and they carry no Flyway version and
-no name Flyway would accept. Copying them into this repository would be wrong the day the engine
-version changes, so the build takes them out of the JAR of exactly the version this application
-depends on and names them, in the order Camunda applies them itself:
+Camunda ships its schema as plain scripts in the engine JAR. They carry no Flyway version and
+no name Flyway would accept. A copy in this repository would be wrong the day the engine
+version changes. So the build takes them out of the JAR of exactly the version this application
+depends on. It names them in the order Camunda applies them itself:
 
 ```
 target/classes/db/migration-camunda7/V7.24.0.1__camunda_engine.sql
@@ -101,37 +102,37 @@ target/classes/db/migration-camunda7/V7.24.0.1__camunda_engine.sql
                                      ...
 ```
 
-Two properties in the `camunda7` profile decide it: `camunda7-engine.version`, which is also the
-migration version, and `camunda7-engine.database`, because Camunda ships one set of scripts per
-database. Raising the engine version raises the schema with it, and the new scripts are new
-migrations rather than edits to applied ones. The engine's own version table,
-`ACT_GE_SCHEMA_LOG`, is written by those scripts and stays the engine's business, and a configured
-table prefix does not work with them, since their statements carry fixed table names.
+Two properties in the `camunda7` profile decide it. `camunda7-engine.version` is also the
+migration version. `camunda7-engine.database` is needed because Camunda ships one set of
+scripts per database. Raising the engine version raises the schema with it. The new scripts are
+new migrations, not edits to applied ones. Those scripts write the engine's own version table,
+`ACT_GE_SCHEMA_LOG`, and it stays the engine's business. A configured table prefix does not
+work with them, because their statements carry fixed table names.
 
 ### The table which is gone
 
 Before release 2.0 the phase-two outbox of this platform was
-[gruelbox](https://github.com/gruelbox/transaction-outbox), and a blueprint like this one had to
-create that library's table, `TXNO_OUTBOX`, as well. VanillaBP writes the outbox itself now, into
-`VANILLABP_PHASE_TWO_OUTBOX` and `VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD`, and both come out of
-`vanillabp-schema` like the delivery table. Nothing here migrates `TXNO_OUTBOX` any more.
+[gruelbox](https://github.com/gruelbox/transaction-outbox). A blueprint like this one had to
+create that library's table, `TXNO_OUTBOX`, as well. Now VanillaBP writes the outbox itself,
+into `VANILLABP_PHASE_TWO_OUTBOX` and `VANILLABP_PHASE_TWO_OUTBOX_PAYLOAD`. Both come out of
+`vanillabp-schema`, like the delivery table. Nothing here migrates `TXNO_OUTBOX` any more.
 
 An application which wants to keep gruelbox adds the artifact
-`io.vanillabp:gruelbox-phase-two-outbox`, which is where that store lives since it left
-the platform. The table is then that library's again and the application migrates it. That is a way
-out for an application which already runs gruelbox, not a recipe for a new one, so this blueprint
-shows the default.
+`io.vanillabp:gruelbox-phase-two-outbox`. That store lives there since it left the platform.
+The table then belongs to that library again, and the application migrates it. That is a way
+out for an application which already runs gruelbox, not a recipe for a new one. So this
+blueprint shows the default.
 
-What a handover of the tables involves, for both migration tools, is documented in
-[Creating the tables with Liquibase or Flyway](https://github.com/vanillabp/adapter-platform-integration/wiki/Spring-Boot-integration#creating-the-tables-with-liquibase-or-flyway).
-This blueprint shows it running rather than explaining it a second time.
+[Creating the tables with Liquibase or Flyway](https://github.com/vanillabp/adapter-platform-integration/wiki/Spring-Boot-integration#creating-the-tables-with-liquibase-or-flyway)
+explains how to hand over the tables, for both migration tools. This blueprint shows it running
+instead of explaining it a second time.
 
 ### When the migration was not applied
 
-With creation switched off, a forgotten migration used to surface at the first workflow, hours
-after the deployment. It does not any more: VanillaBP checks its tables while the application
-starts and ends the boot with the table, the property which would have created it and the artifact
-to apply.
+With creation switched off, a forgotten migration used to show up at the first workflow, hours
+after the deployment. That is over. VanillaBP checks its tables while the application starts.
+If one is missing, it stops the boot and names the table, the property which would have created
+it and the artifact to apply.
 
 ```
 The task-delivery table 'VANILLABP_TASK_DELIVERY' does not exist! VanillaBP remembers
@@ -145,20 +146,20 @@ it instead of running the handler twice. Either
 ```
 
 Each of the three tables is checked that way, and the message names the one which is missing.
-`MissingTableIT` pins it by pointing VanillaBP's Flyway instance at a location without
-migrations.
+`MissingTableIT` holds this in place: it points VanillaBP's Flyway instance at a location
+without migrations.
 
 ## Delta to the base blueprint
 
-Everything about the process, the aggregate and the wiring is `module-single`. What was added or
-changed:
+Everything about the process, the aggregate and the wiring comes from `module-single`. What was
+added or changed:
 
 |                             File                             |                                                      Change                                                      |
 |--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
 | `loan-approval/.../loan-approval/db/migration/V1.0.0__*.sql` | new: the module's own migration, its aggregate table                                                             |
 | `application/.../SchemaConfiguration.java`                   | new: one Flyway instance and initializer per owner                                                               |
 | `application/pom.xml`                                        | the `camunda7` profile takes the engine's scripts out of the engine JAR                                          |
-| `loan-approval/.../model/Aggregate.java`                     | every column named explicitly, so entity and migration cannot drift apart                                        |
+| `loan-approval/.../model/Aggregate.java`                     | every column has an explicit name, so entity and migration cannot drift apart                                    |
 | `application/src/main/resources/application.yaml`            | `ddl-auto: validate`, `create-schema: false`, the locations per owner                                            |
 | `application/src/main/resources/application-camunda7.yaml`   | `database-schema-update: false` and the engine's migrations                                                      |
 | `loan-approval/src/test/resources/application.yaml`          | `ddl-auto: validate` and the module's own migrations                                                             |
@@ -167,16 +168,16 @@ changed:
 | `application/src/test/.../MissingTableIT.java`               | new: a forgotten migration ends the boot                                                                         |
 | both POMs                                                    | `spring-boot-flyway` and `flyway-core`, in the module for its test only; the application also `vanillabp-schema` |
 
-The entity naming its columns is worth a word: as long as a runtime creates the tables, a naming
-strategy decides what they are called, and it is right by definition. Once a migration creates
-them, the two have to agree, and a name written down beats a default nobody looked up.
+Why the entity names its columns: as long as a runtime creates the tables, a naming strategy
+decides their names, and it is right by definition. Once a migration creates them, the two have
+to agree. A name written down is better than a default nobody looked up.
 
-`spring-boot-flyway` is a module of its own since Spring Boot 4, and the `FlywayMigrationInitializer`
-it brings is what makes the entity manager factory wait for a migration. A `Flyway` bean alone
-would migrate whenever its bean happened to be created, which is not an order anybody should rely
-on. Declaring beans of that type also makes Spring Boot's Flyway auto-configuration step aside, so
-`spring.flyway.*` has no effect in the application. In the module's own test that
-auto-configuration is exactly what applies its migrations.
+`spring-boot-flyway` is a module of its own since Spring Boot 4. The
+`FlywayMigrationInitializer` it brings makes the entity manager factory wait for a migration. A
+`Flyway` bean alone would migrate whenever its bean happened to be created, and nobody should
+rely on that order. When you declare beans of that type, Spring Boot's Flyway
+auto-configuration steps aside. So `spring.flyway.*` has no effect in the application. In the
+module's own test, that auto-configuration is exactly what applies its migrations.
 
 ## Running it
 
@@ -187,8 +188,8 @@ mvn verify
 mvn -Pcamunda8 verify        # the BPMS is a Maven profile, never a code change
 ```
 
-Camunda 8 is remote, so a cluster has to run and its address has to be configured, exactly as in
-`module-single`.
+Camunda 8 is remote, so a cluster has to run and you have to configure its address, exactly as
+in `module-single`.
 
 Start the application:
 
@@ -210,7 +211,7 @@ Start a loan approval. This is the only URL you need:
 http://localhost:8080/api/loan-approval/start?amount=5000
 ```
 
-It answers with the ID of the loan request and logs the URL showing the result:
+It answers with the ID of the loan request and logs the URL which shows the result:
 
 ```
 Loan approval '0f7c…' started
@@ -226,11 +227,12 @@ and how to log in is in the
 
 ## How it works
 
-The order at startup is what matters here, and it is not left to chance. Every Flyway instance is
-paired with a `FlywayMigrationInitializer`, and Spring Boot's Flyway module lets the entity manager
-factory depend on beans of that type. The engine reaches its schema through the transaction
-manager, which is built on top of that entity manager factory. VanillaBP checks its own tables once
-all beans exist, in a `SmartInitializingSingleton`, which is after every migration ran.
+The order at startup is what matters here, and it is not left to chance. Every Flyway instance
+has a `FlywayMigrationInitializer` next to it. Spring Boot's Flyway module makes the entity
+manager factory depend on beans of that type. The engine reaches its schema through the
+transaction manager, which is built on top of that entity manager factory. VanillaBP checks its
+own tables once all beans exist, in a `SmartInitializingSingleton`. That is after every
+migration ran.
 
 |                            File                            |                                           Role                                            |
 |------------------------------------------------------------|-------------------------------------------------------------------------------------------|
@@ -249,12 +251,13 @@ the aggregate, is the base blueprint unchanged.
 
 ### Keeping identifiers apart in the BPMS
 
-The BPMS profiles of this blueprint set `name-clash-avoidance: use-prefix`, so VanillaBP puts
-the workflow module ID in front of every identifier before it reaches the engine and takes it
-off again on the way back. The BPMN files, the business code and the rest of the configuration
-keep the plain names, which is why nothing here mentions the prefix twice. What the modes are
-and what each of them costs is explained on the wiki page
-[Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+The BPMS (business process management system) profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names, which is why
+nothing here mentions the prefix twice. The wiki page
+[Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 ## Documentation
 

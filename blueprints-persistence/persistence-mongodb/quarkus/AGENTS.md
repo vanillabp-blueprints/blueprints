@@ -2,11 +2,11 @@
 
 The workflow aggregate lives in MongoDB, and so do the two stores VanillaBP needs itself: the
 phase-two outbox and the log of delivered tasks. No data source anywhere. A delta on top of
-`module-single`, changing nothing but the persistence.
+`module-single`, which changes nothing but the persistence.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
-first. It carries the procedure, the reference structure and the list of things never to do.
+first. It has the procedure, the reference structure and the list of things never to do.
 
 ## Placeholders
 
@@ -26,9 +26,9 @@ Blueprint-specific name:
 | `LOAN_APPROVAL` | the collection of the aggregate, named in `@MongoEntity` |
 
 **The rule this blueprint is built on:** a workflow needs three stores, and a MongoDB
-application moves all three. The aggregate is yours, the phase-two outbox and the delivery log
-are VanillaBP's, and they follow the aggregate's repository. Keeping a data source "for the
-framework" means the persistence was only half moved.
+application moves all three. The aggregate is yours. The phase-two outbox and the delivery log
+belong to VanillaBP, and they follow the aggregate's repository. If you keep a data source "for
+the framework", the persistence was only half moved.
 
 ## Core files
 
@@ -57,33 +57,33 @@ framework" means the persistence was only half moved.
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java`       | GET endpoints operating the process                                                                            |
 | `docs/loan_approval.png`                                                | the picture of the process the README shows, rendered from the BPMN model                                      |
 
-`WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint - copy them
-unchanged. Every test class carries `@QuarkusTest` itself; inheriting it from the base class is
-not enough to make the test a bean.
+`WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint. Copy them
+unchanged. Every test class carries `@QuarkusTest` itself. Inheriting it from the base class
+does not make the test a bean.
 
 ## Adding this blueprint to an existing project
 
 1. Build `module-single` first, or apply this to an existing workflow module. Everything except
    the persistence is that blueprint unchanged.
-2. Replace `quarkus-hibernate-orm-panache` with `quarkus-mongodb-panache` in the workflow module,
-   and remove the JDBC driver from the application. If a data source stays behind, the
-   framework's own stores stay relational and the application ends up with two databases.
+2. Replace `quarkus-hibernate-orm-panache` with `quarkus-mongodb-panache` in the workflow
+   module, and remove the JDBC driver from the application. If a data source stays behind, the
+   framework's own stores stay relational, and the application ends up with two databases.
 3. Map the aggregate as a document: `@MongoEntity(collection = "...")`, the natural ID as
    `@BsonId`, no column annotations. Keep the ID a business identifier.
-4. Make the repository a `PanacheMongoRepositoryBase`. Nothing else attributes the phase-two
-   outbox and the delivery log to MongoDB, and nothing else binds a MongoDB transaction to the
-   platform's - both come with this one line.
-5. Configure `quarkus.mongodb.database` and leave the connection string out while developing:
-   the dev services then start a MongoDB and run it as a **replica set**, which is what MongoDB
-   transactions need. Naming an address switches the dev services off, so a test which does that
-   has to bring a replica set of its own.
-6. Read the startup line naming the transaction each aggregate is processed in. It is the
-   fastest check that step 4 worked, and in production it is where you see that the deployment
-   is a standalone MongoDB - VanillaBP warns about that, because every transactional write fails
+4. Make the repository a `PanacheMongoRepositoryBase`. Nothing else moves the phase-two outbox
+   and the delivery log to MongoDB, and nothing else binds a MongoDB transaction to the
+   platform's transaction. Both come with this one line.
+5. Configure `quarkus.mongodb.database` and leave out the connection string while you develop.
+   The dev services then start a MongoDB and run it as a **replica set**, which MongoDB
+   transactions need. Naming an address switches the dev services off. So a test which does
+   that has to bring a replica set of its own.
+6. Read the startup line which names the transaction each aggregate is processed in. It is the
+   fastest check that step 4 worked. In production it also shows you when the deployment is a
+   standalone MongoDB. VanillaBP warns about that, because every transactional write fails
    there.
-7. Use the `camunda8` profile or another remote BPMS. An embedded engine needs a relational
-   database, so it does not fit an application without one; combining them means the engine and
-   the aggregate commit separately.
+7. Use the `camunda8` profile or another remote BPMS (business process management system). An
+   embedded engine needs a relational database, so it does not fit an application without one.
+   If you combine them, the engine and the aggregate commit separately.
 8. Copy `LoanApprovalIT` including `aFailedStartLeavesNothingBehind`. A test which only walks
    the happy path does not show what this blueprint is about.
 
@@ -94,14 +94,15 @@ bin/camunda8_cluster.sh start   # in the monorepo, or bring your own cluster
 mvn install verify
 ```
 
-`camunda8` is the only profile of this blueprint and it is active by default. Docker is
-required: the dev services start MongoDB as a container, and the cluster runs in containers as
+`camunda8` is the only profile of this blueprint, and it is active by default. Docker is
+required. The dev services start MongoDB as a container, and the cluster runs in containers as
 well.
 
-Both tests of `LoanApprovalIT` have to pass. `theServiceTaskFillsTheAggregate` proves the wiring
-between BPMN and code, `aFailedStartLeavesNothingBehind` proves the aggregate and the outbox
-entry share one transaction - if the second one fails while the first passes, the MongoDB
-transaction is not in place: check the repository and whether the deployment is a replica set.
-`ApplicationSmokeTest` passing means the application boots with the module on the classpath.
+Both tests of `LoanApprovalIT` have to pass. `theServiceTaskFillsTheAggregate` proves the
+wiring between BPMN and code, `aFailedStartLeavesNothingBehind` proves that the aggregate and
+the outbox entry share one transaction. If the second one fails while the first passes, the
+MongoDB transaction is not in place. Check the repository, and whether the deployment is a
+replica set. If `ApplicationSmokeTest` passes, the application boots with the module on the
+classpath.
 
 Do not report success without having run this.

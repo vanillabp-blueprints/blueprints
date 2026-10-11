@@ -4,41 +4,42 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-A service task is the place where a process asks your application to do something. This
-blueprint answers the question that comes right after wiring one up: what happens when the
-work does not simply succeed? A provider is unreachable, or the answer it gives means the
-business case is over. The two look similar in code and could hardly be more different for
-the process.
+In a service task, a process asks your application to do something. This blueprint answers the
+question which comes right after wiring one up: what happens when the work does not simply
+succeed? A provider cannot be reached, or its answer means the business case is over. The two
+look similar in code. For the process they could hardly be more different.
 
 ## What this blueprint shows
 
 ![The loan approval process, with an error boundary event on the service task](docs/loan_approval.png)
 
-The loan approval of the base blueprint, but the service task now asks a rating provider,
-and a provider can behave in three ways. Each one leaves the workflow somewhere else:
+The loan approval of the base blueprint, but the service task now asks a rating provider. A
+provider can behave in three ways. Each one leaves the workflow somewhere else:
 
 - It answers, and the rating is good enough. The handler returns, VanillaBP saves the
-  aggregate, and the process continues on the regular sequence flow.
-- It does not answer. `CreditRatingUnavailableException` leaves the handler, the
-  transaction is rolled back and the BPMS delivers the task again. The model knows nothing
-  about this, and it should not: a provider having a bad minute is not a business case.
-- It answers, but the rating is below the minimum. The handler writes the rejection onto
-  the aggregate and throws `TaskException`. The workflow leaves the task through the error
-  boundary event, and what the handler wrote before throwing is saved anyway.
+  aggregate, and the process goes on along the regular sequence flow.
+- It does not answer. `CreditRatingUnavailableException` leaves the handler, the transaction is
+  rolled back, and the BPMS (business process management system) delivers the task again. The
+  model knows nothing about this, and it should not. A provider with a bad minute is not a
+  business case.
+- It answers, but the rating is below the minimum. The handler writes the rejection onto the
+  aggregate and throws `TaskException`. The workflow leaves the task through the error boundary
+  event. What the handler wrote before throwing is saved anyway.
 
-The third one is the surprising one, so it is worth spelling out. A `TaskException` is not
-a failure. It is a business outcome the BPMN models, so VanillaBP commits the transaction
-and the process takes the error path. Every other exception is a failure, and failures
-leave no trace.
+The third one is the surprising one, so it is worth spelling out. A `TaskException` is not a
+failure. It is a business outcome which the BPMN models. So VanillaBP commits the transaction,
+and the process takes the error path. Every other exception is a failure, and failures leave no
+trace.
 
 Two more things this blueprint carries:
 
 - The rating provider is an input mapping of the BPMN task (`ratingProvider`), bound to a
-  `@TaskParam` of the handler. Which provider is asked is modelled, not compiled in.
-- `Service#assessCreditRating` returns immediately if the aggregate already carries a
-  rating. A remote BPMS may deliver a task more than once, and asking a provider twice may
-  cost money. Idempotency is keyed on the state of the aggregate, never on a counter of
-  invocations.
+  `@TaskParam` of the handler. The model decides which provider is asked. It is not compiled
+  in.
+- `Service#assessCreditRating` returns at once if the aggregate already holds a rating. A
+  remote BPMS may deliver a task more than once, and asking a provider twice may cost money.
+  The state of the aggregate decides whether something already happened, never a counter of
+  calls.
 
 ## Delta to the base blueprint
 
@@ -51,19 +52,19 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `LocalCreditRatingClient.java`          | new: a stand-in provider, so the blueprint runs without one                                                      |
 | `CreditRatingUnavailableException.java` | new: the technical failure the BPMS retries                                                                      |
 | `Service.java`                          | asks the provider, rejects a rating below the minimum with `TaskException`, and returns early if a rating exists |
-| `WorkflowTaskHandler.java`              | takes the provider as `@TaskParam`; no `@Transactional`                                                          |
+| `WorkflowTaskHandler.java`              | takes the provider as `@TaskParam`. No `@Transactional`                                                          |
 | `Aggregate.java`                        | `ratedBy` and `rejectionReason` in addition to the rating                                                        |
 | `LoanApprovalIT.java`                   | one test per outcome, with a simulator standing in for the provider                                              |
 
-The one difference worth understanding is the missing `@Transactional`. VanillaBP runs a
-task handler in a transaction it owns and commits it for a `TaskException` deliberately. A
-transaction declared by the application would roll that back and throw away the rejection
-the process is about to react to.
+The one difference worth understanding is the missing `@Transactional`. VanillaBP runs a task
+handler in a transaction it owns, and commits it for a `TaskException` on purpose. A
+transaction declared by the application would roll that back. It would throw away the rejection
+which the process is about to react to.
 
-You do not have to remember that. An annotation on the handler or its class fails the boot
-with a message naming the method, and one on a bean the handler calls fails the task while it
-runs. What used to leave a rejected loan looking untouched in the database now stops the
-application instead.
+You do not have to remember that. An annotation on the handler or its class fails the boot with
+a message which names the method. One on a bean the handler calls fails the task while it runs.
+In the past such an annotation made a rejected loan look untouched in the database. Now it
+stops the application instead.
 
 ## Running it
 
@@ -73,16 +74,15 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Start one. Its address and everything
+else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -97,9 +97,9 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` makes the config profile of the same
-name the parent of whichever profile the application runs in, so the engine is chosen once, on
-the Maven command line, and the build, the tests and `quarkus:dev` all follow it.
+The file is loaded because the Maven profile `camunda8` makes the config profile of the same
+name the parent of the profile the application runs in. So you choose the engine once, on the
+Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
 Start the application:
 
@@ -107,13 +107,13 @@ Start the application:
 mvn -pl application quarkus:dev
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 Start a loan approval. This is the only URL you need:
 
@@ -121,8 +121,8 @@ Start a loan approval. This is the only URL you need:
 http://localhost:8080/api/loan-approval/start?amount=5000
 ```
 
-The stand-in provider refuses the first request for every loan request, so the first thing
-in the log is the retry:
+The stand-in provider refuses the first request for every loan request. So the first thing in
+the log is the retry:
 
 ```
 Loan approval '0f7c…' started
@@ -131,9 +131,8 @@ Credit rating of loan approval '0f7c…' is 50, awarded by 'acme-rating'
 Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 ```
 
-Ask for a small amount to see the other outcome. A rating of 5 is below the configured
-minimum of 10, so the loan is rejected and the workflow ends through the error boundary
-event:
+Ask for a small amount to see the other outcome. A rating of 5 is below the configured minimum
+of 10. So the loan is rejected, and the workflow ends through the error boundary event:
 
 ```
 http://localhost:8080/api/loan-approval/start?amount=500
@@ -144,26 +143,26 @@ Credit rating of loan approval '4b21…' is 5, awarded by 'acme-rating'
 Loan approval '4b21…' is rejected: rating 5 is below the minimum of 10
 ```
 
-Opening the result URL shows the aggregate with the rejection reason on it. That it is
-there is the point: the handler threw, and the state survived.
+Opening the result URL shows the aggregate with the rejection reason on it. That is the point:
+the handler threw, and the state survived.
 
 Both switches are in the module's own configuration
-(`loan-approval/src/main/resources/loan-approval/loan-approval.yaml`): turn
-`fail-first-rating-attempt` off for an undisturbed run, or move `minimum-rating` to decide
+(`loan-approval/src/main/resources/loan-approval/loan-approval.yaml`). Turn
+`fail-first-rating-attempt` off for a run without the retry. Or move `minimum-rating` to decide
 which amounts are rejected.
 
 ## How it works
 
-|                                          File                                          |                                                             Role                                                             |
-|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: service task with an input mapping and an error boundary event catching `loan-rejected`                         |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | the `@WorkflowTask` method, taking the aggregate and the `@TaskParam`, calling `Service` and letting every exception through |
-| `.../loanapproval/Service.java`                                                        | the work behind the task: ask the provider, rate, reject with `TaskException`                                                |
-| `.../loanapproval/CreditRatingClient.java`                                             | the port to the surrounding system, so a test can replace it                                                                 |
-| `.../loanapproval/LocalCreditRatingClient.java`                                        | the stand-in provider, refusing the first request per loan request                                                           |
-| `.../loanapproval/model/Aggregate.java`                                                | rating, provider and rejection reason, which is all the state there is                                                       |
-| `loan-approval/src/test/.../CreditRatingSimulator.java`                                | the provider as the test needs it: it records requests and can be told to refuse them                                        |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | one test per outcome: rated, retried, rejected                                                                               |
+|                                          File                                          |                                                           Role                                                            |
+|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: service task with an input mapping and an error boundary event catching `loan-rejected`                      |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | the `@WorkflowTask` method. It takes the aggregate and the `@TaskParam`, calls `Service` and lets every exception through |
+| `.../loanapproval/Service.java`                                                        | the work behind the task: ask the provider, rate, reject with `TaskException`                                             |
+| `.../loanapproval/CreditRatingClient.java`                                             | the port to the surrounding system, so a test can replace it                                                              |
+| `.../loanapproval/LocalCreditRatingClient.java`                                        | the stand-in provider, refusing the first request per loan request                                                        |
+| `.../loanapproval/model/Aggregate.java`                                                | rating, provider and rejection reason, which is all the state there is                                                    |
+| `loan-approval/src/test/.../CreditRatingSimulator.java`                                | the provider as the test needs it: it records requests and can be told to refuse them                                     |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | one test per outcome: rated, retried, rejected                                                                            |
 
 The order of events: `ApiController` calls `Service#request`, which builds the
 aggregate and tells `Workflow` that a loan was requested. `Workflow#loanRequested` calls
@@ -173,9 +172,9 @@ the aggregate and the mapped provider, which hands over to `Service#assessCredit
 From there the three outcomes above apply, and the aggregate is saved unless the handler
 failed technically.
 
-The tests wait rather than assert immediately. A BPMS runs tasks in transactions of its own,
-and a retry needs a moment to come around. Asserting right after having started a workflow
-would pass on an embedded engine and fail on a remote one.
+The tests wait instead of asserting at once. A BPMS runs tasks in transactions of its own, and
+a retry needs a moment to come around. Asserting right after starting a workflow would pass on
+an embedded engine and fail on a remote one.
 
 ## Documentation
 

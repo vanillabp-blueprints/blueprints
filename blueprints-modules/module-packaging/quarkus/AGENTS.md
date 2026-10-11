@@ -1,12 +1,13 @@
 # module-packaging
 
-A project which assembles a runtime from workflow module JARs it only has as dependencies:
-foreign group, foreign version, foreign packages, no sources. The application is a POM, a
-configuration file and two tests. A delta on top of `module-multi`, whose modules these are.
+A project which assembles a runtime from workflow module JARs which it has only as
+dependencies: foreign group, foreign version, foreign packages, no sources. The application is
+a POM, a configuration file and two tests. A delta on top of `module-multi`, whose modules
+these are.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
-first. It carries the procedure, the reference structure and the list of things never to do.
+first. It has the procedure, the reference structure and the list of things never to do.
 
 ## Placeholders
 
@@ -29,16 +30,17 @@ Names this blueprint adds, because it has more than one of everything:
 
 **The rules this blueprint is built on:**
 
-1. The application names no module in code. No scan, no entity list, no property of a module -
-   only dependencies, their pinned versions, the adapter and what the environment determines.
-   If something else is needed, that is a finding, not a workaround.
+1. The application names no module in code. No scan, no entity list, no property of a module.
+   Only dependencies, their pinned versions, the adapter and what the environment decides. If
+   something else is needed, that is a finding, not a workaround.
 2. A module is a released artifact: own group, own version, own build, own tests. It is
    updated by changing a version, and nothing in the application moves with it.
-3. Configuration has three levels and this order: what comes from outside beats the
-   `application.yaml` of the assembling project, and that beats the file a module brings
-   along, which carries its defaults. A module's profile-specific file still beats its plain
-   one. Early VanillaBP 2 snapshots had it the opposite way, so older projects may assume that;
-   the order is [documented here](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules-in-Quarkus#configuration).
+3. Configuration has three levels in this order. What comes from outside beats the
+   `application.yaml` of the assembling project. That beats the file a module brings along,
+   which carries its defaults. A module's profile-specific file still beats its plain one.
+   Early VanillaBP 2 snapshots had it the opposite way, so older projects may assume that. The
+   order is
+   [documented here](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules-in-Quarkus#configuration).
 4. Everything about having two modules at all comes from `module-multi` and is not repeated
    here.
 
@@ -51,7 +53,7 @@ Names this blueprint adds, because it has more than one of everything:
 | `application/src/test/java/.../ApplicationSmokeTest.java`  | the discovery test: every declared workflow module has to be one VanillaBP wired                                         |
 | `application/src/test/java/.../ConfigurationLevelsIT.java` | which of the three configuration levels arrives: outside beats the module, the module beats the application              |
 | `loan-approval/pom.xml`                                    | a foreign JAR's POM: no parent, own group `com.acme.lending`, own version, own build and tests                           |
-| `loan-approval/src/main/java/com/acme/loanapproval/...`    | the module's code, in the package its team chose - unreachable for any scan of the application                           |
+| `loan-approval/src/main/java/com/acme/loanapproval/...`    | the module's code, in the package its team chose. No scan of the application reaches it                                  |
 | `loan-approval/pom.xml` (index plugin)                     | the index the module's build writes; what makes it usable without the application knowing anything about it              |
 
 ## Boilerplate files
@@ -64,32 +66,32 @@ Names this blueprint adds, because it has more than one of everything:
 | `loan-approval/src/test/java/com/acme/...`              | the module's own tests, owned by its team and running without this application    |
 | `docs/loan_approval.png`, `docs/loan_repayment.png`     | the pictures of the two processes the README shows, rendered from the BPMN models |
 
-`WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint - copy them
-unchanged. Here they sit in the package of whoever owns them: the harness of a module in the
+`WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint. Copy them
+unchanged. Here they are in the package of whoever owns them: the harness of a module in the
 module's own package, the application's smoke test next to the application.
 
 ## Adding this blueprint to an existing project
 
-1. Take the workflow modules as they are published: dependency plus version, nothing else. If
-   a module has no index of its classes, it is not ready to be published - ask its team for
-   the plugin, and read the fallback in the README before indexing it from outside.
-2. Pin every module version in `dependencyManagement` of the assembling project. A module
-   release is then a line changed there, and the diff of an update says what changed.
-3. Put nothing module-specific into the application: no scan, no entity list, no property of a
-   module. What belongs there is the database, the BPMS adapter and what the environment
-   determines.
-4. Keep the smoke test which counts the modules. In a project assembling foreign JARs it is
-   the test of the discovery, and a forgotten dependency looks exactly like a working
-   application without it.
-5. Configure with the order in mind: a module's file carries defaults, so the assembling
-   project sets what its environment needs and does not have to ask the module's team for a
-   release. What genuinely varies per deployment still belongs outside, in an environment
-   variable, because that beats both.
+1. Take the workflow modules as they are published: dependency plus version, nothing else. If a
+   module has no index of its classes, it is not ready to be published. Ask its team for the
+   plugin. Read the fallback in the README before you index it from outside.
+2. Pin every module version in `dependencyManagement` of the assembling project. Then a module
+   release changes one line there, and the diff of an update says what changed.
+3. Put nothing specific to a module into the application: no scan, no entity list, no property
+   of a module. What belongs there is the database, the BPMS adapter and what the environment
+   decides.
+4. Keep the smoke test which counts the modules. In a project which assembles foreign JARs, it
+   tests the discovery. Without it, a forgotten dependency looks exactly like a working
+   application.
+5. Keep the order in mind when you configure. A module's file carries defaults. So the
+   assembling project sets what its environment needs, and it does not have to ask the module's
+   team for a release. What really varies per deployment still belongs outside, in an
+   environment variable, because that beats both.
 6. Ship what the platform ships: the runnable application from the normal build, the image
-   through Jib, and the native executable where it is wanted. None of them belongs into
-   `verify`: they take minutes, and a test starting a container tests the container runtime.
-7. Choose the BPMS with a Maven profile, as everywhere else. It decides what is packaged, what
-   the tests run against and what the image contains.
+   through Jib, and the native executable where it is wanted. None of them belongs in `verify`.
+   They take minutes, and a test which starts a container tests the container runtime.
+7. Choose the BPMS (business process management system) with a Maven profile, as everywhere
+   else. It decides what is packaged, what the tests run against and what the image contains.
 
 ## Verifying
 
@@ -103,13 +105,13 @@ That runs on Camunda 7, which is embedded and needs no infrastructure.
 mvn install verify -Pcamunda8
 ```
 
-`-Pcamunda8` needs a running cluster and `vanillabp.adapters.camunda8.rest-address`
-configured; do not report a failure of that profile as a defect of the generated code before
-having checked it.
+`-Pcamunda8` needs a running cluster and a configured
+`vanillabp.adapters.camunda8.rest-address`. Check both before you report a failure of that
+profile as a defect of the generated code.
 
-All tests have to pass: the two module tests, the smoke test and `ConfigurationLevelsIT`. The
-smoke test failing with a module which is declared but not wired means the discovery is what
-broke - the module has no auto-configuration, or its JAR did not make it onto the classpath.
+All tests have to pass: the two module tests, the smoke test and `ConfigurationLevelsIT`. If
+the smoke test fails with a module which is declared but not wired, the discovery broke. Either
+the module has no auto-configuration, or its JAR did not get onto the classpath.
 
 The image is not built by `verify`. Build it once by hand when changing anything about the
 packaging:
@@ -119,8 +121,8 @@ mvn install -Dquarkus.container-image.build=true
 ```
 
 The native build (`-Dquarkus.native.enabled=true -Dquarkus.native.container-build=true`) fails
-today for an application without MongoDB, in the platform rather than here. Do not work around
-it in this project, and do not report it as a defect of generated code - the README says what
-it is.
+today for an application without MongoDB. The cause is in the platform, not here. Do not work
+around it in this project, and do not report it as a defect of generated code. The README says
+what it is.
 
 Do not report success without having run this.

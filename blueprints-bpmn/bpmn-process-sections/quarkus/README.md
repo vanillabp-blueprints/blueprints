@@ -4,10 +4,11 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-A process which no longer fits on a screen is cut into sections, and each section usually
-gets an object of its own on the workflow aggregate. That object does not exist before the
-section runs, and for a section the process skips it never does. This blueprint shows how a
-model asks about such a section, and what happens when it reaches into the object instead.
+A process which no longer fits on a screen is cut into sections. Each section usually gets an
+object of its own on the workflow aggregate. That object does not exist before the section
+runs. If the process skips the section, the object never exists. This blueprint shows how a
+model asks about such a section. It also shows what happens when the model reaches into the
+object instead.
 
 ## What this blueprint shows
 
@@ -17,8 +18,8 @@ model asks about such a section, and what happens when it reaches into the objec
 
 A loan approval in two sections. The document check is a call activity, so it has a model of
 its own. The risk assessment is an embedded subprocess, and it runs for a big loan only. Both
-shapes are normal ways to carry a section, and both are used here so that the pattern is not
-tied to one of them.
+shapes are normal ways to hold a section. Both are used here, so that the pattern is not tied
+to one of them.
 
 Each section keeps its findings in an object of its own:
 
@@ -30,9 +31,9 @@ private DocumentCheck documentCheck;
 private RiskAssessment riskAssessment;
 ```
 
-The first task of a section creates that object, the later tasks fill it in. A small loan
-never enters the risk assessment, so it reaches its decision with `riskAssessment` still
-empty, and it stays empty for the rest of that workflow.
+The first task of a section creates that object, and the later tasks fill it in. A small loan
+never enters the risk assessment. So it reaches its decision with `riskAssessment` still empty,
+and it stays empty for the rest of that workflow.
 
 ### The good case
 
@@ -52,46 +53,45 @@ public boolean isCollateralSufficient() {
 }
 ```
 
-`isRiskAssessed` is the one to copy. Whether a section ran is a fact about the workflow, the
-model has every right to ask about it, and a getter on the top level of the aggregate is the
-place to answer it. The gateway after the two paths reads `${riskAssessed}` and nothing else.
+`isRiskAssessed` is the one to copy. Whether a section ran is a fact about the workflow, and
+the model may ask about it. A getter on the top level of the aggregate is the place to answer
+it. The gateway after the two paths reads `${riskAssessed}` and nothing else.
 
-The type is part of the answer. A getter the model reads returns `boolean` rather than
-`Boolean`, because a gateway has to take a path and every engine treats an empty value in a
-condition its own way.
+The type is part of the answer. A getter the model reads returns `boolean`, not `Boolean`. A
+gateway has to take a path, and every engine treats an empty value in a condition its own way.
 
 Inside a section it is different. There the section's object exists, because the first task of
-the section made it, so the model of the section may read the section's own findings. The
-document check asks `${signaturesComplete}` and the risk assessment asks
-`${collateralSufficient}`, each inside itself. The getters still check for null, because one
-aggregate serves every model of the workflow module and a getter which relies on where it is
-called from is a getter somebody moves one day.
+the section made it. So the model of the section may read the section's own findings. The
+document check asks `${signaturesComplete}`, and the risk assessment asks
+`${collateralSufficient}`, each inside itself. The getters still check for null. One aggregate
+serves every model of the workflow module. And a getter which relies on where it is called from
+will be moved by somebody one day.
 
-Such a value also stays where the section is. A called process is a process instance of its
-own and keeps its own variables, so what the document check shares is gone once it ends. An
-embedded subprocess shares the variables of the process instance around it, which is why the
-risk assessment can answer the gateway that follows it.
+Such a value also stays where the section is. A called process is a process instance of its own
+and keeps its own variables. So what the document check shares is gone once it ends. An
+embedded subprocess shares the variables of the process instance around it. That is why the
+risk assessment can answer the gateway which follows it.
 
 ### The bad case
 
-The same gateway, written the way it suggests itself:
+The same gateway, written the way that seems obvious:
 
 ```xml
 <bpmn:conditionExpression>${riskAssessment.collateralSufficient}</bpmn:conditionExpression>
 ```
 
-For a big loan this works. For a small one the path does not resolve: `riskAssessment` is
+For a big loan this works. For a small one the path does not resolve. `riskAssessment` is
 empty, so there is nothing to read `collateralSufficient` from. VanillaBP stops the workflow
-with an error naming the path and the part of it which is empty, rather than handing the
-model a value nobody computed. Writing `false` instead would be worse, because a `false`
-nobody computed cannot be told from one the application worked out.
+with an error which names the path and the part of it which is empty. It does not hand the
+model a value nobody computed. Writing `false` instead would be worse. Nobody could tell a
+`false` which nobody computed from one the application worked out.
 
 Two ways lead out, and both are a decision somebody writes down:
 
-1. Put the question on the top level of the aggregate, as `isRiskAssessed` above. The
-   aggregate knows what an absent section means and the model does not have to.
-2. Declare a substitute for exactly that path in the configuration of the workflow, so the
-   value is stated rather than guessed.
+1. Put the question on the top level of the aggregate, as `isRiskAssessed` above. The aggregate
+   knows what an absent section means, so the model does not have to.
+2. Declare a substitute for exactly that path in the configuration of the workflow. Then the
+   value is stated, not guessed.
 
 The same mistake exists in Java, one line further in:
 
@@ -101,9 +101,9 @@ public boolean isCollateralSufficient() {
 }
 ```
 
-`LoanApprovalIT` has a test for it. It builds an aggregate which has reached no section at
-all and asks every getter the model reads, which is the cheapest way to find out that one of
-them forgot its null check.
+`LoanApprovalIT` has a test for it. It builds an aggregate which has reached no section at all,
+and asks every getter the model reads. That is the cheapest way to find out that one of them
+forgot its null check.
 
 ## Delta to the base blueprint
 
@@ -121,8 +121,8 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `loan-approval.yaml`       | the limit which makes the second section run, and the numbers the two sections use                 |
 | `LoanApprovalIT.java`      | runs a loan through each path and checks that the getters answer without the skipped section       |
 
-Both BPMN files sit in the same directory of the workflow module and are deployed together. A
-called process is part of the module which owns it, not a module of its own.
+Both BPMN files are in the same directory of the workflow module and are deployed together. A
+called process belongs to the module which owns it. It is not a module of its own.
 
 ## Running it
 
@@ -132,16 +132,15 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Start one. Its address and everything
+else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -156,9 +155,9 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` makes the config profile of the same
-name the parent of whichever profile the application runs in, so the engine is chosen once, on
-the Maven command line, and the build, the tests and `quarkus:dev` all follow it.
+The file is loaded because the Maven profile `camunda8` makes the config profile of the same
+name the parent of the profile the application runs in. So you choose the engine once, on the
+Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
 Start the application:
 
@@ -200,17 +199,17 @@ The result of a run is at
 http://localhost:8080/api/loan-approval/{loanRequestId}
 ```
 
-For a small loan the risk assessment is missing from that answer, which is the state the whole
-blueprint is about. All the numbers the two sections use are in the module's own configuration
+For a small loan the risk assessment is missing from that answer. The whole blueprint is about
+that state. All the numbers the two sections use are in the module's own configuration
 (`loan-approval/src/main/resources/loan-approval/loan-approval.yaml`).
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 ## How it works
 
@@ -225,21 +224,21 @@ costs is in
 | `.../loanapproval/WorkflowTaskHandler.java`                                                 | the tasks of both sections, wired by one `@WorkflowService`                  |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                            | one run per path, plus the getters asked on an aggregate without any section |
 
-The order of events for a big loan: the rating task answers the two questions the gateways
-ask, the call activity runs the document check, the gateway sends the loan into the embedded
-subprocess, the two tasks there build the risk assessment, and the gateway after it reads
+The order of events for a big loan: the rating task answers the two questions the gateways ask.
+The call activity runs the document check. The gateway sends the loan into the embedded
+subprocess, and the two tasks there build the risk assessment. The gateway after it reads
 `${riskAssessed}` and picks the decision task which uses the risk report. A small loan takes
-the short way around the subprocess and lands on the other decision task.
+the short way around the subprocess and ends up at the other decision task.
 
-The sub-objects are embedded rather than tables of their own. That is what makes one of them
-absent: all of its columns are empty for a workflow which skipped the section, and an embedded
-object whose columns are all empty comes back as nothing. A section object stored in a table
-of its own behaves the same way, and so does a document with a missing field.
+The sub-objects are embedded, not tables of their own. That is what makes one of them absent.
+For a workflow which skipped the section, all of its columns are empty. An embedded object
+whose columns are all empty comes back as nothing. A section object stored in a table of its
+own behaves the same way, and so does a document with a missing field.
 
-Nothing of the two sections reaches the BPMS. `Aggregate` carries `@NoSyncWithBPMS` and the
-four getters the models read carry `@SyncWithBPMS`, so the engine holds four booleans and the
-aggregate's ID. The numbers behind them stay in the application, which is also why their types
-are a question of the data model alone.
+Nothing of the two sections reaches the BPMS (business process management system). `Aggregate`
+carries `@NoSyncWithBPMS`, and the four getters the models read carry `@SyncWithBPMS`. So the
+engine holds four booleans and the aggregate's ID. The numbers behind them stay in the
+application. That is also why only the data model decides their types.
 
 ## Documentation
 

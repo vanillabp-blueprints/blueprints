@@ -4,11 +4,11 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-An application does not need a relational database to run VanillaBP. This blueprint is the
-proof: the same loan approval as the base blueprint, with the workflow aggregate in MongoDB and
+An application does not need a relational database to run VanillaBP. This blueprint proves it.
+It is the same loan approval as the base blueprint, with the workflow aggregate in MongoDB and
 no data source anywhere in the project. A delta on top of `module-single`.
 
-What makes it more than a swapped repository is the count: a workflow needs **three** stores,
+It is more than a swapped repository, because of the count. A workflow needs **three** stores,
 and all three of them move.
 
 ## What this blueprint shows
@@ -16,25 +16,26 @@ and all three of them move.
 ![The loan approval process](docs/loan_approval.png)
 
 The loan approval of the base blueprint, unchanged: one service task, started through a GET
-request, and an aggregate the task fills. The process is not the point here, the database is.
+request, and an aggregate the task fills. The point here is not the process. It is the
+database.
 
 The three stores of a workflow, and where they are:
 
-|           Store            |                     What it is for                      |        Where it lives        |
-|----------------------------|---------------------------------------------------------|------------------------------|
-| the workflow aggregate     | the state of the business case, your own data           | collection `LOAN_APPROVAL`   |
-| the phase-two outbox       | makes a workflow start on a remote BPMS survive a crash | `vanillabp-phase-two-outbox` |
-| the log of delivered tasks | keeps a repeated delivery from running a handler twice  | `vanillabp-task-deliveries`  |
+|           Store            |                                        What it is for                                        |        Where it lives        |
+|----------------------------|----------------------------------------------------------------------------------------------|------------------------------|
+| the workflow aggregate     | the state of the business case, your own data                                                | collection `LOAN_APPROVAL`   |
+| the phase-two outbox       | makes a workflow start on a remote BPMS (business process management system) survive a crash | `vanillabp-phase-two-outbox` |
+| the log of delivered tasks | keeps a repeated delivery from running a handler twice                                       | `vanillabp-task-deliveries`  |
 
-Only the first one is written by this application's code. The other two are VanillaBP's, and
-they follow the aggregate: putting the aggregate on a MongoDB repository is what moves them, no
-property says it. That is why an application which stores its aggregate in MongoDB but keeps a
-data source around for "the framework" has misunderstood something - there is nothing left to
-put in there.
+Only the first one is written by this application's code. The other two belong to VanillaBP,
+and they follow the aggregate. Putting the aggregate on a MongoDB repository moves them. No
+property says it. So an application which stores its aggregate in MongoDB but keeps a data
+source around for "the framework" has misunderstood something. There is nothing left to put in
+there.
 
-**And it costs no extra class.** The platform's transaction always exists here, MongoDB Panache
+**And it costs no extra class.** The platform's transaction always exists here. MongoDB Panache
 binds a MongoDB transaction to it, and VanillaBP's own MongoDB stores write through that same
-session. Booting says which transaction each aggregate is processed in:
+session. The boot says which transaction each aggregate is processed in:
 
 ```
 Workflow aggregate 'blueprint.workflowmodule.loanapproval.model.Aggregate' (BPMN process
@@ -44,21 +45,21 @@ the JTA transaction of Quarkus
 
 So loading the aggregate, the `@WorkflowTask` method, saving it, the outbox entry and the
 delivery record either all commit or none of them do. The condition is the deployment:
-**MongoDB runs transactions only as a replica set.** The dev services take care of it while
-developing and testing; in production it is on you, and VanillaBP warns at startup when the
-server it talks to is a standalone one.
+**MongoDB runs transactions only as a replica set.** The dev services take care of it while you
+develop and test. In production it is up to you. VanillaBP warns at startup when the server it
+talks to is a standalone one.
 
 **Camunda 7 is missing on purpose.** Its engine is embedded and needs a relational database,
-which is exactly what this blueprint does not have. Running the two together is possible, and
-then the engine and the aggregate commit separately - a compromise worth knowing about, but not
-what a blueprint about MongoDB should demonstrate. So this is the first blueprint with a single
-engine, and a cluster has to run for every build.
+and this blueprint has none. You can run the two together, and then the engine and the
+aggregate commit separately. That compromise is worth knowing about, but a blueprint about
+MongoDB should not show it. So this is the first blueprint with a single engine, and a cluster
+has to run for every build.
 
-**The counter-check is in the test**, because the happy path proves nothing here:
-`LoanApprovalIT#aFailedStartLeavesNothingBehind` rolls the transaction back after a workflow was
-started and asserts that neither the aggregate nor the outbox entry survived. Before the
-framework taught its MongoDB stores to write through the same session, that assertion failed on
-its second half.
+**The counter-check is in the test**, because the happy path proves nothing here.
+`LoanApprovalIT#aFailedStartLeavesNothingBehind` rolls the transaction back after a workflow
+was started. It asserts that neither the aggregate nor the outbox entry survived. Before the
+framework's MongoDB stores learned to write through the same session, the second half of that
+assertion failed.
 
 ## Delta to the base blueprint
 
@@ -84,9 +85,8 @@ engine:
 mvn install verify
 ```
 
-The cluster's address, and everything else specific to that engine, lives in
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+The address of the cluster and everything else specific to that engine are in
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -101,12 +101,12 @@ vanillabp:
       job-lease: use
 ```
 
-`camunda8` is the only profile and it is active by default, so there is no `-P` to
-remember. That profile is also what loads `application-camunda8.yaml`: the Maven profile sets
-the config profile of the same name the parent of whichever profile the application runs in, so the engine is named once and the build, the tests and
-running the application all follow it.
-The tests need no MongoDB of their own either: the dev services start one and run it as a
-replica set, which is why nothing in the configuration says where the database is.
+`camunda8` is the only profile, and it is active by default, so there is no `-P` to remember.
+That profile also loads `application-camunda8.yaml`. The Maven profile makes the config profile
+of the same name the parent of the profile the application runs in. So the engine is named
+once, and the build, the tests and running the application all follow it. The tests need no
+MongoDB of their own either. The dev services start one and run it as a replica set. That is
+why nothing in the configuration says where the database is.
 
 Start the application:
 
@@ -114,13 +114,13 @@ Start the application:
 mvn -pl application quarkus:dev
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 Start a loan approval. This is the only URL you need:
 
@@ -128,7 +128,7 @@ Start a loan approval. This is the only URL you need:
 http://localhost:8080/api/loan-approval/start?amount=5000
 ```
 
-It answers with the ID of the loan request and logs the URL showing the result:
+It answers with the ID of the loan request and logs the URL which shows the result:
 
 ```
 Loan approval '0f7c…' started
@@ -136,12 +136,12 @@ Credit rating of loan approval '0f7c…' is 50
 Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 ```
 
-The collections are worth a look while it runs. `LOAN_APPROVAL` holds the aggregate,
-`vanillabp-phase-two-outbox` the entry which made the start crash-safe, marked `DONE` after it
-was dispatched and deleted later, and `vanillabp-task-deliveries` the record of the task the
-BPMS handed over.
+The collections are worth a look while it runs. `LOAN_APPROVAL` holds the aggregate.
+`vanillabp-phase-two-outbox` holds the entry which made the start safe against a crash. It is
+marked `DONE` after it was dispatched, and deleted later. `vanillabp-task-deliveries` holds the
+record of the task the BPMS handed over.
 
-Going to production means naming the address of a MongoDB, and it has to be a replica set:
+For production you name the address of a MongoDB, and it has to be a replica set:
 
 ```yaml
 quarkus:
@@ -164,11 +164,11 @@ quarkus:
 | `application/src/main/resources/application-camunda8.yaml`                             | the address of the cluster, loaded by the profile of that engine              |
 
 The order of events is the one of the base blueprint. What changed is what the transaction
-around it covers. Starting a workflow on a remote BPMS happens in two phases: the application's
-transaction stores the aggregate and an outbox entry, and after the commit VanillaBP tells the
+around it covers. Starting a workflow on a remote BPMS happens in two phases. The application's
+transaction stores the aggregate and an outbox entry. After the commit, VanillaBP tells the
 engine and writes the result back, on a thread of its own where it opens a transaction itself.
-Both of those now carry the MongoDB session, so the atomicity the outbox promises holds in a
-MongoDB application as well - which is what the second test pins down.
+Both of those now carry the MongoDB session. So the outbox keeps its promise of all or nothing
+in a MongoDB application as well. The second test holds this in place.
 
 ## Documentation
 

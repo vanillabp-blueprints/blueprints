@@ -4,53 +4,52 @@
 
 [![Apache License V.2](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-Some work does not finish while the process asks for it. A partner is sent a request and
-answers minutes or days later, through a callback nobody is waiting for. This blueprint
-shows the task that stays open in between: what the application has to keep, and how it
-later completes the task or cancels it.
+Some work does not finish while the process asks for it. A partner gets a request and answers
+minutes or days later, through a callback nobody waits for. This blueprint shows the task which
+stays open in between: what the application has to keep, and how it later completes or cancels
+the task.
 
 ## What this blueprint shows
 
 ![The loan approval process, with a task waiting for a partner and an error boundary event on it](docs/loan_approval.png)
 
-The loan approval of the base blueprint, with a partner who has to approve the loan before
-the customer is informed. Three things happen around that task:
+The loan approval of the base blueprint, with a partner who has to approve the loan before the
+customer is informed. Three things happen around that task:
 
-- The task is delivered and VanillaBP calls `WorkflowTaskHandler#requestPartnerApproval`.
-  The method sends the request and stores the task's `@TaskId` on the workflow aggregate.
-  Returning from it does **not** complete the task, and that single parameter is what makes
-  the difference: without it the very same method would complete the task by returning.
+- The task is delivered, and VanillaBP calls `WorkflowTaskHandler#requestPartnerApproval`. The
+  method sends the request and stores the task's `@TaskId` on the workflow aggregate. Returning
+  from it does **not** complete the task. That single parameter makes the difference. Without
+  it, the very same method would complete the task by returning.
 - The partner answers through the API, which calls `ProcessService#completeTask` with the
-  stored id. The workflow leaves the task and the service task behind it runs.
+  stored id. The workflow leaves the task, and the service task behind it runs.
 - Or the partner refuses. The application calls `cancelTask` with the error code
-  `partner-rejected`, so the workflow leaves through the error boundary event instead.
+  `partner-rejected`. So the workflow leaves through the error boundary event instead.
 
-The same handler method is called a second time if the workflow takes the task away, this
-time with `@TaskEvent CANCELED`, and it drops the stored id. A method without a
-`@TaskEvent` parameter never learns about that and would keep an id nobody can answer any
-more.
+If the workflow takes the task away, the same handler method is called a second time, now with
+`@TaskEvent CANCELED`. It drops the stored id. A method without a `@TaskEvent` parameter never
+learns about that. It would keep an id which nobody can answer any more.
 
-Two more things this blueprint carries:
+Two more things are in this blueprint:
 
-- `Service#requestPartnerApproval` returns early if the aggregate already carries a task
-  id. A remote BPMS may deliver the same task twice, and asking a partner twice may open
-  two cases on their side. Idempotency is keyed on the state of the aggregate, never on a
-  counter of invocations.
-- A task id reaches the application from outside and may arrive twice, late, or for a task
-  the workflow has taken away. `Service#openPartnerRequest` compares it with the one on the
-  aggregate and refuses anything else, before the BPMS is involved.
+- `Service#requestPartnerApproval` returns early if the aggregate already holds a task id. A
+  remote BPMS (business process management system) may deliver the same task twice. Asking a
+  partner twice may open two cases on their side. The state of the aggregate decides whether
+  something already happened, never a counter of calls.
+- A task id reaches the application from outside. It may arrive twice, late, or for a task the
+  workflow has taken away. `Service#openPartnerRequest` compares it with the one on the
+  aggregate and refuses anything else, before the BPMS takes part.
 
-Who guards which direction is worth knowing. Everything the application sends to the BPMS
-goes through VanillaBP's transaction outbox, which keys operations for idempotency and
-dispatches them at least once - completing a task twice is a logged no-op, and the same is
-true for the answer of a partner arriving twice. The other direction is the application's
-job: a BPMS may deliver the same task again, and
-[the wiki says so plainly](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#what-happens-when-my-handler-throws)
-- key the decision on the state of the aggregate, which is what the early return above
-does.
+It is worth knowing who guards which direction. Everything the application sends to the BPMS
+goes through VanillaBP's transaction outbox. The outbox gives every operation a key, so a
+repeated operation is noticed, and it dispatches each one at least once. Completing a task
+twice does nothing except write a log line. The same is true when the answer of a partner
+arrives twice. The other direction is the application's job. A BPMS may deliver the same task
+again, and
+[the wiki says so plainly](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#what-happens-when-my-handler-throws).
+Let the state of the aggregate decide, which is what the early return above does.
 
-The difference to a user task is who answers, not how it works: the mechanics below are the
-same, and `bpmn-user-task` shows them for a person instead of a system.
+The difference to a user task is who answers, not how it works. The mechanics below are the
+same. `bpmn-user-task` shows them for a person instead of a system.
 
 ## Delta to the base blueprint
 
@@ -68,9 +67,9 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `Aggregate.java`                  | `partnerApprovalTaskId` and what the process wrote on the way out                                |
 | `LoanApprovalIT.java`             | one test per way the task ends: still open, completed, canceled                                  |
 
-The one line worth looking at is `camunda:delegateExpression` in the Camunda 7 model, which is
-what a task that stays open needs there. Camunda 8 needs no counterpart. How each engine wants
-such a task modelled is in the wiki of its adapter, for
+The one line worth looking at is `camunda:delegateExpression` in the Camunda 7 model. A task
+which stays open needs it there. Camunda 8 needs nothing like it. The wiki of each adapter says
+how that engine wants such a task modelled, for
 [Camunda 7](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Configuration#the-bpmn-model-for-camunda-7).
 
 ## Running it
@@ -81,16 +80,15 @@ Requires a JDK 21 or newer. Camunda 7 is embedded, so nothing else has to run:
 mvn install verify
 ```
 
-Running it on another BPMS is a Maven profile, not one line of Java changes:
+To run it on another BPMS, pick another Maven profile. Not one line of Java changes:
 
 ```bash
 mvn install verify -Pcamunda8
 ```
 
-Camunda 8 is a remote engine, so a cluster has to run. Start one; its address, and everything
-else specific to that engine, lives in its profile file
-`application/src/main/resources/application-camunda8.yaml`, with a copy for the module's own
-test:
+Camunda 8 is a remote engine, so a cluster has to run. Start one. Its address and everything
+else specific to that engine are in its profile file
+`application/src/main/resources/application-camunda8.yaml`. The module's own test has a copy:
 
 ```yaml
 vanillabp:
@@ -105,8 +103,8 @@ vanillabp:
       job-lease: use
 ```
 
-That file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
-name, so the engine is chosen once, on the Maven command line, and the build, the tests and
+The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
+name. So you choose the engine once, on the Maven command line. The build, the tests and
 `spring-boot:run` all follow it.
 
 Start the application:
@@ -115,13 +113,13 @@ Start the application:
 mvn -pl application spring-boot:run
 ```
 
-Nothing about identifiers shows up at startup: the BPMS profiles of this blueprint set
-`name-clash-avoidance: use-prefix`, so VanillaBP puts the workflow module ID in front of every
-identifier before it reaches the engine and takes it off again on the way back. The BPMN files,
-the business code and the rest of the configuration keep the plain names, and no tenant is
-involved, which matters on a BPMS licensed per tenant. What the modes are and what each of them
-costs is in
-[the wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided).
+You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
+`name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
+identifier before it reaches the engine, and takes it off again on the way back. The BPMN
+files, the business code and the rest of the configuration keep the plain names. No tenant is
+involved, which matters on a BPMS licensed per tenant.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
+explains the modes and what each of them costs.
 
 Start a loan approval. This is the only URL you need:
 
@@ -129,8 +127,8 @@ Start a loan approval. This is the only URL you need:
 http://localhost:8080/api/loan-approval/start?amount=5000
 ```
 
-The process runs up to the partner and stops there. What it logs are the two URLs their
-answer would arrive at, each one filled in and ready to be clicked:
+The process runs up to the partner and stops there. It logs the two URLs the partner's answer
+would arrive at, each one filled in and ready to click:
 
 ```
 Loan approval '0f7c…' started
@@ -141,7 +139,7 @@ Loan approval '0f7c…' waits for the partner. Their answer arrives at one of:
   Rejected -> http://localhost:8080/api/loan-approval/0f7c…/partner-decision/1a2b…?approved=false
 ```
 
-Opening the first one completes the task, and the process continues to its end:
+Opening the first one completes the task, and the process goes on to its end:
 
 ```
 The partner approved loan approval '0f7c…'
@@ -156,9 +154,9 @@ The partner request of loan approval '0f7c…' was canceled
 Loan approval '0f7c…' ended as rejected by the partner
 ```
 
-The middle line is the cancellation arriving at the same handler method that sent the
-request. Opening the same URL twice answers that this request is not open any more, which
-the application decides on its own, without asking the BPMS.
+The middle line is the cancellation. It arrives at the same handler method that sent the
+request. If you open the same URL twice, the answer is that this request is not open any more.
+The application decides that on its own, without asking the BPMS.
 
 Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
 configures a user for them. They show the instance standing at the task which waits for the
@@ -176,23 +174,23 @@ partner, a view the logged URLs cannot give. Where they are served and how to lo
 | `.../loanapproval/PartnerApprovalClient.java`                                          | the port to the surrounding system, so a test can put a simulator in its place                          |
 | `.../loanapproval/ApiController.java`                                                  | the callback the partner's answer arrives at                                                            |
 | `.../loanapproval/model/Aggregate.java`                                                | `partnerApprovalTaskId`, the handle to the open task, plus what the process wrote                       |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | one test per way the task ends, waiting for the aggregate rather than asking the engine                 |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | one test per way the task ends. They wait for the aggregate instead of asking the engine                |
 
-The order of events: the first service task fills in the credit rating, then the BPMS
-delivers the waiting task and calls `WorkflowTaskHandler#requestPartnerApproval` with
+The order of events: the first service task fills in the credit rating. Then the BPMS delivers
+the waiting task and calls `WorkflowTaskHandler#requestPartnerApproval` with
 `TaskEvent.CREATED`. The handler hands over to `Service`, which sends the request and stores
-the task id on the aggregate - VanillaBP saves the aggregate after the call, like for any
-other task. The workflow now waits, and no thread of the application waits with it.
+the task id on the aggregate. VanillaBP saves the aggregate after the call, as for any other
+task. The workflow now waits, and no thread of the application waits with it.
 
-Whenever the answer arrives, `ApiController` calls `Service#partnerDecided`, which writes
-the result and tells `Workflow` what happened. `completeTask` and `cancelTask` run in a
-transaction: the aggregate is saved along with the answer, and on a remote BPMS the
-completion is sent only after that transaction committed. A rollback therefore leaves the
-task open instead of completing a task whose result was undone.
+Whenever the answer arrives, `ApiController` calls `Service#partnerDecided`. It writes the
+result and tells `Workflow` what happened. `completeTask` and `cancelTask` run in a
+transaction. The aggregate is saved along with the answer. On a remote BPMS the completion is
+sent only after that transaction committed. So a rollback leaves the task open, instead of
+completing a task whose result was undone.
 
-The tests wait rather than assert immediately. A BPMS runs tasks in transactions of its own,
-and a remote one delivers a task a moment after the workflow was started. Asserting right
-away would pass on an embedded engine and fail on a remote one.
+The tests wait instead of asserting at once. A BPMS runs tasks in transactions of its own, and
+a remote one delivers a task a moment after the workflow was started. Asserting right away
+would pass on an embedded engine and fail on a remote one.
 
 ## Documentation
 
