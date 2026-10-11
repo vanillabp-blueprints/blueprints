@@ -21,8 +21,8 @@ stays a technical term, but say what it means the first time it turns up, and wr
 abbreviation out once. If a sentence trips you up when you read it aloud, rewrite it.
 
 This holds for every English text here: the README files, the `AGENTS.md` files of the
-blueprints, `CONTRIBUTING.md`, this file, the Javadoc and comments which explain something, and
-the texts of commits and pull requests. This repository has no wiki of its own. If it gets one,
+blueprints, `CONTRIBUTING.md`, this file, the Javadoc and comments which explain something, in
+the main code and in the tests, and the texts of commits and pull requests. This repository has no wiki of its own. If it gets one,
 the rule holds there as well, because a wiki clone has no `AGENTS.md` of its own.
 
 Nothing a program reads is renamed for the sake of language. Class and method names,
