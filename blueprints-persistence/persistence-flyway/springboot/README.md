@@ -145,7 +145,7 @@ it instead of running the handler twice. Either
   (the default).
 ```
 
-Each of the three tables is checked that way, and the message names the one which is missing.
+Each of the four tables is checked that way, and the message names the one which is missing.
 `MissingTableIT` holds this in place: it points VanillaBP's Flyway instance at a location
 without migrations.
 

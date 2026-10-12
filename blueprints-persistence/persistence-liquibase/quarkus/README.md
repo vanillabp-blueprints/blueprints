@@ -81,11 +81,11 @@ that reason VanillaBP keeps each released version in a file of its own and pins 
 checksum. The changelogs here follow the same rule. Their changeset ids carry the version which
 introduced them, and a later change is always a new changeset.
 
-Three tables are described. The phase-two outbox holds what may reach a remote BPMS (business
+Four tables are described. The phase-two outbox holds what may reach a remote BPMS (business
 process management system) only after the caller's transaction committed. A call which carries
 a payload stores it in a table of its own, and the entry names the row. When a BPMS repeats a
 delivery, VanillaBP answers it from the log of processed task deliveries, and the handler does
-not run twice. Each table is described independently of the database. So the statements for a
+not run twice. The housekeeping table says which node removes old rows at the moment. Each table is described independently of the database. So the statements for a
 database nobody tested still come from Liquibase and are not somebody's guess. Tests of the
 framework cover H2 and PostgreSQL. MySQL, MariaDB, SQL Server, Oracle and DB2 ship without a
 test.

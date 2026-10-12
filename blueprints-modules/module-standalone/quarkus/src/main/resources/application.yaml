@@ -3,11 +3,11 @@
 # module's own configuration file sits at the classpath root rather than in a directory of
 # its own.
 #
-# Nothing about a BPMS is here either. That lives in a profile file per engine - here only
-# 'application-camunda8.yaml', because Camunda 8 is remote and needs an address while
-# Camunda 7 needs nothing beyond its dependency. Switching engines is therefore a profile
-# and not an edit. One adapter dependency and one workflow module are enough for VanillaBP
-# to derive the adapter, the workflow module and where its BPMN files are read from.
+# Nothing about a BPMS is here either. That lives in a profile file per engine,
+# 'application-camunda7.yaml' and 'application-camunda8.yaml', so switching engines is a
+# profile and not an edit. One adapter dependency and one workflow module are enough for
+# VanillaBP to derive the adapter, the workflow module and where its BPMN files are read
+# from.
 quarkus:
   # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
   # application: the build replaces the placeholder with the profile's name, and the profile

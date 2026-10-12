@@ -37,7 +37,8 @@ work goes on.
 
 `verifyDocuments`, `rateRisk`, `signContract`, `requestDocuments` and `informSupervisor` are
 task definitions. Each is the name of the `@WorkflowTask` method, the Camunda 7 expression
-`${retrieveCreditRating}` and the Camunda 8 job type. Rename it in all places or in none.
+(`${verifyDocuments}` and so on) and the Camunda 8 job type. Rename each in all places or in
+none.
 
 ## Core files
 

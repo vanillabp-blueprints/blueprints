@@ -12,23 +12,24 @@ first. It has the procedure, the reference structure and the list of things neve
 
 Replace all of these consistently; they are the same in every blueprint.
 
-|        Placeholder         |                                                          Meaning                                                          |
-|----------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| `blueprint.workflowmodule` | base package                                                                                                              |
-| `loanapproval`             | use case identifier, Java package                                                                                         |
-| `loan-approval`            | use case identifier, kebab case: workflow module ID, resource directory, REST path, Maven module, configuration file name |
-| `loan_approval`            | BPMN process ID                                                                                                           |
+|        Placeholder         |                                         Meaning                                         |
+|----------------------------|-----------------------------------------------------------------------------------------|
+| `blueprint.workflowmodule` | base package                                                                            |
+| `loanapproval`             | use case identifier, Java package                                                       |
+| `loan-approval`            | use case identifier, kebab case: workflow module ID, REST path, configuration file name |
+| `loan_approval`            | BPMN process ID                                                                         |
 
 `loan-approval` occurs in more places than any other placeholder, and all of them have to
-change together: the Maven module directory, the marker file `META-INF/workflow-module`, the
-resource directory `src/main/resources/loan-approval/`, the configuration file
+change together: the marker file `META-INF/workflow-module`, the configuration file
 `loan-approval.yaml` and its property prefix, and the REST path. If you miss one, the build
-does not fail. Instead VanillaBP reports at startup that it found no BPMN file.
+does not fail.
 
-That resource directory has a reason. Workflow modules share one classpath. So **all**
-resources of a module have to be in the one subdirectory named after its ID, and its classes in
-one Java package of their own. Only `META-INF/workflow-module` is outside. A resource at the
-classpath root works until a second module ships a file of the same name.
+This blueprint keeps its resources at the classpath root: the BPMN files in
+`src/main/resources/processes/<adapter-id>/`, and `loan-approval.yaml` next to
+`application.yaml`. That only works because the application is its one workflow module. Where
+modules share one classpath, as JARs of their own, **all** resources of a module have to be in
+one subdirectory named after its ID, and its classes in one Java package of their own. There a
+resource at the classpath root works until a second module ships a file of the same name.
 
 `retrieveCreditRating` is the task definition. It is the name of the `@WorkflowTask` method,
 the Camunda 7 expression `${retrieveCreditRating}` and the Camunda 8 job type. Rename it in all
