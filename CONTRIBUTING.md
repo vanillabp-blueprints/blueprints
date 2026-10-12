@@ -234,6 +234,12 @@ every loan approval started before the switch. Later it found 42 test source roo
 `module-bpms-migration` was one of them. A blueprint which really wants to show a change of
 mode shows it the way the wiki does: as a migration with a second adapter id.
 
+The script also compares the two twins of a blueprint. Each twin can agree with itself and
+still run another mode than the other twin. The Quarkus twins of the `bpmn-*` blueprints did
+that: they had no `application-camunda7.yaml`, so Quarkus ran Camunda 7 under the default while
+Spring Boot ran `use-prefix`. An adapter which one twin uses and the other names nowhere counts
+there under the default, if that twin has a Maven profile of the same name.
+
 A second setting is written out in every `camunda8` profile, for a different reason:
 `job-lease`. The Camunda 8 adapter has no default for it. On a cluster of the 8.10 line it
 stops the boot while the key is missing. With a lease, the cluster only takes the answer of the

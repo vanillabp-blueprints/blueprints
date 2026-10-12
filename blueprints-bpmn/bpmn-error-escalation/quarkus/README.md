@@ -132,27 +132,28 @@ Documents were requested for loan approval '4b21…'
 
 ## How it works
 
-|                                          File                                          |                                                   Role                                                    |
-|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/META-INF/workflow-module`                            | contains `loan-approval`, which makes this JAR a workflow module                                          |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: start event, service task, end event. The task names the method implementing it              |
-| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, a normal JPA entity keyed by the loan request ID                                  |
-| `.../loanapproval/Service.java`                                                        | the business code: builds the aggregate and tells `Workflow` that somebody requested a loan               |
-| `.../loanapproval/Workflow.java`                                                       | what the application tells the process; the only class using `ProcessService`                             |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | what the process tells the application: `@WorkflowService`, `@WorkflowTask`, calls `Service`              |
-| `.../loanapproval/ApiController.java`                                                  | the GET endpoints operating the process                                                                   |
-| `.../loanapproval/config/LoanApprovalProperties.java`                                  | the module's own configuration                                                                            |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a real workflow and waits for the aggregate to have been filled                                    |
-| `loan-approval/src/test/.../WorkflowModuleTest.java`                                   | its base class: boots the module and waits for the workflow to make progress. The same in every blueprint |
-| `application/src/test/.../ApplicationSmokeTest.java`                                   | boots the application, which is where VanillaBP validates that every BPMN task is wired to code           |
+|                                          File                                          |                                                                 Role                                                                  |
+|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/META-INF/workflow-module`                            | contains `loan-approval`, which makes this JAR a workflow module                                                                      |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: a service task with an error boundary event, and a subprocess whose escalation a non-interrupting boundary event catches |
+| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, a normal JPA entity keyed by the loan request ID                                                              |
+| `.../loanapproval/Service.java`                                                        | the business code: builds the aggregate and tells `Workflow` that somebody requested a loan                                           |
+| `.../loanapproval/Workflow.java`                                                       | what the application tells the process; the only class using `ProcessService`                                                         |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | what the process tells the application: `@WorkflowService`, `@WorkflowTask`, calls `Service`                                          |
+| `.../loanapproval/ApiController.java`                                                  | the GET endpoints operating the process                                                                                               |
+| `.../loanapproval/config/LoanApprovalProperties.java`                                  | the module's own configuration                                                                                                        |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a real workflow and waits for the aggregate to have been filled                                                                |
+| `loan-approval/src/test/.../WorkflowModuleTest.java`                                   | its base class: boots the module and waits for the workflow to make progress. The same in every blueprint                             |
+| `application/src/test/.../ApplicationSmokeTest.java`                                   | boots the application, which is where VanillaBP validates that every BPMN task is wired to code                                       |
 
 The order of events: `ApiController` calls `Service#request`. That method builds the aggregate
 and tells `Workflow` what happened, namely `loanRequested`, not "start the process".
 `Workflow#loanRequested` calls `ProcessService#startWorkflow`. VanillaBP stores the aggregate
 and starts the process in the same transaction, so you never get an aggregate without a
-workflow, or the other way round. The BPMS then reaches the service task and calls
-`WorkflowTaskHandler#retrieveCreditRating`. That method only hands over to
-`Service#assessCreditRating`. VanillaBP loads the aggregate before the call and saves it after.
+workflow, or the other way round. The BPMS then reaches the first service task and calls
+`WorkflowTaskHandler#verifyDocuments`. That method only hands over to `Service#verifyDocuments`,
+and so does every other task method here. VanillaBP loads the aggregate before the call and
+saves it after.
 This happens in a transaction VanillaBP owns, so neither of the two classes declares one of its
 own. Only the method the API calls does, because starting a workflow has to run in a
 transaction. If you put `@Transactional` on a task handler anyway, the boot fails with a
@@ -182,7 +183,7 @@ shows that.
 
 - [What happens when my handler throws?](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#what-happens-when-my-handler-throws): the three outcomes, and why a `TaskException` commits
 - [Defining a workflow module](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules-in-Quarkus#defining-a-workflow-module): the marker file, resource conventions and the module's own configuration files
-- [How name clashes are avoided](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided): what the warning at startup is about, and the modes keeping two workflow modules apart
+- [How name clashes are avoided](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided): the modes keeping two workflow modules apart, and what each of them costs
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why there are no process variables
 - [Wire up a process / Wire up a task](https://github.com/vanillabp/spi-for-java#usage): the annotations used in `WorkflowTaskHandler.java`
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how a BPMN task has to be modelled for that engine

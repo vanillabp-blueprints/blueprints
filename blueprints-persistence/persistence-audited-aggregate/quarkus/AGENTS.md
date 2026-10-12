@@ -117,7 +117,7 @@ you report a failure of that profile as a defect of the generated code.
 `LoanApprovalIT` has to pass. Its first test decides the risk assessment and waits until the
 payout was booked. Then it asserts that the notice the archive received holds the decision
 without the payout. That is the aspect of this blueprint. Its second test asserts that the
-trail names four changes and the author of each. If `ApplicationSmokeTest` passes, the
+trail names five changes and the author of each. If `ApplicationSmokeTest` passes, the
 application boots with the module on the classpath.
 
 The test relies on the outbox trying again quickly. `vanillabp.outbox.attempt-frequency` is two

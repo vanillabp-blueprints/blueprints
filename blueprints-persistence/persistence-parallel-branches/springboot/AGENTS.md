@@ -90,11 +90,17 @@ extends `WorkflowModuleTest`, never in the base class.
    thread of the BPMS (business process management system), and on a remote engine one adapter
    shares only a few of them.
 
+The split alone is not enough here, so the aggregate also carries `@DynamicUpdate`. The
+aggregate holds the foreign keys of both branch entities. So a branch which creates its entity
+still writes the aggregate's row, and without `@DynamicUpdate` the transaction which commits
+second puts back the key it read at its start. Add it as well, or let each branch entity own
+its foreign key (`mappedBy`), so that a branch does not write the aggregate at all.
+
 [The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate)
-has the other three ways to deal with the collision: `@DynamicUpdate`, a version attribute plus
-your own retry, and a relation which is only ever added to. Which one fits depends on what the
-branches do. This blueprint shows the first way, because it is the only one which keeps working
-when the branches grow.
+has the other ways to deal with the collision: `@DynamicUpdate` alone, a version attribute
+plus your own retry, and a relation which is only ever added to. Which one fits depends on
+what the branches do. This blueprint splits the aggregate, because that is the only way which
+keeps working when the branches grow.
 
 ## Verifying
 

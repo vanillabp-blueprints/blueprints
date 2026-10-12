@@ -80,9 +80,9 @@ blueprint. Copy them unchanged.
    default (`true`), and that carries the variable which holds the aggregate's ID.
 5. Name the called process in `secondaryBpmnProcesses` of the existing `@WorkflowService`, and
    add its `@WorkflowTask` methods to the same class. **Do not create a second class annotated
-   with `@WorkflowService` for the same workflow aggregate class.** VanillaBP builds one
-   `ProcessService` per aggregate class and starts the process of whichever class the classpath
-   scan found first. So `startWorkflow` may start the called process without a word.
+   with `@WorkflowService` which declares the called process as its `bpmnProcess`.** VanillaBP
+   builds one `ProcessService` per aggregate class, so only one process can be the one
+   `startWorkflow` starts. With two of them the boot fails and names both classes.
 6. Keep working on the one aggregate. Do not add a second entity for the called process, and do
    not pass data between the processes. There is nothing to pass, because both read and write
    the same aggregate.

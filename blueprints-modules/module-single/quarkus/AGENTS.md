@@ -22,9 +22,8 @@ Replace all of these consistently. They are the same in every blueprint.
 `loan-approval` occurs in more places than any other placeholder, and all of them have to
 change together: the Maven module directory, the marker file `META-INF/workflow-module`, the
 resource directory `src/main/resources/loan-approval/`, the configuration file
-`loan-approval.yaml` and its property prefix, the REST path, and the resources location in
-`src/test/resources/application.yaml` of the test. If you miss one, the build does not fail.
-Instead VanillaBP reports at startup that it found no BPMN file.
+`loan-approval.yaml` and its property prefix, and the REST path. If you miss one, the build
+does not fail. Instead VanillaBP reports at startup that it found no BPMN file.
 
 That resource directory has a reason. Workflow modules share one classpath. So **all**
 resources of a module have to be in the one subdirectory named after its ID, and its classes in

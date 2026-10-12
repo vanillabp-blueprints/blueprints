@@ -23,12 +23,11 @@ Blueprint-specific names, each occurring in more than one place:
 |           Name           |                                                 Where it occurs                                                 |
 |--------------------------|-----------------------------------------------------------------------------------------------------------------|
 | `requestPartnerApproval` | the `@WorkflowTask` method, the Camunda 7 `camunda:delegateExpression` and the Camunda 8 `zeebe:taskDefinition` |
-| `partner-rejected`       | the constant `Workflow.PARTNER_REJECTED` and the `errorCode` of `bpmn:error` in the model                       |
 | `informCustomer`         | the `@WorkflowTask` method behind the waiting task and the task definition of that service task                 |
-| `noteRejection`          | the `@WorkflowTask` method on the error path and the task definition of that service task                       |
+| `noteTimeout`            | the `@WorkflowTask` method on the path behind the timer and the task definition of that service task            |
 
-The error code is the contract between code and model. If the two drift apart, the boundary
-event does not catch the canceled task, and the workflow ends as an incident.
+The two durations live in the model only: the cool-off timer in the sequence flow and the
+deadline on the waiting task. The code names neither of them.
 
 ## Core files
 
@@ -41,7 +40,7 @@ event does not catch the canceled task, and the workflow ends as an incident.
 | `loan-approval/src/main/java/.../loanapproval/PartnerApprovalClient.java`                  | the port to the surrounding system, so a test can put a simulator in its place                                    |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java`                          | the callback the answer arrives at, carrying the task id                                                          |
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `partnerApprovalTaskId`, plus the attributes the service tasks behind the waiting task write                      |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | one test per way the task ends: still open, completed, canceled                                                   |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | one test per way the task ends: answered in time, taken away by the deadline                                      |
 
 ## Boilerplate files
 
@@ -81,8 +80,8 @@ base class does not make the test a bean.
    `@Transactional`, never the ones the task handler calls.
 6. Let the answering method reject a task id which is not the one stored on the aggregate. An
    answer arrives from outside and may come after its task is gone.
-7. Add `completeTask` and `cancelTask` calls to `Workflow`, one method per business event,
-   and keep the BPMN error code there as a constant.
+7. Add a `completeTask` call to `Workflow`, one method per answer. Nothing in the application
+   cancels the task. The timer does that.
 8. Add the callback endpoint which carries the task id. When the request goes out, log the URLs
    which continue the process.
 9. Copy `LoanApprovalIT` and write one test per way the task ends.
@@ -107,14 +106,13 @@ you report a failure of that profile as a defect of the generated code.
 
 `LoanApprovalIT` proves the aspect and has to pass:
 
-- the surrounding system was asked once, the aggregate holds the task id, and the service task
-  behind the waiting one has NOT run. This proves that the task stays open,
-- after `completeTask` that service task has run,
-- after `cancelTask` the service task on the error path has run and the stored id is gone.
+- an answer before the deadline completes the task: the service task behind it has run, and
+  the one behind the timer has not,
+- without an answer the deadline takes the task away: the service task behind the timer has
+  run, the one behind the answer has not, and on Camunda 7 the stored id is gone.
 
 If the task is completed as soon as the handler returns, the model wires it in a way that does
-not let it stay open. On Camunda 7 that is `camunda:expression`. If the workflow ends in an
-incident instead of taking the error path, the error code in the code differs from the one in
-the model.
+not let it stay open. On Camunda 7 that is `camunda:expression`. If the second test never sees
+the path behind the timer, the timer boundary event is missing from the waiting task.
 
 Do not report success without having run this.

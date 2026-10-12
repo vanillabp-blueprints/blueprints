@@ -100,8 +100,9 @@ module's changelog, named by `spring.liquibase.change-log`.
    classpath, plus one line per workflow module. Add a `SpringLiquibase` bean for it, which
    keeps Liquibase's default bookkeeping tables. If you rename the outbox table
    (`vanillabp.outbox.jdbc.table`), set the changelog property `vanillabp.outbox.table` before
-   the include. Do the same for the payload table and the delivery table, through
-   `vanillabp.payload.table` and `vanillabp.delivery.table`.
+   the include. Do the same for the payload table, the delivery table and the housekeeping
+   table, through `vanillabp.payload.table`, `vanillabp.delivery.table` and
+   `vanillabp.housekeeping.table`.
 5. Switch off everything which creates tables at runtime:
    `spring.jpa.hibernate.ddl-auto: validate` and `vanillabp.outbox.create-schema: false`. With
    an embedded Camunda 7 engine also

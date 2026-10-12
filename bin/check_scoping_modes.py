@@ -42,9 +42,22 @@ Checked for every '<group>/<blueprint-id>/<platform>/', across all of its source
   - an adapter left under different modes anywhere in one blueprint fails, whether the
     two places are two profiles or the application and a test.
 
+A source root is '<module>/src/<set>/resources' in a blueprint of several Maven modules,
+and 'src/<set>/resources' in a blueprint which is one module itself, like module-standalone.
+
+The twins of a blueprint are compared too, because each twin can agree with itself and
+still run another mode than its twin. That is what the Quarkus twins of the bpmn-*
+blueprints did until the 11th of October 2026: they had no 'application-camunda7.yaml', so
+Quarkus ran Camunda 7 under 'by-adapter' while the Spring Boot twins ran 'use-prefix', and
+the READMEs of both promised 'use-prefix'. An adapter one twin uses and the other twin
+names nowhere counts in that other twin under the default, as long as that twin has a
+Maven profile of the adapter's name. A twin without such a profile does not run that BPMS,
+so there is nothing to compare.
+
 Usage: bin/check_scoping_modes.py
 """
 
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -130,11 +143,14 @@ def load(path):
 def check_blueprint(blueprint, errors, root):
     """Compares every profile of every source root of one blueprint.
 
-    Returns how many source roots and how many profile files it read.
+    Returns how many source roots and how many profile files it read, and the modes it
+    found per adapter, for the comparison of the twins.
     """
 
     sources = [
-        resources for resources in sorted(blueprint.glob("*/src/*/resources"))
+        resources
+        for resources in sorted([*blueprint.glob("*/src/*/resources"),
+                                 *blueprint.glob("src/*/resources")])
         if (resources / BASE_FILE).exists() or any(resources.glob(PROFILE_FILE))
     ]
     profiles = sorted({
@@ -177,7 +193,43 @@ def check_blueprint(blueprint, errors, root):
                 " which runs another mode than the application tests a configuration the"
                 " blueprint does not ship."
             )
-    return len(sources), files
+    modes = {adapter: set(by_place.values()) for adapter, by_place in per_adapter.items()}
+    return len(sources), files, modes
+
+
+def maven_profiles(blueprint):
+    """The ids of the Maven profiles which the POMs of one twin declare."""
+
+    ids = set()
+    for pom in blueprint.rglob("pom.xml"):
+        if "target" in pom.parts:
+            continue
+        ids.update(re.findall(r"<profile>\s*<id>([^<]+)</id>", pom.read_text(encoding="utf-8")))
+    return ids
+
+
+def compare_twins(twins, errors, root):
+    """Fails where the two twins of one blueprint leave an adapter under different modes."""
+
+    if len(twins) < 2:
+        return
+    adapters = set().union(*(modes for _, modes in twins.values()))
+    for adapter in sorted(adapters):
+        said = {}
+        for platform, (blueprint, modes) in sorted(twins.items()):
+            if adapter in modes:
+                said[platform] = modes[adapter]
+            elif adapter in maven_profiles(blueprint):
+                said[platform] = {DEFAULT_MODE}
+        if len(said) > 1 and len({frozenset(found) for found in said.values()}) > 1:
+            where = next(iter(twins.values()))[0].parent.relative_to(root)
+            text = "; ".join(
+                f"{platform} runs it under {', '.join(sorted(found))}"
+                for platform, found in sorted(said.items()))
+            errors.append(
+                f"adapter '{adapter}' in {where}: {text}. The twins of a blueprint show the"
+                " same application on two platforms, so they run the same mode."
+            )
 
 
 def main():
@@ -186,13 +238,18 @@ def main():
     errors = []
     roots = profiles = 0
 
+    twins = defaultdict(dict)
     for pom in sorted(root.glob("*/*/*/pom.xml")):
         blueprint = pom.parent
         if blueprint.name not in PLATFORMS:
             continue
-        read_roots, read_profiles = check_blueprint(blueprint, errors, root)
+        read_roots, read_profiles, modes = check_blueprint(blueprint, errors, root)
         roots += read_roots
         profiles += read_profiles
+        twins[blueprint.parent][blueprint.name] = (blueprint, modes)
+
+    for pair in twins.values():
+        compare_twins(pair, errors, root)
 
     if errors:
         print("BPMS profiles of one blueprint disagree on how identifiers are scoped:\n",

@@ -39,11 +39,12 @@ One annotation wires the tasks of both processes:
 ```
 
 `secondaryBpmnProcesses` names every process except the one the application starts. Put called
-processes there, not into a handler class of their own. VanillaBP builds one `ProcessService`
-per workflow aggregate class. With a second workflow service class on the same aggregate,
-`startWorkflow` starts the process of whichever class the classpath scan found first. That can
-be the called process, and nothing says so. The workflow runs, the wrong half of the model
-runs, and the aggregate ends up half filled.
+processes there, not into the `bpmnProcess` of a class of their own. VanillaBP builds one
+`ProcessService` per workflow aggregate class, so exactly one process is the one
+`startWorkflow` starts. If a second workflow service class on the same aggregate declared the
+called process as its `bpmnProcess`, that choice would be a coin flip. So the boot fails and
+names both classes and both processes. A second class for the same aggregate is fine, as long
+as it declares the same `bpmnProcess`.
 
 The call activity carries no input mapping. That is worth a sentence, because it used to need
 one. VanillaBP finds the workflow aggregate of a task by the handle the engine keeps on the

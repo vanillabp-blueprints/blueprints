@@ -45,10 +45,10 @@ blueprints/
 Blueprint IDs are `<category>-<aspect>` in lower case. The category is one of `module-`,
 `persistence-`, `bpmn-` or `showcase-`. `<platform>` is `springboot` or `quarkus`.
 
-So far the blueprints here are `module-single`, the `bpmn-*` family and
-`persistence-parallel-branches`, each for both platforms, plus `persistence-active-record` for
-Quarkus alone. That is the first blueprint whose subject one platform does not have. The index
-records it as `not-applicable` with a reason, not as a gap. The blueprints live in a directory
+So far the blueprints here are the `module-*`, `persistence-*` and `bpmn-*` families, each
+blueprint for both platforms, except `persistence-active-record`, which is for Quarkus alone.
+Its subject is something Spring Boot does not have. The index records that as `not-applicable`
+with a reason, not as a gap. The blueprints live in a directory
 per category (`blueprints-modules`, `blueprints-persistence`, `blueprints-bpmn`, later
 `showcases`). So the top level stays readable, however many of them there are. The rest of this
 repository is the build, the formatting rules and the conventions the others follow.

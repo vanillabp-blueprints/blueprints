@@ -14,7 +14,7 @@ less than most people expect.
 ![The loan approval process, waiting at a message catch event](docs/loan_approval.png)
 
 The loan approval of the base blueprint. It waits for the signed contract before the money is
-paid out. Three things are worth looking at:
+paid out. Four things are worth looking at:
 
 - **Nothing about the correlation is modelled.** The catch event names a message, and that is
   all. VanillaBP correlates by the workflow aggregate's id. So no correlation key, no business

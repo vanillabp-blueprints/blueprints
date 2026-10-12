@@ -97,8 +97,9 @@ Rules which hold beyond this blueprint:
 4. Give the application a changelog which includes `vanillabp/schema/changelog.xml` from the
    classpath, plus one line per workflow module. If you rename the outbox table
    (`vanillabp.outbox.jdbc.table`), set the changelog property `vanillabp.outbox.table` before
-   the include. Do the same for the payload table and the delivery table, through
-   `vanillabp.payload.table` and `vanillabp.delivery.table`.
+   the include. Do the same for the payload table, the delivery table and the housekeeping
+   table, through `vanillabp.payload.table`, `vanillabp.delivery.table` and
+   `vanillabp.housekeeping.table`.
 5. Point `quarkus.liquibase.change-log` at that changelog and set `migrate-at-start`. One
    datasource, one run.
 6. Switch off everything which creates tables at runtime:

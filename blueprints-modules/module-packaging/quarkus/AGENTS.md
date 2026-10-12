@@ -51,7 +51,7 @@ Names this blueprint adds, because it has more than one of everything:
 | `application/pom.xml`                                      | the whole project: two module dependencies, their versions pinned in `dependencyManagement`, the adapter, the image name |
 | `application/src/main/resources/application.yaml`          | the database, the profile, and two attempts to override values a module ships                                            |
 | `application/src/test/java/.../ApplicationSmokeTest.java`  | the discovery test: every declared workflow module has to be one VanillaBP wired                                         |
-| `application/src/test/java/.../ConfigurationLevelsIT.java` | which of the three configuration levels arrives: outside beats the module, the module beats the application              |
+| `application/src/test/java/.../ConfigurationLevelsIT.java` | which of the three configuration levels arrives: outside beats the application, the application beats the module         |
 | `loan-approval/pom.xml`                                    | a foreign JAR's POM: no parent, own group `com.acme.lending`, own version, own build and tests                           |
 | `loan-approval/src/main/java/com/acme/loanapproval/...`    | the module's code, in the package its team chose. No scan of the application reaches it                                  |
 | `loan-approval/pom.xml` (index plugin)                     | the index the module's build writes; what makes it usable without the application knowing anything about it              |
