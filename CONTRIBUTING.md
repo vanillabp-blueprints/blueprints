@@ -662,8 +662,8 @@ name.
 
 The rule for how we write is in [`AGENTS.md`](./AGENTS.md), under `How we write`, in the form an
 agent reads. It holds for every English text here: the READMEs and `AGENTS.md` files of the
-blueprints, this file, the Javadoc and the comments which explain something, log messages, and
-the texts of commits and pull requests. In short:
+blueprints, this file, the Javadoc and the comments which explain something, in the main code
+and in the tests, log messages, and the texts of commits and pull requests. In short:
 
 Most people who read a blueprint read English as a second language, and so does the
 maintainer. Long sentences, rare words and stacked nouns slow them down. Write so that
