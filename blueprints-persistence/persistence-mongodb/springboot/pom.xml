@@ -34,7 +34,7 @@
     <!-- All VanillaBP artifacts are version managed by the VanillaBP BOM. -->
     <vanillabp.version>2.0.0-SNAPSHOT</vanillabp.version>
     <!-- BPMS adapters are released independently of the platform, so they carry their own version. -->
-    <camunda8-adapter.version>2.0.0-SNAPSHOT</camunda8-adapter.version>
+    <camunda8-adapter.version>2.0.0-8.10-SNAPSHOT</camunda8-adapter.version>
   </properties>
 
   <dependencyManagement>
