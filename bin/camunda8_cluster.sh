@@ -9,6 +9,7 @@
 #
 # Usage: bin/camunda8_cluster.sh start|stop|logs
 #        CAMUNDA_VERSION, ELASTICSEARCH_VERSION and REST_PORT can be overridden.
+#        CAMUNDA_VERSION defaults to the version the Camunda 8 adapter accepts, see below.
 #
 # Used by .github/workflows/build.yaml and usable locally for the same purpose:
 #
@@ -28,17 +29,17 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# The cluster has to be at least as new as the client the Camunda 8 adapter is built
-# against, currently camunda-client-java 8.10.0. An older cluster rejects requests the newer
-# client sends: with 8.8.34 every job activation ended in "Request property [tenantFilter]
-# cannot be parsed", so a workflow started and its task was never delivered.
+# The cluster has to be at least as new as the Camunda client the Camunda 8 adapter is built
+# against. That client is the lowest cluster version the adapter accepts, and the adapter says
+# so in its startup log. An older cluster rejects requests the newer client sends: with 8.8.34
+# every job activation ended in "Request property [tenantFilter] cannot be parsed", so a
+# workflow started and its task was never delivered.
 #
-# The blueprints build against the adapter snapshot without a release-line profile, so they
-# get the adapter's current GA line. That line is 8.10, since Camunda released 8.10.0 on the
-# 29th of September 2026. When the next minor goes GA the adapter moves its default line, and
-# this pin moves with it. Each line has its pin as a property in the root POM of the adapter,
-# and the README of the adapter explains the lines under "Release lines".
-CAMUNDA_VERSION="${CAMUNDA_VERSION:-8.10.0}"
+# So this script does not pin a version. It asks the adapter, see adapter_client_version
+# below. A pin was here until October 2026, and it fell behind: it said 8.10.0 while the
+# adapter was built against 8.10.5. No build failed, and somebody had to read the startup log
+# of the adapter to see it. Set CAMUNDA_VERSION to run another version on purpose.
+CAMUNDA_VERSION="${CAMUNDA_VERSION:-}"
 ELASTICSEARCH_VERSION="${ELASTICSEARCH_VERSION:-8.18.2}"
 REST_PORT="${REST_PORT:-8080}"
 NETWORK=vanillabp-camunda8
@@ -46,6 +47,8 @@ ELASTICSEARCH=vanillabp-elasticsearch
 CAMUNDA=vanillabp-camunda8-cluster
 # Booting Elasticsearch and Camunda takes a while on a cold CI runner.
 READY_TIMEOUT_SECONDS="${READY_TIMEOUT_SECONDS:-300}"
+# The root of this repository. The blueprint POMs below it name the adapter version.
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)"
 # How often a cluster whose exporter never starts working is thrown away and started again.
 START_ATTEMPTS="${START_ATTEMPTS:-2}"
 # How long the exporter gets to write its first index before the cluster counts as broken.
@@ -53,6 +56,11 @@ EXPORTER_TIMEOUT_SECONDS="${EXPORTER_TIMEOUT_SECONDS:-120}"
 
 start() {
   local attempt=1
+
+  if [ -z "${CAMUNDA_VERSION}" ]; then
+    CAMUNDA_VERSION="$(adapter_client_version)" || exit 1
+  fi
+  echo "Starting Camunda 8 ${CAMUNDA_VERSION}"
 
   while true; do
     start_containers
@@ -79,6 +87,93 @@ start() {
     echo "Starting over." >&2
     stop
   done
+}
+
+# The version of the Camunda client which the Camunda 8 adapter is built against. It is read
+# from the POM the adapter publishes. That POM names the client as a dependency with a plain
+# version, and the adapter has a test which keeps it that way (Camunda8PublishedPomTest, see
+# decision 39 of the adapter). The adapter version is the one the blueprint POMs name. They
+# all name the same one, and this function stops if they do not.
+#
+# Maven fetches the POM, so this works wherever the build itself can fetch the adapter. In CI
+# the variables USER_NAME and USER_TOKEN are set, and then the settings of the CI build are
+# used, which point at GitHub Packages. Locally your own Maven settings are used.
+adapter_client_version() {
+  local adapter
+  adapter="$(adapter_version)" || exit 1
+
+  local work
+  work="$(mktemp -d)"
+
+  local settings=()
+  if [ -n "${USER_TOKEN:-}" ]; then
+    settings=(--settings "${ROOT}/.github/workflows/github-packages-settings.xml")
+  fi
+
+  # --update-snapshots, because the adapter is a SNAPSHOT: a cached POM may be days old and
+  # name an older client than the one the build will get.
+  if ! maven --batch-mode --quiet --update-snapshots "${settings[@]}" \
+      org.apache.maven.plugins:maven-dependency-plugin:3.10.0:copy \
+      "-Dartifact=org.camunda.community.vanillabp:camunda8-adapter:${adapter}:pom" \
+      "-DoutputDirectory=${work}" >&2; then
+    echo "Maven could not fetch the POM of camunda8-adapter ${adapter}, so the Camunda" >&2
+    echo "version the adapter accepts is unknown. Set USER_NAME and USER_TOKEN (a GitHub" >&2
+    echo "token with 'read:packages'), or set CAMUNDA_VERSION to the version you want." >&2
+    rm -rf "${work}"
+    exit 1
+  fi
+
+  local client
+  client="$(python3 -I - "${work}"/*.pom <<'PYTHON'
+import sys
+import xml.etree.ElementTree as ET
+
+ns = {"m": "http://maven.apache.org/POM/4.0.0"}
+for dependency in ET.parse(sys.argv[1]).getroot().iterfind("m:dependencies/m:dependency", ns):
+    if (dependency.findtext("m:groupId", namespaces=ns) == "io.camunda"
+            and dependency.findtext("m:artifactId", namespaces=ns) == "camunda-client-java"):
+        print(dependency.findtext("m:version", default="", namespaces=ns).strip())
+PYTHON
+)"
+  rm -rf "${work}"
+
+  # a version with a placeholder in it would mean the adapter published its source POM
+  if ! [[ "${client}" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+    echo "The POM of camunda8-adapter ${adapter} names no usable version of" >&2
+    echo "io.camunda:camunda-client-java (found '${client}')." >&2
+    echo "Set CAMUNDA_VERSION to the version you want." >&2
+    exit 1
+  fi
+
+  echo "camunda8-adapter ${adapter} is built against Camunda client ${client}" >&2
+  echo "${client}"
+}
+
+# The version of the Camunda 8 adapter which the blueprints build against. Each blueprint
+# POM names it in the property 'camunda8-adapter.version'.
+adapter_version() {
+  local versions
+  versions="$(grep --recursive --no-filename --only-matching --include=pom.xml \
+      --exclude-dir=target '<camunda8-adapter.version>[^<]*' "${ROOT}"/blueprints-* \
+    | sed 's/.*>//' | sort --unique)"
+
+  if [ -z "${versions}" ] || [ "$(echo "${versions}" | wc -l)" -ne 1 ]; then
+    echo "The blueprint POMs should name exactly one version of the Camunda 8 adapter" >&2
+    echo "in 'camunda8-adapter.version', but they name: ${versions:-none}" >&2
+    echo "Set CAMUNDA_VERSION to the version you want." >&2
+    exit 1
+  fi
+
+  echo "${versions}"
+}
+
+# Maven from the PATH, as in CI, or else the wrapper of this repository.
+maven() {
+  if command -v mvn >/dev/null 2>&1; then
+    mvn "$@"
+  else
+    "${ROOT}/mvnw" "$@"
+  fi
 }
 
 start_containers() {
