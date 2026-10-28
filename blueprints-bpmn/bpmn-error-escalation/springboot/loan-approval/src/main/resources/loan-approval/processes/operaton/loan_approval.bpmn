@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToVerifyDocuments</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToVerifyDocuments" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_VerifyDocuments" />
+    <bpmn:serviceTask id="ServiceTask_VerifyDocuments" name="Verify documents" camunda:expression="${verifyDocuments}">
+      <bpmn:incoming>Flow_ToVerifyDocuments</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToApproval</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <!--
+      THE ERROR. The handler of the task above throws a TaskException carrying this code,
+      the task ends here and the workflow leaves it for good. An error boundary event is
+      always interrupting - the activity could not be completed, so there is nothing left
+      to continue.
+    -->
+    <bpmn:boundaryEvent id="BoundaryEvent_DocumentsMissing" name="Documents missing" attachedToRef="ServiceTask_VerifyDocuments">
+      <bpmn:outgoing>Flow_ToRequestDocuments</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_DocumentsMissing" errorRef="Error_DocumentsMissing" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_ToRequestDocuments" sourceRef="BoundaryEvent_DocumentsMissing" targetRef="ServiceTask_RequestDocuments" />
+    <bpmn:serviceTask id="ServiceTask_RequestDocuments" name="Request documents" camunda:expression="${requestDocuments}">
+      <bpmn:incoming>Flow_ToRequestDocuments</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToDocumentsRequested</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToDocumentsRequested" sourceRef="ServiceTask_RequestDocuments" targetRef="EndEvent_DocumentsRequested" />
+    <bpmn:endEvent id="EndEvent_DocumentsRequested" name="Documents requested">
+      <bpmn:incoming>Flow_ToDocumentsRequested</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ToApproval" sourceRef="ServiceTask_VerifyDocuments" targetRef="SubProcess_Approval" />
+    <!--
+      THE ESCALATION. It is thrown by the MODEL, not by business code: VanillaBP has no API
+      for raising an escalation, and none is needed here. Inside the subprocess the throw
+      event reports upwards while the subprocess CARRIES ON - that is the difference to an
+      error, and the reason the boundary event below may be non-interrupting.
+    -->
+    <bpmn:subProcess id="SubProcess_Approval" name="Approve the loan">
+      <bpmn:incoming>Flow_ToApproval</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanApproved</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_Approval">
+        <bpmn:outgoing>Flow_ToRateRisk</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_ToRateRisk" sourceRef="StartEvent_Approval" targetRef="ServiceTask_RateRisk" />
+      <bpmn:serviceTask id="ServiceTask_RateRisk" name="Rate the risk" camunda:expression="${rateRisk}">
+        <bpmn:incoming>Flow_ToRateRisk</bpmn:incoming>
+        <bpmn:outgoing>Flow_ToReportLargeAmount</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="Flow_ToReportLargeAmount" sourceRef="ServiceTask_RateRisk" targetRef="ThrowEvent_LargeAmount" />
+      <bpmn:intermediateThrowEvent id="ThrowEvent_LargeAmount" name="Large amount">
+        <bpmn:incoming>Flow_ToReportLargeAmount</bpmn:incoming>
+        <bpmn:outgoing>Flow_ToSignContract</bpmn:outgoing>
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_LargeAmount" escalationRef="Escalation_LargeAmount" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:sequenceFlow id="Flow_ToSignContract" sourceRef="ThrowEvent_LargeAmount" targetRef="ServiceTask_SignContract" />
+      <bpmn:serviceTask id="ServiceTask_SignContract" name="Sign the contract" camunda:expression="${signContract}">
+        <bpmn:incoming>Flow_ToSignContract</bpmn:incoming>
+        <bpmn:outgoing>Flow_ToApprovalDone</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="Flow_ToApprovalDone" sourceRef="ServiceTask_SignContract" targetRef="EndEvent_ApprovalDone" />
+      <bpmn:endEvent id="EndEvent_ApprovalDone">
+        <bpmn:incoming>Flow_ToApprovalDone</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+    <!--
+      NON-INTERRUPTING: the supervisor is informed while the approval inside the subprocess
+      continues. An error boundary event could not do this.
+    -->
+    <bpmn:boundaryEvent id="BoundaryEvent_LargeAmount" name="Large amount" cancelActivity="false" attachedToRef="SubProcess_Approval">
+      <bpmn:outgoing>Flow_ToInformSupervisor</bpmn:outgoing>
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Caught" escalationRef="Escalation_LargeAmount" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_ToInformSupervisor" sourceRef="BoundaryEvent_LargeAmount" targetRef="ServiceTask_InformSupervisor" />
+    <bpmn:serviceTask id="ServiceTask_InformSupervisor" name="Inform the supervisor" camunda:expression="${informSupervisor}">
+      <bpmn:incoming>Flow_ToInformSupervisor</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSupervisorInformed</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToSupervisorInformed" sourceRef="ServiceTask_InformSupervisor" targetRef="EndEvent_SupervisorInformed" />
+    <bpmn:endEvent id="EndEvent_SupervisorInformed" name="Supervisor informed">
+      <bpmn:incoming>Flow_ToSupervisorInformed</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ToLoanApproved" sourceRef="SubProcess_Approval" targetRef="EndEvent_LoanApproved" />
+    <bpmn:endEvent id="EndEvent_LoanApproved" name="Loan approved">
+      <bpmn:incoming>Flow_ToLoanApproved</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <!-- The error code is the string the business code passes to TaskException. -->
+  <bpmn:error id="Error_DocumentsMissing" name="Documents missing" errorCode="documents-missing" />
+  <!-- The escalation code appears in the model only - no code names it. -->
+  <bpmn:escalation id="Escalation_LargeAmount" name="Large amount" escalationCode="large-amount" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="265" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_VerifyDocuments_di" bpmnElement="ServiceTask_VerifyDocuments">
+        <dc:Bounds x="240" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_DocumentsMissing_di" bpmnElement="BoundaryEvent_DocumentsMissing">
+        <dc:Bounds x="272" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="252" y="305" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RequestDocuments_di" bpmnElement="ServiceTask_RequestDocuments">
+        <dc:Bounds x="400" y="340" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_DocumentsRequested_di" bpmnElement="EndEvent_DocumentsRequested">
+        <dc:Bounds x="552" y="362" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="528" y="405" width="86" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_Approval_di" bpmnElement="SubProcess_Approval" isExpanded="true">
+        <dc:Bounds x="400" y="140" width="480" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_Approval_di" bpmnElement="StartEvent_Approval">
+        <dc:Bounds x="422" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RateRisk_di" bpmnElement="ServiceTask_RateRisk">
+        <dc:Bounds x="490" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ThrowEvent_LargeAmount_di" bpmnElement="ThrowEvent_LargeAmount">
+        <dc:Bounds x="632" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="618" y="245" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_SignContract_di" bpmnElement="ServiceTask_SignContract">
+        <dc:Bounds x="700" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ApprovalDone_di" bpmnElement="EndEvent_ApprovalDone">
+        <dc:Bounds x="832" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_LargeAmount_di" bpmnElement="BoundaryEvent_LargeAmount">
+        <dc:Bounds x="622" y="122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="608" y="95" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_InformSupervisor_di" bpmnElement="ServiceTask_InformSupervisor">
+        <dc:Bounds x="700" y="20" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_SupervisorInformed_di" bpmnElement="EndEvent_SupervisorInformed">
+        <dc:Bounds x="852" y="42" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="830" y="85" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanApproved_di" bpmnElement="EndEvent_LoanApproved">
+        <dc:Bounds x="932" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="916" y="245" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToVerifyDocuments_di" bpmnElement="Flow_ToVerifyDocuments">
+        <di:waypoint x="188" y="240" />
+        <di:waypoint x="240" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRequestDocuments_di" bpmnElement="Flow_ToRequestDocuments">
+        <di:waypoint x="290" y="298" />
+        <di:waypoint x="290" y="380" />
+        <di:waypoint x="400" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToDocumentsRequested_di" bpmnElement="Flow_ToDocumentsRequested">
+        <di:waypoint x="500" y="380" />
+        <di:waypoint x="552" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToApproval_di" bpmnElement="Flow_ToApproval">
+        <di:waypoint x="340" y="240" />
+        <di:waypoint x="400" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRateRisk_di" bpmnElement="Flow_ToRateRisk">
+        <di:waypoint x="458" y="220" />
+        <di:waypoint x="490" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToReportLargeAmount_di" bpmnElement="Flow_ToReportLargeAmount">
+        <di:waypoint x="590" y="220" />
+        <di:waypoint x="632" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSignContract_di" bpmnElement="Flow_ToSignContract">
+        <di:waypoint x="668" y="220" />
+        <di:waypoint x="700" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToApprovalDone_di" bpmnElement="Flow_ToApprovalDone">
+        <di:waypoint x="800" y="220" />
+        <di:waypoint x="832" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToInformSupervisor_di" bpmnElement="Flow_ToInformSupervisor">
+        <di:waypoint x="640" y="122" />
+        <di:waypoint x="640" y="60" />
+        <di:waypoint x="700" y="60" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSupervisorInformed_di" bpmnElement="Flow_ToSupervisorInformed">
+        <di:waypoint x="800" y="60" />
+        <di:waypoint x="852" y="60" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanApproved_di" bpmnElement="Flow_ToLoanApproved">
+        <di:waypoint x="880" y="220" />
+        <di:waypoint x="932" y="220" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

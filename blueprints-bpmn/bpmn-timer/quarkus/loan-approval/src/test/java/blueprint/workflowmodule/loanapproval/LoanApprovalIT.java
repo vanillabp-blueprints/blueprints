@@ -92,7 +92,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     assertThat(loanRequest.getCustomerInformed()).isNull();
 
-    if ("camunda7".equals(System.getProperty("blueprint.bpms"))) {
+    if (System.getProperty("blueprint.bpms", "").matches("camunda7|operaton")) {
       // The handler heard about it: an interrupting boundary event cancels the task, and
       // the stored id no longer leads anywhere. Not every BPMS reports that - Camunda 8
       // does not tell a worker that its job was canceled - so an application must not

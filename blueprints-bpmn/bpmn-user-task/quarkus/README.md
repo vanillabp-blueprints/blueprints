@@ -41,7 +41,7 @@ Two smaller things are in this blueprint:
 
 Not every BPMS supports canceling a user task. The engine has to offer a command for it, and
 Camunda 8 does not. VanillaBP answers such a call with an error which names the reason, instead
-of pretending. That is why the test of the cancellation runs on Camunda 7.
+of pretending. That is why the test of the cancellation runs on Camunda 7 and on Operaton.
 [Its adapter's wiki page](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters)
 says which operations a BPMS supports. The Camunda 8 adapter names this one under
 [deviations](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Deviations#cancelusertask-is-not-supported).
@@ -95,6 +95,14 @@ vanillabp:
 The file is loaded because the Maven profile `camunda8` makes the config profile of the same
 name the parent of the profile the application runs in. So you choose the engine once, on the
 Maven command line. The build, the tests and `quarkus:dev` all follow it.
+
+[Operaton](https://operaton.org), the open source successor of Camunda 7, is embedded as well
+and needs nothing else either. The BPMN files are the ones of Camunda 7, because Operaton reads
+their `camunda:` attributes:
+
+```bash
+mvn install verify -Poperaton
+```
 
 The test which cancels the user task does not run there. The build reports it as a skipped
 test, not as a passing one.

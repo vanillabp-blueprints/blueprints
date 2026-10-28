@@ -1,0 +1,32 @@
+# Everything specific to Operaton, loaded only while the 'operaton' profile applies. The
+# Maven profile of the same name activates it for the test as well.
+#
+# This is the state during a migration from Camunda 7 to Operaton: both adapters are
+# configured, Operaton first, and the repayment workflow stays in Camunda 7. Operaton runs on a
+# database of its own, because two engines must not share one set of tables.
+blueprint:
+  operaton-datasource:
+    url: jdbc:h2:mem:migration-test-operaton;DB_CLOSE_DELAY=-1
+vanillabp:
+  prioritized-adapters:
+    - operaton
+    - camunda7
+  adapters:
+    operaton:
+      # The identifiers of this workflow module are prefixed in the BPMS, which keeps modules
+      # apart without a tenant, and a BPMS is licensed per tenant. BPMN files, business code and
+      # configuration keep the plain names, the adapter translates at every boundary. Switching
+      # the mode of a running application is a migration rather than a setting.
+      name-clash-avoidance: use-prefix
+      data-source-name: operatonDataSource
+    camunda7:
+      # The mode of the OLD BPMS, spelled out for the same reason as in the application's
+      # profile file: the default would be 'by-adapter', and then the migration state would
+      # address Camunda 7 differently than the state before it.
+      name-clash-avoidance: use-prefix
+  workflow-modules:
+    loan-approval:
+      workflows:
+        loan_repayment:
+          prioritized-adapters:
+            - camunda7

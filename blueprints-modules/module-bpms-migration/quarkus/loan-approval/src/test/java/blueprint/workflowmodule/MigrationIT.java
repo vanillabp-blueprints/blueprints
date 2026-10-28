@@ -19,10 +19,12 @@ import jakarta.inject.Inject;
  * the one holding its workflow.
  *
  * <p>
- * The tests run only where two adapters are configured, which is the {@code camunda8}
- * profile: it brings both adapters along, because a migration is the state in which the old
- * BPMS is still there. Under the other profile there is one BPMS and nothing to route, so
- * these tests are skipped rather than duplicated.
+ * The tests run only where two adapters are configured, which are the profiles
+ * {@code camunda8} and {@code operaton}: each brings two adapters along, because a migration
+ * is the state in which the old BPMS is still there. The priority list of the profile says
+ * which of them is the new BPMS and which the old one. Under the profile {@code camunda7}
+ * there is one BPMS and nothing to route, so these tests are skipped rather than
+ * duplicated.
  * </p>
  *
  * <p>
@@ -33,10 +35,6 @@ import jakarta.inject.Inject;
  */
 @QuarkusTest
 public class MigrationIT extends WorkflowModuleTest {
-
-  private static final String NEW_BPMS = "camunda8";
-
-  private static final String OLD_BPMS = "camunda7";
 
   @Inject
   Service loanApproval;
@@ -67,7 +65,7 @@ public class MigrationIT extends WorkflowModuleTest {
 
     assertThat(loanApproval.bpmsHolding(loanRequestId))
         .describedAs("the loan approval follows the adapter list, so it starts in the new BPMS")
-        .contains(NEW_BPMS);
+        .contains(newBpms());
 
   }
 
@@ -88,7 +86,7 @@ public class MigrationIT extends WorkflowModuleTest {
 
     assertThat(loanRepayment.bpmsHolding(repaymentId))
         .describedAs("'vanillabp...workflows.loan_repayment.prioritized-adapters' names the old BPMS")
-        .contains(OLD_BPMS);
+        .contains(oldBpms());
 
   }
 
@@ -123,13 +121,41 @@ public class MigrationIT extends WorkflowModuleTest {
     assertThat(paidOut.getContractSignedBy()).isEqualTo("Jane Doe");
     assertThat(loanApproval.bpmsHolding(loanRequestId))
         .describedAs("the workflow ran to its end in the BPMS it was started in")
-        .contains(NEW_BPMS);
+        .contains(newBpms());
+
+  }
+
+  /**
+   * @return The BPMS new workflows start in, the first one of the priority list
+   */
+  private String newBpms() {
+
+    return adapterOfThePriorityList(0);
+
+  }
+
+  /**
+   * @return The BPMS which held the workflows before the migration, the second one of the list
+   */
+  private String oldBpms() {
+
+    return adapterOfThePriorityList(1);
+
+  }
+
+  private static String adapterOfThePriorityList(
+      final int position) {
+
+    return ConfigProvider
+        .getConfig()
+        .getValues("vanillabp.prioritized-adapters", String.class)
+        .get(position);
 
   }
 
   /**
    * The subject of these tests is what happens with two BPMS, so they run where two are
-   * configured. That is the state the 'camunda8' profile brings, and asking the
+   * configured. That is the state the migration profiles bring, and asking the
    * configuration for the priority list says so more directly than asking for the profile.
    */
   private void assumeTwoAdaptersAreConfigured() {

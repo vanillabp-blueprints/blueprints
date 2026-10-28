@@ -419,6 +419,15 @@ background at all. An SVG of that cannot be read in GitHub's dark mode.
    ```bash
    cp LICENSE NOTICE .gitignore <group>/<blueprint-id>/<platform>/
    ```
+
+   A blueprint which runs on Camunda 7 runs on Operaton as well, the open source successor of
+   Camunda 7. The script below adds the `operaton` profile next to every `camunda7` profile,
+   the profile files and the copies of the BPMN files. It names what it left for you to do by
+   hand:
+
+   ```bash
+   python3 bin/add_bpms_profile.py operaton <group>/<blueprint-id>/<platform>
+   ```
 3. Write `README.md` (for humans) and `AGENTS.md` (for agents) from the templates. Render the
    picture of the process which the README shows (see above):
 

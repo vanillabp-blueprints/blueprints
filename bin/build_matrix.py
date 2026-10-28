@@ -38,10 +38,6 @@ PLATFORMS = ("springboot", "quarkus")
 # started as a container by the workflow.
 RUNNABLE = ("camunda7", "camunda8", "operaton")
 
-# What a blueprint is built against when the index says nothing usable about it. Operaton is
-# not among them: only a blueprint which declares it has the Maven profile for it.
-WITHOUT_AN_ANSWER = ("camunda7", "camunda8")
-
 
 def blueprint_directories(root):
     """Every '<group>/<blueprint-id>/<platform>/' with a POM, sorted."""
@@ -65,8 +61,8 @@ def bpms_of(index, blueprint_id):
         runnable = [bpms for bpms in RUNNABLE if bpms in declared]
         # an entry declaring nothing runnable is a mistake in the index, not a reason to
         # build nothing - the consistency check reports it, the matrix keeps testing
-        return runnable or list(WITHOUT_AN_ANSWER)
-    return list(WITHOUT_AN_ANSWER)
+        return runnable or list(RUNNABLE)
+    return list(RUNNABLE)
 
 
 def wanted(directories, changed):

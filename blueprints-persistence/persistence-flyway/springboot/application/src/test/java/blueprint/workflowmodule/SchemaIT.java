@@ -25,8 +25,9 @@ import org.springframework.boot.test.context.SpringBootTest;
  * <p>
  * That nothing created them at runtime is not asserted here but configured:
  * {@code vanillabp.outbox.create-schema} is off, {@code ddl-auto} is {@code validate} and
- * the Camunda 7 adapter's {@code database-schema-update} is off. Booting is therefore the
- * proof, and this test says which tables the migration was supposed to bring.
+ * the {@code database-schema-update} of the embedded engine's adapter is off. Booting is
+ * therefore the proof, and this test says which tables the migration was supposed to
+ * bring.
  * </p>
  *
  * <p>
@@ -141,7 +142,7 @@ public class SchemaIT {
 
     assertThat(tablesOfTheDatabase())
         .describedAs(
-            "The embedded engine's tables come from the scripts Camunda ships in its"
+            "The embedded engine's tables come from the scripts the engine ships in its"
                 + " engine JAR, named for Flyway by the build")
         .contains("ACT_RU_EXECUTION", "ACT_RE_PROCDEF", "ACT_GE_SCHEMA_LOG");
 
@@ -219,12 +220,18 @@ public class SchemaIT {
    */
   private static boolean engineIsEmbedded() {
 
-    try {
-      Class.forName("org.camunda.bpm.engine.ProcessEngine");
-      return true;
-    } catch (final ClassNotFoundException e) {
-      return false;
+    // the engines which run inside the application: Camunda 7 and Operaton
+    for (final var engine : new String[]{
+        "org.camunda.bpm.engine.ProcessEngine", "org.operaton.bpm.engine.ProcessEngine"
+    }) {
+      try {
+        Class.forName(engine);
+        return true;
+      } catch (final ClassNotFoundException e) {
+        // not this one
+      }
     }
+    return false;
 
   }
 

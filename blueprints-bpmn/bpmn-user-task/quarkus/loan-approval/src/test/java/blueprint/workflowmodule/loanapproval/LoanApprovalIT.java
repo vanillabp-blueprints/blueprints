@@ -80,11 +80,11 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   /**
    * Canceling a user task is not supported by every BPMS: Camunda 8 has no command for it
    * up to and including version 8.8, and VanillaBP says so with an error rather than
-   * pretending. This test therefore runs on Camunda 7, and the Maven profile choosing the
-   * BPMS is what tells it apart.
+   * pretending. This test therefore runs on the embedded engines, Camunda 7 and Operaton. The
+   * Maven profile choosing the BPMS is what tells them apart.
    */
   @Test
-  @EnabledIfSystemProperty(named = "blueprint.bpms", matches = "camunda7")
+  @EnabledIfSystemProperty(named = "blueprint.bpms", matches = "camunda7|operaton")
   public void cancelingTheUserTaskTakesTheErrorPath() {
 
     final var loanRequestId = UUID.randomUUID().toString();

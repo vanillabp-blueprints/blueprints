@@ -143,6 +143,14 @@ you choose the engine once, on the Maven command line, and the build, the tests 
 follow it. The file with the engine key of this blueprint, `application-camunda7.yaml`, is
 loaded the same way, and only while Camunda 7 is the engine.
 
+[Operaton](https://operaton.org), the open source successor of Camunda 7, is embedded as well
+and needs nothing else either. The BPMN files are the ones of Camunda 7, because Operaton reads
+their `camunda:` attributes:
+
+```bash
+mvn install verify -Poperaton
+```
+
 Start the application:
 
 ```bash

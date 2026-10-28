@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="Definitions_loan_decision" name="Loan decision" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.31.0">
+  <!-- The decision the business rule task of loan_approval.bpmn calls. It reads two
+       values of the workflow which the aggregate contributed, and produces one. -->
+  <decision id="loan_decision" name="Loan decision">
+    <decisionTable id="DecisionTable_loan" hitPolicy="FIRST">
+      <input id="Input_amount" label="Amount">
+        <inputExpression id="InputExpression_amount" typeRef="integer">
+          <text>amount</text>
+        </inputExpression>
+      </input>
+      <input id="Input_creditRating" label="Credit rating">
+        <inputExpression id="InputExpression_creditRating" typeRef="integer">
+          <text>creditRating</text>
+        </inputExpression>
+      </input>
+      <output id="Output_approval" label="Approval" name="approval" typeRef="string" />
+      <rule id="Rule_goodRating">
+        <inputEntry id="InputEntry_anyAmount">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="InputEntry_goodRating">
+          <text>&gt;= 7</text>
+        </inputEntry>
+        <outputEntry id="OutputEntry_goodApproved">
+          <text>"APPROVED"</text>
+        </outputEntry>
+      </rule>
+      <rule id="Rule_smallLoan">
+        <inputEntry id="InputEntry_smallAmount">
+          <text>&lt;= 2000</text>
+        </inputEntry>
+        <inputEntry id="InputEntry_anyRating">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="OutputEntry_smallApproved">
+          <text>"APPROVED"</text>
+        </outputEntry>
+      </rule>
+      <rule id="Rule_otherwise">
+        <inputEntry id="InputEntry_otherAmount">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="InputEntry_otherRating">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="OutputEntry_declined">
+          <text>"DECLINED"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

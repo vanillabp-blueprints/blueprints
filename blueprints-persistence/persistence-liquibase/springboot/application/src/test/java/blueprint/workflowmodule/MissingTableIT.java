@@ -73,10 +73,15 @@ public class MissingTableIT {
     // servlet container failing to start its filters because the context is already broken
     // would hide the message this test is about.
     arguments.add("--spring.main.web-application-type=none");
-    if (ClassUtils.isPresent("org.camunda.bpm.engine.ProcessEngine", getClass().getClassLoader())) {
+    final var classLoader = getClass().getClassLoader();
+    if (ClassUtils.isPresent("org.camunda.bpm.engine.ProcessEngine", classLoader) || ClassUtils
+        .isPresent("org.operaton.bpm.engine.ProcessEngine", classLoader)) {
       // the engine creates its own tables here: a missing engine schema would end the boot
-      // earlier and with the engine's message, and VanillaBP's is what is under test
-      arguments.add("--vanillabp.adapters.camunda7.database-schema-update=true");
+      // earlier and with the engine's message, and VanillaBP's message is the one
+      // under test. The adapter id is the profile of the build, camunda7 or operaton.
+      arguments.add("--vanillabp.adapters."
+          + System.getProperty("spring.profiles.active")
+          + ".database-schema-update=true");
     }
 
     new SpringApplicationBuilder(Application.class)
