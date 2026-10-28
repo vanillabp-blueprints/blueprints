@@ -54,7 +54,9 @@ You will see that at work. When both checks reach the aggregate at the same time
 loses. VanillaBP logs an ERROR which names the task and the workflow, and the BPMS retries it a
 moment later. Nothing is lost. The version attribute buys you that retry. Without it the second
 write would have overwritten the first, and nothing would have been logged at all. The Camunda
-8 profile shortens the retry backoff, so that moment stays short.
+8 profile shortens the retry backoff, so that moment stays short. On Camunda 8 the three checks
+also write `retries="3"` on their `zeebe:taskDefinition`. Without the attribute the adapter
+gives a failed job no second attempt, and the losing check would end in an incident.
 
 A third decision maker exists, and it is not shown here: a model provider can pick the
 activities. It needs a connector runtime and an account with that provider. So this blueprint
