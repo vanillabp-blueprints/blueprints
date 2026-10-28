@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToRetrieveCreditRating</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRetrieveCreditRating" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_RetrieveCreditRating" />
+    <bpmn:serviceTask id="ServiceTask_RetrieveCreditRating" name="Retrieve credit rating" camunda:expression="${retrieveCreditRating}">
+      <bpmn:incoming>Flow_ToRetrieveCreditRating</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToAwaitInterestRate</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToAwaitInterestRate" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="CatchEvent_InterestRatePublished" />
+    <!--
+      Every loan approval standing here continues when the rate is published, and nothing
+      about that is modelled: a signal is a broadcast, so the event names a signal and
+      that is all. There is no correlation, no key and no instance the sender could aim
+      at - which is exactly the difference to a message catch event.
+    -->
+    <bpmn:intermediateCatchEvent id="CatchEvent_InterestRatePublished" name="Interest rate published">
+      <bpmn:incoming>Flow_ToAwaitInterestRate</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToApplyInterestRate</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_InterestRatePublished" signalRef="Signal_InterestRatePublished" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ToApplyInterestRate" sourceRef="CatchEvent_InterestRatePublished" targetRef="ServiceTask_ApplyInterestRate" />
+    <!--
+      The signal brought no data, so this task reads the published rate from the
+      application's own data. That is where a signal differs from a message once more: a
+      message is correlated for one aggregate, which the application can write beforehand;
+      a broadcast has no aggregate to write to.
+    -->
+    <bpmn:serviceTask id="ServiceTask_ApplyInterestRate" name="Apply interest rate" camunda:expression="${applyInterestRate}">
+      <bpmn:incoming>Flow_ToApplyInterestRate</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanOffered</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanOffered" sourceRef="ServiceTask_ApplyInterestRate" targetRef="EndEvent_LoanOffered" />
+    <bpmn:endEvent id="EndEvent_LoanOffered" name="Loan offered">
+      <bpmn:incoming>Flow_ToLoanOffered</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <!-- The signal name is the string the business code passes to 'sendSignal'. -->
+  <bpmn:signal id="Signal_InterestRatePublished" name="InterestRatePublished" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="145" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RetrieveCreditRating_di" bpmnElement="ServiceTask_RetrieveCreditRating">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CatchEvent_InterestRatePublished_di" bpmnElement="CatchEvent_InterestRatePublished">
+        <dc:Bounds x="402" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="379" y="145" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ApplyInterestRate_di" bpmnElement="ServiceTask_ApplyInterestRate">
+        <dc:Bounds x="500" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanOffered_di" bpmnElement="EndEvent_LoanOffered">
+        <dc:Bounds x="662" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="650" y="145" width="63" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToAwaitInterestRate_di" bpmnElement="Flow_ToAwaitInterestRate">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="402" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToApplyInterestRate_di" bpmnElement="Flow_ToApplyInterestRate">
+        <di:waypoint x="438" y="120" />
+        <di:waypoint x="500" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanOffered_di" bpmnElement="Flow_ToLoanOffered">
+        <di:waypoint x="600" y="120" />
+        <di:waypoint x="662" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

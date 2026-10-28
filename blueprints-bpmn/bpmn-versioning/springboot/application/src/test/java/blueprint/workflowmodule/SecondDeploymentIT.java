@@ -42,16 +42,21 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * </p>
  *
  * <p>
- * The test runs where the engine is the test's own, which is the {@code camunda7} profile.
- * The dispatch is checked by version number, and only an engine which starts empty counts
- * from one. A Camunda 8 cluster keeps every version deployed before, the one of the module's
- * own test included, so there the old model would not be version 1.
+ * The test runs where the engine is the test's own, which are the profiles of the embedded
+ * engines, {@code camunda7} and {@code operaton}. The dispatch is checked by version number,
+ * and only an engine which starts empty counts from one. A Camunda 8 cluster keeps every
+ * version deployed before, the one of the module's own test included, so there the old
+ * model would not be version 1.
  * </p>
  */
 @ExtendWith(OutputCaptureExtension.class)
 public class SecondDeploymentIT {
 
-  private static final String BPMS = "camunda7";
+  /** The profile of the build, which is also the adapter id of its engine. */
+  private static final String BPMS = System.getProperty("spring.profiles.active", "");
+
+  /** The engines which run inside the application and so start empty. */
+  private static final String EMBEDDED_ENGINES = "camunda7|operaton";
 
   /**
    * Where the first boot reads its BPMN files: the model as it was before the change. The
@@ -73,7 +78,7 @@ public class SecondDeploymentIT {
       final CapturedOutput output) throws Exception {
 
     assumeTrue(
-        BPMS.equals(System.getProperty("spring.profiles.active")),
+        BPMS.matches(EMBEDDED_ENGINES),
         "this test counts versions from one, which needs an engine of the test's own");
 
     emptyDatabase();

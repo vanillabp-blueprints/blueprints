@@ -137,5 +137,18 @@
         </dependency>
       </dependencies>
     </profile>
+    <profile>
+      <id>operaton</id>
+      <properties>
+        <bpms>operaton</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>operaton-adapter-quarkus</artifactId>
+          <version>${operaton-adapter.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
   </profiles>
 </project>

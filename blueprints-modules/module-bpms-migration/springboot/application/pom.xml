@@ -112,5 +112,58 @@
         </dependency>
       </dependencies>
     </profile>
+    <!--
+      The second migration profile: from Camunda 7 to Operaton, its open source successor.
+      It brings both adapters, like the one above. Both engines run inside the application,
+      so two things keep them apart: a database of its own for Operaton, and one FEEL library
+      for both. Camunda7NextToOperaton.java does both, and only under this profile. The web
+      applications of the two engines have not been tested side by side, so only those of
+      the old BPMS are here.
+    -->
+    <profile>
+      <id>operaton</id>
+      <properties>
+        <bpms>operaton</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>operaton-adapter-spring-boot</artifactId>
+          <version>${operaton-adapter.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.camunda.community.vanillabp</groupId>
+          <artifactId>camunda7-adapter-spring-boot</artifactId>
+          <version>${camunda7-adapter.version}</version>
+          <!--
+            Camunda 7 and Operaton bring two versions of the same FEEL library, and Camunda's
+            copy keeps Operaton's engine from working. So it goes, and Camunda 7 uses its older
+            FEEL implementation instead, see Camunda7NextToOperaton.java.
+          -->
+          <exclusions>
+            <exclusion>
+              <groupId>org.camunda.feel</groupId>
+              <artifactId>feel-engine</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>org.camunda.community.vanillabp</groupId>
+          <artifactId>camunda7-adapter-spring-boot-webapps</artifactId>
+          <version>${camunda7-adapter.version}</version>
+          <!--
+            Camunda 7 and Operaton bring two versions of the same FEEL library, and Camunda's
+            copy keeps Operaton's engine from working. So it goes, and Camunda 7 uses its older
+            FEEL implementation instead, see Camunda7NextToOperaton.java.
+          -->
+          <exclusions>
+            <exclusion>
+              <groupId>org.camunda.feel</groupId>
+              <artifactId>feel-engine</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+      </dependencies>
+    </profile>
   </profiles>
 </project>

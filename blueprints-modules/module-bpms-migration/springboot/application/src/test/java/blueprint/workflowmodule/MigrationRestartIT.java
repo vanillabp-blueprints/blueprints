@@ -46,13 +46,19 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * </p>
  *
  * <p>
- * The test runs where two adapters are configured, which is the {@code camunda8} profile.
- * With a single BPMS there is nothing to migrate to.
+ * The test runs where two adapters are configured, which are the profiles {@code camunda8}
+ * and {@code operaton}. With a single BPMS there is nothing to migrate to.
+ * </p>
+ *
+ * <p>
+ * Under {@code operaton} both engines run inside the application. Operaton then has a
+ * database of its own, and the test gives it a file next to the one of the application.
  * </p>
  */
 public class MigrationRestartIT {
 
-  private static final String NEW_BPMS = "camunda8";
+  /** The migration profile of the build, which is also the adapter id of the new BPMS. */
+  private static final String NEW_BPMS = System.getProperty("spring.profiles.active", "");
 
   private static final String OLD_BPMS = "camunda7";
 
@@ -79,10 +85,10 @@ public class MigrationRestartIT {
   public void theOldWorkflowsKeepRunningWhereTheyWereStarted() throws Exception {
 
     // the migration needs a second BPMS to migrate to, which is what the priority list of
-    // the 'camunda8' profile brings
+    // a migration profile brings
     assumeTrue(
-        NEW_BPMS.equals(System.getProperty("spring.profiles.active")),
-        "these tests need two adapters, which is what the 'camunda8' profile configures");
+        !NEW_BPMS.equals(OLD_BPMS),
+        "these tests need two adapters, which the profiles 'camunda8' and 'operaton' configure");
 
     emptyDatabase();
 
@@ -197,6 +203,10 @@ public class MigrationRestartIT {
         + DATABASE
         + ";AUTO_SERVER=TRUE");
     all.add("--server.port=0");
+    // the database of Operaton's engine, used by the profile 'operaton' only
+    all.add("--blueprint.operaton-datasource.url=jdbc:h2:file:./"
+        + DATABASE
+        + "-operaton;AUTO_SERVER=TRUE");
     return new SpringApplicationBuilder(Application.class)
         .run(all.toArray(String[]::new));
 
@@ -228,17 +238,20 @@ public class MigrationRestartIT {
     final var deadline = System.nanoTime() + TIMEOUT.toNanos();
     Aggregate last = null;
     while (System.nanoTime() < deadline) {
-      last = aggregates
-          .findById(loanRequestId)
-          .orElse(null);
-      if ((last != null) && condition.test(last)) {
-        return last;
-      }
+      // A pause BEFORE the first look, as in the test harness. The aggregate changes when an
+      // operation is asked for, and the BPMS carries it out after the commit. An embedded
+      // engine of the new BPMS, Operaton for example, is then not yet at its next wait state.
       try {
         Thread.sleep(200);
       } catch (final InterruptedException interrupted) {
         Thread.currentThread().interrupt();
         throw new IllegalStateException(interrupted);
+      }
+      last = aggregates
+          .findById(loanRequestId)
+          .orElse(null);
+      if ((last != null) && condition.test(last)) {
+        return last;
       }
     }
     throw new AssertionError("The workflow '"

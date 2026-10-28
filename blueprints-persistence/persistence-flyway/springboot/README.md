@@ -191,6 +191,18 @@ mvn -Pcamunda8 verify        # the BPMS is a Maven profile, never a code change
 Camunda 8 is remote, so a cluster has to run and you have to configure its address, exactly as
 in `module-single`.
 
+[Operaton](https://operaton.org), the open source successor of Camunda 7, is embedded as well
+and needs nothing else either. The BPMN files are the ones of Camunda 7, because Operaton reads
+their `camunda:` attributes:
+
+```bash
+mvn install verify -Poperaton
+```
+
+The `operaton` profile takes the scripts out of Operaton's engine JAR in the same way. Its
+property `operaton-engine.version` is the migration version, and the scripts go to
+`db/migration-operaton`.
+
 Start the application:
 
 ```bash

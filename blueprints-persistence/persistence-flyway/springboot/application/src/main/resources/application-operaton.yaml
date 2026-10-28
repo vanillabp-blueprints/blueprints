@@ -1,0 +1,34 @@
+# Everything specific to Operaton, loaded only while the 'operaton' profile is active.
+# The Maven profile of the same name activates it, so the BPMS is chosen once.
+#
+# Operaton's web applications are served at /operaton by the adapter module this profile
+# adds, and they are configured here because the settings name the adapter id.
+blueprint:
+  schema:
+    # The embedded engine brings tables along, so this build applies them as well. The files come
+    # out of the engine JAR while the application is built, see the operaton profile of
+    # application/pom.xml - the engine version decides what is correct, so nothing is copied into
+    # this repository.
+    application-locations: classpath:db/migration,classpath:db/migration-operaton
+vanillabp:
+  adapters:
+    operaton:
+      # The identifiers of this workflow module are prefixed in the BPMS, which keeps modules
+      # apart without a tenant, and a BPMS is licensed per tenant. BPMN files, business code and
+      # configuration keep the plain names, the adapter translates at every boundary. Switching
+      # the mode of a running application is a migration rather than a setting.
+      name-clash-avoidance: use-prefix
+      # The engine keeps its hands off the schema: Flyway applies the scripts Operaton ships in
+      # its engine JAR, named by the build (see the operaton profile of application/pom.xml).
+      # Leaving this at its default 'true' would have the engine create or upgrade its tables at
+      # boot, which is exactly what a project managing its schema does not want.
+      database-schema-update: false
+      webapps:
+        # A demo administrator, so the blueprint can be operated without setting one up.
+        # An application with an identity provider of its own leaves this section out and
+        # the web applications use that instead.
+        admin-user:
+          id: demo
+          password: demo
+          first-name: Demo
+          last-name: User

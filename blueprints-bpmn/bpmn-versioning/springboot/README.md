@@ -117,6 +117,14 @@ The file is loaded because the Maven profile `camunda8` sets the Spring profile 
 name. So you choose the engine once, on the Maven command line. The build, the tests and
 `spring-boot:run` all follow it.
 
+[Operaton](https://operaton.org), the open source successor of Camunda 7, is embedded as well
+and needs nothing else either. The BPMN files are the ones of Camunda 7, because Operaton reads
+their `camunda:` attributes:
+
+```bash
+mvn install verify -Poperaton
+```
+
 Take the address out and the application does not boot. This is the normal way to work with
 VanillaBP: it checks the configuration while it boots, and the message names the property to
 set.
@@ -211,10 +219,10 @@ workflow started in the second boot ends through `assessRiskAutomatically`. Dele
 method, and the start says so instead: a task definition of a version which workflows still run
 on, and no method which serves it.
 
-The test runs in the `camunda7` profile only, and skips itself in the other one. It checks the
-choice of method by version number, and only an engine which starts empty counts from one. A
-Camunda 8 cluster keeps every version deployed before. So there the older model would not be
-version 1.
+The test runs in the profiles of the embedded engines, `camunda7` and `operaton`, and skips
+itself in the `camunda8` profile. It checks the choice of method by version number, and only an
+engine which starts empty counts from one. A Camunda 8 cluster keeps every version deployed
+before. So there the older model would not be version 1.
 
 ## Documentation
 

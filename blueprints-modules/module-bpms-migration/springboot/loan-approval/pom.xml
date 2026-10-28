@@ -97,5 +97,37 @@
         </dependency>
       </dependencies>
     </profile>
+    <!-- Both adapters again, for the migration to Operaton. -->
+    <profile>
+      <id>operaton</id>
+      <properties>
+        <bpms>operaton</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>operaton-adapter-spring-boot</artifactId>
+          <version>${operaton-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.camunda.community.vanillabp</groupId>
+          <artifactId>camunda7-adapter-spring-boot</artifactId>
+          <version>${camunda7-adapter.version}</version>
+          <scope>test</scope>
+          <!--
+            Camunda 7 and Operaton bring two versions of the same FEEL library, and Camunda's
+            copy keeps Operaton's engine from working. So it goes, and Camunda 7 uses its older
+            FEEL implementation instead, see Camunda7NextToOperaton.java.
+          -->
+          <exclusions>
+            <exclusion>
+              <groupId>org.camunda.feel</groupId>
+              <artifactId>feel-engine</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+      </dependencies>
+    </profile>
   </profiles>
 </project>

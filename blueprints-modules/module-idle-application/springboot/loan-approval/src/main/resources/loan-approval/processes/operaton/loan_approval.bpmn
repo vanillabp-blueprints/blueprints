@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToRetrieveCreditRating</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRetrieveCreditRating" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_RetrieveCreditRating" />
+    <!-- The expression names the task definition, which defaults to the method name of the @WorkflowTask. -->
+    <bpmn:serviceTask id="ServiceTask_RetrieveCreditRating" name="Retrieve credit rating" camunda:expression="${retrieveCreditRating}">
+      <bpmn:incoming>Flow_ToRetrieveCreditRating</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToWithdrawalPeriod</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToWithdrawalPeriod" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="CatchEvent_WithdrawalPeriod" />
+    <!--
+      The wait this blueprint is about. A customer may withdraw from the contract, so the
+      money is paid out only afterwards, and the BPMS keeps the due date while the workflow
+      waits. Thirty seconds here, because the test of this blueprint has to finish; a real
+      withdrawal period is two weeks, and nothing about the properties changes with it.
+    -->
+    <bpmn:intermediateCatchEvent id="CatchEvent_WithdrawalPeriod" name="Withdrawal period">
+      <bpmn:incoming>Flow_ToWithdrawalPeriod</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToPayOutLoan</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_WithdrawalPeriod">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ToPayOutLoan" sourceRef="CatchEvent_WithdrawalPeriod" targetRef="ServiceTask_PayOutLoan" />
+    <!-- What proves the application woke up again: this task runs when the timer is due. -->
+    <bpmn:serviceTask id="ServiceTask_PayOutLoan" name="Pay out the loan" camunda:expression="${payOutLoan}">
+      <bpmn:incoming>Flow_ToPayOutLoan</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanPaidOut</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanPaidOut" sourceRef="ServiceTask_PayOutLoan" targetRef="EndEvent_LoanPaidOut" />
+    <bpmn:endEvent id="EndEvent_LoanPaidOut" name="Loan paid out">
+      <bpmn:incoming>Flow_ToLoanPaidOut</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="145" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RetrieveCreditRating_di" bpmnElement="ServiceTask_RetrieveCreditRating">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CatchEvent_WithdrawalPeriod_di" bpmnElement="CatchEvent_WithdrawalPeriod">
+        <dc:Bounds x="392" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="370" y="145" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_PayOutLoan_di" bpmnElement="ServiceTask_PayOutLoan">
+        <dc:Bounds x="480" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanPaidOut_di" bpmnElement="EndEvent_LoanPaidOut">
+        <dc:Bounds x="632" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="617" y="145" width="68" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToWithdrawalPeriod_di" bpmnElement="Flow_ToWithdrawalPeriod">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="392" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToPayOutLoan_di" bpmnElement="Flow_ToPayOutLoan">
+        <di:waypoint x="428" y="120" />
+        <di:waypoint x="480" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanPaidOut_di" bpmnElement="Flow_ToLoanPaidOut">
+        <di:waypoint x="580" y="120" />
+        <di:waypoint x="632" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

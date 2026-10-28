@@ -162,6 +162,14 @@ Camunda 8 is a remote engine, so a cluster has to run. Its address is in
 `application/src/main/resources/application-camunda8.yaml`, and the test of each module has a
 copy.
 
+[Operaton](https://operaton.org), the open source successor of Camunda 7, is embedded as well
+and needs nothing else either. The BPMN files are the ones of Camunda 7, because Operaton reads
+their `camunda:` attributes:
+
+```bash
+mvn install verify -Poperaton
+```
+
 Start the application:
 
 ```bash

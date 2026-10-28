@@ -77,17 +77,19 @@ has no reason to ask.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|            File             |                                             What is different                                              |
-|-----------------------------|------------------------------------------------------------------------------------------------------------|
-| `application/pom.xml`       | the second profile brings BOTH adapters, because during a migration the old BPMS is still there            |
-| `application-camunda7.yaml` | the state before the migration: one adapter, nothing to prioritize                                         |
-| `application-camunda8.yaml` | the state during it: the priority list, both adapters, and the workflow which stays behind                 |
-| `application.yaml`          | a FILE database, because the scenario restarts the application                                             |
-| `loan_approval.bpmn`        | a user task and a message catch event, the two wait states the election is shown with                      |
-| `loan_repayment.bpmn`       | the second workflow, whose priority list names the old BPMS alone                                          |
-| `loanrepayment/`            | its use case: the classes carry its name, because otherwise two use cases in one application would collide |
-| `MigrationIT.java`          | starts, routes and finishes workflows in both BPMS                                                         |
-| `MigrationRestartIT.java`   | the migration itself: two boots, one database, the workflows of the first boot finished in the second      |
+|             File              |                                                 What is different                                                  |
+|-------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `application/pom.xml`         | the profiles `camunda8` and `operaton` bring BOTH adapters, because during a migration the old BPMS is still there |
+| `application-camunda7.yaml`   | the state before the migration: one adapter, nothing to prioritize                                                 |
+| `application-camunda8.yaml`   | the state during it: the priority list, both adapters, and the workflow which stays behind                         |
+| `application-operaton.yaml`   | the same state for the migration to Operaton, with a database of its own for Operaton                              |
+| `Camunda7NextToOperaton.java` | what two embedded engines need besides configuration, under the `operaton` profile only                            |
+| `application.yaml`            | a FILE database, because the scenario restarts the application                                                     |
+| `loan_approval.bpmn`          | a user task and a message catch event, the two wait states the election is shown with                              |
+| `loan_repayment.bpmn`         | the second workflow, whose priority list names the old BPMS alone                                                  |
+| `loanrepayment/`              | its use case: the classes carry its name, because otherwise two use cases in one application would collide         |
+| `MigrationIT.java`            | starts, routes and finishes workflows in both BPMS                                                                 |
+| `MigrationRestartIT.java`     | the migration itself: two boots, one database, the workflows of the first boot finished in the second              |
 
 The user task alone is [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user-task-springboot),
 the message alone is [`bpmn-message-correlation`](https://github.com/vanillabp-blueprints/bpmn-message-correlation-springboot).
@@ -115,6 +117,24 @@ mvn install verify -Pcamunda8
 
 The address of the cluster and everything else specific to that engine are in
 `application/src/main/resources/application-camunda8.yaml`.
+
+The second migration goes from Camunda 7 to [Operaton](https://operaton.org), its open source
+successor. Both engines are embedded, so nothing else has to run:
+
+```bash
+mvn install verify -Poperaton
+```
+
+Its profile file `application-operaton.yaml` describes the same state as the one of `camunda8`:
+both adapters, Operaton first, and the repayment stays with Camunda 7. Two engines inside one
+application need two things more. Operaton gets a database of its own, because two engines must
+not share one set of tables. And Camunda 7 uses its older FEEL implementation, because both
+engines bring the same FEEL library in two versions. FEEL is the expression language of decision
+tables. `Camunda7NextToOperaton.java` does both, under this profile only. The
+[README of the Operaton adapter](https://github.com/vanillabp/operaton-adapter#side-by-side)
+explains the FEEL library. The walk-through below works the same with `-Poperaton`. Only the
+web applications of Camunda 7 come with this profile, because those of both engines in one
+application have not been tested together.
 
 The database is a file, `target/database/loan-approval`. In this one point the blueprint
 differs from every other one in the catalogue. The scenario stops the application, changes
@@ -186,6 +206,8 @@ says where they are served and how to log in.
 |                                          File                                          |                                            Role                                             |
 |----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
 | `application/src/main/resources/application-camunda8.yaml`                             | the priority list, both adapters, and the workflow-level list of the repayment              |
+| `application/src/main/resources/application-operaton.yaml`                             | the same for the migration to Operaton, and where Operaton keeps its tables                 |
+| `application/src/main/java/.../Camunda7NextToOperaton.java`                            | Camunda 7 without the FEEL library which Operaton brings in another version                 |
 | `application/src/main/resources/application-camunda7.yaml`                             | the same application with one BPMS, which is where a migration starts                       |
 | `loan-approval/src/test/resources/application-camunda7.yaml`                           | the same state for the module's own test, so it runs the scoping mode the application ships |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process with its two wait states                                                        |
@@ -237,7 +259,7 @@ keep the plain names, which is why nothing here mentions the prefix twice. The w
 [Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided)
 explains the modes and what each of them costs.
 
-Both profiles say it for `camunda7`, and this repetition is the point of this section. The mode
+All three profiles say it for `camunda7`, and this repetition is the point of this section. The mode
 decides what the engine calls a process, a message, a signal and an error. So a migration which
 changes it renames everything the old BPMS already holds. The loan approval waiting for
 `ContractSigned` would wait under `loan-approval__ContractSigned`, while the application asks

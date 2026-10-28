@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToRetrieveCreditRating</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRetrieveCreditRating" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_RetrieveCreditRating" />
+    <bpmn:serviceTask id="ServiceTask_RetrieveCreditRating" name="Retrieve credit rating" camunda:expression="${retrieveCreditRating}">
+      <bpmn:incoming>Flow_ToRetrieveCreditRating</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToDecision</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToDecision" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="Gateway_Decision" />
+    <!--
+      THE RECOMMENDED WAY. Both conditions ask the aggregate a question it answers itself
+      ('isRatedAcceptable()', 'isRatedForManualReview()'). The model therefore knows the
+      decisions of the process but nothing about the data behind them: the attribute those
+      getters read may become an enum or three columns without this file being touched, and
+      without migrating the workflows already running.
+    -->
+    <bpmn:exclusiveGateway id="Gateway_Decision" name="How does the rating look?" default="Flow_ToRejectLoan">
+      <bpmn:incoming>Flow_ToDecision</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToApproveLoan</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToRequestManualReview</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToRejectLoan</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_ToApproveLoan" name="good enough" sourceRef="Gateway_Decision" targetRef="ServiceTask_ApproveLoan">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${ratedAcceptable}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToRequestManualReview" name="worth a look" sourceRef="Gateway_Decision" targetRef="ServiceTask_RequestManualReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${ratedForManualReview}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <!-- The default flow: taken when no condition holds, so the process cannot get stuck. -->
+    <bpmn:sequenceFlow id="Flow_ToRejectLoan" name="too risky" sourceRef="Gateway_Decision" targetRef="ServiceTask_RejectLoan" />
+    <bpmn:serviceTask id="ServiceTask_ApproveLoan" name="Approve loan" camunda:expression="${approveLoan}">
+      <bpmn:incoming>Flow_ToApproveLoan</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToNotification</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToNotification" sourceRef="ServiceTask_ApproveLoan" targetRef="Gateway_Notification" />
+    <!--
+      THE WAY NOT TO DO IT, kept here to be seen. This condition reads a raw attribute of
+      the aggregate and carries the threshold itself. It works, and it is what most people
+      write first - but the model now depends on 'amount' being a number in that unit, and
+      the day it becomes a Money object with a currency, every workflow standing at this
+      gateway has to be migrated. Ask the aggregate a question instead.
+    -->
+    <bpmn:exclusiveGateway id="Gateway_Notification" name="How is the customer told?" default="Flow_ToSendEmail">
+      <bpmn:incoming>Flow_ToNotification</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSendPaperLetter</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToSendEmail</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_ToSendPaperLetter" name="large amount" sourceRef="Gateway_Notification" targetRef="ServiceTask_SendPaperLetter">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${amount &gt;= 10000}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToSendEmail" name="otherwise" sourceRef="Gateway_Notification" targetRef="ServiceTask_SendEmail" />
+    <bpmn:serviceTask id="ServiceTask_SendPaperLetter" name="Send paper letter" camunda:expression="${sendPaperLetter}">
+      <bpmn:incoming>Flow_ToSendPaperLetter</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanApprovedByLetter</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="ServiceTask_SendEmail" name="Send email" camunda:expression="${sendEmail}">
+      <bpmn:incoming>Flow_ToSendEmail</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanApprovedByEmail</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="ServiceTask_RequestManualReview" name="Request manual review" camunda:expression="${requestManualReview}">
+      <bpmn:incoming>Flow_ToRequestManualReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToManualReview</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="ServiceTask_RejectLoan" name="Reject loan" camunda:expression="${rejectLoan}">
+      <bpmn:incoming>Flow_ToRejectLoan</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanRejected</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanApprovedByLetter" sourceRef="ServiceTask_SendPaperLetter" targetRef="EndEvent_LoanApproved" />
+    <bpmn:sequenceFlow id="Flow_ToLoanApprovedByEmail" sourceRef="ServiceTask_SendEmail" targetRef="EndEvent_LoanApproved" />
+    <bpmn:sequenceFlow id="Flow_ToManualReview" sourceRef="ServiceTask_RequestManualReview" targetRef="EndEvent_ManualReview" />
+    <bpmn:sequenceFlow id="Flow_ToLoanRejected" sourceRef="ServiceTask_RejectLoan" targetRef="EndEvent_LoanRejected" />
+    <bpmn:endEvent id="EndEvent_LoanApproved" name="Loan approved">
+      <bpmn:incoming>Flow_ToLoanApprovedByLetter</bpmn:incoming>
+      <bpmn:incoming>Flow_ToLoanApprovedByEmail</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_ManualReview" name="Manual review">
+      <bpmn:incoming>Flow_ToManualReview</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_LoanRejected" name="Loan rejected">
+      <bpmn:incoming>Flow_ToLoanRejected</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="282" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="325" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RetrieveCreditRating_di" bpmnElement="ServiceTask_RetrieveCreditRating">
+        <dc:Bounds x="240" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Decision_di" bpmnElement="Gateway_Decision" isMarkerVisible="true">
+        <dc:Bounds x="395" y="275" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="252" y="215" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ApproveLoan_di" bpmnElement="ServiceTask_ApproveLoan">
+        <dc:Bounds x="530" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Notification_di" bpmnElement="Gateway_Notification" isMarkerVisible="true">
+        <dc:Bounds x="680" y="135" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="596" y="196" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_SendPaperLetter_di" bpmnElement="ServiceTask_SendPaperLetter">
+        <dc:Bounds x="790" y="20" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_SendEmail_di" bpmnElement="ServiceTask_SendEmail">
+        <dc:Bounds x="790" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanApproved_di" bpmnElement="EndEvent_LoanApproved">
+        <dc:Bounds x="982" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="966" y="185" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RequestManualReview_di" bpmnElement="ServiceTask_RequestManualReview">
+        <dc:Bounds x="530" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ManualReview_di" bpmnElement="EndEvent_ManualReview">
+        <dc:Bounds x="982" y="282" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="966" y="325" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RejectLoan_di" bpmnElement="ServiceTask_RejectLoan">
+        <dc:Bounds x="530" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanRejected_di" bpmnElement="EndEvent_LoanRejected">
+        <dc:Bounds x="982" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="967" y="465" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
+        <di:waypoint x="188" y="300" />
+        <di:waypoint x="240" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToDecision_di" bpmnElement="Flow_ToDecision">
+        <di:waypoint x="340" y="300" />
+        <di:waypoint x="395" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToApproveLoan_di" bpmnElement="Flow_ToApproveLoan">
+        <di:waypoint x="420" y="275" />
+        <di:waypoint x="420" y="160" />
+        <di:waypoint x="530" y="160" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="428" y="205" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRequestManualReview_di" bpmnElement="Flow_ToRequestManualReview">
+        <di:waypoint x="445" y="300" />
+        <di:waypoint x="530" y="300" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="455" y="282" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRejectLoan_di" bpmnElement="Flow_ToRejectLoan">
+        <di:waypoint x="420" y="325" />
+        <di:waypoint x="420" y="440" />
+        <di:waypoint x="530" y="440" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="428" y="395" width="49" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToNotification_di" bpmnElement="Flow_ToNotification">
+        <di:waypoint x="630" y="160" />
+        <di:waypoint x="680" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSendPaperLetter_di" bpmnElement="Flow_ToSendPaperLetter">
+        <di:waypoint x="705" y="135" />
+        <di:waypoint x="705" y="60" />
+        <di:waypoint x="790" y="60" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="713" y="90" width="71" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSendEmail_di" bpmnElement="Flow_ToSendEmail">
+        <di:waypoint x="705" y="185" />
+        <di:waypoint x="705" y="220" />
+        <di:waypoint x="790" y="220" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="713" y="196" width="49" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanApprovedByLetter_di" bpmnElement="Flow_ToLoanApprovedByLetter">
+        <di:waypoint x="890" y="60" />
+        <di:waypoint x="936" y="60" />
+        <di:waypoint x="936" y="160" />
+        <di:waypoint x="982" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanApprovedByEmail_di" bpmnElement="Flow_ToLoanApprovedByEmail">
+        <di:waypoint x="890" y="220" />
+        <di:waypoint x="936" y="220" />
+        <di:waypoint x="936" y="160" />
+        <di:waypoint x="982" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToManualReview_di" bpmnElement="Flow_ToManualReview">
+        <di:waypoint x="630" y="300" />
+        <di:waypoint x="982" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanRejected_di" bpmnElement="Flow_ToLoanRejected">
+        <di:waypoint x="630" y="440" />
+        <di:waypoint x="982" y="440" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
