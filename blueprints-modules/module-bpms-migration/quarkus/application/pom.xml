@@ -152,8 +152,8 @@
       The second migration profile: from Camunda 7 to Operaton, its open source successor.
       It brings both adapters, like the one above. Both engines run inside the application,
       so two things keep them apart: a datasource of its own for Operaton, which
-      application-operaton.yaml declares, and one FEEL library for both, which
-      Camunda7NextToOperaton.java and the exclusion below take care of.
+      application-operaton.yaml declares, and one FEEL library for both, which the exclusion
+      below and application-operaton.yaml take care of.
     -->
     <profile>
       <id>operaton</id>
@@ -173,7 +173,7 @@
           <!--
             Camunda 7 and Operaton bring two versions of the same FEEL library, and Camunda's
             copy keeps Operaton's engine from working. So it goes, and Camunda 7 uses its older
-            FEEL implementation instead, see Camunda7NextToOperaton.java.
+            FEEL implementation instead, see application-operaton.yaml.
           -->
           <exclusions>
             <exclusion>

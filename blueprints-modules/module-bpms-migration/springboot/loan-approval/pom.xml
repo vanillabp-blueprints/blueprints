@@ -118,7 +118,7 @@
           <!--
             Camunda 7 and Operaton bring two versions of the same FEEL library, and Camunda's
             copy keeps Operaton's engine from working. So it goes, and Camunda 7 uses its older
-            FEEL implementation instead, see Camunda7NextToOperaton.java.
+            FEEL implementation instead, see application-operaton.yaml.
           -->
           <exclusions>
             <exclusion>
