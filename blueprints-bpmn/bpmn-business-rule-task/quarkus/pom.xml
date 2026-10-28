@@ -24,7 +24,7 @@
     <bpms>none</bpms>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
-    <quarkus.version>3.40.1</quarkus.version>
+    <quarkus.version>3.40.1.1</quarkus.version>
     <jandex-maven-plugin.version>3.6.0</jandex-maven-plugin.version>
     <!--
       Without a parent POM nothing manages the versions of the build plugins, and an
@@ -32,8 +32,8 @@
       Naming them keeps a build reproducible.
     -->
     <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
-    <maven-surefire-plugin.version>3.6.0</maven-surefire-plugin.version>
-    <maven-failsafe-plugin.version>3.6.0</maven-failsafe-plugin.version>
+    <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
+    <maven-failsafe-plugin.version>3.6.1</maven-failsafe-plugin.version>
     <!-- Not part of the Quarkus BOM, so this blueprint says which version it uses. -->
     <lombok.version>1.18.48</lombok.version>
     <assertj.version>3.27.7</assertj.version>
