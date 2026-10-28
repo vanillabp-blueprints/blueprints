@@ -115,8 +115,9 @@
     <!--
       The second migration profile: from Camunda 7 to Operaton, its open source successor.
       It brings both adapters, like the one above. Both engines run inside the application,
-      so two things keep them apart: a database of its own for Operaton, and one FEEL library
-      for both. Camunda7NextToOperaton.java does both, and only under this profile. The web
+      so two things keep them apart: a database of its own for Operaton, which
+      OperatonDatabase.java builds under this profile only, and one FEEL library for both,
+      which the exclusions below and application-operaton.yaml take care of. The web
       applications of the two engines have not been tested side by side, so only those of
       the old BPMS are here.
     -->
@@ -138,7 +139,7 @@
           <!--
             Camunda 7 and Operaton bring two versions of the same FEEL library, and Camunda's
             copy keeps Operaton's engine from working. So it goes, and Camunda 7 uses its older
-            FEEL implementation instead, see Camunda7NextToOperaton.java.
+            FEEL implementation instead, see application-operaton.yaml.
           -->
           <exclusions>
             <exclusion>
@@ -154,7 +155,7 @@
           <!--
             Camunda 7 and Operaton bring two versions of the same FEEL library, and Camunda's
             copy keeps Operaton's engine from working. So it goes, and Camunda 7 uses its older
-            FEEL implementation instead, see Camunda7NextToOperaton.java.
+            FEEL implementation instead, see application-operaton.yaml.
           -->
           <exclusions>
             <exclusion>

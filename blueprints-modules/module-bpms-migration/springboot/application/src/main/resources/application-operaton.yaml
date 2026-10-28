@@ -4,7 +4,7 @@
 #
 # Both engines run inside this application, and two engines must not share one set of
 # tables. Camunda 7 keeps its tables in the application's database, where they were before
-# the migration. Operaton gets a database of its own, which Camunda7NextToOperaton.java builds
+# the migration. Operaton gets a database of its own, which OperatonDatabase.java builds
 # from the address below.
 blueprint:
   operaton-datasource:
@@ -31,6 +31,14 @@ vanillabp:
       # change how the OLD BPMS is addressed in the middle of the migration. A message for a
       # loan approval started before the switch would then correlate against nothing.
       name-clash-avoidance: use-prefix
+      # Camunda 7 and Operaton bring the same FEEL library, the expression language of
+      # decision tables, in two versions, and the Camunda 7 engine does not start with
+      # Operaton's. So the POM removes Camunda's copy, and Camunda 7 uses its older FEEL
+      # implementation, which does without that library. It covers what simple decision
+      # tables use. This blueprint has no decision at all, but the engine needs the switch to
+      # start. The README of the Operaton adapter explains it:
+      # https://github.com/vanillabp/operaton-adapter#side-by-side
+      dmn-feel-legacy-behavior: true
       webapps:
         admin-user:
           id: demo

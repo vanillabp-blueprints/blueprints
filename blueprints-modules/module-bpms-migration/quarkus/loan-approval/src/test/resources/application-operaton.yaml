@@ -33,6 +33,8 @@ vanillabp:
       # profile file: the default would be 'by-adapter', and then the migration state would
       # address Camunda 7 differently than the state before it.
       name-clash-avoidance: use-prefix
+      # Camunda's copy of the FEEL library is removed, see the application's profile file.
+      dmn-feel-legacy-behavior: true
       # With a second datasource in the application, every embedded engine names its own.
       # 'default' is the application's datasource, where Camunda 7 had its tables before.
       data-source-name: default
