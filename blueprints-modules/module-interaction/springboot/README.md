@@ -69,7 +69,7 @@ need to know the waiting one.
 
 Having two workflow modules at all is the subject of that blueprint, so it is not repeated
 here. Each module brings an auto-configuration and wires itself. It names its beans
-`<module-id>_<SimpleName>` and keeps its resources below a directory of its own. The
+`<workflow-module-id>_<SimpleName>` and keeps its resources below a directory of its own. The
 application sets `name-clash-avoidance: use-prefix`, so the two modules cannot collide inside
 the engine. The only new thing here is the border between them.
 
