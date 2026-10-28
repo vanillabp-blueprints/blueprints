@@ -92,6 +92,14 @@ The file is loaded because the Maven profile `camunda8` makes the config profile
 name the parent of the profile the application runs in. So you choose the engine once, on the
 Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
+[Operaton](https://operaton.org), the open source successor of Camunda 7, is embedded as well
+and needs nothing else either. The BPMN files are the ones of Camunda 7, because Operaton reads
+their `camunda:` attributes:
+
+```bash
+mvn install verify -Poperaton
+```
+
 The Process-Engine-API adapter cannot run this blueprint, and it says so instead of starting
 badly. That API never reports a start the application did not ask for. So deploying such a
 process fails with a message which names the element.
