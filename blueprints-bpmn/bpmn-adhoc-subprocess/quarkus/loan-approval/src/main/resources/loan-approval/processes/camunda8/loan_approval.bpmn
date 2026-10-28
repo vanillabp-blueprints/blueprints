@@ -80,17 +80,17 @@
       -->
       <bpmn:serviceTask id="Check_Income" name="Check income">
         <bpmn:extensionElements>
-          <zeebe:taskDefinition type="checkIncome" />
+          <zeebe:taskDefinition type="checkIncome" retries="3" />
         </bpmn:extensionElements>
       </bpmn:serviceTask>
       <bpmn:serviceTask id="Check_Fraud" name="Check for fraud">
         <bpmn:extensionElements>
-          <zeebe:taskDefinition type="checkFraud" />
+          <zeebe:taskDefinition type="checkFraud" retries="3" />
         </bpmn:extensionElements>
       </bpmn:serviceTask>
       <bpmn:serviceTask id="Check_Collateral" name="Check collateral">
         <bpmn:extensionElements>
-          <zeebe:taskDefinition type="checkCollateral" />
+          <zeebe:taskDefinition type="checkCollateral" retries="3" />
         </bpmn:extensionElements>
       </bpmn:serviceTask>
     </bpmn:adHocSubProcess>

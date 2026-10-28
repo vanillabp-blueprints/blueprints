@@ -131,6 +131,10 @@ Credit rating of loan approval '0f7c…' is 50, awarded by 'acme-rating'
 Show the result -> http://localhost:8080/api/loan-approval/0f7c…
 ```
 
+On Camunda 8 the model has to ask for that retry. Its `zeebe:taskDefinition` writes
+`retries="3"`. Without the attribute, the adapter fails the job with no retries left, so the
+first refusal would be an incident.
+
 Ask for a small amount to see the other outcome. A rating of 5 is below the configured minimum
 of 10. So the loan is rejected, and the workflow ends through the error boundary event:
 

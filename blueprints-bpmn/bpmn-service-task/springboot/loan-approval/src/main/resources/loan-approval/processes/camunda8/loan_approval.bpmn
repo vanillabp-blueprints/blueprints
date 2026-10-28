@@ -12,7 +12,7 @@
     -->
     <bpmn:serviceTask id="ServiceTask_RetrieveCreditRating" name="Retrieve credit rating">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="retrieveCreditRating" />
+        <zeebe:taskDefinition type="retrieveCreditRating" retries="3" />
         <zeebe:ioMapping>
           <zeebe:input source="=&#34;acme-rating&#34;" target="ratingProvider" />
         </zeebe:ioMapping>
