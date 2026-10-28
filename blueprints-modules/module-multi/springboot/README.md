@@ -78,7 +78,7 @@ hurts:
   one called `ApiController`, and Spring names a bean after its class. So the second module to
   be registered ends the boot with *conflicts with existing, non-compatible bean definition*, a
   message about a name nobody wrote. That is why each module generates its bean names as
-  `<module-id>_<SimpleName>`, so they read `loan-approval_Service` and
+  `<workflow-module-id>_<SimpleName>`, so they read `loan-approval_Service` and
   `loan-repayment_Service`. It takes one class per module which says which module it is
   (`LoanApprovalBeanNames`). The same generator covers the repositories. From then on a stack
   trace or an actuator listing shows these names. `BeanNamesPerModuleIT` keeps it that way,
@@ -112,7 +112,7 @@ vanillabp:
   stronger, and it costs more.
 - `none`: nothing is scoped, and the application promises that its identifiers are unique. The
   adapter warns about it at startup. You give that promise with
-  `vanillabp.adapters.<id>.accept-unscoped-identifiers: true`.
+  `vanillabp.adapters.<adapter-id>.accept-unscoped-identifiers: true`.
 
 **Changing the mode later is a migration, not a setting.** A running workflow is found by the
 identifiers it was started with. So a switch makes running workflows unreachable. The way

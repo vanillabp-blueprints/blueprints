@@ -116,7 +116,7 @@ vanillabp:
   stronger, and it costs more.
 - `none`: nothing is scoped, and the application promises that its identifiers are unique. The
   adapter warns about it at startup. You give that promise with
-  `vanillabp.adapters.<id>.accept-unscoped-identifiers: true`.
+  `vanillabp.adapters.<adapter-id>.accept-unscoped-identifiers: true`.
 
 **Changing the mode later is a migration, not a setting.** A running workflow is found by the
 identifiers it was started with. So a switch makes running workflows unreachable. The way

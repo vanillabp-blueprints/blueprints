@@ -502,11 +502,17 @@ blueprint POM, and that adapter documents its version. Neither is repeated here.
 to look up a version is a second place to have it wrong.
 
 An adapter may carry a compatibility value inside its version. Where it does, the engine the CI
-starts has to move with it. That is why `bin/camunda8_cluster.sh` pins a version at all.
-Renovate cannot cross that boundary on its own. `renovate.json` extends the preset which that
-adapter ships, because that preset reads the value. The adapter which carries the value
-documents what it means, for Camunda 8 under
+starts has to move with it. Renovate cannot cross that boundary on its own. `renovate.json`
+extends the preset which that adapter ships, because that preset reads the value. The adapter
+which carries the value documents what it means, for Camunda 8 under
 [release lines](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter#release-lines).
+
+`bin/camunda8_cluster.sh` has no version of its own. It reads the adapter version from the
+blueprint POMs, fetches the POM of that adapter and starts the Camunda version which that POM
+names for `io.camunda:camunda-client-java`. This client is the lowest cluster version the adapter
+accepts. So the cluster moves with the adapter. A pin used to be here, and it fell behind: it
+said 8.10.0 while the adapter was built against 8.10.5. Set `CAMUNDA_VERSION` to run another
+version on purpose.
 
 ## What CI builds
 
