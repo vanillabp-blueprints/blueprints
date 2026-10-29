@@ -46,13 +46,14 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * </p>
  *
  * <p>
- * The test runs where two adapters are configured, which are the profiles {@code camunda8}
- * and {@code operaton}. With a single BPMS there is nothing to migrate to.
+ * The test runs where two adapters are configured, which are the profiles {@code camunda8},
+ * {@code operaton} and {@code cibseven}. With a single BPMS there is nothing to migrate to.
  * </p>
  *
  * <p>
- * Under {@code operaton} both engines run inside the application. Operaton then has a
- * database of its own, and the test gives it a file next to the one of the application.
+ * Under {@code operaton} and {@code cibseven} both engines run inside the application. The new
+ * engine then has a database of its own, and the test gives it a file next to the one of the
+ * application.
  * </p>
  */
 public class MigrationRestartIT {
@@ -88,7 +89,8 @@ public class MigrationRestartIT {
     // a migration profile brings
     assumeTrue(
         !NEW_BPMS.equals(OLD_BPMS),
-        "these tests need two adapters, which the profiles 'camunda8' and 'operaton' configure");
+        "these tests need two adapters, which the profiles 'camunda8', 'operaton' and 'cibseven'"
+            + " configure");
 
     emptyDatabase();
 
@@ -207,6 +209,10 @@ public class MigrationRestartIT {
     all.add("--blueprint.operaton-datasource.url=jdbc:h2:file:./"
         + DATABASE
         + "-operaton;AUTO_SERVER=TRUE");
+    // the database of CIB seven's engine, used by the profile 'cibseven' only
+    all.add("--blueprint.cibseven-datasource.url=jdbc:h2:file:./"
+        + DATABASE
+        + "-cibseven;AUTO_SERVER=TRUE");
     return new SpringApplicationBuilder(Application.class)
         .run(all.toArray(String[]::new));
 

@@ -19,8 +19,8 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  *
  * <p>
  * The tests run only where two adapters are configured, which are the profiles
- * {@code camunda8} and {@code operaton}: each brings two adapters along, because a migration
- * is the state in which the old BPMS is still there. The priority list of the profile says
+ * {@code camunda8}, {@code operaton} and {@code cibseven}: each brings two adapters along,
+ * because a migration is the state in which the old BPMS is still there. The priority list of the profile says
  * which of them is the new BPMS and which the old one. Under the profile {@code camunda7}
  * there is one BPMS and nothing to route, so these tests are skipped rather than
  * duplicated.
