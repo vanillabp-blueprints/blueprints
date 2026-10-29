@@ -34,9 +34,9 @@ import yaml
 
 PLATFORMS = ("springboot", "quarkus")
 
-# The engines the build matrix can run: Camunda 7 and Operaton are embedded, Camunda 8 is
-# started as a container by the workflow.
-RUNNABLE = ("camunda7", "camunda8", "operaton")
+# The engines the build matrix can run: Camunda 7, Operaton and CIB seven are embedded,
+# Camunda 8 is started as a container by the workflow.
+RUNNABLE = ("camunda7", "camunda8", "operaton", "cibseven")
 
 
 def blueprint_directories(root):

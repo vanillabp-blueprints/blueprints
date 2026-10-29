@@ -1,0 +1,49 @@
+# Everything specific to CIB seven, loaded only while the 'cibseven' profile is active.
+# The Maven profile of the same name activates it, so the BPMS is chosen once.
+#
+# The key this blueprint is about lives here rather than in application.yaml, because it
+# belongs to one engine: CIB seven runs embedded and its job executor is what polls the
+# database of this application. On a remote BPMS that polling happens in the cluster and
+# this file is not loaded at all.
+vanillabp:
+  adapters:
+    cibseven:
+      # The identifiers of this workflow module are prefixed in the BPMS, which keeps modules
+      # apart without a tenant, and a BPMS is licensed per tenant. BPMN files, business code and
+      # configuration keep the plain names, the adapter translates at every boundary. Switching
+      # the mode of a running application is a migration rather than a setting.
+      name-clash-avoidance: use-prefix
+      # Without this key the job executor asks the database for work every 5 seconds,
+      # widening to 60 while it finds none. With it, a cycle which found nothing asks once
+      # when the next job is due and waits for that moment, and any transaction which writes
+      # a job wakes it again. That is what lets this application pass the 30 seconds of the
+      # withdrawal period without a single database command.
+      #
+      # The engine's metrics reporter would write its counters to the database every 900
+      # seconds and wake the engine four times an hour, so it stops writing them here. It
+      # keeps counting in memory, and an application which needs the numbers in its database
+      # says so with 'db-metrics-reporting: true' - which is a choice between two costs, not
+      # a setting to turn on by habit.
+      #
+      # One thing is left to the operator: the engine now acquires jobs by due date, and
+      # that order wants an index on the due date of ACT_RU_JOB. The startup message asks
+      # for it. An in-memory H2 does not care, a production database does.
+      sleep-until-something-is-due: true
+      webapps:
+        # A demo administrator, so the blueprint can be operated without setting one up.
+        # An application with an identity provider of its own leaves this section out and
+        # the web applications use that instead.
+        admin-user:
+          id: demo
+          password: demo
+          first-name: Demo
+          last-name: User
+
+# CIB seven's new webclient at /webapp comes with the web applications. It signs its
+# login tokens with this secret and does not start without one. The value is for the
+# demo only. A real application sets its own, the same on every instance, for example
+# from an environment variable. Make one with: openssl rand -base64 120 | tr -d '\n'
+cibseven:
+  webclient:
+    authentication:
+      jwtSecret: oZTyrJ3x7k5b7XHJplVywCce/uIHDPTz1r4UYZkRhh7RZmJjEhalX0V0cyf0+ceGj/0ynEoq+yOslcudCUyzCT9Jt3lrteFn9ZfeIUY8NIR84cd5rzOLg0te86nmVGmoNqiezm2wZ6Xk797SeoYGiNp+eY1nbNkm

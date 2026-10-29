@@ -101,11 +101,10 @@ to the aggregate. If the task never runs, the wiring between BPMN and code is wr
 startup log then names the BPMN task without a method, or the method without a task. If
 `ApplicationSmokeTest` passes, the application boots with the module on the classpath.
 
-`SecondDeploymentIT` has to pass under `camunda7` and `operaton`, and skips itself under
-`camunda8`. It counts
-versions from one, and only an engine which starts empty does that. If it fails at the start
-notice, read the `DEPLOYED VERSIONS` section of the second boot's log. It names what VanillaBP
-found instead. If it fails while waiting for the old workflow, the method kept for version 1
+`SecondDeploymentIT` has to pass under `camunda7`, `operaton` and `cibseven`, and skips itself
+under `camunda8`. It counts versions from one, and only an engine which starts empty does
+that. If it fails at the start notice, read the `DEPLOYED VERSIONS` section of the second boot's
+log. It names what VanillaBP found instead. If it fails while waiting for the old workflow, the method kept for version 1
 did not run.
 
 Do not report success without having run this.

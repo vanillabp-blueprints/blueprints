@@ -94,6 +94,10 @@ The file is loaded because the Maven profile `camunda8` makes the config profile
 name the parent of the profile the application runs in. So you choose the engine once, on the
 Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
+Take the address out and the application does not boot. This is the normal way to work with
+VanillaBP: it checks the configuration while it boots, and the message names the property to
+set.
+
 [Operaton](https://operaton.org), the open source successor of Camunda 7, is embedded as well
 and needs nothing else either. The BPMN files are the ones of Camunda 7, because Operaton reads
 their `camunda:` attributes:
@@ -102,9 +106,13 @@ their `camunda:` attributes:
 mvn install verify -Poperaton
 ```
 
-Take the address out and the application does not boot. This is the normal way to work with
-VanillaBP: it checks the configuration while it boots, and the message names the property to
-set.
+[CIB seven](https://cibseven.org), a fork of Camunda 7 made by CIB software, is embedded as
+well and needs nothing else either. The BPMN files are the ones of Camunda 7, because CIB seven
+reads their `camunda:` attributes:
+
+```bash
+mvn install verify -Pcibseven
+```
 
 Start the application:
 

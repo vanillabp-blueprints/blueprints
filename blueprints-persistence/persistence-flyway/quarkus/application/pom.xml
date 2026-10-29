@@ -310,5 +310,91 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>cibseven</id>
+      <properties>
+        <bpms>cibseven</bpms>
+        <!--
+          The engine whose schema is applied. Flyway needs a version and a file name, CIB seven's
+          scripts have neither, so the build takes them out of the engine JAR of exactly this
+          version and names them. Nothing is copied into this repository: raising this property
+          raises the schema with it.
+        -->
+        <cibseven-engine.version>2.2.0</cibseven-engine.version>
+        <!-- CIB seven ships one set of scripts per database, and this is the one this blueprint runs. -->
+        <cibseven-engine.database>h2</cibseven-engine.database>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>cibseven-adapter-quarkus</artifactId>
+          <version>${cibseven-adapter.version}</version>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>3.11.0</version>
+            <executions>
+              <execution>
+                <id>unpack-engine-schema</id>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <phase>generate-resources</phase>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.cibseven.bpm</groupId>
+                      <artifactId>cibseven-engine</artifactId>
+                      <version>${cibseven-engine.version}</version>
+                      <includes>org/cibseven/bpm/engine/db/create/activiti.${cibseven-engine.database}.create.*.sql</includes>
+                      <outputDirectory>${project.build.directory}/engine-schema</outputDirectory>
+                    </artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.2.0</version>
+            <executions>
+              <execution>
+                <id>name-engine-schema-for-flyway</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>generate-resources</phase>
+                <configuration>
+                  <target>
+                    <!--
+                      Flyway applies files in the order of their version, so the parts are numbered
+                      the way CIB seven's own installation applies them: the engine first, then
+                      identity, history, CMMN and DMN.
+                      CIB seven's modeler has a script, too. It is left out, because the
+                      adapter switches the modeler off.
+                    -->
+                    <property name="engine.scripts" value="${project.build.directory}/engine-schema/org/cibseven/bpm/engine/db/create"/>
+                    <property name="flyway.engine" value="${project.build.outputDirectory}/db/migration-engine"/>
+                    <mkdir dir="${flyway.engine}"/>
+                    <copy file="${engine.scripts}/activiti.${cibseven-engine.database}.create.engine.sql" tofile="${flyway.engine}/V${cibseven-engine.version}.1__cibseven_engine.sql"/>
+                    <copy file="${engine.scripts}/activiti.${cibseven-engine.database}.create.identity.sql" tofile="${flyway.engine}/V${cibseven-engine.version}.2__cibseven_identity.sql"/>
+                    <copy file="${engine.scripts}/activiti.${cibseven-engine.database}.create.history.sql" tofile="${flyway.engine}/V${cibseven-engine.version}.3__cibseven_history.sql"/>
+                    <copy file="${engine.scripts}/activiti.${cibseven-engine.database}.create.case.engine.sql" tofile="${flyway.engine}/V${cibseven-engine.version}.4__cibseven_case_engine.sql"/>
+                    <copy file="${engine.scripts}/activiti.${cibseven-engine.database}.create.case.history.sql" tofile="${flyway.engine}/V${cibseven-engine.version}.5__cibseven_case_history.sql"/>
+                    <copy file="${engine.scripts}/activiti.${cibseven-engine.database}.create.decision.engine.sql" tofile="${flyway.engine}/V${cibseven-engine.version}.6__cibseven_decision_engine.sql"/>
+                    <copy file="${engine.scripts}/activiti.${cibseven-engine.database}.create.decision.history.sql" tofile="${flyway.engine}/V${cibseven-engine.version}.7__cibseven_decision_history.sql"/>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
