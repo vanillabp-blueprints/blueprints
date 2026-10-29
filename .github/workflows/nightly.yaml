@@ -1,9 +1,4 @@
 name: Nightly build
-# Two runs a day, and the midday one is temporary. Until the 2.0 release several stories a
-# day reach the platform. A break found at two in the morning therefore arrives together
-# with everything merged since, and the reader has to work out which change it belongs to.
-# The midday run cuts that wait from sixteen hours to about four. After the release a day
-# carries far fewer changes, and then this run goes and the early one stays alone.
 "on":
   schedule:
     # Early enough to be green or red before anybody starts working.
@@ -15,9 +10,6 @@ name: Nightly build
     # what stands here is the earliest this may start rather than the time it runs at. So a
     # run on the hour waits behind everybody else's hourly jobs for no reason.
     - cron: "7 2 * * *"
-    # Midday UTC, early afternoon in Europe: what went in during the morning gets its
-    # answer while there is still a working day left. Crooked as well, for the same reason.
-    - cron: "7 12 * * *"
   workflow_dispatch:
 permissions:
   contents: read

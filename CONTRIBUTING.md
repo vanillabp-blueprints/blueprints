@@ -614,13 +614,10 @@ integration left two blueprints unable to compile, every pull request stayed gre
 person found it a day later.
 
 `nightly.yaml` is the build which reads the platform snapshot from where it is published. It
-asks to run at 02:07 and at 12:07 UTC. It only asks, because GitHub puts a scheduled run into a
-queue instead of starting it. The odd minute is because that queue is longest on the hour. The
-early run also comes after the four platform repositories which measure the same published
-snapshot, the last of them at 01:11. The midday run belongs to the time before the 2.0 release.
-Several stories a day reach the platform now, and a break found at two in the morning arrives
-together with everything merged since. After the release the midday run goes, and the early run
-stays alone. The head of the workflow file says the same.
+asks to run at 02:07 UTC. It only asks, because GitHub puts a scheduled run into a queue instead
+of starting it. The odd minute is because that queue is longest on the hour. The run also comes
+after the four platform repositories which measure the same published snapshot, the last of them
+at 01:11.
 
 It starts with the job `platform`. That job stops the run when the two secrets are empty,
 because sixty jobs which fail on a 401 look like sixty broken blueprints. It also writes down
