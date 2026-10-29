@@ -36,8 +36,12 @@ jobs:
   # ran into a cluster no Camunda 7 job ever starts.
   discover:
     runs-on: ubuntu-latest
+    # Three parts, one per matrix job below, because GitHub starts no more than 256 jobs
+    # from one matrix. bin/build_matrix.py says more.
     outputs:
-      combinations: "${{ steps.list.outputs.combinations }}"
+      part1: "${{ steps.list.outputs.part1 }}"
+      part2: "${{ steps.list.outputs.part2 }}"
+      part3: "${{ steps.list.outputs.part3 }}"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -51,9 +55,14 @@ jobs:
       - id: list
         name: Collect blueprint and BPMS combinations
         run: |
-          list=$(python bin/build_matrix.py blueprints.yaml)
-          echo "combinations=${list}" >> "$GITHUB_OUTPUT"
-          echo "Building: ${list}"
+          parts=$(python bin/build_matrix.py blueprints.yaml)
+          # one JSON list per line, one line per part
+          number=0
+          while IFS= read -r part; do
+            number=$((number + 1))
+            echo "part${number}=${part}" >> "$GITHUB_OUTPUT"
+            echo "Building in part ${number}: ${part}"
+          done <<< "${parts}"
 
   # Where the platform artifacts come from decides what a night is worth, so that is
   # settled once, before a matrix of sixty jobs starts.
@@ -142,11 +151,20 @@ jobs:
   # adapter-platform-integration and the adapters rather than whatever was cached. A
   # blueprint breaking here means the framework moved, not the blueprint, and that is
   # exactly what this job is for.
-  freshness:
+  #
+  # GitHub starts no more than 256 jobs from one matrix, and with four engines a night has
+  # more. Above that limit the matrix job does not start at all. So there are three matrix
+  # jobs, one per part of the list, with the same steps (the YAML anchor below). They run one
+  # after the other, so no more than twenty jobs run at once, as before. All three name their
+  # jobs 'freshness (...)', which is what 'Nightly issue' looks for.
+  freshness-1:
     # 'platform' as well, because it is what says the published snapshots can be read at
     # all. A matrix which starts without that turns every blueprint red for a reason which
     # has nothing to do with blueprints.
     needs: [discover, platform]
+    # Only an index without a single blueprint leaves the first part empty, and a matrix
+    # without an entry is an error rather than an empty run.
+    if: needs.discover.outputs.part1 != '[]'
     # Spelled out so the name of a job is stable enough to read: 'Nightly issue' looks for
     # the jobs of this matrix by name, and the name GitHub builds from a matrix entry
     # depends on the order of its keys.
@@ -165,8 +183,8 @@ jobs:
       # the morning.
       max-parallel: 20
       matrix:
-        include: "${{ fromJSON(needs.discover.outputs.combinations) }}"
-    steps:
+        include: "${{ fromJSON(needs.discover.outputs.part1) }}"
+    steps: &freshness-steps
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
@@ -238,3 +256,36 @@ jobs:
       - name: Stop the Camunda 8 cluster
         if: always() && matrix.bpms == 'camunda8'
         run: bin/camunda8_cluster.sh stop
+
+  # The second part, after the first one. '!cancelled()' lets it run when the first part is
+  # red, because a red blueprint should not hide the result of the others.
+  freshness-2:
+    needs: [discover, platform, freshness-1]
+    if: >-
+      !cancelled() && needs.discover.result == 'success' && needs.platform.result == 'success'
+      && needs.discover.outputs.part2 != '[]'
+    name: freshness (${{ matrix.blueprint }} on ${{ matrix.bpms }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include: "${{ fromJSON(needs.discover.outputs.part2) }}"
+    steps: *freshness-steps
+
+  # The third part, after the second one, for the same reasons.
+  freshness-3:
+    needs: [discover, platform, freshness-2]
+    if: >-
+      !cancelled() && needs.discover.result == 'success' && needs.platform.result == 'success'
+      && needs.discover.outputs.part3 != '[]'
+    name: freshness (${{ matrix.blueprint }} on ${{ matrix.bpms }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include: "${{ fromJSON(needs.discover.outputs.part3) }}"
+    steps: *freshness-steps

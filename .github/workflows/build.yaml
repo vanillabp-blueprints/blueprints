@@ -43,8 +43,12 @@ jobs:
   # what the CI does.
   discover:
     runs-on: ubuntu-latest
+    # The combinations come in three parts, one per matrix job below, because GitHub starts
+    # no more than 256 jobs from one matrix. bin/build_matrix.py says more.
     outputs:
-      combinations: "${{ steps.list.outputs.combinations }}"
+      part1: "${{ steps.list.outputs.part1 }}"
+      part2: "${{ steps.list.outputs.part2 }}"
+      part3: "${{ steps.list.outputs.part3 }}"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -87,24 +91,34 @@ jobs:
         run: |
           # an empty list means no comparison was possible, and then everything is built
           if [ -s changed.txt ]; then
-            list=$(python bin/build_matrix.py blueprints.yaml changed.txt)
+            parts=$(python bin/build_matrix.py blueprints.yaml changed.txt)
           else
-            list=$(python bin/build_matrix.py blueprints.yaml)
+            parts=$(python bin/build_matrix.py blueprints.yaml)
           fi
-          echo "combinations=${list}" >> "$GITHUB_OUTPUT"
-          echo "Building: ${list}"
+          # one JSON list per line, one line per part
+          number=0
+          while IFS= read -r part; do
+            number=$((number + 1))
+            echo "part${number}=${part}" >> "$GITHUB_OUTPUT"
+            echo "Building in part ${number}: ${part}"
+          done <<< "${parts}"
 
   # What a user gets after the split: the blueprint directory alone, with a plain Maven
   # and without the aggregator, the wrapper or the root POM of this repository. This is
   # the job that has to be green before a blueprint is delivered.
-  blueprint:
+  #
+  # GitHub starts no more than 256 jobs from one matrix, and with four engines a full run has
+  # more. Above that limit the matrix job does not start at all. So there are three matrix
+  # jobs, one per part of the list, with the same steps (the YAML anchor below). They run one
+  # after the other, so no more than twenty jobs run at once, as before.
+  blueprint-1:
     # The aggregator job is what fills the Maven cache, so the matrix waits for it and reads
     # a cache which already holds what every blueprint needs.
     needs: [discover, monorepo]
     # A change which touches no blueprint leaves an empty list, and a matrix without a single
     # entry is an error, not an empty run. The job would fail with nothing to show for it, and
     # the aggregator below still builds every module. 'verified' reads a skipped job as a pass.
-    if: needs.discover.outputs.combinations != '[]'
+    if: needs.discover.outputs.part1 != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -114,8 +128,8 @@ jobs:
       # more than that anyway.
       max-parallel: 20
       matrix:
-        include: "${{ fromJSON(needs.discover.outputs.combinations) }}"
-    steps:
+        include: "${{ fromJSON(needs.discover.outputs.part1) }}"
+    steps: &blueprint-steps
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
@@ -186,6 +200,35 @@ jobs:
       - name: Stop the Camunda 8 cluster
         if: always() && matrix.bpms == 'camunda8'
         run: bin/camunda8_cluster.sh stop
+
+  # The second part, after the first one. '!cancelled()' lets it run when the first part is
+  # red or empty. A red blueprint should not hide the result of the others.
+  blueprint-2:
+    needs: [discover, monorepo, blueprint-1]
+    if: >-
+      !cancelled() && needs.discover.result == 'success' && needs.monorepo.result == 'success'
+      && needs.discover.outputs.part2 != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include: "${{ fromJSON(needs.discover.outputs.part2) }}"
+    steps: *blueprint-steps
+
+  # The third part, after the second one, for the same reasons.
+  blueprint-3:
+    needs: [discover, monorepo, blueprint-2]
+    if: >-
+      !cancelled() && needs.discover.result == 'success' && needs.monorepo.result == 'success'
+      && needs.discover.outputs.part3 != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include: "${{ fromJSON(needs.discover.outputs.part3) }}"
+    steps: *blueprint-steps
 
   # The aggregator adds what a single blueprint does not see: Spotless over the whole
   # repository, and every blueprint compiled and packaged together.
@@ -266,17 +309,22 @@ jobs:
   # directories, and its job names grow with every blueprint added.
   verified:
     if: always()
-    needs: [blueprint, monorepo]
+    needs: [blueprint-1, blueprint-2, blueprint-3, monorepo]
     runs-on: ubuntu-latest
     steps:
       - name: Every build job succeeded
         run: |
-          echo "blueprints: ${{ needs.blueprint.result }}"
-          echo "monorepo:   ${{ needs.monorepo.result }}"
+          echo "blueprints, part 1: ${{ needs.blueprint-1.result }}"
+          echo "blueprints, part 2: ${{ needs.blueprint-2.result }}"
+          echo "blueprints, part 3: ${{ needs.blueprint-3.result }}"
+          echo "monorepo:           ${{ needs.monorepo.result }}"
           # 'skipped' is a pass: a change which touches no blueprint has no matrix to run,
           # and the aggregator below still built every module
-          case "${{ needs.blueprint.result }}" in
-            success|skipped) ;;
-            *) exit 1 ;;
-          esac
+          for result in "${{ needs.blueprint-1.result }}" "${{ needs.blueprint-2.result }}" \
+            "${{ needs.blueprint-3.result }}"; do
+            case "${result}" in
+              success|skipped) ;;
+              *) exit 1 ;;
+            esac
+          done
           [ "${{ needs.monorepo.result }}" = "success" ]

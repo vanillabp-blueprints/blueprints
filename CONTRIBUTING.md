@@ -547,6 +547,11 @@ same rule the split job follows, crossed with the `bpms` list of each blueprint 
 entry, next to everything else it declares. A directory which the index does not know yet is
 built against every engine. Being unknown is a finding of its own, not a reason to test less.
 
+The list is cut into three parts, and the jobs `blueprint-1`, `blueprint-2` and `blueprint-3`
+build one part each, one after the other. GitHub starts no more than 256 jobs from one matrix,
+and a full run with four engines has more. `nightly.yaml` does the same with `freshness-1` to
+`freshness-3`.
+
 A BPMS which runs inside the application needs nothing. One which runs as a server has to be
 started first. `bin/camunda8_cluster.sh` starts the one this repository builds against:
 
