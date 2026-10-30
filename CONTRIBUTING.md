@@ -423,13 +423,14 @@ background at all. An SVG of that cannot be read in GitHub's dark mode.
    cp LICENSE NOTICE .gitignore <group>/<blueprint-id>/<platform>/
    ```
 
-   A blueprint which runs on Camunda 7 runs on Operaton as well, the open source successor of
-   Camunda 7. The script below adds the `operaton` profile next to every `camunda7` profile,
-   the profile files and the copies of the BPMN files. It names what it left for you to do by
-   hand:
+   A blueprint which runs on Camunda 7 runs on Operaton and CIB seven as well, two forks of
+   Camunda 7. The script below adds the `operaton` or the `cibseven` profile next to every
+   `camunda7` profile, the profile files and the copies of the BPMN files. It names what it left
+   for you to do by hand:
 
    ```bash
    python3 bin/add_bpms_profile.py operaton <group>/<blueprint-id>/<platform>
+   python3 bin/add_bpms_profile.py cibseven <group>/<blueprint-id>/<platform>
    ```
 3. Write `README.md` (for humans) and `AGENTS.md` (for agents) from the templates. Render the
    picture of the process which the README shows (see above):
@@ -545,6 +546,11 @@ same rule the split job follows, crossed with the `bpms` list of each blueprint 
 (`bin/build_matrix.py`). A blueprint which cannot run on an engine says so once, in its index
 entry, next to everything else it declares. A directory which the index does not know yet is
 built against every engine. Being unknown is a finding of its own, not a reason to test less.
+
+The list is cut into three parts, and the jobs `blueprint-1`, `blueprint-2` and `blueprint-3`
+build one part each, one after the other. GitHub starts no more than 256 jobs from one matrix,
+and a full run with four engines has more. `nightly.yaml` does the same with `freshness-1` to
+`freshness-3`.
 
 A BPMS which runs inside the application needs nothing. One which runs as a server has to be
 started first. `bin/camunda8_cluster.sh` starts the one this repository builds against:

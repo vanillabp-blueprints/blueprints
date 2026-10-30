@@ -184,5 +184,29 @@
         </dependency>
       </dependencies>
     </profile>
+    <!--
+      The third migration profile: from Camunda 7 to CIB seven, a fork of Camunda 7. It
+      brings both adapters, like the ones above. Both engines run inside the application, so
+      CIB seven gets a datasource of its own, which application-cibseven.yaml declares. Both
+      engines use the same FEEL library in the same version, so nothing is excluded here.
+    -->
+    <profile>
+      <id>cibseven</id>
+      <properties>
+        <bpms>cibseven</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>cibseven-adapter-quarkus</artifactId>
+          <version>${cibseven-adapter.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.camunda.community.vanillabp</groupId>
+          <artifactId>camunda7-adapter-quarkus</artifactId>
+          <version>${camunda7-adapter.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
   </profiles>
 </project>

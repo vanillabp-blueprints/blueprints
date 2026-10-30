@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToRetrieveCreditRating</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRetrieveCreditRating" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_RetrieveCreditRating" />
+    <bpmn:serviceTask id="ServiceTask_RetrieveCreditRating" name="Retrieve credit rating" camunda:expression="${retrieveCreditRating}">
+      <bpmn:incoming>Flow_ToRetrieveCreditRating</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToAwaitSignedContract</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToAwaitSignedContract" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="CatchEvent_ContractSigned" />
+    <!--
+      The workflow waits here until the application correlates the message. Nothing about
+      the correlation is modelled: VanillaBP correlates by the workflow aggregate's ID,
+      which the engine knows as the business key of the instance.
+    -->
+    <bpmn:intermediateCatchEvent id="CatchEvent_ContractSigned" name="Contract signed">
+      <bpmn:incoming>Flow_ToAwaitSignedContract</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToPayOut</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_ContractSigned" messageRef="Message_ContractSigned" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ToPayOut" sourceRef="CatchEvent_ContractSigned" targetRef="ServiceTask_PayOut" />
+    <bpmn:serviceTask id="ServiceTask_PayOut" name="Pay out" camunda:expression="${payOut}">
+      <bpmn:incoming>Flow_ToPayOut</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanPaidOut</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanPaidOut" sourceRef="ServiceTask_PayOut" targetRef="EndEvent_LoanPaidOut" />
+    <bpmn:endEvent id="EndEvent_LoanPaidOut" name="Loan paid out">
+      <bpmn:incoming>Flow_ToLoanPaidOut</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <!-- The message name is the string the business code passes to 'correlateMessage'. -->
+  <bpmn:message id="Message_ContractSigned" name="ContractSigned" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="145" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RetrieveCreditRating_di" bpmnElement="ServiceTask_RetrieveCreditRating">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CatchEvent_ContractSigned_di" bpmnElement="CatchEvent_ContractSigned">
+        <dc:Bounds x="402" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="382" y="145" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_PayOut_di" bpmnElement="ServiceTask_PayOut">
+        <dc:Bounds x="500" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanPaidOut_di" bpmnElement="EndEvent_LoanPaidOut">
+        <dc:Bounds x="662" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="646" y="145" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToAwaitSignedContract_di" bpmnElement="Flow_ToAwaitSignedContract">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="402" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToPayOut_di" bpmnElement="Flow_ToPayOut">
+        <di:waypoint x="438" y="120" />
+        <di:waypoint x="500" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanPaidOut_di" bpmnElement="Flow_ToLoanPaidOut">
+        <di:waypoint x="600" y="120" />
+        <di:waypoint x="662" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

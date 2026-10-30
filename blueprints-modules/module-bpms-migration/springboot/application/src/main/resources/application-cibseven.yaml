@@ -1,0 +1,49 @@
+# The state DURING a migration from Camunda 7 to CIB seven: both BPMS configured at once.
+# Loaded while the 'cibseven' profile applies, and that profile brings BOTH adapters along,
+# because a migration always has the old BPMS still in it.
+#
+# Both engines run inside this application, and two engines must not share one set of
+# tables. Camunda 7 keeps its tables in the application's database, where they were before
+# the migration. CIB seven gets a database of its own, which CibSevenDatabase.java builds
+# from the address below.
+blueprint:
+  cibseven-datasource:
+    url: jdbc:h2:file:./target/database/loan-approval-cibseven;AUTO_SERVER=TRUE
+vanillabp:
+  # The order is the whole configuration. New workflows start in the first adapter of this
+  # list; every operation on a workflow which already exists is routed to the adapter
+  # holding it, which VanillaBP finds by asking the adapters in this order.
+  prioritized-adapters:
+    - cibseven
+    - camunda7
+  adapters:
+    cibseven:
+      # The identifiers of this workflow module are prefixed in the BPMS, which keeps modules
+      # apart without a tenant, and a BPMS is licensed per tenant. BPMN files, business code and
+      # configuration keep the plain names, the adapter translates at every boundary. Switching
+      # the mode of a running application is a migration rather than a setting.
+      name-clash-avoidance: use-prefix
+      # The name of the datasource bean CIB seven's engine runs on.
+      data-source-name: cibsevenDataSource
+    camunda7:
+      # The same mode 'application-camunda7.yaml' set before the migration, and repeating it
+      # here is not redundant: leaving it out would fall back to the default 'by-adapter' and
+      # change how the OLD BPMS is addressed in the middle of the migration. A message for a
+      # loan approval started before the switch would then correlate against nothing.
+      name-clash-avoidance: use-prefix
+      webapps:
+        admin-user:
+          id: demo
+          password: demo
+          first-name: Demo
+          last-name: User
+  workflow-modules:
+    loan-approval:
+      workflows:
+        # The workflow which stays behind: repayments keep starting in the old BPMS while
+        # approvals already start in the new one. The list is the same key one level deeper,
+        # and the most specific non-empty list wins - that is how a migration can be done
+        # one workflow at a time instead of all at once.
+        loan_repayment:
+          prioritized-adapters:
+            - camunda7

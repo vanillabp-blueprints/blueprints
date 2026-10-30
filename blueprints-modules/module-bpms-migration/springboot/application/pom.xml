@@ -166,5 +166,36 @@
         </dependency>
       </dependencies>
     </profile>
+    <!--
+      The third migration profile: from Camunda 7 to CIB seven, a fork of Camunda 7. It
+      brings both adapters, like the ones above. Both engines run inside the application, so
+      CIB seven gets a database of its own, which CibSevenDatabase.java builds under this
+      profile only. Both engines use the same FEEL library in the same version, so nothing
+      is excluded here. The web applications of both engines in one application are not
+      supported, so only those of the old BPMS are here.
+    -->
+    <profile>
+      <id>cibseven</id>
+      <properties>
+        <bpms>cibseven</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>cibseven-adapter-spring-boot</artifactId>
+          <version>${cibseven-adapter.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.camunda.community.vanillabp</groupId>
+          <artifactId>camunda7-adapter-spring-boot</artifactId>
+          <version>${camunda7-adapter.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.camunda.community.vanillabp</groupId>
+          <artifactId>camunda7-adapter-spring-boot-webapps</artifactId>
+          <version>${camunda7-adapter.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
   </profiles>
 </project>

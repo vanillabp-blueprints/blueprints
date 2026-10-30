@@ -100,6 +100,9 @@ The file is loaded because the Maven profile `camunda8` makes the config profile
 name the parent of the profile the application runs in. So you choose the engine once, on the
 Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
+The test which cancels the user task does not run there. The build reports it as a skipped
+test, not as a passing one.
+
 [Operaton](https://operaton.org), the open source successor of Camunda 7, is embedded as well
 and needs nothing else either. The BPMN files are the ones of Camunda 7, because Operaton reads
 their `camunda:` attributes:
@@ -108,8 +111,13 @@ their `camunda:` attributes:
 mvn install verify -Poperaton
 ```
 
-The test which cancels the user task does not run there. The build reports it as a skipped
-test, not as a passing one.
+[CIB seven](https://cibseven.org), a fork of Camunda 7 made by CIB software, is embedded as
+well and needs nothing else either. The BPMN files are the ones of Camunda 7, because CIB seven
+reads their `camunda:` attributes:
+
+```bash
+mvn install verify -Pcibseven
+```
 
 Start the application:
 

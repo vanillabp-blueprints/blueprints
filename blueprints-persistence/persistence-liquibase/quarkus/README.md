@@ -188,8 +188,19 @@ their `camunda:` attributes:
 mvn install verify -Poperaton
 ```
 
+[CIB seven](https://cibseven.org), a fork of Camunda 7 made by CIB software, is embedded as
+well and needs nothing else either. The BPMN files are the ones of Camunda 7, because CIB seven
+reads their `camunda:` attributes:
+
+```bash
+mvn install verify -Pcibseven
+```
+
 The `operaton` profile applies `db/changelog-operaton.xml`. It includes the changelog which
-Operaton ships in its engine JAR, in the same way as for Camunda 7.
+Operaton ships in its engine JAR, in the same way as for Camunda 7. The `cibseven` profile
+applies `db/changelog-cibseven.xml`, which includes the changelog of CIB seven's engine JAR. That
+changelog also creates the tables of CIB seven's modeler. The engine does not use them, because
+the adapter switches the modeler off.
 
 Start the application:
 

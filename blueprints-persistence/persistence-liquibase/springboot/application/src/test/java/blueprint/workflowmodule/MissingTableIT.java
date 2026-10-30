@@ -75,10 +75,12 @@ public class MissingTableIT {
     arguments.add("--spring.main.web-application-type=none");
     final var classLoader = getClass().getClassLoader();
     if (ClassUtils.isPresent("org.camunda.bpm.engine.ProcessEngine", classLoader) || ClassUtils
-        .isPresent("org.operaton.bpm.engine.ProcessEngine", classLoader)) {
+        .isPresent("org.operaton.bpm.engine.ProcessEngine", classLoader) || ClassUtils
+            .isPresent("org.cibseven.bpm.engine.ProcessEngine", classLoader)) {
       // the engine creates its own tables here: a missing engine schema would end the boot
       // earlier and with the engine's message, and VanillaBP's message is the one
-      // under test. The adapter id is the profile of the build, camunda7 or operaton.
+      // under test. The adapter id is the profile of the build, camunda7, operaton or
+      // cibseven.
       arguments.add("--vanillabp.adapters."
           + System.getProperty("spring.profiles.active")
           + ".database-schema-update=true");

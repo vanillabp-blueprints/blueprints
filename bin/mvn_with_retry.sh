@@ -25,8 +25,10 @@ ATTEMPTS="${ATTEMPTS:-2}"
 PAUSE_SECONDS="${PAUSE_SECONDS:-30}"
 
 # What a repository refusing to answer looks like in the log. Every one of these is about
-# reaching an artifact, none of them can be caused by the code being built.
-TRANSFER_FAILURES='Could not transfer artifact|Could not resolve dependencies|Non-resolvable parent POM|status code: 40[39]|status code: 5[0-9][0-9]|Connection reset|Connection timed out|Read timed out|Failed to read artifact descriptor|Remote host terminated the handshake'
+# reaching an artifact, none of them can be caused by the code being built. Under load Maven
+# Central also answers "not found" for artifacts which are there, and Maven then reports
+# them as "could not be resolved".
+TRANSFER_FAILURES='Could not transfer artifact|Could not resolve dependencies|could not be resolved|Non-resolvable parent POM|status code: 40[39]|status code: 5[0-9][0-9]|Connection reset|Connection timed out|Read timed out|Failed to read artifact descriptor|Remote host terminated the handshake'
 
 log="$(mktemp)"
 trap 'rm -f "${log}"' EXIT

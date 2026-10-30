@@ -104,6 +104,14 @@ their `camunda:` attributes:
 mvn install verify -Poperaton
 ```
 
+[CIB seven](https://cibseven.org), a fork of Camunda 7 made by CIB software, is embedded as
+well and needs nothing else either. The BPMN files are the ones of Camunda 7, because CIB seven
+reads their `camunda:` attributes:
+
+```bash
+mvn install verify -Pcibseven
+```
+
 The Process-Engine-API adapter cannot run this blueprint, and it says so instead of starting
 badly. That API never reports a start the application did not ask for. So deploying such a
 process fails with a message which names the element.

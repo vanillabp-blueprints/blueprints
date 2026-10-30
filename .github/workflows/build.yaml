@@ -43,8 +43,12 @@ jobs:
   # what the CI does.
   discover:
     runs-on: ubuntu-latest
+    # The combinations come in three parts, one per matrix job below, because GitHub starts
+    # no more than 256 jobs from one matrix. bin/build_matrix.py says more.
     outputs:
-      combinations: "${{ steps.list.outputs.combinations }}"
+      part1: "${{ steps.list.outputs.part1 }}"
+      part2: "${{ steps.list.outputs.part2 }}"
+      part3: "${{ steps.list.outputs.part3 }}"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -87,24 +91,34 @@ jobs:
         run: |
           # an empty list means no comparison was possible, and then everything is built
           if [ -s changed.txt ]; then
-            list=$(python bin/build_matrix.py blueprints.yaml changed.txt)
+            parts=$(python bin/build_matrix.py blueprints.yaml changed.txt)
           else
-            list=$(python bin/build_matrix.py blueprints.yaml)
+            parts=$(python bin/build_matrix.py blueprints.yaml)
           fi
-          echo "combinations=${list}" >> "$GITHUB_OUTPUT"
-          echo "Building: ${list}"
+          # one JSON list per line, one line per part
+          number=0
+          while IFS= read -r part; do
+            number=$((number + 1))
+            echo "part${number}=${part}" >> "$GITHUB_OUTPUT"
+            echo "Building in part ${number}: ${part}"
+          done <<< "${parts}"
 
   # What a user gets after the split: the blueprint directory alone, with a plain Maven
   # and without the aggregator, the wrapper or the root POM of this repository. This is
   # the job that has to be green before a blueprint is delivered.
-  blueprint:
+  #
+  # GitHub starts no more than 256 jobs from one matrix, and with four engines a full run has
+  # more. Above that limit the matrix job does not start at all. So there are three matrix
+  # jobs, one per part of the list, with the same steps (the YAML anchor below). They run one
+  # after the other, so no more than twenty jobs run at once, as before.
+  blueprint-1:
     # The aggregator job is what fills the Maven cache, so the matrix waits for it and reads
     # a cache which already holds what every blueprint needs.
     needs: [discover, monorepo]
     # A change which touches no blueprint leaves an empty list, and a matrix without a single
     # entry is an error, not an empty run. The job would fail with nothing to show for it, and
     # the aggregator below still builds every module. 'verified' reads a skipped job as a pass.
-    if: needs.discover.outputs.combinations != '[]'
+    if: needs.discover.outputs.part1 != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -114,8 +128,8 @@ jobs:
       # more than that anyway.
       max-parallel: 20
       matrix:
-        include: "${{ fromJSON(needs.discover.outputs.combinations) }}"
-    steps:
+        include: "${{ fromJSON(needs.discover.outputs.part1) }}"
+    steps: &blueprint-steps
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
@@ -168,7 +182,11 @@ jobs:
         # released: the Maven cache of this runner holds yesterday's, and Maven would keep it
         # for the rest of the day. A blueprint would then be built against a framework which
         # no longer exists, which has cost a red build more than once.
-        run: mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
+        # Through bin/mvn_with_retry.sh, like the nightly: with more than 250 jobs some of
+        # them get "not found" from Maven Central for artifacts which are there. The script
+        # repeats only what the log proves to be a transfer, never a failed test.
+        run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
+          -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
           -P${{ matrix.bpms }} install
       # In the summary of this job, because this is where a red blueprint is read. The
@@ -186,6 +204,35 @@ jobs:
       - name: Stop the Camunda 8 cluster
         if: always() && matrix.bpms == 'camunda8'
         run: bin/camunda8_cluster.sh stop
+
+  # The second part, after the first one. '!cancelled()' lets it run when the first part is
+  # red or empty. A red blueprint should not hide the result of the others.
+  blueprint-2:
+    needs: [discover, monorepo, blueprint-1]
+    if: >-
+      !cancelled() && needs.discover.result == 'success' && needs.monorepo.result == 'success'
+      && needs.discover.outputs.part2 != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include: "${{ fromJSON(needs.discover.outputs.part2) }}"
+    steps: *blueprint-steps
+
+  # The third part, after the second one, for the same reasons.
+  blueprint-3:
+    needs: [discover, monorepo, blueprint-2]
+    if: >-
+      !cancelled() && needs.discover.result == 'success' && needs.monorepo.result == 'success'
+      && needs.discover.outputs.part3 != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include: "${{ fromJSON(needs.discover.outputs.part3) }}"
+    steps: *blueprint-steps
 
   # The aggregator adds what a single blueprint does not see: Spotless over the whole
   # repository, and every blueprint compiled and packaged together.
@@ -232,15 +279,37 @@ jobs:
         run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots -DskipTests -DskipITs
           install
-      - name: Resolve what the other engine needs, so the cache holds that too
-        # The build above runs the default profile, so the artifacts of the other engine
-        # would be missing and every job of that engine would fetch them itself.
+      - name: Resolve what the other engines need, so the cache holds that too
+        # The build above runs the default profile, so the artifacts of the other engines
+        # would be missing and every job of such an engine would fetch them itself. With
+        # Operaton and CIB seven that is more than a hundred jobs asking Maven Central for
+        # the same engine, and some of them got "not found" for a jar which is there.
         # --update-snapshots here as well, because this step decides what the cache carries
-        # for the jobs of that engine. Without it the cache handed them yesterday's adapter
+        # for the jobs of these engines. Without it the cache handed them yesterday's adapter
         # out of the restored cache, and only their own --update-snapshots saved them.
-        run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
-          --batch-mode --no-transfer-progress --update-snapshots -Pcamunda8
-          -DskipTests -DskipITs dependency:go-offline
+        run: |
+          for engine in camunda8 operaton cibseven; do
+            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+              --batch-mode --no-transfer-progress --update-snapshots -P"$engine" \
+              -DskipTests -DskipITs dependency:go-offline
+          done
+      - name: Resolve the test provider of Surefire and Failsafe, so the cache holds it too
+        # Surefire and Failsafe fetch their JUnit provider only when tests run, and this job
+        # runs none. So every job of the matrix fetched surefire-junit-platform itself, and
+        # Maven Central answered more than two hundred of them with 429. The versions come
+        # from the parents of Spring Boot and Quarkus and differ by blueprint, so they are
+        # read from the plugins the build resolves, not written down here.
+        run: |
+          plugins="${RUNNER_TEMP}/plugins.txt"
+          ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+            --batch-mode --no-transfer-progress --quiet \
+            dependency:resolve-plugins -DoutputFile="${plugins}" -DappendOutput=true
+          for version in $(grep -ohE 'maven-(surefire|failsafe)-plugin:jar:[0-9][0-9.]*' "${plugins}" \
+              | sed 's/.*://' | sort -u); do
+            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+              --batch-mode --no-transfer-progress \
+              dependency:get -Dartifact="org.apache.maven.surefire:surefire-junit-platform:${version}"
+          done
       # This job writes down the platform for the run as a whole, because it is the one which
       # fills the cache the matrix reads. bin/platform_snapshot.sh says why a version string
       # cannot answer the question and what the report is good for.
@@ -266,17 +335,22 @@ jobs:
   # directories, and its job names grow with every blueprint added.
   verified:
     if: always()
-    needs: [blueprint, monorepo]
+    needs: [blueprint-1, blueprint-2, blueprint-3, monorepo]
     runs-on: ubuntu-latest
     steps:
       - name: Every build job succeeded
         run: |
-          echo "blueprints: ${{ needs.blueprint.result }}"
-          echo "monorepo:   ${{ needs.monorepo.result }}"
+          echo "blueprints, part 1: ${{ needs.blueprint-1.result }}"
+          echo "blueprints, part 2: ${{ needs.blueprint-2.result }}"
+          echo "blueprints, part 3: ${{ needs.blueprint-3.result }}"
+          echo "monorepo:           ${{ needs.monorepo.result }}"
           # 'skipped' is a pass: a change which touches no blueprint has no matrix to run,
           # and the aggregator below still built every module
-          case "${{ needs.blueprint.result }}" in
-            success|skipped) ;;
-            *) exit 1 ;;
-          esac
+          for result in "${{ needs.blueprint-1.result }}" "${{ needs.blueprint-2.result }}" \
+            "${{ needs.blueprint-3.result }}"; do
+            case "${result}" in
+              success|skipped) ;;
+              *) exit 1 ;;
+            esac
+          done
           [ "${{ needs.monorepo.result }}" = "success" ]

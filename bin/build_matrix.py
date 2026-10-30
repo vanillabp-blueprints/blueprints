@@ -22,8 +22,14 @@ all modules on every run regardless, and the nightly run builds every blueprint 
 so nothing is uncovered; what a pull request buys with the narrower matrix is about a hundred
 jobs which do not fetch the same artifacts from Maven Central at the same second.
 
+The list comes out in PARTS parts, one JSON array per line, because GitHub runs at most 256
+jobs from one matrix. With four engines a full run has more than that, so the workflows have
+one matrix job per part. The parts differ in size by one at most, and a part may be empty. A
+part which would grow beyond the limit stops this script with a message, and then PARTS and
+the workflows get one part more.
+
 Usage: bin/build_matrix.py <blueprints.yaml> [<file with changed paths, one per line>]
-       Prints one JSON array of {"blueprint": ..., "bpms": ...} objects.
+       Prints PARTS lines, each one JSON array of {"blueprint": ..., "bpms": ...} objects.
 """
 
 import json
@@ -34,9 +40,18 @@ import yaml
 
 PLATFORMS = ("springboot", "quarkus")
 
-# The engines the build matrix can run: Camunda 7 and Operaton are embedded, Camunda 8 is
-# started as a container by the workflow.
-RUNNABLE = ("camunda7", "camunda8", "operaton")
+# The engines the build matrix can run: Camunda 7, Operaton and CIB seven are embedded,
+# Camunda 8 is started as a container by the workflow.
+RUNNABLE = ("camunda7", "camunda8", "operaton", "cibseven")
+
+# GitHub refuses a matrix of more than 256 jobs, and it does not say so in a way a reader of
+# the run notices: the matrix job just never starts. So the list is cut into this many parts,
+# and the workflows build.yaml and nightly.yaml have one matrix job per part. Three parts take
+# 768 jobs, a full run with four engines has about 260.
+PARTS = 3
+
+# What GitHub allows in one matrix.
+MATRIX_LIMIT = 256
 
 
 def blueprint_directories(root):
@@ -120,8 +135,28 @@ def main():
         for bpms in bpms_of(index, blueprint_id):
             combinations.append({"blueprint": directory, "bpms": bpms})
 
-    print(json.dumps(combinations, separators=(",", ":")))
+    for part in parts_of(combinations):
+        print(json.dumps(part, separators=(",", ":")))
     return 0
+
+
+def parts_of(combinations):
+    """:return: PARTS lists in a row, which differ in size by one at most"""
+
+    size, rest = divmod(len(combinations), PARTS)
+    if size + (1 if rest else 0) > MATRIX_LIMIT:
+        raise SystemExit(
+            f"{len(combinations)} jobs do not fit into {PARTS} matrices of at most"
+            f" {MATRIX_LIMIT} jobs. Raise PARTS in bin/build_matrix.py and add a matrix job"
+            " for the new part to build.yaml and nightly.yaml."
+        )
+    parts = []
+    start = 0
+    for number in range(PARTS):
+        end = start + size + (1 if number < rest else 0)
+        parts.append(combinations[start:end])
+        start = end
+    return parts
 
 
 if __name__ == "__main__":
