@@ -293,6 +293,23 @@ jobs:
               --batch-mode --no-transfer-progress --update-snapshots -P"$engine" \
               -DskipTests -DskipITs dependency:go-offline
           done
+      - name: Resolve the test provider of Surefire and Failsafe, so the cache holds it too
+        # Surefire and Failsafe fetch their JUnit provider only when tests run, and this job
+        # runs none. So every job of the matrix fetched surefire-junit-platform itself, and
+        # Maven Central answered more than two hundred of them with 429. The versions come
+        # from the parents of Spring Boot and Quarkus and differ by blueprint, so they are
+        # read from the plugins the build resolves, not written down here.
+        run: |
+          plugins="${RUNNER_TEMP}/plugins.txt"
+          ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+            --batch-mode --no-transfer-progress --quiet \
+            dependency:resolve-plugins -DoutputFile="${plugins}" -DappendOutput=true
+          for version in $(grep -ohE 'maven-(surefire|failsafe)-plugin:jar:[0-9][0-9.]*' "${plugins}" \
+              | sed 's/.*://' | sort -u); do
+            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+              --batch-mode --no-transfer-progress \
+              dependency:get -Dartifact="org.apache.maven.surefire:surefire-junit-platform:${version}"
+          done
       # This job writes down the platform for the run as a whole, because it is the one which
       # fills the cache the matrix reads. bin/platform_snapshot.sh says why a version string
       # cannot answer the question and what the report is good for.
