@@ -275,15 +275,20 @@ jobs:
         run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots -DskipTests -DskipITs
           install
-      - name: Resolve what the other engine needs, so the cache holds that too
-        # The build above runs the default profile, so the artifacts of the other engine
-        # would be missing and every job of that engine would fetch them itself.
+      - name: Resolve what the other engines need, so the cache holds that too
+        # The build above runs the default profile, so the artifacts of the other engines
+        # would be missing and every job of such an engine would fetch them itself. With
+        # Operaton and CIB seven that is more than a hundred jobs asking Maven Central for
+        # the same engine, and some of them got "not found" for a jar which is there.
         # --update-snapshots here as well, because this step decides what the cache carries
-        # for the jobs of that engine. Without it the cache handed them yesterday's adapter
+        # for the jobs of these engines. Without it the cache handed them yesterday's adapter
         # out of the restored cache, and only their own --update-snapshots saved them.
-        run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
-          --batch-mode --no-transfer-progress --update-snapshots -Pcamunda8
-          -DskipTests -DskipITs dependency:go-offline
+        run: |
+          for engine in camunda8 operaton cibseven; do
+            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+              --batch-mode --no-transfer-progress --update-snapshots -P"$engine" \
+              -DskipTests -DskipITs dependency:go-offline
+          done
       # This job writes down the platform for the run as a whole, because it is the one which
       # fills the cache the matrix reads. bin/platform_snapshot.sh says why a version string
       # cannot answer the question and what the report is good for.
