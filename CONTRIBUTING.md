@@ -589,6 +589,24 @@ from the repository secrets `VANILLABP_USER_NAME` and `VANILLABP_USER_TOKEN`, a 
 blueprint POMs stay free of all this. A blueprint shows what an application needs, and after
 the release that is Maven Central.
 
+### Why `.mvn/maven.config` sets the repository key
+
+Next to every file it downloads, Maven writes a note named `_remote.repositories`. The note says
+which repository the file came from. Maven 3.10 writes the repository id plus a hash of its URL,
+for example `central-98c55166…`. The Quarkus tests resolve the application a second time, inside
+the test JVM, with an older resolver. That resolver looks only for the plain id, `central`. It
+finds the file but not the repository in the note, reports the file as "present, but
+unavailable", and downloads it again from Maven Central.
+
+So every Quarkus job downloaded its application a second time. For `persistence-active-record`
+that was 1020 files, all of them already in the repository. With a few hundred jobs in a run,
+Central answered some of them with 429 or "not found", and a blueprint failed on an artifact
+which Central has. On the 31st of October 2026 three attempts of one run failed this way, each
+in another job. The Quarkus 3.40 test bootstrap brings Maven Resolver 1.9.27.
+`-Daether.system.trackingRepositoryKeyFunction=nid` makes Maven write the plain id again, so
+both resolvers read the same note. It can go when the Quarkus bootstrap uses a resolver which
+reads the new notes.
+
 ### Which platform a run built against
 
 Every framework artifact is `2.0.0-SNAPSHOT`, and the framework publishes under that version
