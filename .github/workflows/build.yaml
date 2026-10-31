@@ -310,6 +310,18 @@ jobs:
               --batch-mode --no-transfer-progress \
               dependency:get -Dartifact="org.apache.maven.surefire:surefire-junit-platform:${version}"
           done
+          # The provider is not all. When the tests run, Surefire also fetches the JUnit
+          # launcher in the version of the JUnit engine the tests use. No POM names that
+          # launcher, so nothing above downloads it, and every job of the matrix asked
+          # Maven Central for it. On the 31st of October 2026 Central answered one of them
+          # with "not found", twice in a row. The versions differ by blueprint here as well,
+          # so they are read from the engines the build put into the repository.
+          for engine in ~/.m2/repository/org/junit/platform/junit-platform-engine/*/; do
+            version="$(basename "${engine}")"
+            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+              --batch-mode --no-transfer-progress \
+              dependency:get -Dartifact="org.junit.platform:junit-platform-launcher:${version}"
+          done
       # This job writes down the platform for the run as a whole, because it is the one which
       # fills the cache the matrix reads. bin/platform_snapshot.sh says why a version string
       # cannot answer the question and what the report is good for.
