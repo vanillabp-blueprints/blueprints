@@ -11,5 +11,5 @@ cb521ad0be01d01e  differs  src/main/java/blueprint/workflowmodule/loanapproval/W
 4f6d9798ac729e02  differs  src/main/java/blueprint/workflowmodule/loanapproval/config/LoanApprovalProperties.java  # configuration is bound to a class on one platform and to an interface on the other
 6dcdfbe2838c4f44  differs  src/main/java/blueprint/workflowmodule/loanapproval/model/AggregateRepository.java  # each platform's repository idiom
 9fb1f8af132dae40  differs  src/test/java/blueprint/workflowmodule/ApplicationSmokeTest.java  # test harness: the beans are asked for in the bean container's own words
-33289af19edd6ccf  differs  src/test/java/blueprint/workflowmodule/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
+907bfb10196dd9b7  differs  src/test/java/blueprint/workflowmodule/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
 d7754fc5324fb76c  differs  src/test/java/blueprint/workflowmodule/loanapproval/LoanApprovalIT.java  # injection annotations, the test class carries @QuarkusTest itself because inheriting it leaves it without a bean, and the aggregate is read through the repository idiom of the platform
