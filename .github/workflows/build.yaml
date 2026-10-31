@@ -135,6 +135,15 @@ jobs:
         with:
           java-version: 25.0.5+8.0.LTS
           distribution: temurin
+      # Maven 3.10 is not used yet. The Central Portal rejects the bundles it builds
+      # (mavenplugins/central-publishing-maven-plugin#78), and Quarkus' test bootstrap cannot
+      # read the repository records it writes, so every Quarkus test downloads everything
+      # again. All vanillabp repositories stay on 3.9 until both are solved.
+      - name: Use Maven 3.9
+        run: |
+          curl -fsSL https://archive.apache.org/dist/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.tar.gz \
+            | tar xz -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/apache-maven-3.9.16/bin" >> "$GITHUB_PATH"
       # Read-only on purpose: the cache is written by the aggregator job, which downloaded
       # everything once. 'cache: maven' of setup-java cannot do this - it keys on the hash of
       # all POMs, so all jobs share ONE cache whose content is whatever the job that saved it
@@ -253,6 +262,15 @@ jobs:
         with:
           java-version: 25.0.5+8.0.LTS
           distribution: temurin
+      # Maven 3.10 is not used yet. The Central Portal rejects the bundles it builds
+      # (mavenplugins/central-publishing-maven-plugin#78), and Quarkus' test bootstrap cannot
+      # read the repository records it writes, so every Quarkus test downloads everything
+      # again. All vanillabp repositories stay on 3.9 until both are solved.
+      - name: Use Maven 3.9
+        run: |
+          curl -fsSL https://archive.apache.org/dist/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.tar.gz \
+            | tar xz -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/apache-maven-3.9.16/bin" >> "$GITHUB_PATH"
       - uses: actions/cache@v6
         with:
           path: ~/.m2/repository
@@ -309,6 +327,18 @@ jobs:
             ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
               --batch-mode --no-transfer-progress \
               dependency:get -Dartifact="org.apache.maven.surefire:surefire-junit-platform:${version}"
+          done
+          # The provider is not all. When the tests run, Surefire also fetches the JUnit
+          # launcher in the version of the JUnit engine the tests use. No POM names that
+          # launcher, so nothing above downloads it, and every job of the matrix asked
+          # Maven Central for it. On the 31st of October 2026 Central answered one of them
+          # with "not found", twice in a row. The versions differ by blueprint here as well,
+          # so they are read from the engines the build put into the repository.
+          for engine in ~/.m2/repository/org/junit/platform/junit-platform-engine/*/; do
+            version="$(basename "${engine}")"
+            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+              --batch-mode --no-transfer-progress \
+              dependency:get -Dartifact="org.junit.platform:junit-platform-launcher:${version}"
           done
       # This job writes down the platform for the run as a whole, because it is the one which
       # fills the cache the matrix reads. bin/platform_snapshot.sh says why a version string
