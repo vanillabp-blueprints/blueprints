@@ -23,6 +23,9 @@ vanillabp:
       # configuration keep the plain names, the adapter translates at every boundary. Switching
       # the mode of a running application is a migration rather than a setting.
       name-clash-avoidance: use-prefix
+      # How long a correlated message waits for the workflow to reach the event which
+      # waits for it. Completing a task does not mean the engine is already there.
+      message-time-to-live: 1m
       # The name of the datasource bean CIB seven's engine runs on.
       data-source-name: cibsevenDataSource
     camunda7:
@@ -31,6 +34,7 @@ vanillabp:
       # change how the OLD BPMS is addressed in the middle of the migration. A message for a
       # loan approval started before the switch would then correlate against nothing.
       name-clash-avoidance: use-prefix
+      message-time-to-live: 1m
       webapps:
         admin-user:
           id: demo

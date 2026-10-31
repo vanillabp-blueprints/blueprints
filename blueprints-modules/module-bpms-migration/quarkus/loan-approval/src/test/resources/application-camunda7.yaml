@@ -9,3 +9,6 @@ vanillabp:
       # configuration the blueprint ships. Without this line the test would fall back to the
       # default 'by-adapter' and address Camunda 7 differently than the application does.
       name-clash-avoidance: use-prefix
+      # How long a correlated message waits for the workflow to reach the event which
+      # waits for it. Completing a task does not mean the engine is already there.
+      message-time-to-live: 1m

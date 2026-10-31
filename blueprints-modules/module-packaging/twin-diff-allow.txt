@@ -18,7 +18,7 @@ cb521ad0be01d01e  differs  loan-approval/src/main/java/com/acme/loanapproval/Wor
 ffd5af58cb78f4f0  differs  loan-approval/src/main/java/com/acme/loanapproval/config/LoanApprovalProperties.java  # configuration is bound to a class on one platform and to an interface on the other
 6dcdfbe2838c4f44  differs  loan-approval/src/main/java/com/acme/loanapproval/model/AggregateRepository.java  # each platform's repository idiom
 95841c7f80d2b443  only-springboot  loan-approval/src/test/java/com/acme/ModuleTestApplication.java  # only one platform needs an application class to boot a workflow module for its test
-33289af19edd6ccf  differs  loan-approval/src/test/java/com/acme/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
+907bfb10196dd9b7  differs  loan-approval/src/test/java/com/acme/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
 d7754fc5324fb76c  differs  loan-approval/src/test/java/com/acme/loanapproval/LoanApprovalIT.java  # injection annotations, the test class carries @QuarkusTest itself, and the aggregate is read through the repository idiom of the platform
 1e139fca8cc81019  differs  loan-repayment/src/main/java/com/acme/loanrepayment/ApiController.java  # the same GET endpoints, written with the HTTP annotations of the platform
 390373b8420587a9  only-springboot  loan-repayment/src/main/java/com/acme/loanrepayment/LoanRepaymentAutoConfiguration.java  # a module contributes its beans through an auto-configuration on one platform; on the other its index does it
@@ -29,5 +29,5 @@ bc3eeb09e3b64ce4  differs  loan-repayment/src/main/java/com/acme/loanrepayment/W
 ba6785db231fbf83  differs  loan-repayment/src/main/java/com/acme/loanrepayment/config/LoanRepaymentProperties.java  # configuration is bound to a class on one platform and to an interface on the other
 6dcdfbe2838c4f44  differs  loan-repayment/src/main/java/com/acme/loanrepayment/model/AggregateRepository.java  # each platform's repository idiom
 95841c7f80d2b443  only-springboot  loan-repayment/src/test/java/com/acme/ModuleTestApplication.java  # only one platform needs an application class to boot a workflow module for its test
-33289af19edd6ccf  differs  loan-repayment/src/test/java/com/acme/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
+907bfb10196dd9b7  differs  loan-repayment/src/test/java/com/acme/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
 4737a0148b29e92d  differs  loan-repayment/src/test/java/com/acme/loanrepayment/LoanRepaymentIT.java  # injection annotations, the test class carries @QuarkusTest itself, and the aggregate is read through the repository idiom of the platform

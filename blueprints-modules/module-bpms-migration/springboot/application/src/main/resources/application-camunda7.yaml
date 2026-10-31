@@ -15,6 +15,9 @@ vanillabp:
       # configuration keep the plain names, the adapter translates at every boundary. Switching
       # the mode of a running application is a migration rather than a setting.
       name-clash-avoidance: use-prefix
+      # How long a correlated message waits for the workflow to reach the event which
+      # waits for it. Completing a task does not mean the engine is already there.
+      message-time-to-live: 1m
       webapps:
         # A demo administrator, so the blueprint can be operated without setting one up.
         # An application with an identity provider of its own leaves this section out and

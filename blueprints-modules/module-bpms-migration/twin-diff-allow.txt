@@ -7,7 +7,7 @@
 201ccde0ac63cae5  only-springboot  application/src/main/java/blueprint/workflowmodule/OperatonDatabase.java  # one platform builds a second datasource in code, the other one declares it in configuration
 38cb19420b75aa70  only-springboot  application/src/main/java/blueprint/workflowmodule/CibSevenDatabase.java  # one platform builds a second datasource in code, the other one declares it in configuration
 9fb1f8af132dae40  differs  application/src/test/java/blueprint/workflowmodule/ApplicationSmokeTest.java  # asking the bean container whether a ProcessService exists is done in the container's own words
-54364e11180def4e  only-springboot  application/src/test/java/blueprint/workflowmodule/MigrationRestartIT.java  # only one platform lets a test boot the application twice, each boot with one of the blueprint's own BPMS profiles, which is what a migration is
+c8ebca299a08496d  only-springboot  application/src/test/java/blueprint/workflowmodule/MigrationRestartIT.java  # only one platform lets a test boot the application twice, each boot with one of the blueprint's own BPMS profiles, which is what a migration is
 10e24a71eacdc968  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/ApiController.java  # the same GET endpoints, written with the HTTP annotations of the platform
 192e6df246199282  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/Service.java  # bean and injection annotations, the configuration accessor and the repository idiom of the platform
 3a168a3dedd310c9  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/Workflow.java  # bean and injection annotations only; both inject ProcessService here and nowhere else
@@ -23,5 +23,5 @@ cf7fafe96743cff1  differs  loan-approval/src/test/java/blueprint/workflowmodule/
 201ccde0ac63cae5  only-springboot  loan-approval/src/test/java/blueprint/workflowmodule/OperatonDatabase.java  # one platform builds a second datasource in code, the other one declares it in configuration
 38cb19420b75aa70  only-springboot  loan-approval/src/test/java/blueprint/workflowmodule/CibSevenDatabase.java  # one platform builds a second datasource in code, the other one declares it in configuration
 7478214e70e9a2b7  only-springboot  loan-approval/src/test/java/blueprint/workflowmodule/TestApplication.java  # only one platform needs an application class to boot a workflow module for its test
-33289af19edd6ccf  differs  loan-approval/src/test/java/blueprint/workflowmodule/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
+907bfb10196dd9b7  differs  loan-approval/src/test/java/blueprint/workflowmodule/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
 b2992ff2518d34cf  differs  loan-approval/src/test/java/blueprint/workflowmodule/loanapproval/LoanApprovalIT.java  # injection annotations, and the test class carries @QuarkusTest itself because inheriting it leaves it without a bean
