@@ -18,12 +18,16 @@ vanillabp:
       # configuration keep the plain names, the adapter translates at every boundary. Switching
       # the mode of a running application is a migration rather than a setting.
       name-clash-avoidance: use-prefix
+      # How long a correlated message waits for the workflow to reach the event which
+      # waits for it. Completing a task does not mean the engine is already there.
+      message-time-to-live: 1m
       data-source-name: operatonDataSource
     camunda7:
       # The mode of the OLD BPMS, spelled out for the same reason as in the application's
       # profile file: the default would be 'by-adapter', and then the migration state would
       # address Camunda 7 differently than the state before it.
       name-clash-avoidance: use-prefix
+      message-time-to-live: 1m
       # Camunda's copy of the FEEL library is removed, see the application's profile file.
       dmn-feel-legacy-behavior: true
   workflow-modules:

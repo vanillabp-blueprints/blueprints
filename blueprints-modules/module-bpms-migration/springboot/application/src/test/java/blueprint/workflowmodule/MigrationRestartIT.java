@@ -244,20 +244,20 @@ public class MigrationRestartIT {
     final var deadline = System.nanoTime() + TIMEOUT.toNanos();
     Aggregate last = null;
     while (System.nanoTime() < deadline) {
-      // A pause BEFORE the first look, as in the test harness. The aggregate changes when an
-      // operation is asked for, and the BPMS carries it out after the commit. An embedded
-      // engine of the new BPMS, Operaton for example, is then not yet at its next wait state.
-      try {
-        Thread.sleep(200);
-      } catch (final InterruptedException interrupted) {
-        Thread.currentThread().interrupt();
-        throw new IllegalStateException(interrupted);
-      }
+      // The first look comes at once. A pause before it would hide a correlation which only
+      // works because the BPMS had time to reach its next wait state. The message
+      // time-to-live of the profiles is what lets a message wait for the workflow.
       last = aggregates
           .findById(loanRequestId)
           .orElse(null);
       if ((last != null) && condition.test(last)) {
         return last;
+      }
+      try {
+        Thread.sleep(200);
+      } catch (final InterruptedException interrupted) {
+        Thread.currentThread().interrupt();
+        throw new IllegalStateException(interrupted);
       }
     }
     throw new AssertionError("The workflow '"
