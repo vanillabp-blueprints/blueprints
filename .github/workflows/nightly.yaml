@@ -82,6 +82,15 @@ jobs:
         with:
           java-version: 25
           distribution: temurin
+      # Maven 3.10 is not used yet. The Central Portal rejects the bundles it builds
+      # (mavenplugins/central-publishing-maven-plugin#78), and Quarkus' test bootstrap cannot
+      # read the repository records it writes, so every Quarkus test downloads everything
+      # again. All vanillabp repositories stay on 3.9 until both are solved.
+      - name: Use Maven 3.9
+        run: |
+          curl -fsSL https://archive.apache.org/dist/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.tar.gz \
+            | tar xz -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/apache-maven-3.9.16/bin" >> "$GITHUB_PATH"
       - name: The credentials for the published snapshots have to be there
         run: |
           missing=""
@@ -190,6 +199,15 @@ jobs:
         with:
           java-version: 25.0.5+8.0.LTS
           distribution: temurin
+      # Maven 3.10 is not used yet. The Central Portal rejects the bundles it builds
+      # (mavenplugins/central-publishing-maven-plugin#78), and Quarkus' test bootstrap cannot
+      # read the repository records it writes, so every Quarkus test downloads everything
+      # again. All vanillabp repositories stay on 3.9 until both are solved.
+      - name: Use Maven 3.9
+        run: |
+          curl -fsSL https://archive.apache.org/dist/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.tar.gz \
+            | tar xz -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/apache-maven-3.9.16/bin" >> "$GITHUB_PATH"
       # Written before the build, so the upload below has the name whatever the build does.
       # 'Nightly issue' builds the same name out of the job name, so the two have to agree:
       # the blueprint path with its slashes turned into dashes, then the BPMS.
