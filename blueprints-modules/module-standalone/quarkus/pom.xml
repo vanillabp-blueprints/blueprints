@@ -36,6 +36,7 @@
     <!-- BPMS adapters are released independently of the platform, so they carry their own version. -->
     <camunda7-adapter.version>2.0.0-SNAPSHOT</camunda7-adapter.version>
     <camunda8-adapter.version>2.0.0-8.10-SNAPSHOT</camunda8-adapter.version>
+    <cibseven-adapter.version>2.0.0-2.2-SNAPSHOT</cibseven-adapter.version>
     <operaton-adapter.version>2.0.0-SNAPSHOT</operaton-adapter.version>
   </properties>
 
@@ -283,6 +284,19 @@
           <groupId>io.vanillabp</groupId>
           <artifactId>operaton-adapter-quarkus</artifactId>
           <version>${operaton-adapter.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>cibseven</id>
+      <properties>
+        <bpms>cibseven</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>cibseven-adapter-quarkus</artifactId>
+          <version>${cibseven-adapter.version}</version>
         </dependency>
       </dependencies>
     </profile>

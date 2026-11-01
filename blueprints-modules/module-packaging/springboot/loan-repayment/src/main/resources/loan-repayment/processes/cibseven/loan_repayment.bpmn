@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_repayment" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <bpmn:process id="loan_repayment" name="Loan repayment" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="StartEvent_RepaymentAgreed" name="Repayment agreed">
+      <bpmn:outgoing>Flow_ToScheduleInstallments</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToScheduleInstallments" sourceRef="StartEvent_RepaymentAgreed" targetRef="ServiceTask_ScheduleInstallments" />
+    <!-- The expression names the task definition, which defaults to the method name of the @WorkflowTask. -->
+    <bpmn:serviceTask id="ServiceTask_ScheduleInstallments" name="Schedule installments" camunda:expression="${scheduleInstallments}">
+      <bpmn:incoming>Flow_ToScheduleInstallments</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToInstallmentsScheduled</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToInstallmentsScheduled" sourceRef="ServiceTask_ScheduleInstallments" targetRef="EndEvent_InstallmentsScheduled" />
+    <bpmn:endEvent id="EndEvent_InstallmentsScheduled" name="Installments scheduled">
+      <bpmn:incoming>Flow_ToInstallmentsScheduled</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_repayment">
+      <bpmndi:BPMNShape id="StartEvent_RepaymentAgreed_di" bpmnElement="StartEvent_RepaymentAgreed">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="145" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ScheduleInstallments_di" bpmnElement="ServiceTask_ScheduleInstallments">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_InstallmentsScheduled_di" bpmnElement="EndEvent_InstallmentsScheduled">
+        <dc:Bounds x="392" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="379" y="145" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToScheduleInstallments_di" bpmnElement="Flow_ToScheduleInstallments">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToInstallmentsScheduled_di" bpmnElement="Flow_ToInstallmentsScheduled">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="392" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

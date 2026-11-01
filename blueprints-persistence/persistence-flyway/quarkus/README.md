@@ -175,8 +175,18 @@ their `camunda:` attributes:
 mvn install verify -Poperaton
 ```
 
+[CIB seven](https://cibseven.org), a fork of Camunda 7 made by CIB software, is embedded as
+well and needs nothing else either. The BPMN files are the ones of Camunda 7, because CIB seven
+reads their `camunda:` attributes:
+
+```bash
+mvn install verify -Pcibseven
+```
+
 The `operaton` profile takes the scripts out of Operaton's engine JAR in the same way. Its
-property `operaton-engine.version` is the migration version.
+property `operaton-engine.version` is the migration version. The `cibseven` profile does the
+same with CIB seven's engine JAR and `cibseven-engine.version`. It leaves out the script of CIB
+seven's modeler, because the adapter switches the modeler off.
 
 Start the application:
 

@@ -46,13 +46,14 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * </p>
  *
  * <p>
- * The test runs where two adapters are configured, which are the profiles {@code camunda8}
- * and {@code operaton}. With a single BPMS there is nothing to migrate to.
+ * The test runs where two adapters are configured, which are the profiles {@code camunda8},
+ * {@code operaton} and {@code cibseven}. With a single BPMS there is nothing to migrate to.
  * </p>
  *
  * <p>
- * Under {@code operaton} both engines run inside the application. Operaton then has a
- * database of its own, and the test gives it a file next to the one of the application.
+ * Under {@code operaton} and {@code cibseven} both engines run inside the application. The new
+ * engine then has a database of its own, and the test gives it a file next to the one of the
+ * application.
  * </p>
  */
 public class MigrationRestartIT {
@@ -88,7 +89,8 @@ public class MigrationRestartIT {
     // a migration profile brings
     assumeTrue(
         !NEW_BPMS.equals(OLD_BPMS),
-        "these tests need two adapters, which the profiles 'camunda8' and 'operaton' configure");
+        "these tests need two adapters, which the profiles 'camunda8', 'operaton' and 'cibseven'"
+            + " configure");
 
     emptyDatabase();
 
@@ -207,6 +209,10 @@ public class MigrationRestartIT {
     all.add("--blueprint.operaton-datasource.url=jdbc:h2:file:./"
         + DATABASE
         + "-operaton;AUTO_SERVER=TRUE");
+    // the database of CIB seven's engine, used by the profile 'cibseven' only
+    all.add("--blueprint.cibseven-datasource.url=jdbc:h2:file:./"
+        + DATABASE
+        + "-cibseven;AUTO_SERVER=TRUE");
     return new SpringApplicationBuilder(Application.class)
         .run(all.toArray(String[]::new));
 
@@ -238,20 +244,20 @@ public class MigrationRestartIT {
     final var deadline = System.nanoTime() + TIMEOUT.toNanos();
     Aggregate last = null;
     while (System.nanoTime() < deadline) {
-      // A pause BEFORE the first look, as in the test harness. The aggregate changes when an
-      // operation is asked for, and the BPMS carries it out after the commit. An embedded
-      // engine of the new BPMS, Operaton for example, is then not yet at its next wait state.
-      try {
-        Thread.sleep(200);
-      } catch (final InterruptedException interrupted) {
-        Thread.currentThread().interrupt();
-        throw new IllegalStateException(interrupted);
-      }
+      // The first look comes at once. A pause before it would hide a correlation which only
+      // works because the BPMS had time to reach its next wait state. The message
+      // time-to-live of the profiles is what lets a message wait for the workflow.
       last = aggregates
           .findById(loanRequestId)
           .orElse(null);
       if ((last != null) && condition.test(last)) {
         return last;
+      }
+      try {
+        Thread.sleep(200);
+      } catch (final InterruptedException interrupted) {
+        Thread.currentThread().interrupt();
+        throw new IllegalStateException(interrupted);
       }
     }
     throw new AssertionError("The workflow '"

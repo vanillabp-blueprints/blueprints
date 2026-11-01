@@ -77,17 +77,18 @@ has no reason to ask.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File             |                                                 What is different                                                  |
-|-----------------------------|--------------------------------------------------------------------------------------------------------------------|
-| `application/pom.xml`       | the profiles `camunda8` and `operaton` bring BOTH adapters, because during a migration the old BPMS is still there |
-| `application-camunda7.yaml` | the state before the migration: one adapter, nothing to prioritize                                                 |
-| `application-camunda8.yaml` | the state during it: the priority list, both adapters, and the workflow which stays behind                         |
-| `application-operaton.yaml` | the same state for the migration to Operaton, with a database of its own for Operaton                              |
-| `application.yaml`          | a FILE database, because the scenario restarts the application                                                     |
-| `loan_approval.bpmn`        | a user task and a message catch event, the two wait states the election is shown with                              |
-| `loan_repayment.bpmn`       | the second workflow, whose priority list names the old BPMS alone                                                  |
-| `loanrepayment/`            | its use case: the classes carry its name, because otherwise two use cases in one application would collide         |
-| `MigrationIT.java`          | starts, routes and finishes workflows in both BPMS                                                                 |
+|            File             |                                                       What is different                                                        |
+|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| `application/pom.xml`       | the profiles `camunda8`, `operaton` and `cibseven` bring BOTH adapters, because during a migration the old BPMS is still there |
+| `application-camunda7.yaml` | the state before the migration: one adapter, nothing to prioritize                                                             |
+| `application-camunda8.yaml` | the state during it: the priority list, both adapters, and the workflow which stays behind                                     |
+| `application-operaton.yaml` | the same state for the migration to Operaton, with a database of its own for Operaton                                          |
+| `application-cibseven.yaml` | the same state for the migration to CIB seven, with a database of its own for CIB seven                                        |
+| `application.yaml`          | a FILE database, because the scenario restarts the application                                                                 |
+| `loan_approval.bpmn`        | a user task and a message catch event, the two wait states the election is shown with                                          |
+| `loan_repayment.bpmn`       | the second workflow, whose priority list names the old BPMS alone                                                              |
+| `loanrepayment/`            | its use case: the classes carry its name, because otherwise two use cases in one application would collide                     |
+| `MigrationIT.java`          | starts, routes and finishes workflows in both BPMS                                                                             |
 
 The user task alone is [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user-task-quarkus),
 the message alone is [`bpmn-message-correlation`](https://github.com/vanillabp-blueprints/bpmn-message-correlation-quarkus).
@@ -132,6 +133,21 @@ the expression language of decision tables. The POM removes Camunda's copy, and 
 `dmn-feel-legacy-behavior` of the profile file switches Camunda 7 over. The
 [README of the Operaton adapter](https://github.com/vanillabp/operaton-adapter#side-by-side)
 explains the FEEL library. The walk-through below works the same with `-Poperaton`.
+
+The third migration goes from Camunda 7 to [CIB seven](https://cibseven.org), a fork of Camunda 7
+made by CIB software. It is embedded as well:
+
+```bash
+mvn install verify -Pcibseven
+```
+
+Its profile file `application-cibseven.yaml` describes the same state again: both adapters, CIB
+seven first, and the repayment stays with Camunda 7. CIB seven gets a datasource of its own, which
+the profile file declares. Like the one of Operaton it takes part in the two-phase commit (XA),
+because one transaction writes to both databases. Both engines use the same FEEL library in the
+same version, so the POM excludes nothing and Camunda 7 keeps its FEEL implementation. The
+[README of the CIB seven adapter](https://github.com/vanillabp/cibseven-adapter#side-by-side)
+describes this setup. The walk-through below works the same with `-Pcibseven`.
 
 The database is a file, `target/database/loan-approval`. In this one point the blueprint
 differs from every other one in the catalogue. The scenario stops the application, changes
@@ -199,6 +215,7 @@ camunda7
 |----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
 | `application/src/main/resources/application-camunda8.yaml`                             | the priority list, both adapters, and the workflow-level list of the repayment              |
 | `application/src/main/resources/application-operaton.yaml`                             | the same for the migration to Operaton, and where Operaton keeps its tables                 |
+| `application/src/main/resources/application-cibseven.yaml`                             | the same for the migration to CIB seven, and where CIB seven keeps its tables               |
 | `application/src/main/resources/application-camunda7.yaml`                             | the same application with one BPMS, which is where a migration starts                       |
 | `loan-approval/src/test/resources/application-camunda7.yaml`                           | the same state for the module's own test, so it runs the scoping mode the application ships |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process with its two wait states                                                        |

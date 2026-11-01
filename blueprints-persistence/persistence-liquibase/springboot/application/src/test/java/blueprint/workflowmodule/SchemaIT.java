@@ -188,9 +188,9 @@ public class SchemaIT {
    */
   private static boolean engineIsEmbedded() {
 
-    // the engines which run inside the application: Camunda 7 and Operaton
+    // the engines which run inside the application: Camunda 7, Operaton and CIB seven
     for (final var engine : new String[]{
-        "org.camunda.bpm.engine.ProcessEngine", "org.operaton.bpm.engine.ProcessEngine"
+        "org.camunda.bpm.engine.ProcessEngine", "org.operaton.bpm.engine.ProcessEngine", "org.cibseven.bpm.engine.ProcessEngine"
     }) {
       try {
         Class.forName(engine);

@@ -21,6 +21,7 @@
     <vanillabp.version>2.0.0-SNAPSHOT</vanillabp.version>
     <camunda7-adapter.version>2.0.0-SNAPSHOT</camunda7-adapter.version>
     <camunda8-adapter.version>2.0.0-8.10-SNAPSHOT</camunda8-adapter.version>
+    <cibseven-adapter.version>2.0.0-2.2-SNAPSHOT</cibseven-adapter.version>
     <operaton-adapter.version>2.0.0-SNAPSHOT</operaton-adapter.version>
   </properties>
 
@@ -190,6 +191,20 @@
           <groupId>io.vanillabp</groupId>
           <artifactId>operaton-adapter-spring-boot</artifactId>
           <version>${operaton-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>cibseven</id>
+      <properties>
+        <bpms>cibseven</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>cibseven-adapter-spring-boot</artifactId>
+          <version>${cibseven-adapter.version}</version>
           <scope>test</scope>
         </dependency>
       </dependencies>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The application's changelog for a build with the EMBEDDED CIB seven engine: everything from
+  changelog.xml plus the engine's own tables.
+
+  CIB seven ships its schema in the engine JAR, as a changelog with a baseline and one changeset
+  per upgrade. It kept the changelog of Camunda 7 and its file name, camunda-changelog.xml, and
+  moved it to its own package. It is included, never copied: the engine version on the
+  classpath decides what is correct, and its 'db.name' properties pick the statements for the
+  database in use. The engine's own version table, ACT_GE_SCHEMA_LOG, stays the engine's
+  business. The upgrade to CIB seven 2.2 also creates the tables of CIB seven's modeler. The
+  adapter leaves the modeler off, so the engine does not use them.
+
+  Two things go with this. The adapter must be told to keep its hands off
+  ('vanillabp.adapters.cibseven.database-schema-update: false' in application-cibseven.yaml),
+  and a configured table prefix does not work with the changelog, because its statements carry
+  fixed table names.
+-->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <include file="db/changelog.xml" relativeToChangelogFile="false" />
+
+  <include file="org/cibseven/bpm/engine/db/liquibase/camunda-changelog.xml" relativeToChangelogFile="false" />
+
+</databaseChangeLog>

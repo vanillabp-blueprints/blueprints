@@ -46,6 +46,12 @@
       "enabled": false
     },
     {
+      "description": "Maven itself stays on 3.9 for now. Maven 3.10 builds bundles the Central Portal rejects (mavenplugins/central-publishing-maven-plugin#78), and Quarkus' test bootstrap cannot read the repository records it writes. Every vanillabp repository stays on 3.9 until a separate story moves them all together.",
+      "matchManagers": ["maven-wrapper"],
+      "matchDepNames": ["maven"],
+      "allowedVersions": "<3.10"
+    },
+    {
       "description": "The coordinates of the module-packaging blueprint are invented on purpose: it shows an application built from artifacts of its own, and 'com.acme' exists nowhere. Renovate reported them as dependencies it could not look up, which is true and useless, and a permanent warning on the dependency dashboard hides the real ones.",
       "matchPackageNames": ["/^com\\.acme/"],
       "enabled": false

@@ -1,5 +1,5 @@
 The migrations of an embedded engine end up here while the application is built: the profile of
-that engine in application/pom.xml, camunda7 or operaton, takes the engine's scripts out of its JAR
-and names them for Flyway. With a remote engine the directory stays empty, and it exists in the
-classpath either way, because Flyway resolves its locations at build time. Flyway reads only files
-named V<version>__... or R__..., so this file is invisible to it.
+that engine in application/pom.xml, camunda7, operaton or cibseven, takes the engine's scripts out
+of its JAR and names them for Flyway. With a remote engine the directory stays empty, and it exists
+in the classpath either way, because Flyway resolves its locations at build time. Flyway reads only
+files named V<version>__... or R__..., so this file is invisible to it.

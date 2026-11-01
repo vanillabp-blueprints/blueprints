@@ -12,6 +12,7 @@ blueprint gets such an engine the same way every time, and this script does it:
     next to it,
   - every 'application-camunda7.yaml' gets an 'application-<type>.yaml' next to it, with
     the adapter id, the names in the comments and the path of the web applications changed,
+    and with the settings the web applications of the engine need on top, if it has any,
   - every directory 'processes/camunda7' is copied to 'processes/<type>', because the BPMN
     files are read from a directory per adapter id,
   - the README of the blueprint gets a paragraph after the one which explains the
@@ -51,6 +52,34 @@ ENGINES = {
             "```bash\nmvn install verify -Poperaton\n```\n"
         ),
     },
+    "cibseven": {
+        "name": "CIB seven",
+        "group_id": "io.vanillabp",
+        "artifact_prefix": "cibseven-adapter",
+        "version": "2.0.0-2.2-SNAPSHOT",
+        # CIB seven kept the path of Camunda 7.
+        "webapps_path": "/camunda",
+        "readme": (
+            "[CIB seven](https://cibseven.org), a fork of Camunda 7 made by CIB software, is"
+            " embedded as\nwell and needs nothing else either. The BPMN files are the ones of"
+            " Camunda 7, because CIB seven\nreads their `camunda:` attributes:\n\n"
+            "```bash\nmvn install verify -Pcibseven\n```\n"
+        ),
+        # The webapps module of CIB seven also starts CIB seven's new webclient, and that one
+        # does not start without a secret for its login tokens.
+        "webapps_settings": (
+            "\n"
+            "# CIB seven's new webclient at /webapp comes with the web applications. It signs its\n"
+            "# login tokens with this secret and does not start without one. The value is for the\n"
+            "# demo only. A real application sets its own, the same on every instance, for example\n"
+            "# from an environment variable. Make one with: openssl rand -base64 120 | tr -d '\\n'\n"
+            "cibseven:\n"
+            "  webclient:\n"
+            "    authentication:\n"
+            "      jwtSecret: oZTyrJ3x7k5b7XHJplVywCce/uIHDPTz1r4UYZkRhh7RZmJjEhalX0V0cyf0+ceGj/0ynEoq"
+            "+yOslcudCUyzCT9Jt3lrteFn9ZfeIUY8NIR84cd5rzOLg0te86nmVGmoNqiezm2wZ6Xk797SeoYGiNp+eY1nbNkm\n"
+        ),
+    },
 }
 
 # The paragraph which explains the camunda8 profile, as the READMEs word it. The new paragraph
@@ -60,6 +89,15 @@ README_ANCHORS = (
     "The file applies because the Maven profile `camunda8`",
     "Camunda 8 is a remote engine, so a cluster has to run.",
     "Camunda 8 is remote, so a cluster has to run",
+)
+
+# Paragraphs which still speak about Camunda 8 and follow the one above in some READMEs. The new
+# paragraph goes after them, so they keep standing next to what they refer to.
+README_CONTINUATIONS = (
+    "Take the address out and the application does not boot.",
+    "Without it the application does not boot.",
+    "The test which cancels the user task does not run there.",
+    "That engine has no loop cardinality.",
 )
 
 WEBAPPS_COMMENT = """        <!--
@@ -171,6 +209,8 @@ def profile_file(source, engine_type, engine, report):
     text = re.sub(r"/camunda\b", engine["webapps_path"], text)
     text = text.replace("'camunda7'", f"'{engine_type}'")
     text = re.sub(r"^(\s*)camunda7:", rf"\g<1>{engine_type}:", text, flags=re.M)
+    if "webapps_settings" in engine and re.search(r"^\s+webapps:", text, flags=re.M):
+        text = text.rstrip("\n") + "\n" + engine["webapps_settings"]
     target.write_text(text, encoding="utf-8")
     if re.search(r"camunda7|Camunda", text):
         report.append(f"{target}: still names Camunda, check it by hand")
@@ -201,8 +241,14 @@ def readme(directory, engine_type, engine, report):
     if start < 0:
         report.append(f"{path}: no paragraph about the camunda8 profile, add the {engine_type} one by hand")
         return
-    end = text.find("\n\n", start)
-    text = text[: end + 2] + engine["readme"] + "\n" + text[end + 2:]
+    end = text.find("\n\n", start) + 2
+    while text.startswith(README_CONTINUATIONS, end):
+        end = text.find("\n\n", end) + 2
+    # the paragraphs of the other forks stay in the order they were added
+    for other in ENGINES.values():
+        if text.startswith(other["readme"] + "\n", end):
+            end += len(other["readme"]) + 1
+    text = text[:end] + engine["readme"] + "\n" + text[end:]
     path.write_text(text, encoding="utf-8")
 
 
