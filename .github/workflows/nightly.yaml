@@ -71,8 +71,9 @@ jobs:
   # Packages answers 401 for the Camunda adapters, every job dies on a POM it could not
   # read, and that reads like sixty broken blueprints. And a runner which still holds yesterday's snapshot would
   # build against a framework which no longer exists, which is the one thing this workflow
-  # is here to notice. So this run restores no Maven cache, every Maven call carries
-  # --update-snapshots, and the step below writes down which platform build the night got.
+  # is here to notice. So the matrix deletes every snapshot the Maven cache carries in,
+  # every Maven call carries --update-snapshots, and the step below writes down which
+  # platform build the night got.
   # 'Nightly issue' quotes that into its report, so a reader sees which side moved.
   platform:
     runs-on: ubuntu-latest
@@ -186,10 +187,9 @@ jobs:
     timeout-minutes: 30
     strategy:
       fail-fast: false
-      # Same limit as the build workflow, for the same reason: this run has no cache on
-      # purpose, so every job resolves everything, and a hundred of them starting together
-      # are answered by Maven Central with 429 and 403. Nothing here is in a hurry at two in
-      # the morning.
+      # Same limit as the build workflow, for the same reason: a hundred jobs starting
+      # together are answered by Maven Central with 429 and 403. Nothing here is in a hurry
+      # at two in the morning.
       max-parallel: 20
       matrix:
         include: "${{ fromJSON(needs.discover.outputs.part1) }}"
@@ -208,6 +208,34 @@ jobs:
           curl -fsSL https://archive.apache.org/dist/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.tar.gz \
             | tar xz -C "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/apache-maven-3.9.16/bin" >> "$GITHUB_PATH"
+      # The cache of the last build on main, read-only, as in build.yaml. This run used to
+      # start without any cache, so each of its 258 jobs downloaded Spring Boot, Quarkus and
+      # the engines from Maven Central, twenty at a time. Central answered that with 429,
+      # and the ban outlasted the pause of the retry script. A release never changes once it
+      # is published, so this run loses nothing by taking it from the cache.
+      - uses: actions/cache/restore@v6
+        with:
+          path: ~/.m2/repository
+          # never matches, because only build.yaml writes caches; the restore-keys find the
+          # newest one
+          key: maven-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            maven-${{ hashFiles('**/pom.xml') }}-
+            maven-
+      # "Fresh" is about our own snapshots, and those must not come from the cache. So
+      # all VanillaBP artifacts go, the adapters in the Camunda community hub too, and any
+      # other snapshot as well. Maven then has nothing old to fall back on and has to ask
+      # the snapshot repositories. The '*.lastUpdated' files go too: they record a download
+      # which failed in the run that wrote the cache, and Maven would not try that download
+      # again.
+      - name: Remove the snapshots the cache carried in
+        run: |
+          repository="${HOME}/.m2/repository"
+          rm -rf "${repository}/io/vanillabp" "${repository}/org/camunda/community/vanillabp"
+          if [ -d "${repository}" ]; then
+            find "${repository}" -type d -name '*-SNAPSHOT' -prune -exec rm -rf {} +
+            find "${repository}" -type f -name '*.lastUpdated' -delete
+          fi
       # Written before the build, so the upload below has the name whatever the build does.
       # 'Nightly issue' builds the same name out of the job name, so the two have to agree:
       # the blueprint path with its slashes turned into dashes, then the BPMS.
@@ -238,10 +266,10 @@ jobs:
           } >> "$GITHUB_ENV"
       # 'install' alone, not 'install verify': install already runs every phase verify
       # has, and naming both compiled every module twice
-      # Through bin/mvn_with_retry.sh, because this run resolves everything from scratch
-      # and Maven Central answers that with 403 or 429 often enough to be the most common
-      # red build here. The script repeats only what the log proves to be a transfer: a
-      # failed test is reported the first time, as it has to be.
+      # Through bin/mvn_with_retry.sh, because Maven Central answers some jobs with 403 or
+      # 429 even when most of what they need comes from the cache. The script repeats only
+      # what the log proves to be a transfer: a failed test is reported the first time, as
+      # it has to be.
       - name: Build against the current snapshots
         working-directory: "${{ matrix.blueprint }}"
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
