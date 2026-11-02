@@ -246,7 +246,7 @@ public class MigrationRestartIT {
     while (System.nanoTime() < deadline) {
       // The first look comes at once. A pause before it would hide a correlation which only
       // works because the BPMS had time to reach its next wait state. The message
-      // time-to-live of the profiles is what lets a message wait for the workflow.
+      // time-to-live of the workflow module is what lets a message wait for the workflow.
       last = aggregates
           .findById(loanRequestId)
           .orElse(null);
