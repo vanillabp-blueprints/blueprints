@@ -6,3 +6,12 @@
 # application.
 loan-approval:
   rating-scale: 100
+
+# How long a correlated message waits for the workflow to reach the event which waits for
+# it. Completing a task does not mean the engine is already there. The key names no
+# adapter, because it means the same on every BPMS. So it is set once here, for the module,
+# and holds for every engine of the migration.
+vanillabp:
+  workflow-modules:
+    loan-approval:
+      message-time-to-live: 1m
