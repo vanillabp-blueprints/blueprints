@@ -3,8 +3,8 @@ name: Build
   push:
     # Only 'main'. Every other branch is built through its pull request, once instead of
     # twice: a push to a branch with an open pull request used to start this workflow a
-    # second time, and two full matrices at once starve each other on Maven Central and on
-    # GitHub Packages. What that produces looks like defects of random blueprints.
+    # second time, and two full matrices at once starve each other on Maven Central. What
+    # that produces looks like defects of random blueprints.
     branches:
       - main
   pull_request:
@@ -17,11 +17,6 @@ concurrency:
 permissions:
   contents: read
 env:
-  # The VanillaBP artifacts are 2.0.0-SNAPSHOT until the release. The two Camunda adapters
-  # live in GitHub Packages, and reading them needs a token, see
-  # .github/workflows/github-packages-settings.xml.
-  USER_NAME: "${{ secrets.VANILLABP_USER_NAME }}"
-  USER_TOKEN: "${{ secrets.VANILLABP_USER_TOKEN }}"
   # The branch of vanillabp-blueprints/.github the index is read from - it says which
   # BPMS a blueprint is built against.
   INDEX_REF: main

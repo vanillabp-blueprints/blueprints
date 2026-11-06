@@ -24,8 +24,7 @@ build. The submodules are cloned over SSH. If GitHub has no SSH key of yours, ru
 `git config --global url."https://github.com/".insteadOf "git@github.com:"` before you clone. If
 the bug is in a repository the workspace does not hold, the agent clones it next to the others.
 Before it opens the pull request, the agent follows the `CONTRIBUTING.md` and the `AGENTS.md` of
-the repository it changes, where it has one. The two Camunda adapters live in the Camunda Community
-Hub, which asks you to sign its contributor license agreement on your first pull request there.
+the repository it changes, where it has one.
 
 ## Prerequisites
 
@@ -248,11 +247,11 @@ what the newer run wrote. Still, the blueprints write `do-not-use`. On 8.10 the 
 the cluster can lose a leased job when a long poll ends, and the job then waits for a whole
 `job-timeout`. Blueprint builds went red from it. Until Camunda fixes that, the adapter advises
 `do-not-use`, and a blueprint shows the advised way. Why is
-[decision 88 of the adapter](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+[decision 88 of the adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
 Moving to `use` later costs nothing, because a job which was never leased can be leased at any
 time. The other way does not work, because the cluster never takes a lease off a job again.
 `do-not-use` is also what every release line before 8.10 did. What a lease costs is in the
-[wiki of the adapter](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds).
+[wiki of the adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds).
 
 ## Rule 5: the aspect is proven by a test
 
@@ -518,7 +517,7 @@ An adapter may carry a compatibility value inside its version. Where it does, th
 starts has to move with it. Renovate cannot cross that boundary on its own. `renovate.json`
 extends the preset which that adapter ships, because that preset reads the value. The adapter
 which carries the value documents what it means, for Camunda 8 under
-[release lines](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter#release-lines).
+[release lines](https://github.com/vanillabp/camunda8-adapter#release-lines).
 
 `bin/camunda8_cluster.sh` has no version of its own. It reads the adapter version from the
 blueprint POMs, fetches the POM of that adapter and starts the Camunda version which that POM
@@ -579,13 +578,9 @@ No CI-specific address is checked in anywhere.
 
 ### Reading the VanillaBP snapshots
 
-Until 2.0.0 is released, `spi-for-java` and the platform publish their snapshots to the
-snapshot repository of Maven Central, which needs no login. The two Camunda adapters publish
-theirs to GitHub Packages, because their namespace belongs to the Camunda Community Hub. GitHub
-Packages needs a token even for public packages.
-`.github/workflows/github-packages-settings.xml` names all three places. The credentials come
-from the repository secrets `VANILLABP_USER_NAME` and `VANILLABP_USER_TOKEN`, a token with
-`read:packages`. Locally, the same settings file works with those two variables exported. The
+Until 2.0.0 is released, `spi-for-java`, the platform and the BPMS adapters publish their
+snapshots to the snapshot repository of Maven Central, which needs no login.
+`.github/workflows/github-packages-settings.xml` names it, and the same file works locally. The
 blueprint POMs stay free of all this. A blueprint shows what an application needs, and after
 the release that is Maven Central.
 
@@ -604,7 +599,8 @@ every blueprint job. Each run then has a list like this in its summary:
 ```
 
 The timestamp and the number after it name the build which the snapshot repository served. So
-you can read two runs next to each other. The script only names what Maven fetched during the
+you can read two runs next to each other. The BPMS adapters of a run are in the list as well,
+because they come from the same repository. The script only names what Maven fetched during the
 run. If Maven refreshed nothing, the report says so. It does not pass off the runner's cache as
 the framework of today.
 
@@ -628,9 +624,8 @@ of starting it. The odd minute is because that queue is longest on the hour. The
 after the four platform repositories which measure the same published snapshot, the last of them
 at 01:11.
 
-It starts with the job `platform`. That job stops the run when the two secrets are empty,
-because sixty jobs which fail on a 401 look like sixty broken blueprints. It also writes down
-which platform build the night got. No job of that run restores the Maven cache, and every
+It starts with the job `platform`. That job writes down which platform build the night got. No
+job of that run restores the Maven cache, and every
 Maven call passes `--update-snapshots`. So nothing here can quietly build against yesterday's
 framework.
 
@@ -650,7 +645,6 @@ This is the same build by hand. Run it when the issue names a blueprint. The iss
 the BPMS, and that is the profile to pass:
 
 ```bash
-export USER_NAME=<github user> USER_TOKEN=<token with read:packages>
 cd <group>/<blueprint-id>/<platform>
 mvn -s ../../../.github/workflows/github-packages-settings.xml \
   --update-snapshots -P<bpms> verify
