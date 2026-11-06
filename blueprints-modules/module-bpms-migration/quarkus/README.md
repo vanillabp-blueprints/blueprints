@@ -247,7 +247,7 @@ five minutes of watching nothing, and the handlers here finish in milliseconds. 
 found the case which makes it visible: a workflow started right after a restart. The adapter
 now keeps a restart from causing it. It waits for the cluster to release its workers before it
 closes the client. The measurements are in
-[what a restart costs the application which starts next](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next).
+[what a restart costs the application which starts next](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next).
 
 Two things are worth knowing before you do this against a real cluster. First, a remote BPMS
 may answer from a read model which is only eventually consistent, that is, it catches up after

@@ -166,7 +166,7 @@ Camunda 7 serves its own web applications, and the `camunda7` profile of this bl
 configures a user for them. They show the two processes side by side, and nothing between them:
 no message flow, no call activity, no relation the engine knows about. There the names carry
 the prefix of their module, as `module-multi` explains. The
-[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin)
+[adapter's wiki](https://github.com/vanillabp/camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin)
 says where they are served and how to log in.
 
 ## How it works

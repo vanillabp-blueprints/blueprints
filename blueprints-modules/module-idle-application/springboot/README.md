@@ -34,7 +34,7 @@ The second is `vanillabp.adapters.camunda7.sleep-until-something-is-due` in
 engine. Without it the engine keeps asking its database for work while nothing happens. With
 it, a cycle which found nothing asks once when the next job is due and waits for that moment.
 Any transaction which writes a job wakes it again. The adapter's
-[wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Configuration#letting-an-idle-engine-go-quiet)
+[wiki](https://github.com/vanillabp/camunda7-adapter/wiki/Configuration#letting-an-idle-engine-go-quiet)
 says what the key costs and which database index it needs from you.
 
 One key without the other saves nothing. If the engine waits but the outbox stays at its
@@ -133,14 +133,14 @@ vanillabp:
       rest-address: http://localhost:8080
       # Camunda 8.10 can lose a leased job for a whole job-timeout. Until Camunda fixes that,
       # the adapter advises against a lease. The key has no default:
-      # https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds
+      # https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds
       job-lease: do-not-use
 ```
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
 fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
 
 The file is loaded because the Maven profile `camunda8` sets the profile of the same name. So
 you choose the engine once, on the Maven command line, and the build, the tests and the run all
@@ -236,7 +236,7 @@ Camunda 7 serves its own web applications, and the `camunda7` profile of this bl
 configures a user for them. A browser looking at them causes traffic of its own. They ask the
 database on every page. So a dashboard left open in front of a sleeping application is a poller
 with a person behind it. The
-[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin)
+[adapter's wiki](https://github.com/vanillabp/camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin)
 says where they are served and how to log in.
 
 ## How it works

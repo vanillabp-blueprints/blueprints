@@ -96,8 +96,9 @@ start() {
 # all name the same one, and this function stops if they do not.
 #
 # Maven fetches the POM, so this works wherever the build itself can fetch the adapter. In CI
-# the variables USER_NAME and USER_TOKEN are set, and then the settings of the CI build are
-# used, which point at GitHub Packages. Locally your own Maven settings are used.
+# the settings of the CI build are used, which point at the snapshot repository of Maven
+# Central. Locally your own Maven settings are used, so a run does not replace an adapter you
+# installed yourself with the published one.
 adapter_client_version() {
   local adapter
   adapter="$(adapter_version)" || exit 1
@@ -106,19 +107,19 @@ adapter_client_version() {
   work="$(mktemp -d)"
 
   local settings=()
-  if [ -n "${USER_TOKEN:-}" ]; then
-    settings=(--settings "${ROOT}/.github/workflows/github-packages-settings.xml")
+  if [ -n "${CI:-}" ]; then
+    settings=(--settings "${ROOT}/.github/workflows/maven-settings.xml")
   fi
 
   # --update-snapshots, because the adapter is a SNAPSHOT: a cached POM may be days old and
   # name an older client than the one the build will get.
   if ! maven --batch-mode --quiet --update-snapshots "${settings[@]}" \
       org.apache.maven.plugins:maven-dependency-plugin:3.10.0:copy \
-      "-Dartifact=org.camunda.community.vanillabp:camunda8-adapter:${adapter}:pom" \
+      "-Dartifact=io.vanillabp:camunda8-adapter:${adapter}:pom" \
       "-DoutputDirectory=${work}" >&2; then
     echo "Maven could not fetch the POM of camunda8-adapter ${adapter}, so the Camunda" >&2
-    echo "version the adapter accepts is unknown. Set USER_NAME and USER_TOKEN (a GitHub" >&2
-    echo "token with 'read:packages'), or set CAMUNDA_VERSION to the version you want." >&2
+    echo "version the adapter accepts is unknown. Let your Maven settings read the snapshot" >&2
+    echo "repository of Maven Central, or set CAMUNDA_VERSION to the version you want." >&2
     rm -rf "${work}"
     exit 1
   fi

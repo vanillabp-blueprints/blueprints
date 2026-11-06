@@ -3,8 +3,8 @@ name: Build
   push:
     # Only 'main'. Every other branch is built through its pull request, once instead of
     # twice: a push to a branch with an open pull request used to start this workflow a
-    # second time, and two full matrices at once starve each other on Maven Central and on
-    # GitHub Packages. What that produces looks like defects of random blueprints.
+    # second time, and two full matrices at once starve each other on Maven Central. What
+    # that produces looks like defects of random blueprints.
     branches:
       - main
   pull_request:
@@ -17,11 +17,6 @@ concurrency:
 permissions:
   contents: read
 env:
-  # The VanillaBP artifacts are 2.0.0-SNAPSHOT until the release. The two Camunda adapters
-  # live in GitHub Packages, and reading them needs a token, see
-  # .github/workflows/github-packages-settings.xml.
-  USER_NAME: "${{ secrets.VANILLABP_USER_NAME }}"
-  USER_TOKEN: "${{ secrets.VANILLABP_USER_TOKEN }}"
   # The branch of vanillabp-blueprints/.github the index is read from - it says which
   # BPMS a blueprint is built against.
   INDEX_REF: main
@@ -195,7 +190,7 @@ jobs:
         # them get "not found" from Maven Central for artifacts which are there. The script
         # repeats only what the log proves to be a transfer, never a failed test.
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
-          -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
+          -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
           -P${{ matrix.bpms }} install
       # In the summary of this job, because this is where a red blueprint is read. The
@@ -294,7 +289,7 @@ jobs:
         # integration tests of the Quarkus blueprints ran here, in a job which starts
         # neither a Camunda 8 cluster nor anything else they need, and the build waited ten
         # minutes for a cluster nobody had started.
-        run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
+        run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots -DskipTests -DskipITs
           install
       - name: Resolve what the other engines need, so the cache holds that too
@@ -307,7 +302,7 @@ jobs:
         # out of the restored cache, and only their own --update-snapshots saved them.
         run: |
           for engine in camunda8 operaton cibseven; do
-            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
               --batch-mode --no-transfer-progress --update-snapshots -P"$engine" \
               -DskipTests -DskipITs dependency:go-offline
           done
@@ -319,12 +314,12 @@ jobs:
         # read from the plugins the build resolves, not written down here.
         run: |
           plugins="${RUNNER_TEMP}/plugins.txt"
-          ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+          ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
             --batch-mode --no-transfer-progress --quiet \
             dependency:resolve-plugins -DoutputFile="${plugins}" -DappendOutput=true
           for version in $(grep -ohE 'maven-(surefire|failsafe)-plugin:jar:[0-9][0-9.]*' "${plugins}" \
               | sed 's/.*://' | sort -u); do
-            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
               --batch-mode --no-transfer-progress \
               dependency:get -Dartifact="org.apache.maven.surefire:surefire-junit-platform:${version}"
           done
@@ -336,7 +331,7 @@ jobs:
           # so they are read from the engines the build put into the repository.
           for engine in ~/.m2/repository/org/junit/platform/junit-platform-engine/*/; do
             version="$(basename "${engine}")"
-            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
               --batch-mode --no-transfer-progress \
               dependency:get -Dartifact="org.junit.platform:junit-platform-launcher:${version}"
           done

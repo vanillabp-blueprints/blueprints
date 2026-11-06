@@ -219,7 +219,7 @@ camunda7
 
 Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint
 configures a user for them. They are a second way to see where a workflow lives. The
-[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin)
+[adapter's wiki](https://github.com/vanillabp/camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin)
 says where they are served and how to log in.
 
 ## How it works
@@ -263,7 +263,7 @@ five minutes of watching nothing, and the handlers here finish in milliseconds. 
 found the case which makes it visible: a workflow started right after a restart. The adapter
 now keeps a restart from causing it. It waits for the cluster to release its workers before it
 closes the client. The measurements are in
-[what a restart costs the application which starts next](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next).
+[what a restart costs the application which starts next](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#what-a-restart-costs-the-application-which-starts-next).
 
 Two things are worth knowing before you do this against a real cluster. First, a remote BPMS
 may answer from a read model which is only eventually consistent, that is, it catches up after

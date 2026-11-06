@@ -34,10 +34,10 @@ repository="${MAVEN_REPO_LOCAL:-${HOME}/.m2/repository}"
 snapshots="${repository}/io/vanillabp"
 
 # Maven writes one maven-metadata-<repository id>.xml per remote repository a snapshot came
-# from, next to the jar it resolved. The platform comes from the repository
-# 'central-snapshots', see .github/workflows/github-packages-settings.xml, so this reads what
-# came from the platform and skips the modules a build installed itself, which carry no such
-# file.
+# from, next to the jar it resolved. The platform and the BPMS adapters come from the
+# repository 'central-snapshots', see .github/workflows/maven-settings.xml, so this
+# reads what came from there and skips the modules a build installed itself, which carry no
+# such file.
 mapfile -t metadata < <(find "$snapshots" \
   -path '*-SNAPSHOT/maven-metadata-central-snapshots.xml' -newer "$marker" 2>/dev/null | sort)
 

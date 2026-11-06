@@ -107,14 +107,14 @@ vanillabp:
       rest-address: http://localhost:8080
       # Camunda 8.10 can lose a leased job for a whole job-timeout. Until Camunda fixes that,
       # the adapter advises against a lease. The key has no default:
-      # https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds
+      # https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds
       job-lease: do-not-use
 ```
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
 fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
 
 The file is loaded because the Maven profile `camunda8` makes the config profile of the same
 name the parent of the profile the application runs in. So you choose the engine once, on the
@@ -209,7 +209,7 @@ same on both.
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why the collections are attributes, and what several writers do to a row
 - [Wire up a task](https://github.com/vanillabp/spi-for-java#wire-up-a-task): what a `@WorkflowTask` method may be handed
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: what that engine reports about an iteration
-- [What becomes of a shared value on Camunda 7](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/What-becomes-of-a-shared-value): what happens to the four collections of this aggregate there, and why an application should pick a serialization format
+- [What becomes of a shared value on Camunda 7](https://github.com/vanillabp/camunda7-adapter/wiki/What-becomes-of-a-shared-value): what happens to the four collections of this aggregate there, and why an application should pick a serialization format
 
 This blueprint is developed in the monorepo
 [`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a

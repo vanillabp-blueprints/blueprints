@@ -245,7 +245,7 @@ Camunda 7 serves its own web applications, and the `camunda7` profile of this bl
 configures a user for them. They work on a schema Flyway built, which is the point of this
 blueprint: the engine does not need to have created its tables itself. Where they are served
 and how to log in is in the
-[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
+[adapter's wiki](https://github.com/vanillabp/camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 
