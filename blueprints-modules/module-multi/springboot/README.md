@@ -246,7 +246,7 @@ configures a user for them. They are also where prefixing becomes visible: the d
 processes are named `loan-approval-loan_approval` and `loan-repayment-loan_repayment` there,
 while everything in this repository keeps calling them `loan_approval` and `loan_repayment`.
 Where they are served and how to log in is in the
-[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
+[adapter's wiki](https://github.com/vanillabp/camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

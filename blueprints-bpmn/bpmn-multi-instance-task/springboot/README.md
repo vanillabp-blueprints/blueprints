@@ -93,14 +93,14 @@ vanillabp:
       rest-address: http://localhost:8080
       # Camunda 8.10 can lose a leased job for a whole job-timeout. Until Camunda fixes that,
       # the adapter advises against a lease. The key has no default:
-      # https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds
+      # https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds
       job-lease: do-not-use
 ```
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
 fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
 
 The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
 name. So you choose the engine once, on the Maven command line. The build, the tests and
@@ -109,7 +109,7 @@ name. So you choose the engine once, on the Maven command line. The build, the t
 That engine has no loop cardinality. It reports neither the number of instances nor, to a
 nested task, the iteration around it. The adapter fills those gaps while deploying. So the same
 Java code and the same annotations work here. The
-[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Deviations)
+[adapter's wiki](https://github.com/vanillabp/camunda8-adapter/wiki/Deviations)
 says what it does.
 
 [Operaton](https://operaton.org), the open source successor of Camunda 7, is embedded as well
@@ -176,7 +176,7 @@ Camunda 7 serves its own web applications, and the `camunda7` profile of this bl
 configures a user for them. They draw the multi-instance task with the number of instances that
 ran, which is the quickest way to see an iteration from outside. Where they are served and how
 to log in is in the
-[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
+[adapter's wiki](https://github.com/vanillabp/camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 
@@ -204,7 +204,7 @@ remote one.
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why the collection is an attribute rather than a variable, and what several writers do to a row
 - [Wire up a task](https://github.com/vanillabp/spi-for-java#wire-up-a-task): what a `@WorkflowTask` method may be handed
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: what that engine reports about an iteration
-- [What becomes of a shared value on Camunda 7](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/What-becomes-of-a-shared-value): the partner ids travel to that engine as an object variable, and the serialization format an application needs so a list of ids stays readable
+- [What becomes of a shared value on Camunda 7](https://github.com/vanillabp/camunda7-adapter/wiki/What-becomes-of-a-shared-value): the partner ids travel to that engine as an object variable, and the serialization format an application needs so a list of ids stays readable
 
 This blueprint is developed in the monorepo
 [`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a

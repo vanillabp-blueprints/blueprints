@@ -195,7 +195,7 @@ Camunda 7 serves its own web applications, and the `camunda7` profile of this bl
 configures a user for them. They show what was deployed, which is the shortest answer to what
 is actually in this runtime: two processes, each prefixed with the module which brought it.
 Where they are served and how to log in is in the
-[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
+[adapter's wiki](https://github.com/vanillabp/camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 To run the image instead of the JAR:
 

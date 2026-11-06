@@ -50,7 +50,7 @@ end event it reached:
 `endEventId()` is `null` there, and this blueprint's test does not assert it. Whether a
 cancelled workflow is reported at all differs too. The adapter of each engine says what its own
 does, for
-[Camunda 8](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Deviations#a-cancelled-workflow-reports-no-end-before-line-810).
+[Camunda 8](https://github.com/vanillabp/camunda8-adapter/wiki/Deviations#a-cancelled-workflow-reports-no-end-before-line-810).
 Write code which works in every case. A `null` end event is normal. A business decision must
 not rely on a difference which a BPMS may not make. What a model looks like decides nothing
 here. A terminate end event and an interrupting event subprocess look like a cancelation, but
@@ -103,14 +103,14 @@ vanillabp:
       rest-address: http://localhost:8080
       # Camunda 8.10 can lose a leased job for a whole job-timeout. Until Camunda fixes that,
       # the adapter advises against a lease. The key has no default:
-      # https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds
+      # https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds
       job-lease: do-not-use
 ```
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
 fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
 
 The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
 name. So you choose the engine once, on the Maven command line. The build, the tests and
@@ -183,7 +183,7 @@ configures a user for them. They are where an ended instance disappears from the
 and that is the view this blueprint replaces for your application: your users should not have
 to look into a BPMS to see whether a case is closed. Where they are served and how to log in is
 in the
-[adapter's wiki](https://github.com/camunda-community-hub/vanillabp-camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
+[adapter's wiki](https://github.com/vanillabp/camunda7-adapter/wiki/Cockpit-Tasklist-and-Admin).
 
 ## How it works
 

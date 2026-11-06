@@ -21,7 +21,7 @@ vanillabp:
       # (decision 88 of the adapter), so the blueprint shows it. Moving to 'use' later costs
       # nothing, because a job which was never leased can be leased at any time. The key has
       # no default. On a cluster before 8.10 it is read and does nothing:
-      # https://github.com/camunda-community-hub/vanillabp-camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds
+      # https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds
       job-lease: do-not-use
     camunda7:
       # The mode of the OLD BPMS, spelled out for the same reason as in the application's

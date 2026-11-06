@@ -74,7 +74,7 @@
       </properties>
       <dependencies>
         <dependency>
-          <groupId>org.camunda.community.vanillabp</groupId>
+          <groupId>io.vanillabp</groupId>
           <artifactId>camunda8-adapter-spring-boot</artifactId>
           <version>${camunda8-adapter.version}</version>
           <scope>test</scope>
