@@ -108,7 +108,7 @@ adapter_client_version() {
 
   local settings=()
   if [ -n "${CI:-}" ]; then
-    settings=(--settings "${ROOT}/.github/workflows/github-packages-settings.xml")
+    settings=(--settings "${ROOT}/.github/workflows/maven-settings.xml")
   fi
 
   # --update-snapshots, because the adapter is a SNAPSHOT: a cached POM may be days old and

@@ -89,7 +89,7 @@ jobs:
           # snapshot repository of Maven Central answers before sixty jobs rely on it. The
           # adapters are not asked for here: they have versions of their own, and the matrix
           # resolves them itself a minute later, fresh, as it does everything else.
-          mvn -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml" \
+          mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
             --batch-mode --no-transfer-progress --update-snapshots \
             -Dmaven.repo.local="${probe}" \
             org.apache.maven.plugins:maven-dependency-plugin:3.9.0:get \
@@ -246,7 +246,7 @@ jobs:
       - name: Build against the current snapshots
         working-directory: "${{ matrix.blueprint }}"
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
-          -s "$GITHUB_WORKSPACE/.github/workflows/github-packages-settings.xml"
+          -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
           -P${{ matrix.bpms }} install
       # A red night used to leave nothing behind but the log of the job, so the issue it
