@@ -163,6 +163,8 @@
                 unquotes version numbers, which silently turns '3.10' into '3.1'.
               -->
               <exclude>.github/workflows/**</exclude>
+              <!-- The same holds for the composite actions next to the workflows. -->
+              <exclude>.github/actions/**</exclude>
               <!--
                 The YAML of a blueprint is excluded for the same reason: the formatter
                 drops comments, and in a blueprint the comments are what is being taught.
