@@ -1,0 +1,136 @@
+name: Build the cockpit application with the user interface behind a proxy
+# blueprints-cockpit/cockpit-user-task-application-proxy/springboot needs two things before its
+# own build: the workflow module of the backend in the Maven repository, and the nginx image of
+# the frontend in Docker. Its integration test starts that image. So this workflow builds the
+# three parts in their order, in one job: the backend with Maven, the frontend with npm, and then
+# the application with Maven again. The generic matrix of build.yaml cannot do that, which is why
+# it leaves this directory out.
+#
+# After the split, each part is a repository of its own, and the application takes the released
+# workflow module and the published image. This job does by hand what the releases do there.
+"on":
+  push:
+    branches:
+      - main
+    paths:
+      - "blueprints-cockpit/cockpit-user-task-backend/**"
+      - "blueprints-cockpit/cockpit-user-task-frontend/**"
+      - "blueprints-cockpit/cockpit-user-task-application-proxy/**"
+      - ".github/workflows/cockpit-application-proxy.yaml"
+  pull_request:
+    paths:
+      - "blueprints-cockpit/cockpit-user-task-backend/**"
+      - "blueprints-cockpit/cockpit-user-task-frontend/**"
+      - "blueprints-cockpit/cockpit-user-task-application-proxy/**"
+      - ".github/workflows/cockpit-application-proxy.yaml"
+  workflow_dispatch:
+concurrency:
+  group: cockpit-application-proxy-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+env:
+  BACKEND: blueprints-cockpit/cockpit-user-task-backend/springboot
+  FRONTEND: blueprints-cockpit/cockpit-user-task-frontend/react
+  APPLICATION: blueprints-cockpit/cockpit-user-task-application-proxy/springboot
+  # The module kit is not on npmjs.com yet, so the frontend installs it from a Verdaccio
+  # registry inside the job. The lock file of the frontend carries the checksums of exactly
+  # this commit. Keep it the same as KIT_REF in frontend.yaml.
+  KIT_REPOSITORY: vanillabp/business-cockpit-module-kit
+  KIT_REF: cd83ab07d38baa5026e4926774fd7b27562506b7
+jobs:
+  application-proxy:
+    name: ${{ matrix.bpms }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        bpms:
+          - camunda7
+          - camunda8
+          - operaton
+          - cibseven
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ env.KIT_REPOSITORY }}
+          ref: ${{ env.KIT_REF }}
+          path: module-kit
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          java-version: 25.0.5+8
+          distribution: temurin
+      - name: Use Maven 3.9
+        uses: ./.github/actions/use-maven
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      # Read-only, like the matrix of build.yaml: the aggregator job there writes the cache.
+      - uses: actions/cache/restore@v6
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            maven-${{ hashFiles('**/pom.xml') }}-
+            maven-
+      - name: Start a Camunda 8 cluster
+        if: matrix.bpms == 'camunda8'
+        # The same as in build.yaml. The address is set here and not in the build step, so a
+        # build for another BPMS never sees a configured camunda8 adapter.
+        run: |
+          bin/camunda8_cluster.sh start
+          {
+            echo "VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS=http://localhost:8080"
+            echo "VANILLABP_ADAPTERS_CAMUNDA8_REST_ADDRESS=http://localhost:8080"
+          } >> "$GITHUB_ENV"
+
+      # 1. The backend: the workflow module and the API jar into the local Maven repository.
+      #    Its own tests run in build.yaml, so they are skipped here.
+      - name: Install the backend
+        run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
+          -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
+          --batch-mode --no-transfer-progress --update-snapshots
+          -f "$BACKEND/pom.xml" -P${{ matrix.bpms }} -DskipTests -DskipITs install
+
+      # 2. The frontend: the micro-frontends and the nginx image, from the API jar just built.
+      - name: Start Verdaccio and publish the module kit into it
+        run: |
+          docker run -d --name verdaccio -p 4873:4873 \
+            -v "$GITHUB_WORKSPACE/$FRONTEND/verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro" \
+            verdaccio/verdaccio:6
+          timeout 60 bash -c 'until curl -fs http://localhost:4873/-/ping; do sleep 2; done'
+          cd "$GITHUB_WORKSPACE/module-kit"
+          for package in bc-module-kit bc-module-host; do
+            npm publish --workspace "packages/$package" \
+              --registry http://localhost:4873 --//localhost:4873/:_authToken=ci --tag snapshot
+          done
+      - name: Build the nginx image of the frontend
+        working-directory: ${{ env.FRONTEND }}
+        # 'npm run build' builds the image as well, but skips it with a warning where Docker
+        # does not run. 'npm run build:image' fails there instead, and this job needs the image.
+        # The second call takes every layer from the cache of the first one.
+        run: |
+          npm ci
+          export API_JAR="$(ls "$GITHUB_WORKSPACE/$BACKEND"/api/target/cockpit-user-task-api-*.jar \
+            | grep -v -e '-sources.jar' -e '-javadoc.jar' | head -1)"
+          npm run build
+          npm run build:image
+
+      # 3. The application, and its integration test against the image just built.
+      - name: Build and test the application
+        run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
+          -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
+          --batch-mode --no-transfer-progress --update-snapshots
+          -f "$APPLICATION/pom.xml" -P${{ matrix.bpms }} install
+
+      - name: The Camunda 8 cluster's log, if something went wrong
+        if: failure() && matrix.bpms == 'camunda8'
+        run: bin/camunda8_cluster.sh logs
+      - name: Stop the Camunda 8 cluster
+        if: always() && matrix.bpms == 'camunda8'
+        run: bin/camunda8_cluster.sh stop
+      - name: Stop Verdaccio
+        if: always()
+        run: docker rm -f verdaccio || true

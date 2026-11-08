@@ -106,6 +106,7 @@
     <module>blueprints-bpmn/bpmn-process-sections/springboot</module>
     <module>blueprints-bpmn/bpmn-process-sections/quarkus</module>
     <module>blueprints-cockpit/cockpit-user-task-backend/springboot</module>
+    <module>blueprints-cockpit/cockpit-user-task-application-proxy/springboot</module>
   </modules>
 
   <scm>
@@ -176,6 +177,11 @@
                 opens up. The formatter would drop them.
               -->
               <exclude>blueprints-cockpit/*-frontend/*/verdaccio/**</exclude>
+              <!--
+                A docker-compose.yaml of a blueprint says in comments what each container is
+                for. The formatter would drop them.
+              -->
+              <exclude>**/docker-compose.yaml</exclude>
             </excludes>
             <jackson>
               <yamlFeatures>
