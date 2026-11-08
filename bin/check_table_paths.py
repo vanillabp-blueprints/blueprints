@@ -8,7 +8,8 @@ That is how 22 blueprints came to name a profile file which had moved a month be
 and story 683 corrected them by hand.
 
 Checked for '<group>/<blueprint-id>/<platform>/AGENTS.md' and its README.md, in every
-table whose first header cell is 'File':
+table whose first header cell is 'File'. The platform of a frontend of the Business Cockpit
+is its UI framework, and its directory holds a package.json instead of a pom.xml:
 
   - every path in the first cell of a row leads to a file or directory of the blueprint,
   - a row saying the file is 'deleted' or 'gone' names one which is really not there.
@@ -26,7 +27,8 @@ below it.
 A first cell which is not meant as a file needs no exception of its own: the header of
 the table decides. A table of beans, of BPMN element ids or of placeholders is headed
 'Bean', 'Name' or 'Placeholder' and is not read here. What a build writes is not in the
-repository, so a path below 'target/' is skipped as well.
+repository, so a path below 'target/' is skipped as well, and so is one below
+'node_modules/' or 'dist/' of a frontend.
 
 Usage: bin/check_table_paths.py
 """
@@ -37,6 +39,8 @@ from pathlib import Path
 
 PLATFORMS = ("springboot", "quarkus")
 
+FRONTEND_PLATFORMS = ("react", "angular", "vue")
+
 DOCUMENTS = ("AGENTS.md", "README.md")
 
 # The tables this script reads, by the name of their first column.
@@ -44,16 +48,16 @@ FILE_COLUMN = "File"
 
 CODE_SPAN = re.compile(r"`([^`]+)`")
 
-# What a build writes. It is not committed, so a table naming it is right even though
-# nothing is there.
-BUILD_OUTPUT = "target"
+# What a build writes: Maven into 'target', npm into 'node_modules' and 'dist'. It is not
+# committed, so a table naming it is right even though nothing is there.
+BUILD_OUTPUT = {"target", "node_modules", "dist"}
 
 # A file name without a directory in front of it is only a file name if it ends in one of
 # these. Without the list every 'com.acme' and every 'blueprint.workflowmodule' would be
 # read as a path.
 EXTENSIONS = {
-    ".bpmn", ".dmn", ".idx", ".imports", ".java", ".json", ".md", ".png",
-    ".properties", ".py", ".sh", ".sql", ".txt", ".xml", ".yaml", ".yml",
+    ".bpmn", ".dmn", ".idx", ".imports", ".java", ".js", ".json", ".md", ".mjs", ".png",
+    ".properties", ".py", ".sh", ".sql", ".ts", ".tsx", ".txt", ".xml", ".yaml", ".yml",
 }
 
 # How a row says that the file it names is the one this blueprint does without.
@@ -101,7 +105,7 @@ def paths_in(cell):
             continue
         if "/" not in token and Path(token).suffix not in EXTENSIONS:
             continue
-        if BUILD_OUTPUT in Path(token).parts:
+        if BUILD_OUTPUT & set(Path(token).parts):
             continue
         found.append(token)
     return found
@@ -129,7 +133,7 @@ def resolves(blueprint, path):
                 return True
             continue
         for match in blueprint.glob(candidate):
-            if BUILD_OUTPUT not in match.relative_to(blueprint).parts:
+            if not BUILD_OUTPUT & set(match.relative_to(blueprint).parts):
                 return True
     return False
 
@@ -166,9 +170,10 @@ def main():
     errors = []
     documents = checked = 0
 
-    for pom in sorted(root.glob("*/*/*/pom.xml")):
-        blueprint = pom.parent
-        if blueprint.name not in PLATFORMS:
+    for marker in sorted([*root.glob("*/*/*/pom.xml"), *root.glob("*/*/*/package.json")]):
+        blueprint = marker.parent
+        frontend = marker.name == "package.json"
+        if blueprint.name not in (FRONTEND_PLATFORMS if frontend else PLATFORMS):
             continue
         for name in DOCUMENTS:
             documents += 1
