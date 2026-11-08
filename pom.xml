@@ -105,6 +105,7 @@
     <module>blueprints-bpmn/bpmn-adhoc-subprocess/quarkus</module>
     <module>blueprints-bpmn/bpmn-process-sections/springboot</module>
     <module>blueprints-bpmn/bpmn-process-sections/quarkus</module>
+    <module>blueprints-cockpit/cockpit-user-task-backend/springboot</module>
   </modules>
 
   <scm>

@@ -27,6 +27,12 @@ that needs the index: a platform is allowed to be missing only where the index s
 'not-applicable' for it, which is a statement about the platform and carries its reason.
 Without the index this stays a message rather than a failure, so a local run works offline.
 
+One more case is allowed, for a whole category at a time. A new family of blueprints starts
+on one platform, and its twins follow in a phase of their own, as the Quarkus twins of the
+first families did. While a category is listed in CATEGORIES_BEFORE_THEIR_TWIN_PHASE, a twin
+the index says 'planned' for may be missing. Take the category out of the list when its twin
+phase starts, and the check is strict for it again.
+
 Usage: bin/check_twin_diff.py [blueprints.yaml]
                                          fail on every unapproved difference (CI)
        bin/check_twin_diff.py --update   write the approvals, keeping the reasons already
@@ -41,6 +47,11 @@ from pathlib import Path
 PLATFORMS = ("springboot", "quarkus")
 
 ALLOW_FILE = "twin-diff-allow.txt"
+
+# The categories whose blueprints exist on one platform so far, because their twins come in a
+# phase of their own. A twin the index says 'planned' for may be missing there, nowhere else.
+# 'cockpit' started on Spring Boot. Its Quarkus twins follow in the Quarkus phase.
+CATEGORIES_BEFORE_THEIR_TWIN_PHASE = ("cockpit",)
 
 TODO_REASON = "TODO: say why the twins differ here"
 
@@ -239,6 +250,28 @@ def inapplicable_platforms(index_file):
     }
 
 
+def planned_in_a_later_phase(index_file):
+    """The twins which may still be missing, as (blueprint id, platform).
+
+    A twin may be missing if the index says 'planned' for it and its blueprint belongs to a
+    category listed in CATEGORIES_BEFORE_THEIR_TWIN_PHASE. Returns None if no index was given.
+    """
+
+    if index_file is None:
+        return None
+
+    import yaml
+
+    index = yaml.safe_load(index_file.read_text(encoding="utf-8"))
+    return {
+        (blueprint["id"], platform)
+        for blueprint in index["blueprints"]
+        if blueprint.get("category") in CATEGORIES_BEFORE_THEIR_TWIN_PHASE
+        for platform in PLATFORMS
+        if blueprint["platforms"][platform]["status"] == "planned"
+    }
+
+
 def main():
 
     arguments = sys.argv[1:]
@@ -248,6 +281,7 @@ def main():
 
     index_file = Path(given[0]) if given else None
     inapplicable = inapplicable_platforms(index_file)
+    later = planned_in_a_later_phase(index_file)
 
     directories = blueprints(root)
     if not directories:
@@ -274,6 +308,11 @@ def main():
                 print(
                     f"{display}: only '{platforms[0]}' exists, and the index says"
                     f" '{', '.join(missing)}' is not applicable to this blueprint")
+            elif all((blueprint_directory.name, platform) in later for platform in missing):
+                print(
+                    f"{display}: only '{platforms[0]}' exists. The index says"
+                    f" '{', '.join(missing)}' is planned, and the twins of its category come in"
+                    " a phase of their own")
             else:
                 unpaired.append((display, missing))
             continue

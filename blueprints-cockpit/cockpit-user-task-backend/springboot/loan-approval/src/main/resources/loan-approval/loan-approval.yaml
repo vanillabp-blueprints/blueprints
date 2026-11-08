@@ -1,0 +1,33 @@
+# Configuration of the workflow module 'loan-approval'.
+#
+# The file is named after the workflow module ID and is loaded automatically, with a
+# lower priority than application.yaml. Everything only this module needs belongs here.
+# That keeps a workflow module a self-contained application inside the application.
+vanillabp:
+  workflow-modules:
+    loan-approval:
+      # What the Business Cockpit has to know about this module. Where the cockpit server is,
+      # is not a matter of the module. The application writes it, below 'vanillabp.cockpit'.
+      # https://github.com/vanillabp/business-cockpit/wiki/Configuration#what-a-workflow-module-tells-the-cockpit
+      cockpit:
+        # Where the cockpit reaches this module. The cockpit serves the module to the browser
+        # below '/wm/loan-approval/' and forwards each request to this address. It replaces
+        # '/wm/loan-approval' by the path of this address. So the form which asks for
+        # '/wm/loan-approval/api/user-tasks/...' reaches '/loan-approval/api/user-tasks/...'
+        # here, and '/wm/loan-approval/bc-manifest.json' reaches the user interface below
+        # '/loan-approval/'. Everything of this module is below its own path, like its
+        # resources are below their own directory. The application sets the address it runs at.
+        workflow-module-uri: http://localhost:8080/loan-approval
+        # The user interface is a set of ES modules, listed in a manifest. The name is agreed
+        # with the cockpit user interface. VanillaBP passes it on without reading it.
+        ui-uri-type: ES_MODULES
+        # The manifest, relative to the address above.
+        ui-uri-path: /bc-manifest.json
+        i18n-languages:
+          - en
+        # The names in the BPMN files are English. They become the titles in the cockpit.
+        bpmn-description-language: en
+        # Who caused a report. The forms of this blueprint carry no user, so the system is
+        # named. An application with a login writes 'by-application' and sets the initiator
+        # in the details provider.
+        initiator-source: system

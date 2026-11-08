@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.cockpit-user-task-backend-springboot</groupId>
+    <artifactId>cockpit-user-task-backend</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>loan-approval</artifactId>
+  <name>Workflow module 'loan-approval'</name>
+  <description>The workflow module: BPMN models, the code implementing them, the endpoints of the user task forms and what the Business Cockpit needs to show the user tasks, packaged as a JAR.</description>
+
+  <properties>
+    <!--
+      The stand-in for the Business Cockpit which the integration test reports to. It is the
+      dev shell simulator of the cockpit: a small Spring Boot application which takes the
+      reports a workflow module sends and serves them back. The test starts its runnable JAR.
+    -->
+    <dev-shell-simulator.version>0.9.0-SNAPSHOT</dev-shell-simulator.version>
+  </properties>
+
+  <dependencies>
+    <!--
+      The workflow module knows the VanillaBP APIs, but no BPMS: 'vanillabp-spring-boot-support'
+      deliberately does not expose any BPMS API, so the hexagonal architecture cannot be
+      broken by accident. The adapter is chosen by the application.
+    -->
+    <dependency>
+      <groupId>io.vanillabp</groupId>
+      <artifactId>vanillabp-spring-boot-support</artifactId>
+    </dependency>
+    <!--
+      The annotations and types of the Business Cockpit, such as @UserTaskDetailsProvider. Like
+      the line above, this knows no BPMS. The cockpit adapter of the BPMS is chosen by the
+      application, next to the BPMS adapter.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>spi-for-java</artifactId>
+      <version>${businesscockpit.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <!--
+      Testing the workflow module means running it: the test sources bring their own tiny
+      Spring Boot application (TestApplication), a database, a BPMS adapter and a cockpit
+      adapter. This is the normal case - a workflow module is a JAR and cannot be started on
+      its own.
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!--
+      The OpenAPI the endpoints implement. The test reads it and checks that every operation
+      in it has an endpoint here, so the file and the code cannot drift apart unnoticed.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint</groupId>
+      <artifactId>cockpit-user-task-api</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        Copies the runnable JAR of the dev shell simulator to target/, where the integration
+        test starts it. It is not a dependency, because it is a whole application and none of
+        its classes belong on the classpath of the test.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>dev-shell-simulator</id>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>io.vanillabp.businesscockpit</groupId>
+                  <artifactId>dev-shell-simulator</artifactId>
+                  <version>${dev-shell-simulator.version}</version>
+                  <classifier>runnable</classifier>
+                  <destFileName>dev-shell-simulator.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <!-- Where the test finds the simulator, and where it writes the simulator's log. -->
+            <dev-shell-simulator.jar>${project.build.directory}/dev-shell-simulator.jar</dev-shell-simulator.jar>
+            <dev-shell-simulator.log>${project.build.directory}/dev-shell-simulator.log</dev-shell-simulator.log>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!--
+    One profile per BPMS. Each adds two adapters to the test: the BPMS adapter, which runs the
+    workflows, and the cockpit adapter of the same BPMS, which reports their user tasks to the
+    cockpit. The application which runs this workflow module declares the same two.
+  -->
+  <profiles>
+    <profile>
+      <id>camunda7</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <bpms>camunda7</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda7-adapter-spring-boot</artifactId>
+          <version>${camunda7-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-camunda7-adapter-spring-boot</artifactId>
+          <version>${businesscockpit.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>camunda8</id>
+      <properties>
+        <bpms>camunda8</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda8-adapter-spring-boot</artifactId>
+          <version>${camunda8-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-camunda8-adapter-spring-boot</artifactId>
+          <version>${businesscockpit-camunda8.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>operaton</id>
+      <properties>
+        <bpms>operaton</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>operaton-adapter-spring-boot</artifactId>
+          <version>${operaton-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-operaton-adapter-spring-boot</artifactId>
+          <version>${businesscockpit.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>cibseven</id>
+      <properties>
+        <bpms>cibseven</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>cibseven-adapter-spring-boot</artifactId>
+          <version>${cibseven-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-cibseven-adapter-spring-boot</artifactId>
+          <version>${businesscockpit.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>

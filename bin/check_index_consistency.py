@@ -38,6 +38,7 @@ GROUP_OF_CATEGORY = {
     "module": "blueprints-modules",
     "persistence": "blueprints-persistence",
     "bpmn": "blueprints-bpmn",
+    "cockpit": "blueprints-cockpit",
     "showcase": "showcases",
 }
 

@@ -339,6 +339,11 @@ the index declares the missing platform not applicable. So leaving a twin out is
 somebody writes down, not something a check quietly skips. Pass the index to have that checked.
 Without it, a single directory is only reported.
 
+A new family of blueprints may start on one platform. Its twins then come in a phase of their
+own, as the Quarkus twins of the first families did. `CATEGORIES_BEFORE_THEIR_TWIN_PHASE` in the
+script names such a category, today `cockpit`. There a twin may be missing while the index says
+`planned` for it. Take the category out of the list when its twin phase starts.
+
 Where both twins are there, it compares their Java sources after removing package lines,
 imports and comments. So a different import or a Javadoc written for one platform is never a
 difference. Everything left over has to be approved in
@@ -412,8 +417,10 @@ background at all. An SVG of that cannot be read in GitHub's dark mode.
 
 1. Create `<group>/<blueprint-id>/<platform>/` and add it to `<modules>` of the root POM. The
    group is the blueprint's category: `blueprints-modules`, `blueprints-persistence`,
-   `blueprints-bpmn` or `showcases`. `bin/check_index_consistency.py` rejects a blueprint in
-   the wrong one.
+   `blueprints-bpmn`, `blueprints-cockpit` or `showcases`. `bin/check_index_consistency.py`
+   rejects a blueprint in the wrong one. A `cockpit-*` blueprint with a user interface comes
+   in parts, and each part is a blueprint ID of its own, such as `cockpit-user-task-backend`.
+   The tools find a part like any other blueprint, because they read the directories.
 2. Copy the structure of `blueprints-modules/module-single/<platform>/` and apply your delta.
    Include the test harness files it needs (see above), and the three files every split
    repository needs of its own:
