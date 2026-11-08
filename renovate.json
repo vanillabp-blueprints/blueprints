@@ -76,6 +76,11 @@
       "groupName": "{{{depName}}}",
       "automerge": false,
       "addLabels": ["needs-doc-update"]
+    },
+    {
+      "description": "The JDK of the workflows is written as '25.0.5+8', not as '25.0.5+8.0.LTS' which the Adoptium API reports. setup-java matches a version with a build number exactly against the runner's tool cache, which spells it the short way. With the long spelling every job downloads the JDK from GitHub's release storage, and a 504 there turned a whole nightly red. This keeps an update in the short spelling.",
+      "matchDatasources": ["java-version"],
+      "extractVersion": "^(?<version>\\d+\\.\\d+\\.\\d+\\+\\d+)"
     }
   ]
 }
