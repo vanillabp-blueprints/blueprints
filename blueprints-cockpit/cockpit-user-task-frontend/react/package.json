@@ -35,8 +35,8 @@
   "devDependencies": {
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@vanillabp/bc-module-host": "0.1.0-snapshot.0",
-    "@vanillabp/bc-module-kit": "0.1.0-snapshot.0",
+    "@vanillabp/bc-module-host": "0.1.0-snapshot.2",
+    "@vanillabp/bc-module-kit": "0.1.0-snapshot.2",
     "esbuild": "0.28.2",
     "fflate": "0.8.3",
     "openapi-typescript": "7.13.0",
