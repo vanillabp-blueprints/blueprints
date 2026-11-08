@@ -3,7 +3,9 @@
 # Push every blueprint of this monorepo into a repository of its own.
 #
 # The job is DIRECTORY DRIVEN and IDEMPOTENT: it iterates over the directories
-# '<group>/<blueprint-id>/<platform>/' which exist and splits what it finds. A blueprint whose
+# '<group>/<blueprint-id>/<platform>/' which exist and splits what it finds. A Java platform
+# ('springboot', 'quarkus') is a directory with a pom.xml. A frontend of a cockpit blueprint
+# ('react', 'angular', 'vue') is a directory with a package.json, because it is built with npm. A blueprint whose
 # platform directory does not exist yet is not mentioned anywhere - no repository is
 # created on stock, and the index keeps saying 'planned' until the directory arrives. A
 # later run picks it up without anybody having to remember it.
@@ -32,6 +34,7 @@ INDEX_REPO="${ORG}/.github"
 INDEX_BRANCH="${INDEX_BRANCH:-main}"
 HOMEPAGE="https://github.com/${ORG}"
 PLATFORMS=(springboot quarkus)
+FRONTEND_PLATFORMS=(react angular vue)
 DRY_RUN="${DRY_RUN:-0}"
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)"
@@ -88,10 +91,21 @@ PYTHON
 split_count=0
 splitted=()
 
+# The file which marks a directory as a blueprint: the build file of its platform.
+markers=()
 for platform in "${PLATFORMS[@]}"; do
-  for pom in */*/"${platform}"/pom.xml; do
-    [ -f "${pom}" ] || continue
-    prefix="$(dirname "${pom}")"
+  markers+=("pom.xml:${platform}")
+done
+for platform in "${FRONTEND_PLATFORMS[@]}"; do
+  markers+=("package.json:${platform}")
+done
+
+for marker in "${markers[@]}"; do
+  build_file="${marker%%:*}"
+  platform="${marker#*:}"
+  for found in */*/"${platform}/${build_file}"; do
+    [ -f "${found}" ] || continue
+    prefix="$(dirname "${found}")"
     id="$(basename "$(dirname "${prefix}")")"
     repo="${id}-${platform}"
     branch="split-${id}-${platform}"

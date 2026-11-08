@@ -269,6 +269,14 @@ jobs:
       # and not what the cache happened to carry in.
       - name: Mark the moment the build starts
         run: touch "${RUNNER_TEMP}/platform-snapshot-marker"
+      # The application and the bundle of a cockpit blueprint need the UI jar of a frontend,
+      # which npm builds. So they cannot build here. cockpit-applications.yaml builds them after
+      # the backend and the frontend. This writes them as a value for '-pl', each with '!'.
+      - name: Which modules only build after their frontend
+        run: |
+          leave_out="$(python3 bin/build_matrix.py --chained-modules)"
+          echo "LEAVE_OUT=${leave_out:+-pl ${leave_out}}" >> "$GITHUB_ENV"
+          echo "Left out: ${leave_out:-nothing}"
       - name: Build every blueprint through the aggregator
         # Both switches, because they belong to different plugins: Surefire reads
         # -DskipTests, Failsafe does not and wants -DskipITs. With only the first one the
@@ -277,7 +285,7 @@ jobs:
         # minutes for a cluster nobody had started.
         run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots -DskipTests -DskipITs
-          install
+          ${LEAVE_OUT} install
       - name: Resolve what the other engines need, so the cache holds that too
         # The build above runs the default profile, so the artifacts of the other engines
         # would be missing and every job of such an engine would fetch them itself. With
@@ -290,7 +298,7 @@ jobs:
           for engine in camunda8 operaton cibseven; do
             ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
               --batch-mode --no-transfer-progress --update-snapshots -P"$engine" \
-              -DskipTests -DskipITs dependency:go-offline
+              -DskipTests -DskipITs ${LEAVE_OUT} dependency:go-offline
           done
       - name: Resolve the test provider of Surefire and Failsafe, so the cache holds it too
         # Surefire and Failsafe fetch their JUnit provider only when tests run, and this job
@@ -301,7 +309,7 @@ jobs:
         run: |
           plugins="${RUNNER_TEMP}/plugins.txt"
           ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
-            --batch-mode --no-transfer-progress --quiet \
+            --batch-mode --no-transfer-progress --quiet ${LEAVE_OUT} \
             dependency:resolve-plugins -DoutputFile="${plugins}" -DappendOutput=true
           for version in $(grep -ohE 'maven-(surefire|failsafe)-plugin:jar:[0-9][0-9.]*' "${plugins}" \
               | sed 's/.*://' | sort -u); do

@@ -558,6 +558,15 @@ build one part each, one after the other. GitHub starts no more than 256 jobs fr
 and a full run with four engines has more. `nightly.yaml` does the same with `freshness-1` to
 `freshness-3`.
 
+A cockpit blueprint with a user interface is the one exception to "alone". Its backend builds
+alone, and `build.yaml` builds it like any other blueprint. Its frontend is an npm project, and
+`frontend.yaml` builds it. Its application and its bundle take the workflow module of the
+backend and the UI jar of a frontend, and nothing publishes those from this repository. So
+`build.yaml` leaves them out, the aggregator included. `cockpit-applications.yaml` builds the
+parts one after the other: the backend, every frontend, and then each application and bundle
+once per frontend, with exactly that one UI jar in its local repository. `bin/build_matrix.py`
+decides which directories these are, from the directories which exist.
+
 A BPMS which runs inside the application needs nothing. One which runs as a server has to be
 started first. `bin/camunda8_cluster.sh` starts the one this repository builds against:
 

@@ -28,15 +28,30 @@ one matrix job per part. The parts differ in size by one at most, and a part may
 part which would grow beyond the limit stops this script with a message, and then PARTS and
 the workflows get one part more.
 
+A cockpit blueprint with a user interface comes in parts: '<base>-backend', '<base>-frontend'
+and the parts which take both, such as '<base>-application' and '<base>-bundle'. Only the
+backend builds on its own. The frontend is an npm project without a POM. The other parts need
+the workflow module of the backend and the UI jar of a frontend, and neither is published from
+this repository. So they are not built here at all, and a change inside one of them or inside a
+frontend builds nothing here. Their own workflows build the parts one after the other
+(.github/workflows/cockpit-applications.yaml and frontend.yaml). '--chain' prints what such a
+workflow builds, and '--chained-modules' what the aggregator of build.yaml leaves out.
+
 Usage: bin/build_matrix.py <blueprints.yaml> [<file with changed paths, one per line>]
        Prints PARTS lines, each one JSON array of {"blueprint": ..., "bpms": ...} objects.
+       bin/build_matrix.py --chain <blueprints.yaml>
+       Prints one JSON object: "frontends", a list of {"frontend", "artifact"}, and "builds", a
+       list of {"part", "frontend", "artifact", "bpms"}: every application and bundle crossed
+       with every frontend of its blueprint and with its engines.
+       bin/build_matrix.py --chained-modules
+       Prints the chained parts which are modules of the root POM, as a value for Maven's
+       '-pl', each with '!' in front, so the aggregator leaves them out. Empty if there is none.
 """
 
 import json
 import sys
 from pathlib import Path
-
-import yaml
+from xml.etree import ElementTree
 
 PLATFORMS = ("springboot", "quarkus")
 
@@ -53,16 +68,45 @@ PARTS = 3
 # What GitHub allows in one matrix.
 MATRIX_LIMIT = 256
 
+# The part of a cockpit blueprint which builds on its own, and the one built with npm.
+BACKEND = "-backend"
+FRONTEND = "-frontend"
 
-def blueprint_directories(root):
-    """Every '<group>/<blueprint-id>/<platform>/' with a POM, sorted."""
+# The chained parts which the workflow cockpit-applications.yaml builds. Other chained parts,
+# such as an application which takes its user interface from nginx, have workflows of their own.
+CHAIN_PARTS = ("-application", "-bundle")
+
+MAVEN_NS = {"m": "http://maven.apache.org/POM/4.0.0"}
+
+
+def chained(root, group, blueprint_id):
+    """Whether a blueprint is a part which needs the backend of its blueprint to be built first.
+
+    :return: the base of the blueprint, such as 'cockpit-user-task', or None
+    """
+
+    for backend in (root / group).glob(f"*{BACKEND}"):
+        base = backend.name[: -len(BACKEND)]
+        if blueprint_id.startswith(f"{base}-") and blueprint_id != backend.name:
+            return base
+    return None
+
+
+def blueprint_directories(root, with_chained=False):
+    """Every '<group>/<blueprint-id>/<platform>/' with a POM, sorted.
+
+    :param with_chained: whether the parts which cannot build alone are listed as well
+    """
 
     directories = []
     for pom in sorted(root.glob("*/*/*/pom.xml")):
         directory = pom.parent
         if directory.name not in PLATFORMS:
             continue
-        directories.append(directory.relative_to(root))
+        relative = directory.relative_to(root)
+        if not with_chained and chained(root, relative.parts[0], relative.parts[1]):
+            continue
+        directories.append(relative)
     return directories
 
 
@@ -80,11 +124,12 @@ def bpms_of(index, blueprint_id):
     return list(RUNNABLE)
 
 
-def wanted(directories, changed):
+def wanted(directories, changed, root):
     """The directories a change asks for, out of all of them.
 
     :param directories: every blueprint directory
     :param changed: the paths a change touched
+    :param root: the root of this repository
     :return: the directories to build
     """
 
@@ -93,6 +138,11 @@ def wanted(directories, changed):
         directory = blueprint_directory_of(path, directories)
         if directory is not None:
             touched.add(directory)
+            continue
+        parts = path.split("/")
+        if len(parts) > 2 and chained(root, parts[0], parts[1]):
+            # a frontend, an application or a bundle of a cockpit blueprint: its own workflow
+            # builds it, together with the backend it needs
             continue
         if path.count("/") == 0 and path.endswith(".md"):
             # documentation at the top level, README.md and its kind, builds nothing
@@ -111,13 +161,60 @@ def blueprint_directory_of(path, directories):
     return None
 
 
+def chain(root, index):
+    """What the workflow cockpit-applications.yaml builds, see the usage above."""
+
+    frontends = []
+    builds = []
+    for directory in blueprint_directories(root, with_chained=True):
+        group, blueprint_id = directory.parts[0], directory.parts[1]
+        base = chained(root, group, blueprint_id)
+        if base is None or blueprint_id not in [f"{base}{part}" for part in CHAIN_PARTS]:
+            continue
+        for package in sorted((root / group / f"{base}{FRONTEND}").glob("*/package.json")):
+            frontend = package.parent.relative_to(root)
+            artifact = "ui-jar-" + "-".join(frontend.parts[1:])
+            entry = {"frontend": str(frontend), "artifact": artifact}
+            if entry not in frontends:
+                frontends.append(entry)
+            for bpms in bpms_of(index, blueprint_id):
+                builds.append({"part": str(directory), "bpms": bpms, **entry})
+    return {"frontends": frontends, "builds": builds}
+
+
+def chained_modules(root):
+    """The chained parts the aggregator has to leave out, as a value for '-pl'."""
+
+    project = ElementTree.parse(root / "pom.xml").getroot()
+    modules = {
+        (module.text or "").strip() for module in project.findall("m:modules/m:module", MAVEN_NS)
+    }
+    excluded = [
+        f"!{directory}"
+        for directory in blueprint_directories(root, with_chained=True)
+        if str(directory) in modules and chained(root, directory.parts[0], directory.parts[1])
+    ]
+    return ",".join(excluded)
+
+
 def main():
 
-    if len(sys.argv) not in (2, 3):
+    root = Path(__file__).resolve().parent.parent
+
+    if sys.argv[1:] == ["--chained-modules"]:
+        print(chained_modules(root))
+        return 0
+
+    # Only here, because the aggregator job asks for the chained modules without PyYAML.
+    import yaml
+
+    if len(sys.argv) == 3 and sys.argv[1] == "--chain":
+        index = yaml.safe_load(Path(sys.argv[2]).read_text(encoding="utf-8")) or {}
+        print(json.dumps(chain(root, index), separators=(",", ":")))
+        return 0
+    if len(sys.argv) not in (2, 3) or sys.argv[1].startswith("--"):
         print(__doc__, file=sys.stderr)
         return 2
-
-    root = Path(__file__).resolve().parent.parent
     index = yaml.safe_load(Path(sys.argv[1]).read_text(encoding="utf-8")) or {}
 
     directories = [str(directory) for directory in blueprint_directories(root)]
@@ -127,7 +224,7 @@ def main():
             for line in Path(sys.argv[2]).read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
-        directories = wanted(directories, changed)
+        directories = wanted(directories, changed, root)
 
     combinations = []
     for directory in directories:

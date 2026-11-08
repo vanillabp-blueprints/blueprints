@@ -1,0 +1,230 @@
+name: Build the cockpit applications
+# The applications and bundles of the cockpit blueprints, blueprints-cockpit/*-application/<platform>
+# and blueprints-cockpit/*-bundle/<platform>. Each one takes the workflow module of its backend
+# and the UI jar of one of its frontends. In a repository of its own, both come from a Maven
+# repository as released versions. Here they come from this commit, so the parts build one
+# after the other:
+#
+#   1. 'backend' installs every cockpit backend with Maven and hands its artifacts on,
+#   2. 'frontend' builds the UI jar of every frontend with npm, from the API jar of step 1,
+#   3. 'part' installs the artifacts of step 1 and exactly one UI jar into its local
+#      repository with 'mvn install:install-file', and then builds the application or bundle.
+#
+# The React, the Angular and the Vue frontend build a UI jar with the same coordinates. So step 3
+# runs once per frontend, and each run proves that the part works with that one. The list of
+# frontends is the directories which exist, like everything else in this repository
+# (bin/build_matrix.py --chain).
+#
+# build.yaml leaves these parts out, because it cannot build them alone. The backends and the
+# frontends have their own tests in build.yaml and frontend.yaml. This workflow skips them.
+"on":
+  push:
+    branches:
+      - main
+    paths:
+      - "blueprints-cockpit/**"
+      - "bin/build_matrix.py"
+      - "bin/camunda8_cluster.sh"
+      - ".github/workflows/cockpit-applications.yaml"
+  pull_request:
+    paths:
+      - "blueprints-cockpit/**"
+      - "bin/build_matrix.py"
+      - "bin/camunda8_cluster.sh"
+      - ".github/workflows/cockpit-applications.yaml"
+  workflow_dispatch:
+concurrency:
+  group: cockpit-applications-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+env:
+  # The branch of vanillabp-blueprints/.github the index is read from - it says which BPMS a
+  # part is built against, exactly as in build.yaml.
+  INDEX_REF: main
+  # The module kit is not on npmjs.com yet. The same commit as in frontend.yaml, because the
+  # lock files of the frontends carry its checksums.
+  KIT_REPOSITORY: vanillabp/business-cockpit-module-kit
+  KIT_REF: cd83ab07d38baa5026e4926774fd7b27562506b7
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      frontends: "${{ steps.list.outputs.frontends }}"
+      builds: "${{ steps.list.outputs.builds }}"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.15"
+      - name: Install dependencies
+        run: pip install --quiet pyyaml
+      - name: Download the blueprints index
+        run: curl -fsSL -o blueprints.yaml
+          "https://raw.githubusercontent.com/vanillabp-blueprints/.github/${INDEX_REF}/blueprints.yaml"
+      - id: list
+        name: Collect the frontends, and the parts crossed with frontend and BPMS
+        run: |
+          chain="$(python bin/build_matrix.py --chain blueprints.yaml)"
+          echo "frontends=$(jq -c .frontends <<< "${chain}")" >> "$GITHUB_OUTPUT"
+          echo "builds=$(jq -c .builds <<< "${chain}")" >> "$GITHUB_OUTPUT"
+          jq . <<< "${chain}"
+
+  backend:
+    needs: discover
+    if: needs.discover.outputs.builds != '[]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          java-version: 25.0.5+8
+          distribution: temurin
+      - name: Use Maven 3.9
+        uses: ./.github/actions/use-maven
+      # Read-only, like the matrix of build.yaml: the aggregator there writes the cache.
+      - uses: actions/cache/restore@v6
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            maven-${{ hashFiles('**/pom.xml') }}-
+            maven-
+      - name: Install every cockpit backend
+        # Without tests: build.yaml runs them on every BPMS. Here only the artifacts count.
+        run: |
+          for pom in blueprints-cockpit/*-backend/*/pom.xml; do
+            $GITHUB_WORKSPACE/bin/mvn_with_retry.sh \
+              -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
+              --batch-mode --no-transfer-progress --update-snapshots \
+              -f "${pom}" -DskipTests -DskipITs install
+          done
+      # The groupIds of the blueprints all start with io.vanillabp.blueprint, and the API jar
+      # has that groupId itself. So this directory holds what the next jobs need.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: backends
+          path: ~/.m2/repository/io/vanillabp/blueprint*/
+          if-no-files-found: error
+          retention-days: 1
+
+  frontend:
+    name: ${{ matrix.frontend }}
+    needs: [discover, backend]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: "${{ fromJSON(needs.discover.outputs.frontends) }}"
+    defaults:
+      run:
+        working-directory: ${{ matrix.frontend }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ env.KIT_REPOSITORY }}
+          ref: ${{ env.KIT_REF }}
+          path: module-kit
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v8
+        with:
+          name: backends
+          path: ${{ runner.temp }}/backends
+      - name: Start Verdaccio and publish the module kit into it
+        run: |
+          docker run -d --name verdaccio -p 4873:4873 \
+            -v "$PWD/verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro" verdaccio/verdaccio:6
+          timeout 60 bash -c 'until curl -fs http://localhost:4873/-/ping; do sleep 2; done'
+          cd "$GITHUB_WORKSPACE/module-kit"
+          for package in bc-module-kit bc-module-host; do
+            npm publish --workspace "packages/$package" \
+              --registry http://localhost:4873 --//localhost:4873/:_authToken=ci --tag snapshot
+          done
+      - name: Install
+        run: npm ci
+      - name: Build the UI jar
+        # The frontend names its API jar in package.json, as groupId:artifactId:version.
+        run: |
+          IFS=: read -r group artifact version <<< "$(node -p "require('./package.json').config.apiJar")"
+          export API_JAR="$(find "$RUNNER_TEMP/backends" -path "*/${artifact}/${version}/${artifact}-${version}.jar" | head -1)"
+          if [ -z "${API_JAR}" ]; then
+            echo "::error::The API jar ${group}:${artifact}:${version} is not among the backends this run installed."
+            exit 1
+          fi
+          npm run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            ${{ matrix.frontend }}/dist/*.jar
+            ${{ matrix.frontend }}/dist/*.pom
+          if-no-files-found: error
+          retention-days: 1
+      - name: Stop Verdaccio
+        if: always()
+        run: docker rm -f verdaccio || true
+
+  part:
+    name: ${{ matrix.part }} (${{ matrix.frontend }}, ${{ matrix.bpms }})
+    needs: [discover, backend, frontend]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include: "${{ fromJSON(needs.discover.outputs.builds) }}"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          java-version: 25.0.5+8
+          distribution: temurin
+      - name: Use Maven 3.9
+        uses: ./.github/actions/use-maven
+      - uses: actions/cache/restore@v6
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            maven-${{ hashFiles('**/pom.xml') }}-
+            maven-
+      - uses: actions/download-artifact@v8
+        with:
+          name: backends
+          path: ${{ runner.temp }}/backends
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ runner.temp }}/ui-jar
+      - name: Put the backends and the one UI jar into the local repository
+        run: |
+          mkdir -p ~/.m2/repository/io/vanillabp
+          cp -r "$RUNNER_TEMP"/backends/* ~/.m2/repository/io/vanillabp/
+          jar="$(ls "$RUNNER_TEMP"/ui-jar/*.jar | head -1)"
+          mvn --batch-mode --no-transfer-progress install:install-file \
+            -Dfile="${jar}" -DpomFile="${jar%.jar}.pom"
+      - name: Start a Camunda 8 cluster
+        if: matrix.bpms == 'camunda8'
+        # The same as in build.yaml, which says why both spellings are set.
+        run: |
+          bin/camunda8_cluster.sh start
+          {
+            echo "VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS=http://localhost:8080"
+            echo "VANILLABP_ADAPTERS_CAMUNDA8_REST_ADDRESS=http://localhost:8080"
+          } >> "$GITHUB_ENV"
+      - name: Build and test the part on its own
+        working-directory: "${{ matrix.part }}"
+        run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
+          -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
+          --batch-mode --no-transfer-progress --update-snapshots
+          -P${{ matrix.bpms }} install
+      - name: The Camunda 8 cluster's log, if something went wrong
+        if: failure() && matrix.bpms == 'camunda8'
+        run: bin/camunda8_cluster.sh logs
+      - name: Stop the Camunda 8 cluster
+        if: always() && matrix.bpms == 'camunda8'
+        run: bin/camunda8_cluster.sh stop
