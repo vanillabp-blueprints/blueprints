@@ -170,6 +170,11 @@
                 drops comments, and in a blueprint the comments are what is being taught.
               -->
               <exclude>**/src/**</exclude>
+              <!--
+                The Verdaccio configuration of a cockpit frontend says in comments what it
+                opens up. The formatter would drop them.
+              -->
+              <exclude>blueprints-cockpit/*-frontend/*/verdaccio/**</exclude>
             </excludes>
             <jackson>
               <yamlFeatures>

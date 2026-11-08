@@ -1,0 +1,46 @@
+{
+  "name": "cockpit-user-task-frontend-react",
+  "private": true,
+  "version": "1.0.0-SNAPSHOT",
+  "description": "The micro-frontends of the workflow module loan-approval for a VanillaBP Business Cockpit, written in React. Builds the UI jar and an nginx image.",
+  "license": "Apache-2.0",
+  "author": "Phactum Softwareentwicklung GmbH (https://www.phactum.at/)",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "config": {
+    "workflowModuleId": "loan-approval",
+    "uiJar": "io.vanillabp.blueprint:cockpit-user-task-ui",
+    "apiJar": "io.vanillabp.blueprint:cockpit-user-task-api:1.0.0-SNAPSHOT",
+    "image": "vanillabp-blueprints/cockpit-user-task-ui"
+  },
+  "scripts": {
+    "fetch:openapi": "node scripts/fetch-openapi.mjs",
+    "generate:client": "openapi-typescript build/openapi/loan-approval.yaml --output src/generated/loan-approval.ts",
+    "typecheck": "tsc --noEmit",
+    "build:micro-frontends": "node scripts/build-micro-frontends.mjs",
+    "check:entries": "bc-check-entries dist/micro-frontends/bc-manifest.json --metafile build/meta.json",
+    "build:jar": "node scripts/build-ui-jar.mjs",
+    "build:image": "node scripts/build-image.mjs",
+    "build": "npm run fetch:openapi && npm run generate:client && npm run typecheck && npm run build:micro-frontends && npm run check:entries && npm run build:jar && node scripts/build-image.mjs --skip-without-docker",
+    "test": "node --test --test-concurrency=1 \"test/browser/**/*.test.js\"",
+    "start": "node scripts/start.mjs"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vanillabp/bc-module-host": "0.1.0-SNAPSHOT",
+    "@vanillabp/bc-module-kit": "0.1.0-SNAPSHOT",
+    "esbuild": "0.28.2",
+    "fflate": "0.8.3",
+    "openapi-typescript": "7.13.0",
+    "playwright": "1.64.1",
+    "typescript": "5.9.3"
+  }
+}
