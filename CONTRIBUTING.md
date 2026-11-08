@@ -564,8 +564,10 @@ alone, and `build.yaml` builds it like any other blueprint. Its frontend is an n
 backend and the UI jar of a frontend, and nothing publishes those from this repository. So
 `build.yaml` leaves them out, the aggregator included. `cockpit-applications.yaml` builds the
 parts one after the other: the backend, every frontend, and then each application and bundle
-once per frontend, with exactly that one UI jar in its local repository. `bin/build_matrix.py`
-decides which directories these are, from the directories which exist.
+once per frontend, with exactly that one UI jar in its local repository. The application which
+takes its user interface from nginx has a workflow of its own, `cockpit-application-proxy.yaml`.
+`bin/build_matrix.py` decides which directories these are, from the directories which exist:
+every part of a cockpit blueprint other than its backend.
 
 A BPMS which runs inside the application needs nothing. One which runs as a server has to be
 started first. `bin/camunda8_cluster.sh` starts the one this repository builds against:

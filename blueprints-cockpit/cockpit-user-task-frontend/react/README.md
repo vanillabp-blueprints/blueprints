@@ -154,33 +154,18 @@ The jar is a zip file, so reading it needs no Java.
 The forms call `/wm/loan-approval/api/...`. In production the cockpit forwards `/wm/loan-approval/`
 to the workflow module. During development the dev shell does it, and the workflow module runs
 on your machine. You need no application for that. The backend starts the module the way its
-test does, with an embedded BPMS and a database in memory.
+test does, with an embedded BPMS and a database in memory. Its README says how, in "Running the
+backend for the development of the user interface". In short:
 
-In a clone of `cockpit-user-task-backend-springboot`, build once:
-
-```bash
-mvn install -DskipTests
-```
-
-Then start the dev shell simulator, which stands in for the server of the cockpit. It listens on
-port 8079:
-
-```bash
-java -jar loan-approval/target/dev-shell-simulator.jar \
-  --spring.config.additional-location=loan-approval/src/test/resources/dev-shell-simulator.yaml
-```
-
-And the workflow module in a second terminal. It reports to the simulator and answers on port
-8080:
-
-```bash
-mvn -pl loan-approval spring-boot:test-run -Dspring-boot.run.profiles=camunda7
-```
+1. Build the backend once, without its tests.
+2. Start the dev shell simulator, which stands in for the server of the cockpit. It listens on
+   port 8079.
+3. Start the workflow module in a second terminal. It reports to the simulator and answers on
+   port 8080.
 
 Start a loan approval at `http://localhost:8080/loan-approval/api/loan-requests/start?amount=5000`.
 The dev shell forwards `/wm/loan-approval/` to `http://localhost:8080/loan-approval/`, the same
-way the cockpit does. The README of the backend says more, in "Running the backend for the
-development of the user interface".
+way the cockpit does.
 
 ### The dev shell (not there yet)
 

@@ -1,0 +1,48 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is
+# in its own configuration file (loan-approval/loan-approval.yaml inside the module JAR).
+#
+# Nothing about a BPMS is here either. That lives in a profile file per engine,
+# 'application-<bpms>.yaml', so switching engines is a profile and not an edit.
+spring:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, so
+  # 'application-<bpms>.yaml' is loaded without anybody having to name the profile twice.
+  # Tests get the same value as a system property.
+  profiles:
+    active: "@bpms@"
+  datasource:
+    url: jdbc:h2:mem:loan-approval;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+# Where the nginx of the frontend answers. It serves the micro-frontends of the workflow
+# module below '/loan-approval/', and UserInterfaceRoute forwards those paths to it. Only the
+# scheme, the host and the port count. The path of a request stays as it is.
+#
+# This address is for an nginx started on your machine:
+#   docker run --rm -p 8081:80 vanillabp-blueprints/cockpit-user-task-ui:1.0.0-SNAPSHOT
+# docker-compose.yaml sets the address of its own nginx.
+user-interface:
+  address: http://localhost:8081
+
+vanillabp:
+  cockpit:
+    # Where the reports about workflows and user tasks go: the BPMS API of the Business Cockpit.
+    # The address is the cockpit of docker-compose.yaml, published on port 8090. A report the
+    # cockpit does not take stays in the outbox and is sent again later.
+    # https://github.com/vanillabp/business-cockpit/wiki/Connecting-a-workflow-module
+    rest:
+      base-url: http://localhost:8090
+      authentication:
+        # The account the cockpit of docker-compose.yaml expects, from its profile 'local'. A
+        # real cockpit has an account of its own, and its password does not belong in this file.
+        basic: true
+        username: abc
+        password: "123"
+
+logging:
+  level:
+    blueprint.workflowmodule: INFO

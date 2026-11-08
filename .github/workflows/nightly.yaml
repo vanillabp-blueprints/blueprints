@@ -162,9 +162,14 @@ jobs:
         include: "${{ fromJSON(needs.discover.outputs.part1) }}"
     steps: &freshness-steps
       - uses: actions/checkout@v7
+      # Exact, but in the spelling of the runner's tool cache. The runner brings Temurin
+      # 25.0.5+8 along, and setup-java compares a version with a build number to the cache
+      # entries character by character, so '25.0.5+8.0.LTS' never matched it. Each of the 258
+      # jobs then downloaded the JDK from GitHub's release storage, and when that storage
+      # answered with 504 for half an hour, 142 jobs went red before Maven started.
       - uses: actions/setup-java@v6
         with:
-          java-version: 25.0.5+8.0.LTS
+          java-version: 25.0.5+8
           distribution: temurin
       - name: Use Maven 3.9
         uses: ./.github/actions/use-maven

@@ -1,0 +1,100 @@
+# The whole picture on one machine: the application, the nginx of the frontend, the Business
+# Cockpit with its MongoDB and the users it knows. Build first, the README says how:
+#
+#   mvn package dependency:copy@business-cockpit
+#   docker compose up
+#
+# The application, the cockpit and the simulator of its users run from the jars in target/.
+# The nginx runs the image of the frontend.
+services:
+  # The application: the workflow module, no UI jar. It forwards the paths of the user
+  # interface to the nginx below.
+  application:
+    image: eclipse-temurin:25-jre
+    volumes:
+      - ./target/loan-approval.jar:/application.jar:ro
+    command:
+      - java
+      - -jar
+      - /application.jar
+      # where the nginx is, inside this network
+      - --user-interface.address=http://user-interface:80
+      # where the cockpit is, inside this network
+      - --vanillabp.cockpit.rest.base-url=http://business-cockpit:8080
+      # where the cockpit reaches this application. The module says localhost, which is
+      # the cockpit itself in this network.
+      - --vanillabp.workflow-modules.loan-approval.cockpit.workflow-module-uri=http://application:8080/loan-approval
+    environment:
+      # The time zone of the outbox housekeeping, which runs at night. Without it the night is
+      # the one of UTC, and VanillaBP says so at the start. Write your own zone here.
+      TZ: Europe/Vienna
+    ports:
+      - "8080:8080"
+    depends_on:
+      - user-interface
+
+  # The micro-frontends of the workflow module, built by the frontend with
+  # 'npm run build:image'. It publishes no port. The browser reaches it only through the
+  # application, so there is one origin and one place for security.
+  user-interface:
+    image: vanillabp-blueprints/cockpit-user-task-ui:1.0.0-SNAPSHOT
+
+  # The Business Cockpit, without a user interface of its own. It is published as a runnable
+  # jar, not as an image. The profile 'local' logs everybody in with the password 'test' and
+  # takes reports from the account 'abc' the application reports with.
+  business-cockpit:
+    image: eclipse-temurin:25-jre
+    # The cockpit asks the simulator for its users once, at the start. If the simulator is not
+    # ready yet, the cockpit stops, and this starts it again.
+    restart: on-failure
+    volumes:
+      - ./target/business-cockpit.jar:/business-cockpit.jar:ro
+    command:
+      - java
+      - -jar
+      - /business-cockpit.jar
+      # the profile 'local' reads its users from the dev shell simulator below
+      - --dev-shell-simulator.users-uri=http://dev-shell-simulator:8079/dev-shell/user
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_MONGODB_URI: mongodb://mongodb:27017/business-cockpit?directConnection=true
+      BUSINESS_COCKPIT_APPLICATIONURI: http://localhost:8090
+    ports:
+      - "8090:8080"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      dev-shell-simulator:
+        condition: service_started
+
+  # The users the cockpit knows. The profile 'local' of the cockpit has no directory of its
+  # own and asks the simulator, which refuses to start without one user at least.
+  dev-shell-simulator:
+    image: eclipse-temurin:25-jre
+    volumes:
+      - ./target/dev-shell-simulator.jar:/dev-shell-simulator.jar:ro
+    command:
+      - java
+      - -jar
+      - /dev-shell-simulator.jar
+      - --dev-shell-simulator.users[0].id=test
+      - --dev-shell-simulator.users[0].email=test@example.com
+      - --dev-shell-simulator.users[0].first-name=Test
+      - --dev-shell-simulator.users[0].last-name=User
+      - --dev-shell-simulator.users[0].groups=RISK_ASSESSMENT
+
+  # The database of the cockpit. A replica set of one node, because the cockpit needs
+  # transactions. The health check starts the replica set the first time it runs.
+  mongodb:
+    image: mongo:8.2
+    command: [ "--replSet", "rs0", "--bind_ip_all" ]
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [ { _id: 0, host: 'mongodb:27017' } ] }).ok }"
+      interval: 5s
+      timeout: 10s
+      retries: 20
