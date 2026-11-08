@@ -30,8 +30,8 @@ env:
   BACKEND_POM: blueprints-cockpit/cockpit-user-task-backend/springboot/pom.xml
   API_MODULE: api
   API_ARTIFACT_ID: cockpit-user-task-api
-  # The module kit is a private repository and not on npmjs.com yet. Its packages are
-  # published into a Verdaccio registry inside the job, from this commit. The lock files of the
+  # The module kit is not on npmjs.com yet. Its packages are published into a Verdaccio
+  # registry inside the job, from this commit of its public repository. The lock files of the
   # frontends carry the checksums of exactly this commit, so moving it means `npm install` in
   # every frontend as well.
   KIT_REPOSITORY: vanillabp/business-cockpit-module-kit
@@ -82,19 +82,10 @@ jobs:
         working-directory: ${{ matrix.frontend }}
     steps:
       - uses: actions/checkout@v7
-      - name: Check the token of the module kit
-        env:
-          KIT_TOKEN: ${{ secrets.BC_MODULE_KIT_TOKEN }}
-        run: |
-          if [ -z "$KIT_TOKEN" ]; then
-            echo "::error::The secret BC_MODULE_KIT_TOKEN is missing. It needs read access to the contents of $KIT_REPOSITORY."
-            exit 1
-          fi
       - uses: actions/checkout@v7
         with:
           repository: ${{ env.KIT_REPOSITORY }}
           ref: ${{ env.KIT_REF }}
-          token: ${{ secrets.BC_MODULE_KIT_TOKEN }}
           path: module-kit
           persist-credentials: false
       - uses: actions/setup-node@v7
