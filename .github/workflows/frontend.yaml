@@ -30,12 +30,6 @@ env:
   BACKEND_POM: blueprints-cockpit/cockpit-user-task-backend/springboot/pom.xml
   API_MODULE: api
   API_ARTIFACT_ID: cockpit-user-task-api
-  # The module kit is not on npmjs.com yet. Its packages are published into a Verdaccio
-  # registry inside the job, from this commit of its public repository. The lock files of the
-  # frontends carry the checksums of exactly this commit, so moving it means `npm install` in
-  # every frontend as well.
-  KIT_REPOSITORY: vanillabp/business-cockpit-module-kit
-  KIT_REF: cd83ab07d38baa5026e4926774fd7b27562506b7
 jobs:
   api-jar:
     name: API jar
@@ -82,12 +76,6 @@ jobs:
         working-directory: ${{ matrix.frontend }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/checkout@v7
-        with:
-          repository: ${{ env.KIT_REPOSITORY }}
-          ref: ${{ env.KIT_REF }}
-          path: module-kit
-          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -95,16 +83,6 @@ jobs:
         with:
           name: api-jar
           path: ${{ runner.temp }}/api-jar
-      - name: Start Verdaccio and publish the module kit into it
-        run: |
-          docker run -d --name verdaccio -p 4873:4873 \
-            -v "$PWD/verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro" verdaccio/verdaccio:6
-          timeout 60 bash -c 'until curl -fs http://localhost:4873/-/ping; do sleep 2; done'
-          cd "$GITHUB_WORKSPACE/module-kit"
-          for package in bc-module-kit bc-module-host; do
-            npm publish --workspace "packages/$package" \
-              --registry http://localhost:4873 --//localhost:4873/:_authToken=ci --tag snapshot
-          done
       - name: Install
         run: npm ci
       - name: Install Chromium for the browser tests
@@ -123,6 +101,3 @@ jobs:
             ${{ matrix.frontend }}/dist/*.pom
           if-no-files-found: error
           retention-days: 7
-      - name: Stop Verdaccio
-        if: always()
-        run: docker rm -f verdaccio || true

@@ -175,11 +175,6 @@
               -->
               <exclude>**/src/**</exclude>
               <!--
-                The Verdaccio configuration of a cockpit frontend says in comments what it
-                opens up. The formatter would drop them.
-              -->
-              <exclude>blueprints-cockpit/*-frontend/*/verdaccio/**</exclude>
-              <!--
                 A docker-compose.yaml of a blueprint, and the files a cockpit application
                 mounts into its containers, say in comments what each container is for. The
                 formatter would drop them.

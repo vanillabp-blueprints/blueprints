@@ -80,35 +80,13 @@ stays the same where it uses the minimum.
 
 ## Running it
 
-You need Node.js 24 and Docker. Docker runs the Verdaccio registry for the module kit and builds
-the nginx image.
+You need Node.js 24 and Docker. Docker builds the nginx image.
 
-### The module kit from a local registry
+### The module kit
 
-The packages `@vanillabp/bc-module-kit` and `@vanillabp/bc-module-host` are not on npmjs.com
-yet. Until they are, they come from a local [Verdaccio](https://verdaccio.org) registry. The
-file `.npmrc` sends the scope `@vanillabp` there, and everything else still comes from
-npmjs.com. Start the registry, then publish the kit into it from a clone of
-[`business-cockpit-module-kit`](https://github.com/vanillabp/business-cockpit-module-kit):
-
-```bash
-docker run -d --name verdaccio -p 4873:4873 \
-  -v "$PWD/verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro" verdaccio/verdaccio:6
-
-cd ../business-cockpit-module-kit
-for package in bc-module-kit bc-module-host; do
-  npm publish --workspace packages/$package --registry http://localhost:4873 \
-    --//localhost:4873/:_authToken=local --tag snapshot
-done
-```
-
-`verdaccio/config.yaml` lets anybody publish, so keep the registry on your own machine. The
-token is a dummy, because npm does not publish without one. `package-lock.json` holds the
-checksums of the kit at the commit the CI uses (`KIT_REF` in `.github/workflows/frontend.yaml`
-of the monorepo). If you publish another commit, `npm ci` fails with `EINTEGRITY`. Then run
-`npm install` to take the new checksums.
-
-Once the kit is on npmjs.com, delete `.npmrc` and the folder `verdaccio`.
+`@vanillabp/bc-module-kit` and `@vanillabp/bc-module-host` come from npmjs.com like every other
+package. While the kit is a prerelease, `package.json` pins both versions exactly. To take a newer
+snapshot, raise the pinned version and run `npm install`.
 
 ### Build and test
 

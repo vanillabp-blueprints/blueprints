@@ -48,8 +48,6 @@ per page. Two modules which define the same name break each other.
 |              File              |                                      Purpose                                       |
 |--------------------------------|------------------------------------------------------------------------------------|
 | `package.json`                 | the scripts, and in `config` the module id, the jar coordinates and the image name |
-| `.npmrc`                       | the scope `@vanillabp` from Verdaccio, until the kit is on npmjs.com               |
-| `verdaccio/config.yaml`        | the configuration of that registry                                                 |
 | `tsconfig.json`                | type checking only; esbuild builds                                                 |
 | `scripts/fetch-openapi.mjs`    | takes the OpenAPI file out of the API jar                                          |
 | `scripts/build-ui-jar.mjs`     | the UI jar and its pom                                                             |
@@ -86,9 +84,8 @@ npm run build
 npm test
 ```
 
-`npm ci` needs the module kit in Verdaccio, see the README. `npm run build` needs the API jar,
-from `~/.m2` after `mvn install` of the backend, or from `API_JAR`. `bc-check-entries` has to
-pass. It runs inside `npm run build`. Every browser test has to pass, the ones with areas and the
-ones with `all` only.
+`npm run build` needs the API jar, from `~/.m2` after `mvn install` of the backend, or from
+`API_JAR`. `bc-check-entries` has to pass. It runs inside `npm run build`. Every browser test has
+to pass, the ones with areas and the ones with `all` only.
 
 Do not report success without having run this.
