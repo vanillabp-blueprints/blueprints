@@ -59,6 +59,12 @@
       "respectLatest": false
     },
     {
+      "description": "The Angular compiler accepts one minor line of TypeScript only, and the Angular frontend pins TypeScript to it. A newer TypeScript comes with the Angular release which accepts it, so it is raised together with Angular by hand and not proposed on its own, which could never install.",
+      "matchFileNames": ["blueprints-cockpit/*-frontend/angular/package.json"],
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<6.1"
+    },
+    {
       "description": "The coordinates of the module-packaging blueprint are invented on purpose: it shows an application built from artifacts of its own, and 'com.acme' exists nowhere. Renovate reported them as dependencies it could not look up, which is true and useless, and a permanent warning on the dependency dashboard hides the real ones.",
       "matchPackageNames": ["/^com\\.acme/"],
       "enabled": false

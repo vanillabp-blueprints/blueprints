@@ -71,6 +71,7 @@ jobs:
       matrix:
         frontend:
           - blueprints-cockpit/cockpit-user-task-frontend/react
+          - blueprints-cockpit/cockpit-user-task-frontend/angular
     defaults:
       run:
         working-directory: ${{ matrix.frontend }}
