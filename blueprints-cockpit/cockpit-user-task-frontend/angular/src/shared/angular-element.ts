@@ -40,7 +40,9 @@ export function defineAngularElement(name: string, component: BcComponent, provi
       const style = document.createElement('style');
       style.textContent = STYLE;
       const host = document.createElement('div');
-      shadowRoot.append(style, host);
+      // The cockpit may move the web component, which unmounts and mounts it again in the same
+      // shadow root. Replacing the children keeps one style and one host there.
+      shadowRoot.replaceChildren(style, host);
       const state: Mounted = { props, unmounted: false };
       mounted.set(shadowRoot, state);
       // Creating the application takes a moment. The cockpit may update or remove the web
@@ -51,7 +53,7 @@ export function defineAngularElement(name: string, component: BcComponent, provi
         state.component = createComponent(component, { environmentInjector: applicationRef.injector, elementInjector, hostElement: host });
         state.component.setInput('props', state.props);
         applicationRef.attachView(state.component.hostView);
-      });
+      }).catch((error) => console.error(`${name}: Angular could not draw the web component`, error));
     },
     update: (shadowRoot, props) => {
       const state = mounted.get(shadowRoot);
