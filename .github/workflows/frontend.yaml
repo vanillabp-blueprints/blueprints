@@ -62,7 +62,11 @@ jobs:
       - name: Install
         run: npm ci
       - name: Install Chromium for the browser tests
-        run: npx playwright install --with-deps chromium-headless-shell
+        # Without --with-deps: the runner image already brings Chrome and the system
+        # libraries it needs. With it, Playwright installs them again through apt, and on the
+        # 11th of November 2026 the Ubuntu mirror of the runners could not be resolved for
+        # hours, which made both frontend jobs red although nothing here had changed.
+        run: npx playwright install chromium-headless-shell
       - name: Build the micro-frontends, the UI jar and the nginx image
         run: npm run build
       - name: Test in the host of the module kit
