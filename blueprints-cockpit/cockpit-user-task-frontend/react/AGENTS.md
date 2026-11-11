@@ -3,7 +3,8 @@
 The forms of the workflow module `loan-approval` for a VanillaBP Business Cockpit, in React: two
 user tasks, a data entry which picks the form, a column of the task list. An npm project without
 Java. It builds the micro-frontends, the UI jar and an nginx image. The backend with the API and
-the application are separate projects.
+the application are separate projects. The OpenAPI file of the backend comes in through the git
+submodule `backend/`.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
@@ -19,7 +20,7 @@ Replace all of these consistently. They are the same in every blueprint.
 | `loan_approval`     | BPMN process id, compared in both data entries                                                                     |
 | `assessRisk`        | task definition of the first user task                                                                             |
 | `checkDocuments`    | task definition of the second user task                                                                            |
-| `cockpit-user-task` | blueprint id: the names of the API jar, the UI jar and the image                                                   |
+| `cockpit-user-task` | blueprint id: the names of the backend repository, the UI jar and the image                                        |
 
 `loan-approval` and `loan_approval` are in `src/loan-approval.ts` and in `package.json`
 (`config`). The task definitions must be the ones of the BPMN file of the backend. If one is
@@ -39,7 +40,7 @@ per page. Two modules which define the same name break each other.
 | `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`. It exports nothing, evaluating it defines the web components               |
 | `src/forms/check-documents-form.tsx`   | visual entry `CheckDocumentsForm`                                                                         |
 | `src/shared/input-form.tsx`            | the four web components of a form (`all`, `body`, `information`, `actions`) and the messages between them |
-| `src/shared/api.ts`                    | the client of the module API, base path `/wm/loan-approval`                                               |
+| `src/shared/api.ts`                    | the client of the module API, base path `/wm/loan-approval` from the server of the OpenAPI file           |
 | `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                                 |
 | `test/browser/user-task-forms.test.js` | the browser tests, with areas and with `all` only                                                         |
 
@@ -49,7 +50,8 @@ per page. Two modules which define the same name break each other.
 |--------------------------------|------------------------------------------------------------------------------------|
 | `package.json`                 | the scripts, and in `config` the module id, the jar coordinates and the image name |
 | `tsconfig.json`                | type checking only; esbuild builds                                                 |
-| `scripts/fetch-openapi.mjs`    | takes the OpenAPI file out of the API jar                                          |
+| `scripts/fetch-openapi.mjs`    | copies the OpenAPI file from the submodule, and its server as the client base URL  |
+| `.gitmodules`                  | the submodule `backend`, the backend repository which owns the OpenAPI file        |
 | `scripts/build-ui-jar.mjs`     | the UI jar and its pom                                                             |
 | `scripts/build-image.mjs`      | the nginx image                                                                    |
 | `scripts/start.mjs`            | placeholder for the dev shell                                                      |
@@ -71,8 +73,10 @@ per page. Two modules which define the same name break each other.
    A larger one writes its four web components itself, the same way.
 3. Each value for the task list needs a column in `src/data/user-task-list.ts`, and the backend
    has to put the value into `details` with its `@UserTaskDetailsProvider`.
-4. Point `config.apiJar` in `package.json` at the API jar of your backend. If your cockpit has a
-   types library of its own, replace `@vanillabp/bc-module-kit` with it.
+4. Point the submodule in `.gitmodules` at your backend repository
+   (`git submodule add <url> backend`), set `config.openapi` in `package.json` to the OpenAPI file
+   inside it, and delete `config.openapiInMonorepo`. If your cockpit has a types library of its
+   own, replace `@vanillabp/bc-module-kit` with it.
 5. Keep the data entries free of React. `npm run check:entries` fails otherwise.
 
 ## Verifying
@@ -84,8 +88,9 @@ npm run build
 npm test
 ```
 
-`npm run build` needs the API jar, from `~/.m2` after `mvn install` of the backend, or from
-`API_JAR`. `bc-check-entries` has to pass. It runs inside `npm run build`. Every browser test has
+`npm run build` needs the OpenAPI file: the submodule `backend/` filled
+(`git submodule update --init`), the backend directory next to this one in the monorepo, or
+`OPENAPI_FILE`. `bc-check-entries` has to pass. It runs inside `npm run build`. Every browser test has
 to pass, the ones with areas and the ones with `all` only.
 
 Do not report success without having run this.

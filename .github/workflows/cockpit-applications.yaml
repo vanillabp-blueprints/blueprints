@@ -6,7 +6,8 @@ name: Build the cockpit applications
 # after the other:
 #
 #   1. 'backend' installs every cockpit backend with Maven and hands its artifacts on,
-#   2. 'frontend' builds the UI jar of every frontend with npm, from the API jar of step 1,
+#   2. 'frontend' builds the UI jar of every frontend with npm, from the OpenAPI file of its
+#      backend directory,
 #   3. 'part' installs the artifacts of step 1 and exactly one UI jar into its local
 #      repository with 'mvn install:install-file', and then builds the application or bundle.
 #
@@ -95,8 +96,8 @@ jobs:
               --batch-mode --no-transfer-progress --update-snapshots \
               -f "${pom}" -DskipTests -DskipITs install
           done
-      # The groupIds of the blueprints all start with io.vanillabp.blueprint, and the API jar
-      # has that groupId itself. So this directory holds what the next jobs need.
+      # The groupIds of the blueprints all start with io.vanillabp.blueprint. So this directory
+      # holds what the part jobs need.
       - uses: actions/upload-artifact@v7
         with:
           name: backends
@@ -106,7 +107,8 @@ jobs:
 
   frontend:
     name: ${{ matrix.frontend }}
-    needs: [discover, backend]
+    needs: discover
+    if: needs.discover.outputs.builds != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -120,22 +122,10 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - uses: actions/download-artifact@v8
-        with:
-          name: backends
-          path: ${{ runner.temp }}/backends
       - name: Install
         run: npm ci
       - name: Build the UI jar
-        # The frontend names its API jar in package.json, as groupId:artifactId:version.
-        run: |
-          IFS=: read -r group artifact version <<< "$(node -p "require('./package.json').config.apiJar")"
-          export API_JAR="$(find "$RUNNER_TEMP/backends" -path "*/${artifact}/${version}/${artifact}-${version}.jar" | head -1)"
-          if [ -z "${API_JAR}" ]; then
-            echo "::error::The API jar ${group}:${artifact}:${version} is not among the backends this run installed."
-            exit 1
-          fi
-          npm run build
+        run: npm run build
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
