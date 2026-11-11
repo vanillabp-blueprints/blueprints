@@ -309,13 +309,30 @@ jobs:
         # Maven Central answered more than two hundred of them with 429. The versions come
         # from the parents of Spring Boot and Quarkus and differ by blueprint, so they are
         # read from the plugins the build resolves, not written down here.
+        # They are read from what Maven prints, not from '-DoutputFile -DappendOutput=true':
+        # in a reactor build every module writes that file anew, so only the last module is
+        # left. When that was a module of packaging pom, no version was found, no provider
+        # was cached, and Maven Central answered the matrix with 403. The printed lists go to
+        # a file of their own, because they would fill the log with a list per module.
+        # They are not read from the directories in ~/.m2 either: the restored cache holds
+        # every version any earlier run needed, and fetching providers for all of them would
+        # ask Central for more, not less.
         run: |
-          plugins="${RUNNER_TEMP}/plugins.txt"
-          mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
-            --batch-mode --no-transfer-progress --quiet ${LEAVE_OUT} \
-            dependency:resolve-plugins -DoutputFile="${plugins}" -DappendOutput=true
-          for version in $(grep -ohE 'maven-(surefire|failsafe)-plugin:jar:[0-9][0-9.]*' "${plugins}" \
-              | sed 's/.*://' | sort -u); do
+          resolved="${RUNNER_TEMP}/plugins.txt"
+          if ! mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
+              --batch-mode --no-transfer-progress ${LEAVE_OUT} \
+              dependency:resolve-plugins > "${resolved}" 2>&1; then
+            tail -n 50 "${resolved}"
+            exit 1
+          fi
+          versions="$(grep -ohE 'maven-(surefire|failsafe)-plugin:jar:[0-9][0-9.]*' "${resolved}" \
+            | sed 's/.*://' | sort -u)"
+          if [ -z "${versions}" ]; then
+            echo "::error::Found no version of Surefire or Failsafe, so no provider gets into the cache"
+            exit 1
+          fi
+          echo "Surefire and Failsafe in use:" ${versions}
+          for version in ${versions}; do
             mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
               --batch-mode --no-transfer-progress \
               dependency:get -Dartifact="org.apache.maven.surefire:surefire-junit-platform:${version}"
