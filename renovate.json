@@ -59,10 +59,17 @@
       "respectLatest": false
     },
     {
-      "description": "The Angular compiler accepts one minor line of TypeScript only, and the Angular frontend pins TypeScript to it. A newer TypeScript comes with the Angular release which accepts it, so it is raised together with Angular by hand and not proposed on its own, which could never install.",
+      "description": "The Angular compiler accepts one minor line of TypeScript only, and the Angular frontend pins TypeScript to it. A new minor or major of TypeScript comes with the Angular release which accepts it, so it is raised together with Angular by hand and not proposed on its own, which could never install. Patches stay inside the line and are still proposed.",
       "matchFileNames": ["blueprints-cockpit/*-frontend/angular/package.json"],
       "matchPackageNames": ["typescript"],
-      "allowedVersions": "<6.1"
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
+    },
+    {
+      "description": "The Angular frontend runs the Angular linker in Babel while esbuild bundles, so it names '@babel/core' itself, at the exact version '@angular/compiler-cli' depends on. One group for Angular and Babel brings a new Babel in the same pull request as the Angular release which asks for it, and the two stay on one version.",
+      "matchFileNames": ["blueprints-cockpit/*-frontend/angular/package.json"],
+      "matchPackageNames": ["@angular/**", "@babel/core"],
+      "groupName": "Angular"
     },
     {
       "description": "The coordinates of the module-packaging blueprint are invented on purpose: it shows an application built from artifacts of its own, and 'com.acme' exists nowhere. Renovate reported them as dependencies it could not look up, which is true and useless, and a permanent warning on the dependency dashboard hides the real ones.",
