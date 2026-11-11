@@ -275,7 +275,8 @@ Playwright finds them there with `getByTestId`.
 backend. The tests answer the module API inside the browser, at the network level, so the forms
 run unchanged. Every form is tested twice: in a host with the areas `body`, `information` and
 `actions`, and in a host which only knows `all`. The tests also check that the data entries load
-neither React nor a form, and that opening one form does not load the other.
+neither React nor a form, that opening one form does not load the other, and that the typed text
+stays when the cockpit sets a property such as the language.
 
 ### Three repositories, and the order of their releases
 

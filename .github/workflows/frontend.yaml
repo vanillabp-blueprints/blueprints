@@ -26,14 +26,31 @@ concurrency:
 permissions:
   contents: read
 jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      frontends: "${{ steps.list.outputs.frontends }}"
+    steps:
+      - uses: actions/checkout@v7
+      - id: list
+        name: Collect the frontends
+        # The list of frontends is the directories which exist, so a new frontend builds
+        # without a change of this workflow.
+        run: |
+          frontends="$(find blueprints-cockpit -mindepth 3 -maxdepth 3 -path '*-frontend/*/package.json' -printf '%h\n' \
+            | sort | jq -R . | jq -cs .)"
+          echo "frontends=${frontends}" >> "$GITHUB_OUTPUT"
+          jq . <<< "${frontends}"
+
   frontend:
+    needs: discover
+    if: needs.discover.outputs.frontends != '[]'
     name: ${{ matrix.frontend }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        frontend:
-          - blueprints-cockpit/cockpit-user-task-frontend/react
+        frontend: ${{ fromJSON(needs.discover.outputs.frontends) }}
     defaults:
       run:
         working-directory: ${{ matrix.frontend }}
