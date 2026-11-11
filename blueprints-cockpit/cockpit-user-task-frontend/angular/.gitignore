@@ -61,9 +61,7 @@ build/
 ### npm ###
 node_modules/
 dist/
-# the OpenAPI file of the module API, taken from the API jar by scripts/fetch-openapi.mjs
+# the OpenAPI file of the module API, copied there by scripts/fetch-openapi.mjs
 build/
-# a copy of the OpenAPI file placed here by hand, for a build without the API jar
-.openapi/
-# the typed client, generated from the OpenAPI file
+# the typed client and its base URL, generated from the OpenAPI file
 src/generated/

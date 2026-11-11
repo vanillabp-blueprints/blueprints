@@ -1,18 +1,20 @@
 // The client of the module API. Its types are generated from the OpenAPI file of the backend, see
 // scripts/fetch-openapi.mjs, so a changed API breaks this build and not the running form.
 //
-// Every call goes to /wm/loan-approval/. The cockpit forwards that path to the workflow module.
-// So the browser talks to one origin only, and the cockpit never sees the data of the form. The
-// module completes the user task itself, and that is what tells the cockpit about it.
+// Every call goes to /wm/loan-approval/. That is the server of the OpenAPI file, and
+// scripts/fetch-openapi.mjs writes it to src/generated/server.ts. The cockpit forwards the path
+// to the workflow module. So the browser talks to one origin only, and the cockpit never sees
+// the data of the form. The module completes the user task itself, and that is what tells the
+// cockpit about it.
 
 import createClient from 'openapi-fetch';
 import type { components, paths } from '../generated/loan-approval.ts';
-import { WORKFLOW_MODULE_ID } from '../loan-approval.ts';
+import { SERVER_URL } from '../generated/server.ts';
 
 export type AssessRiskForm = components['schemas']['AssessRiskForm'];
 export type CheckDocumentsForm = components['schemas']['CheckDocumentsForm'];
 
-const api = createClient<paths>({ baseUrl: `/wm/${WORKFLOW_MODULE_ID}` });
+const api = createClient<paths>({ baseUrl: SERVER_URL });
 
 /** An answer of the module API which is not a success. */
 export class ApiError extends Error {
