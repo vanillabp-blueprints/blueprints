@@ -250,6 +250,9 @@ jobs:
         with:
           java-version: 25.0.5+8
           distribution: temurin
+      # The Maven of this action and not ./mvnw. The wrapper downloads a Maven distribution
+      # of its own from Central, which no cache holds, and when that one download failed the
+      # whole matrix was skipped. The wrapper stays for people who build on their machine.
       - name: Use Maven 3.9
         uses: ./.github/actions/use-maven
       - uses: actions/cache@v6
@@ -283,7 +286,7 @@ jobs:
         # integration tests of the Quarkus blueprints ran here, in a job which starts
         # neither a Camunda 8 cluster nor anything else they need, and the build waited ten
         # minutes for a cluster nobody had started.
-        run: ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
+        run: mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots -DskipTests -DskipITs
           ${LEAVE_OUT} install
       - name: Resolve what the other engines need, so the cache holds that too
@@ -296,7 +299,7 @@ jobs:
         # out of the restored cache, and only their own --update-snapshots saved them.
         run: |
           for engine in camunda8 operaton cibseven; do
-            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
+            mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
               --batch-mode --no-transfer-progress --update-snapshots -P"$engine" \
               -DskipTests -DskipITs ${LEAVE_OUT} dependency:go-offline
           done
@@ -308,12 +311,12 @@ jobs:
         # read from the plugins the build resolves, not written down here.
         run: |
           plugins="${RUNNER_TEMP}/plugins.txt"
-          ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
+          mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
             --batch-mode --no-transfer-progress --quiet ${LEAVE_OUT} \
             dependency:resolve-plugins -DoutputFile="${plugins}" -DappendOutput=true
           for version in $(grep -ohE 'maven-(surefire|failsafe)-plugin:jar:[0-9][0-9.]*' "${plugins}" \
               | sed 's/.*://' | sort -u); do
-            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
+            mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
               --batch-mode --no-transfer-progress \
               dependency:get -Dartifact="org.apache.maven.surefire:surefire-junit-platform:${version}"
           done
@@ -325,7 +328,7 @@ jobs:
           # so they are read from the engines the build put into the repository.
           for engine in ~/.m2/repository/org/junit/platform/junit-platform-engine/*/; do
             version="$(basename "${engine}")"
-            ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
+            mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
               --batch-mode --no-transfer-progress \
               dependency:get -Dartifact="org.junit.platform:junit-platform-launcher:${version}"
           done

@@ -93,6 +93,10 @@ modules is. VanillaBP passes both on to the cockpit, and the cockpit user interf
 
 ### The module wires itself
 
+Think of a workflow module as a complete application of its own which just cannot run alone. It
+relies on nothing the hosting application provides, except resources the application shares on
+purpose, such as the data source
+([Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#what-is-a-workflow-module)).
 An application is only a container for workflow modules. It adds this module as a Maven
 dependency, and that is all. So the module brings two auto-configurations, which Spring Boot
 loads from every JAR on the class path.
