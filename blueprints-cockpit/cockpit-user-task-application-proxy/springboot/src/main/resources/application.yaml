@@ -19,14 +19,19 @@ spring:
       ddl-auto: create-drop
 
 # Where the nginx of the frontend answers. It serves the micro-frontends of the workflow
-# module below '/loan-approval/', and UserInterfaceRoute forwards those paths to it. Only the
+# module below '/loan-approval/'. The module brings the route which forwards those paths to
+# it. The route is on because this application has the gateway and sets this key. Only the
 # scheme, the host and the port count. The path of a request stays as it is.
+#
+# The key is below the id of the module, so every module of an application has its own. The
+# environment variable LOAN_APPROVAL_USER_INTERFACE_ADDRESS overrides it per stage.
 #
 # This address is for an nginx started on your machine:
 #   docker run --rm -p 8081:80 vanillabp-blueprints/cockpit-user-task-ui:1.0.0-SNAPSHOT
 # docker-compose.yaml sets the address of its own nginx.
-user-interface:
-  address: http://localhost:8081
+loan-approval:
+  user-interface:
+    address: http://localhost:8081
 
 vanillabp:
   cockpit:

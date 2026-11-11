@@ -31,3 +31,12 @@ vanillabp:
         # named. An application with a login writes 'by-application' and sets the initiator
         # in the details provider.
         initiator-source: system
+
+# The keys this module reads itself are below its id. There is one, and the module leaves it
+# unset:
+#
+#   loan-approval.user-interface.address
+#
+# It is the address of an nginx which serves the user interface. An application which sets it
+# and has the starter of Spring Cloud Gateway (server-webmvc) forwards the files of the user
+# interface there. An application which does not set it serves them from the UI jar.

@@ -19,7 +19,8 @@ Replace all of these consistently. They are the same in every blueprint.
 
 |        Placeholder         |                                     Meaning                                      |
 |----------------------------|----------------------------------------------------------------------------------|
-| `blueprint.workflowmodule` | base package, the parent package of the workflow module                          |
+| `blueprint.workflowmodule` | base package of the workflow module                                              |
+| `blueprint.application`    | package of the application, not above the workflow module                        |
 | `loanapproval`             | use case identifier, Java package                                                |
 | `loan-approval`            | use case identifier, kebab case: workflow module ID, REST path, folder of the UI |
 | `loan_approval`            | BPMN process ID                                                                  |
@@ -47,7 +48,7 @@ Blueprint-specific names, each occurring in more than one place:
 
 |                      File                      |                                         Purpose                                          |
 |------------------------------------------------|------------------------------------------------------------------------------------------|
-| `src/main/java/.../Application.java`           | `@SpringBootApplication` in the parent package of the module                             |
+| `src/main/java/.../Application.java`           | `@SpringBootApplication` in a package which is not above the module                      |
 | `src/main/resources/application-camunda7.yaml` | the Camunda 7 settings, and the same file per other BPMS                                 |
 | `src/test/java/.../ApplicationSmokeTest.java`  | the context starts and every workflow module is wired                                    |
 | `docker-compose.yaml`                          | MongoDB, the user directory and the cockpit, for trying the application                  |
@@ -58,7 +59,8 @@ Blueprint-specific names, each occurring in more than one place:
 
 ## Adding this blueprint to an existing project
 
-1. Add the workflow module as a dependency, in the version the backend released.
+1. Add the workflow module as a dependency, in the version the backend released. Add no
+   component scan, entity scan or repository package for it. The module wires itself.
 2. Add the UI JAR of the module as a `runtime` dependency, in the version the frontend
    released. Do not serve its files with code. Spring Boot serves `META-INF/resources/` of every
    JAR.

@@ -11,7 +11,7 @@ It is one of three parts of the blueprint `cockpit-user-task`:
 
 |                Part                |                                   What it holds                                   |
 |------------------------------------|-----------------------------------------------------------------------------------|
-| `cockpit-user-task-backend`        | the workflow module and its API as an OpenAPI file in a jar, built with Maven     |
+| `cockpit-user-task-backend`        | the workflow module and its API as an OpenAPI file, built with Maven              |
 | `cockpit-user-task-frontend-react` | this project: the micro-frontends, the UI jar and the nginx image, built with npm |
 | `cockpit-user-task-application`    | takes the workflow module and the UI jar and makes a runnable application of them |
 
@@ -80,7 +80,15 @@ stays the same where it uses the minimum.
 
 ## Running it
 
-You need Node.js 24 and Docker. Docker builds the nginx image.
+You need Node.js 24, git and Docker. Docker builds the nginx image.
+
+Clone the repository with its submodule, which brings the OpenAPI file of the backend:
+
+```bash
+git clone --recurse-submodules https://github.com/vanillabp-blueprints/cockpit-user-task-frontend-react.git
+```
+
+If you cloned without it, `git submodule update --init` fetches the submodule later.
 
 ### The module kit
 
@@ -100,7 +108,7 @@ npm test
 |             Script              |                                            What it does                                            |
 |---------------------------------|----------------------------------------------------------------------------------------------------|
 | `npm run build`                 | all of the following, one after the other                                                          |
-| `npm run fetch:openapi`         | takes the OpenAPI file out of the API jar of the backend                                           |
+| `npm run fetch:openapi`         | copies the OpenAPI file of the backend into `build/openapi`                                        |
 | `npm run generate:client`       | generates the types of the API client from it                                                      |
 | `npm run typecheck`             | checks the types of the whole project                                                              |
 | `npm run build:micro-frontends` | builds the entries and `bc-manifest.json` into `dist/micro-frontends`                              |
@@ -110,22 +118,54 @@ npm test
 | `npm test`                      | the browser tests, see [How it works](#how-it-works)                                               |
 | `npm run start`                 | the dev shell. Not there yet, see below                                                            |
 
-### The API jar
+### The OpenAPI file of the backend
 
 The forms call the API of the workflow module. The backend describes that API in an OpenAPI
-file and ships it in the jar `io.vanillabp.blueprint:cockpit-user-task-api`. This project
-generates its typed client from that file, so a changed API breaks the build here and not the
-form in the browser. `scripts/fetch-openapi.mjs` looks for the jar in this order:
+file. This project generates its typed client from that file, so a changed API breaks the build
+here and not the form in the browser. The file is the contract between the two projects, and it
+is the only thing this project takes from the backend.
 
-1. `OPENAPI_FILE`, the path of an OpenAPI file, for example a draft of a new API,
-2. `API_JAR`, the path of the jar, for example one a CI job built before,
-3. `MAVEN_REPOSITORY_URL`, a Maven repository such as GitHub Packages, with `MAVEN_USERNAME`
-   and `MAVEN_PASSWORD` if it needs a login,
-4. the local Maven repository `~/.m2/repository`, which `mvn install` of the backend fills,
-5. `.openapi/loan-approval.yaml`, a copy you put there by hand. Git ignores it, and the build
-   warns when it uses it.
+The file comes in through a git submodule. `backend/` is the backend repository at a fixed
+commit, and `.gitmodules` says which repository that is. `config.openapi` in `package.json` names
+the file inside it:
 
-The jar is a zip file, so reading it needs no Java.
+```text
+backend/api/src/main/resources/openapi/loan-approval.yaml
+```
+
+Why a submodule and not a released jar? The frontend builds without the backend being built or
+released, and without Java. It needs no Maven repository and no login to one. The commit of the
+submodule says exactly which state of the API the frontend was built against, and a pull request
+which moves it shows the change of the API in its diff.
+
+`scripts/fetch-openapi.mjs` copies the file to `build/openapi/loan-approval.yaml`. It also takes
+the first server of the file, `/wm/loan-approval`, as the base URL of the client. To build
+against another file, for example a draft of a new API, set `OPENAPI_FILE` to its path.
+
+To take a newer API, move the submodule to the newest commit of the backend and commit that:
+
+```bash
+git submodule update --remote backend
+git add backend
+git commit -m "build: take the newest API of the backend"
+```
+
+Renovate can do the same with its manager `git-submodules`. It is off by default, so switch it on
+in `renovate.json`:
+
+```json
+{
+  "git-submodules": { "enabled": true }
+}
+```
+
+Then Renovate opens a pull request whenever the branch `main` of the backend moves on.
+
+In the monorepo [`blueprints`](https://github.com/vanillabp-blueprints/blueprints), where this
+project is developed, the backend is a directory next to this one, and there is no submodule.
+There the script reads the file named in `config.openapiInMonorepo`. The job which copies this
+project into its own repository adds the submodule. In your own project, delete
+`config.openapiInMonorepo`.
 
 ### With the backend during development
 
@@ -244,16 +284,19 @@ Node. A repository where Maven and npm build together is hard to have there. So 
 module with a user interface has three parts, each built with one tool: the backend with Maven,
 this frontend with npm, and the application with Maven again.
 
-The frontend needs only the API, and the API is in the backend. Only the application needs both.
-So there is no cycle, and a release goes in this order:
+The frontend needs only the API, and it takes the OpenAPI file from the backend repository
+through its submodule. Only the application needs both. So there is no cycle, and a release goes
+in this order:
 
-1. the backend, which releases the API jar,
-2. the frontend, which reads the released API jar,
+1. the backend, which releases the workflow module,
+2. the frontend, which releases the UI jar, built against the API at the commit of its submodule,
 3. the application, which takes the released workflow module and the released UI jar.
 
-After a release of the backend, Renovate proposes the new version to the frontend and to the
-application as a pull request. More repositories to release is the price for build agents with
-one tool each.
+The frontend does not wait for a release of the backend. It can build against a commit of the
+backend which is not released yet. Before a release, check that the submodule points at the
+commit of the backend release, or at one with the same API. Renovate proposes new versions to
+the application as pull requests. More repositories to release is the price for build agents
+with one tool each.
 
 ### Why npm builds apart from Maven
 

@@ -12,7 +12,8 @@
   "config": {
     "workflowModuleId": "loan-approval",
     "uiJar": "io.vanillabp.blueprint:cockpit-user-task-ui",
-    "apiJar": "io.vanillabp.blueprint:cockpit-user-task-api:1.0.0-SNAPSHOT",
+    "openapi": "backend/api/src/main/resources/openapi/loan-approval.yaml",
+    "openapiInMonorepo": "../../cockpit-user-task-backend/springboot/api/src/main/resources/openapi/loan-approval.yaml",
     "image": "vanillabp-blueprints/cockpit-user-task-ui"
   },
   "scripts": {

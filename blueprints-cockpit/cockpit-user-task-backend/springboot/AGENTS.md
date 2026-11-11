@@ -36,7 +36,7 @@ Blueprint-specific names, each occurring in more than one place:
 | `documentsNote`         | the field of the second form                                                                                                             |
 | `/wm/loan-approval`     | the server of the OpenAPI: the path the cockpit serves the module at                                                                     |
 | `/loan-approval`        | the path every endpoint of the module starts with, and the path of `workflow-module-uri`                                                 |
-| `cockpit-user-task-api` | the artifact id of the OpenAPI JAR, which the frontend reads                                                                             |
+| `cockpit-user-task-api` | the artifact id of the OpenAPI JAR, which the test of the workflow module reads. The frontend reads the file through a git submodule     |
 
 The cockpit replaces `/wm/loan-approval` by the path of `workflow-module-uri` when it forwards a
 request. Keep the server of the OpenAPI, the path of `workflow-module-uri` and the prefix of the
@@ -44,41 +44,47 @@ controllers in line, or a form reaches nothing.
 
 ## Core files
 
-|                                File                                 |                                                         Why it matters                                                          |
-|---------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| `api/src/main/resources/openapi/loan-approval.yaml`                 | the contract with the frontend: four operations, `servers: /wm/loan-approval`. Change it together with `UserTaskFormController` |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | `vanillabp.workflow-modules.loan-approval.cockpit.*`: `workflow-module-uri`, `ui-uri-type: ES_MODULES`, `ui-uri-path`           |
-| `loan-approval/src/main/java/.../WorkflowTaskHandler.java`          | one `@WorkflowTask` method per user task, keeping `@TaskId`, and the `@UserTaskDetailsProvider` method filling `details`        |
-| `loan-approval/src/main/java/.../UserTaskFormController.java`       | the endpoints of the forms, below `/loan-approval/api/user-tasks/{userTaskId}`. GET reads, POST completes, 404 if not open      |
-| `loan-approval/src/main/java/.../Service.java`                      | finds the loan request by the id of its open task, writes the input, completes the task through `Workflow`                      |
-| `loan-approval/src/main/java/.../Workflow.java`                     | `startWorkflow` and `completeUserTask`                                                                                          |
-| `loan-approval/src/main/java/.../model/Aggregate.java`              | per user task the id of the open task and the input of its form                                                                 |
-| `loan-approval/src/main/java/.../model/AggregateRepository.java`    | the finders by task id                                                                                                          |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`               | both tasks through the endpoints, what the cockpit was told, and every OpenAPI operation mapped                                 |
-| `loan-approval/src/test/java/.../CockpitSimulator.java`             | starts the dev shell simulator as the cockpit of the test                                                                       |
+|                                      File                                       |                                                               Why it matters                                                               |
+|---------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| `api/src/main/resources/openapi/loan-approval.yaml`                             | the contract with the frontend: four operations, `servers: /wm/loan-approval`. Change it together with `UserTaskFormController`            |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`             | `vanillabp.workflow-modules.loan-approval.cockpit.*`: `workflow-module-uri`, `ui-uri-type: ES_MODULES`, `ui-uri-path`                      |
+| `loan-approval/src/main/java/.../WorkflowTaskHandler.java`                      | one `@WorkflowTask` method per user task, keeping `@TaskId`, and the `@UserTaskDetailsProvider` method filling `details`                   |
+| `loan-approval/src/main/java/.../UserTaskFormController.java`                   | the endpoints of the forms, below `/loan-approval/api/user-tasks/{userTaskId}`. GET reads, POST completes, 404 if not open                 |
+| `loan-approval/src/main/java/.../Service.java`                                  | finds the loan request by the id of its open task, writes the input, completes the task through `Workflow`                                 |
+| `loan-approval/src/main/java/.../Workflow.java`                                 | `startWorkflow` and `completeUserTask`                                                                                                     |
+| `loan-approval/src/main/java/.../model/Aggregate.java`                          | per user task the id of the open task and the input of its form                                                                            |
+| `loan-approval/src/main/java/.../model/AggregateRepository.java`                | the finders by task id                                                                                                                     |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                           | both tasks through the endpoints, what the cockpit was told, and every OpenAPI operation mapped                                            |
+| `loan-approval/src/test/java/.../CockpitSimulator.java`                         | starts the dev shell simulator as the cockpit of the test                                                                                  |
+| `loan-approval/src/main/java/.../LoanApprovalAutoConfiguration.java`            | the module wires itself: component scan, `@EntityScan` and `@EnableJpaRepositories` of its own package, with fully qualified bean names    |
+| `loan-approval/src/main/java/.../UserInterfaceRouteAutoConfiguration.java`      | the route `/loan-approval/**` without `/loan-approval/api/**` to `loan-approval.user-interface.address`, only with the gateway and the key |
+| `loan-approval/src/main/resources/META-INF/spring/...AutoConfiguration.imports` | names both auto-configurations                                                                                                             |
 
 ## Boilerplate files
 
 |                             File                             |                                                   Purpose                                                   |
 |--------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
 | `pom.xml` (blueprint root)                                   | the VanillaBP BOM import, the versions of the BPMS adapters and of the cockpit adapters                     |
-| `api/pom.xml`                                                | publishes the OpenAPI as `io.vanillabp.blueprint:cockpit-user-task-api`, no code                            |
+| `api/pom.xml`                                                | the OpenAPI as `io.vanillabp.blueprint:cockpit-user-task-api`, no code, read by the test of the module      |
 | `loan-approval/pom.xml`                                      | `vanillabp-spring-boot-support` and the cockpit `spi-for-java`; per BPMS profile both adapters for the test |
 | `loan-approval/src/test/resources/application.yaml`          | the database, a short outbox poll interval, the address of the simulator                                    |
 | `loan-approval/src/test/resources/application-camunda7.yaml` | the Camunda 7 settings of the test, and the same file per other BPMS                                        |
 | `loan-approval/src/test/resources/dev-shell-simulator.yaml`  | the users the simulator knows. It does not start without one                                                |
-| `loan-approval/src/test/java/.../TestApplication.java`       | the minimal application the module's test boots                                                             |
+| `loan-approval/src/test/java/.../ModuleTestApplication.java` | the minimal application the module's test boots. It scans nothing, the auto-configuration wires the module  |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`    | base class of the integration test: waits for workflow progress                                             |
 | `loan-approval/src/test/java/.../LocalBackend.java`          | runs the module with `spring-boot:test-run` for the development of the forms                                |
 | `docs/loan_approval.png`                                     | the picture of the process the README shows, rendered from the BPMN model                                   |
 
-`TestApplication` and `WorkflowModuleTest` are identical in every blueprint. Copy them unchanged.
+`WorkflowModuleTest` is identical in every blueprint. Copy it unchanged. Do not take the
+`TestApplication` of other blueprints. Its component scan would register every bean of the
+module a second time, under another name.
 
 ## Adding this blueprint to an existing project
 
 1. Add a Maven module `api` with the OpenAPI of your forms in
    `src/main/resources/openapi/<workflow-module-id>.yaml`. Give it the server
-   `/wm/<workflow-module-id>`. Publish it, so the frontend can read it.
+   `/wm/<workflow-module-id>`. The frontend reads this file through a git submodule of the
+   backend repository. The JAR is for the test of the workflow module.
 2. Add `io.vanillabp.businesscockpit:spi-for-java` to the workflow module. Add the cockpit
    adapter of your BPMS next to the BPMS adapter, wherever the BPMS adapter is declared:
    `businesscockpit-<bpms>-adapter-spring-boot`.
@@ -96,7 +102,12 @@ controllers in line, or a form reaches nothing.
 7. Add the endpoints of the OpenAPI to a controller below `/<workflow-module-id>`. GET returns
    what the form shows, POST writes the input to the aggregate and completes the task. Answer
    404 for a task id which is not open. Write the input to the aggregate only on completion.
-8. Copy `CockpitSimulator`, `dev-shell-simulator.yaml` and the dependency plugin execution of
+8. Copy `LoanApprovalAutoConfiguration`, `UserInterfaceRouteAutoConfiguration` and the imports
+   file. Set `WORKFLOW_MODULE_ID` to your module id. Add
+   `spring-cloud-gateway-server-webmvc` to the module as an optional dependency, with the
+   Spring Cloud BOM. The route class is the same for every module. A later support library of
+   the Business Cockpit will bring it.
+9. Copy `CockpitSimulator`, `dev-shell-simulator.yaml` and the dependency plugin execution of
    `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the test
    which checks every OpenAPI operation against the endpoints.
 

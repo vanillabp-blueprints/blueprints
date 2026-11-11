@@ -1,4 +1,4 @@
-package blueprint.workflowmodule;
+package blueprint.application;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -9,10 +9,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * cockpit adapter are loaded.
  *
  * <p>
- * Its package is the parent package of the workflow module, so component scanning, entity
- * scanning and Spring Data repositories of the module are picked up without any
- * configuration. The user interface needs no code either. Spring Boot serves the files below
- * {@code META-INF/resources/} of every JAR on the class path.
+ * Note the package. It is not above the package of the workflow module, and it does not need
+ * to be. The module brings an auto-configuration, which wires its beans, its entities and its
+ * repositories. The user interface needs no code either. Spring Boot serves the files below
+ * {@code META-INF/resources/} of every JAR on the class path. So this class says nothing about
+ * the module, and adding another one is a line in the POM.
  * </p>
  */
 @SpringBootApplication

@@ -49,6 +49,17 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
+    <!--
+      The gateway which forwards the files of the user interface to an nginx, if the application
+      names one. Optional: the module compiles against it, but an application gets it only if it
+      adds the starter itself. Without it, the route of the module stays off and the user
+      interface comes from the UI jar.
+    -->
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-gateway-server-webmvc</artifactId>
+      <optional>true</optional>
+    </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>

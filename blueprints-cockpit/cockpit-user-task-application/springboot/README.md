@@ -30,15 +30,18 @@ a user interface has three parts, each in a repository of its own:
 | `cockpit-user-task-frontend-react`         | the forms and the columns of the task list, as a JAR of the user interface              | npm        |
 | `cockpit-user-task-application-springboot` | this repository: the application which takes the workflow module and the user interface | Maven      |
 
-The frontend needs only the API, and the API is in the backend. Only the application needs both.
-So nothing depends on itself in a circle. Build and release the parts in this order:
+The frontend needs only the API, and the API is in the backend. The frontend reads its OpenAPI
+file through a git submodule of the backend, at a commit it pins. So it builds without the backend
+being built or released. Only the application needs both. So nothing depends on itself in a
+circle. Release the parts in this order:
 
-1. the backend, which releases the API JAR and the workflow module,
-2. the frontend, which reads the released API JAR and releases the JAR of the user interface,
+1. the backend, which releases the workflow module,
+2. the frontend, which releases the JAR of the user interface, built against the API at the
+   commit of its submodule,
 3. this application, which takes the released workflow module and the released user interface.
 
-Each part takes the parts before it as a released version from your Maven repository. The two
-versions are properties in `pom.xml`. A bot such as Renovate opens the pull request which moves
+This application takes both as released versions from your Maven repository. The two versions
+are properties in `pom.xml`. A bot such as Renovate opens the pull request which moves
 them from a snapshot to a release. More repositories to release is the price for build runners
 with one tool each.
 
@@ -59,6 +62,14 @@ configuration serves it.
 There is a frontend in React, one in Angular and one in Vue. All three publish their JAR under the
 same coordinates. So this application does not know which one it gets. It gets the one your
 Maven repository holds. If you switch from one frontend to another, nothing changes here.
+
+### The application is only a container
+
+The application adds the workflow module as a Maven dependency, and that is all it does for it.
+The module brings an auto-configuration which wires its beans, its entities and its repositories.
+So the package of `Application` is `blueprint.application`, which is not above the module, and
+the application has no Java code but its `main` method. What stays in `application.yaml` is what
+differs per deployment: the database, the cockpit the reports go to, and the account for it.
 
 ### The way the cockpit reaches the application
 
@@ -161,7 +172,7 @@ says how to start it.
 |                      File                      |                                         Role                                         |
 |------------------------------------------------|--------------------------------------------------------------------------------------|
 | `pom.xml`                                      | the workflow module, the user interface JAR, and per BPMS profile both adapters      |
-| `src/main/java/.../Application.java`           | starts the application. Its package is above the module, so the module is found      |
+| `src/main/java/.../Application.java`           | starts the application. The module wires itself, so the package does not matter      |
 | `src/main/resources/application.yaml`          | the database, the active BPMS profile, and the cockpit the reports go to             |
 | `src/main/resources/application-camunda7.yaml` | what Camunda 7 needs, and the same file per other BPMS                               |
 | `src/test/.../ApplicationSmokeTest.java`       | the context starts, and every workflow module is wired                               |

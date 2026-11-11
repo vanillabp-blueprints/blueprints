@@ -75,7 +75,7 @@ jobs:
             echo "VANILLABP_ADAPTERS_CAMUNDA8_REST_ADDRESS=http://localhost:8080"
           } >> "$GITHUB_ENV"
 
-      # 1. The backend: the workflow module and the API jar into the local Maven repository.
+      # 1. The backend: the workflow module into the local Maven repository.
       #    Its own tests run in build.yaml, so they are skipped here.
       - name: Install the backend
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
@@ -83,7 +83,8 @@ jobs:
           --batch-mode --no-transfer-progress --update-snapshots
           -f "$BACKEND/pom.xml" -P${{ matrix.bpms }} -DskipTests -DskipITs install
 
-      # 2. The frontend: the micro-frontends and the nginx image, from the API jar just built.
+      # 2. The frontend: the micro-frontends and the nginx image. It reads the OpenAPI file from
+      #    the backend directory, so it needs nothing of step 1.
       - name: Build the nginx image of the frontend
         working-directory: ${{ env.FRONTEND }}
         # 'npm run build' builds the image as well, but skips it with a warning where Docker
@@ -91,8 +92,6 @@ jobs:
         # The second call takes every layer from the cache of the first one.
         run: |
           npm ci
-          export API_JAR="$(ls "$GITHUB_WORKSPACE/$BACKEND"/api/target/cockpit-user-task-api-*.jar \
-            | grep -v -e '-sources.jar' -e '-javadoc.jar' | head -1)"
           npm run build
           npm run build:image
 

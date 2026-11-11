@@ -3,9 +3,9 @@ name: Build the cockpit frontends
 # build with Node alone, apart from the Maven build in build.yaml: many companies give their
 # build agents Node or Java, not both, and a cockpit frontend shows how to live with that.
 #
-# The one thing a frontend needs from Java is the API jar of its backend. The job 'api-jar'
-# builds it here from the backend in this monorepo and hands it over as a file. A frontend in a
-# repository of its own fetches it from GitHub Packages instead, see its README.
+# A frontend needs one thing from its backend, the OpenAPI file. In a repository of its own it
+# reads the file from a git submodule. Here it reads it from the backend directory next to it,
+# so a change of the API and of the frontend builds together in one pull request.
 "on":
   push:
     branches:
@@ -25,46 +25,9 @@ concurrency:
   cancel-in-progress: true
 permissions:
   contents: read
-env:
-  # The backend whose API jar the frontends read.
-  BACKEND_POM: blueprints-cockpit/cockpit-user-task-backend/springboot/pom.xml
-  API_MODULE: api
-  API_ARTIFACT_ID: cockpit-user-task-api
 jobs:
-  api-jar:
-    name: API jar
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
-        with:
-          java-version: 25.0.5+8.0.LTS
-          distribution: temurin
-      - name: Use Maven 3.9
-        uses: ./.github/actions/use-maven
-      - name: Build the API jar
-        run: |
-          if [ ! -f "$BACKEND_POM" ]; then
-            echo "::error::$BACKEND_POM is missing. The frontends read their API from the backend, so the backend comes first."
-            exit 1
-          fi
-          ./mvnw -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
-            --batch-mode --no-transfer-progress \
-            -f "$BACKEND_POM" -pl "$API_MODULE" -am -DskipTests install
-          mkdir -p "$RUNNER_TEMP/api-jar"
-          find "$(dirname "$BACKEND_POM")/$API_MODULE/target" -maxdepth 1 -name "$API_ARTIFACT_ID-*.jar" \
-            ! -name '*-sources.jar' ! -name '*-javadoc.jar' -exec cp {} "$RUNNER_TEMP/api-jar/" \;
-          ls -l "$RUNNER_TEMP/api-jar"
-      - uses: actions/upload-artifact@v7
-        with:
-          name: api-jar
-          path: ${{ runner.temp }}/api-jar/
-          if-no-files-found: error
-          retention-days: 1
-
   frontend:
     name: ${{ matrix.frontend }}
-    needs: api-jar
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -80,18 +43,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - uses: actions/download-artifact@v8
-        with:
-          name: api-jar
-          path: ${{ runner.temp }}/api-jar
       - name: Install
         run: npm ci
       - name: Install Chromium for the browser tests
         run: npx playwright install --with-deps chromium-headless-shell
       - name: Build the micro-frontends, the UI jar and the nginx image
-        run: |
-          export API_JAR="$(ls "$RUNNER_TEMP"/api-jar/*.jar | head -1)"
-          npm run build
+        run: npm run build
       - name: Test in the host of the module kit
         run: npm test
       - uses: actions/upload-artifact@v7

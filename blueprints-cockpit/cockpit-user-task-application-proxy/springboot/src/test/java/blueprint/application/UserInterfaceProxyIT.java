@@ -1,4 +1,4 @@
-package blueprint.workflowmodule;
+package blueprint.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,6 +32,11 @@ import com.github.dockerjava.api.exception.NotFoundException;
  * proves is that the application and that image fit together: the same paths, the same
  * manifest, the headers of the nginx passed on. A stand-in would only prove that the route
  * forwards something.
+ * </p>
+ *
+ * <p>
+ * The route is the workflow module's. So this test also proves that the module brings it. The
+ * application has no route of its own and only names the address of the nginx.
  * </p>
  *
  * <p>
@@ -94,7 +99,7 @@ public class UserInterfaceProxyIT {
       final DynamicPropertyRegistry properties) {
 
     properties.add(
-        "user-interface.address",
+        "loan-approval.user-interface.address",
         () -> "http://"
             + nginx.getHost()
             + ":"
