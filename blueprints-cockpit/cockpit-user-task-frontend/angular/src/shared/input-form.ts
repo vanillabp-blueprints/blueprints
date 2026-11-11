@@ -71,11 +71,16 @@ abstract class Area {
   protected readonly definition = this.inputForm.definition;
   protected readonly testId = this.definition.testId;
   protected readonly userTask = computed(() => this.props().userTask as BcUserTask);
+  /**
+   * The cockpit hands over a new user task object whenever it sets any property, the language
+   * for example. The id stays the same then, so whatever depends on the id only does not run again.
+   */
+  protected readonly userTaskId = computed(() => this.userTask().id!);
   protected readonly texts = computed(() => textsFor(this.props().language));
   protected readonly language = computed(() => String(this.props().language ?? 'en'));
 }
 
-/** An area which shows the data of the form. It loads them when the user task changes. */
+/** An area which shows the data of the form. It loads them when the id of the user task changes. */
 @Directive()
 abstract class AreaWithData extends Area {
   protected readonly form = signal<unknown>(undefined);
@@ -84,7 +89,7 @@ abstract class AreaWithData extends Area {
   constructor() {
     super();
     effect((onCleanup) => {
-      const userTaskId = this.userTask().id!;
+      const userTaskId = this.userTaskId();
       let current = true;
       onCleanup(() => { current = false; });
       untracked(() => loadOnce(this.inputForm, userTaskId).then(

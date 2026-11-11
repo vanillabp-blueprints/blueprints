@@ -207,6 +207,30 @@ for (const cockpit of COCKPITS) {
       await page.close();
     });
 
+    it('the typed text stays when the cockpit sets a property, the language for example', async () => {
+      const { page, pageErrors, completed } = await openPage(cockpit.query, {
+        forms: { 'assess-risk': { loanRequestId: 'LR-4711', amount: 25000 } },
+      });
+      await page.evaluate((task) => window.bcTest.show(task), assessRisk);
+      const input = page.getByTestId('assess-risk-input');
+      const complete = page.getByTestId('assess-risk-complete');
+      await input.fill('low, a steady income');
+
+      // The cockpit sets a property on every web component of the user task.
+      await page.evaluate(() => document.querySelectorAll('#user-task-page [data-bc-area] > *, #user-task-page > :not([data-bc-area])')
+        .forEach((element) => { element.language = 'de'; }));
+      await assertText(complete, 'Abschließen');
+      // Loading the form again would also take a moment, so give it one before looking.
+      await page.evaluate(() => new Promise((done) => setTimeout(done, 200)));
+
+      assert.equal(await input.inputValue(), 'low, a steady income');
+      await complete.click({ timeout: 5000 });
+      await page.getByTestId('assess-risk-done').waitFor();
+      assert.deepEqual(completed, [{ userTaskId: 'task-1', form: 'assess-risk', body: { riskAssessment: 'low, a steady income' } }]);
+      assert.deepEqual(pageErrors, []);
+      await page.close();
+    });
+
     it('a user task the module does not know any more shows a message instead of the form', async () => {
       const { page, pageErrors } = await openPage(cockpit.query, { status: 404 });
       await page.evaluate((task) => window.bcTest.show(task), assessRisk);
