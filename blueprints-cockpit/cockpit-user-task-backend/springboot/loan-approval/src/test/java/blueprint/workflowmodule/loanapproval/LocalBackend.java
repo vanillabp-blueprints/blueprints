@@ -2,7 +2,7 @@ package blueprint.workflowmodule.loanapproval;
 
 import org.springframework.boot.SpringApplication;
 
-import blueprint.workflowmodule.TestApplication;
+import blueprint.workflowmodule.ModuleTestApplication;
 
 /**
  * Runs this workflow module on your machine, for somebody who works on its user interface.
@@ -11,7 +11,7 @@ import blueprint.workflowmodule.TestApplication;
  * The backend has no application of its own. The application which runs the workflow module
  * is a repository of its own, and it needs the user interface, which is built after the
  * backend. So this class starts the module the way its test does: with the
- * {@link TestApplication}, the database in memory and the test configuration. That
+ * {@link ModuleTestApplication}, the database in memory and the test configuration. That
  * configuration reports to a dev shell simulator on its default port 8079. The module answers
  * on port 8080.
  * </p>
@@ -33,7 +33,7 @@ public final class LocalBackend {
   public static void main(
       final String[] args) {
 
-    SpringApplication.run(TestApplication.class, args);
+    SpringApplication.run(ModuleTestApplication.class, args);
 
   }
 

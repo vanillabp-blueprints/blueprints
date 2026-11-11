@@ -36,7 +36,8 @@ files below the same path, `/loan-approval/`.
 The cockpit loads `/wm/loan-approval/bc-manifest.json`. It forwards the request to the address the
 module reported, `http://localhost:8080/loan-approval`, and puts the path of that address in
 place of `/wm/loan-approval`. So the application gets `/loan-approval/bc-manifest.json`. It has no
-such file, so `UserInterfaceRoute` passes the request on to the nginx, with the path unchanged:
+such file, so the route of the workflow module passes the request on to the nginx, with the path
+unchanged:
 
 |          The browser asks the cockpit for           |       The application gets        |            Who answers             |
 |-----------------------------------------------------|-----------------------------------|------------------------------------|
@@ -48,16 +49,28 @@ The browser sees one origin, the cockpit's. It never talks to the application or
 directly. And every file of the user interface passes through the application, so the security
 of the application covers those files as well.
 
-### The forwarding is a route of Spring Cloud Gateway
+### The forwarding is a route of Spring Cloud Gateway, and the module brings it
 
-`UserInterfaceRoute` is one route of
+An application is only a container for workflow modules. So the route is not in this
+application. The workflow module brings it, as `UserInterfaceRouteAutoConfiguration`. It is one
+route of
 [Spring Cloud Gateway](https://docs.spring.io/spring-cloud-gateway/reference/spring-cloud-gateway-server-webmvc.html),
 in the flavour for Spring MVC. It takes every GET below `/loan-approval/`, except the API below
 `/loan-approval/api/`. Spring MVC asks a route before it asks the controllers. So without that
 exception, the API of the module would go to the nginx as well.
 
-The address of the nginx is a configuration value, `user-interface.address`. Only its scheme, host
-and port count.
+The route is on when two things are true. This application has the starter of the gateway, and
+it sets `loan-approval.user-interface.address`, the address of the nginx. Only its scheme, host
+and port count. The key is below the id of the module, so each module of an application gets an
+address of its own. An application which does not set it serves the user interface from the UI
+jar, as `cockpit-user-task-application` does.
+
+The route is the same for every workflow module with a user interface. Only the id differs. So a
+later support library of the Business Cockpit will bring it, and the module will lose the class.
+
+The module also wires its beans, its entities and its repositories itself. So the package of
+`Application` is `blueprint.application`, which is not above the module. This application has
+no Java code but its `main` method.
 
 ### When this fits
 
@@ -89,16 +102,16 @@ Compared to `cockpit-user-task-application-springboot`:
 |            File             |                                  What is different                                   |
 |-----------------------------|--------------------------------------------------------------------------------------|
 | `pom.xml`                   | no UI jar; the gateway, the Spring Cloud release train, Testcontainers for the test  |
-| `UserInterfaceRoute.java`   | new: forwards the paths of the user interface to the nginx                           |
-| `application.yaml`          | new key `user-interface.address`, the address of the nginx                           |
+| `application.yaml`          | new key `loan-approval.user-interface.address`, the address of the nginx             |
 | `UserInterfaceProxyIT.java` | new: the application in front of the real nginx of the frontend                      |
 | `docker-compose.yaml`       | new: the application, the nginx, the Business Cockpit with its MongoDB and its users |
 
 ## Running it
 
-Requires a JDK 21 or newer and Docker. Build the backend and the frontend first, in this order.
-In their own repositories, that means `mvn install` in the backend, and `npm run build` and
-`npm run build:image` in the frontend. The frontend's README says how. That gives you the
+Requires a JDK 21 or newer and Docker. Build the backend and the frontend first. In their own
+repositories, that means `mvn install` in the backend, and `npm run build` and
+`npm run build:image` in the frontend. The frontend reads the OpenAPI file through a git submodule
+of the backend, so it does not need the backend built. The frontend's README says how. That gives you the
 workflow module in your local Maven repository and the image
 `vanillabp-blueprints/cockpit-user-task-ui:1.0.0-SNAPSHOT` in your local Docker.
 
@@ -168,7 +181,6 @@ until one is there.
 |                      File                      |                                         Role                                         |
 |------------------------------------------------|--------------------------------------------------------------------------------------|
 | `src/main/java/.../Application.java`           | the application. It takes the workflow module through its Maven dependency           |
-| `src/main/java/.../UserInterfaceRoute.java`    | the route which forwards the files of the user interface to the nginx                |
 | `src/main/resources/application.yaml`          | the database, the address of the nginx and the address of the cockpit                |
 | `src/main/resources/application-camunda7.yaml` | the settings of Camunda 7, and the same file per other BPMS                          |
 | `src/test/java/.../UserInterfaceProxyIT.java`  | starts the nginx image and asks the application for every file of the user interface |
@@ -176,7 +188,8 @@ until one is there.
 | `docker-compose.yaml`                          | the application, the nginx, the cockpit, its MongoDB and its users on one machine    |
 
 `UserInterfaceProxyIT` runs against the image the frontend builds, not against a stand-in with test
-files. A stand-in would only prove that the route forwards something. The real image proves that
+files. A stand-in would only prove that the route forwards something. The application has no
+route of its own, so the test also proves that the workflow module brings it. The real image proves that
 the application and the frontend agree on the paths and on the manifest. The test asks for the
 manifest, then for every file the manifest names, and it checks that the API of the module is
 still answered by the application. The header `Cache-Control: no-cache` of the manifest comes from
@@ -190,7 +203,9 @@ it. Name another one with `-Duser-interface.image=...`.
 
 The workflow module is in the backend repository and the forms are in the frontend repository.
 The backend builds with Maven, the frontend with npm. So they build on build agents with one tool
-each. Release the backend first, then the frontend, then this application. A bot such as Renovate
+each. The frontend reads the OpenAPI file of the backend through a git submodule, at a commit it
+pins, so it builds without the backend being built or released. Release the backend first, then
+the frontend, then this application. A bot such as Renovate
 opens the pull request which moves this application to the new release of the backend. The tag
 of the nginx image is a deployment setting. It moves with each deployment, not with a build.
 

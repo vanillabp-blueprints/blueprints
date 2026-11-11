@@ -90,9 +90,11 @@
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
     <!--
-      The gateway which forwards the paths of the user interface to the nginx. This is the
-      flavour for Spring MVC. It forwards on the threads of the servlet container, like every
-      other request of this application. The other flavour needs WebFlux.
+      The gateway which forwards the paths of the user interface to the nginx. The route itself
+      comes from the workflow module, which has the gateway as an optional dependency. This
+      starter is what switches the route on, together with the address in application.yaml.
+      This is the flavour for Spring MVC. It forwards on the threads of the servlet container,
+      like every other request of this application. The other flavour needs WebFlux.
     -->
     <dependency>
       <groupId>org.springframework.cloud</groupId>

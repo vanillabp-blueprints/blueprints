@@ -6,9 +6,8 @@
 
 A workflow module with a user interface comes in two JARs: the workflow module, built with Maven,
 and the JAR of its user interface, built with npm. An application which runs several workflow
-modules would need two dependencies per module, and it would have to know how each module is
-wired. This blueprint packs both JARs and the wiring into one library, a bundle. The application
-adds one dependency per module, and nothing else.
+modules would need two dependencies per module. This blueprint packs both JARs into one library,
+a bundle. The application adds one dependency per module, and nothing else.
 
 ## What this blueprint shows
 
@@ -43,33 +42,32 @@ a user interface has three parts, each in a repository of its own:
 |----------------------------------------|----------------------------------------------------------------------------|------------|
 | `cockpit-user-task-backend-springboot` | the API of the forms as a JAR, and the workflow module                     | Maven      |
 | `cockpit-user-task-frontend-react`     | the forms and the columns of the task list, as a JAR of the user interface | npm        |
-| `cockpit-user-task-bundle-springboot`  | this repository: the workflow module, the user interface and their wiring  | Maven      |
+| `cockpit-user-task-bundle-springboot`  | this repository: the workflow module and the user interface as one library | Maven      |
 
-The frontend needs only the API, and the API is in the backend. Only the bundle needs both. So
-nothing depends on itself in a circle. Build and release the parts in this order: the backend,
-then the frontend, then this bundle. Each part takes the parts before it as a released version
-from your Maven repository. The two versions are properties in `pom.xml`, and a bot such as
+The frontend needs only the API, and the API is in the backend. The frontend reads its OpenAPI
+file through a git submodule of the backend, at a commit it pins. So it builds without the backend
+being built or released. Only the bundle needs both. So nothing depends on itself in a circle.
+Release the parts in this order: the backend, then the frontend, then this bundle. The frontend
+pins a commit of the backend, and the bundle takes both as released versions from your Maven
+repository. The two versions are properties in `pom.xml`, and a bot such as
 Renovate opens the pull request which moves them from a snapshot to a release.
 
 A Maven plugin which downloads Node and runs npm would save a repository. But it puts a second tool
 chain into the Maven build, which many companies see as a security risk. So the frontend builds
 its JAR with npm alone, and Maven takes it like any other dependency.
 
-### The bundle wires the module
+### The module wires itself, the bundle has no code
 
-An application with several workflow modules has a package of its own. Its component scan does not
-reach the package of a module. So the bundle brings an auto-configuration,
-`LoanApprovalBundleAutoConfiguration`, which Spring Boot loads from every JAR on the class path.
-It does two things:
+An application is only a container for workflow modules. Taking a module as a dependency has to
+be enough. An application with several workflow modules has a package of its own, and its
+component scan does not reach the package of a module. So the workflow module brings an
+auto-configuration, `LoanApprovalAutoConfiguration`, which Spring Boot loads from every JAR on the
+class path. It scans the package of the module for beans, entities and repositories, with fully
+qualified bean names. The README of the backend says why.
 
-- It scans the package of the module for beans. Every workflow module has classes called
-  `Service`, `Workflow` and `ApiController`, so the beans get their fully qualified class name as
-  name. With the short names, the second module in one application ends the boot.
-- It adds the package of the module to the packages Spring Boot looks for entities and
-  repositories in. The application's own package stays in that list.
-
-The workflow module itself does not change. Its team may add an auto-configuration of its own
-later, as `module-packaging` shows. Then the bundle needs none.
+That leaves nothing for the bundle to wire. Everything specific to the module is in the module,
+because every application which takes it needs it. The bundle only puts the module and its user
+interface together, so an application adds them in one line.
 
 ### The user interface needs nothing
 
@@ -85,14 +83,12 @@ carries the one your Maven repository holds.
 
 Compared to [`cockpit-user-task-application`](https://github.com/vanillabp-blueprints/cockpit-user-task-application-springboot):
 
-|                    File                    |                                       What is different                                        |
-|--------------------------------------------|------------------------------------------------------------------------------------------------|
-| `pom.xml`                                  | a library, not an application. The adapters are only in the test, the application chooses them |
-| `LoanApprovalBundleAutoConfiguration.java` | new: wires the module into an application in another package                                   |
-| `...AutoConfiguration.imports`             | new: tells Spring Boot about the auto-configuration                                            |
-| `src/test/.../Application.java`            | the application of the test, in a package which does not reach the module                      |
-| `src/test/resources/application.yaml`      | what the application writes: the database and where the reports go                             |
-| `docker-compose.yaml`                      | gone: the application which takes the bundle runs the cockpit                                  |
+|                 File                  |                                       What is different                                        |
+|---------------------------------------|------------------------------------------------------------------------------------------------|
+| `pom.xml`                             | a library, not an application. The adapters are only in the test, the application chooses them |
+| `src/test/.../Application.java`       | the application of the test, in a package which does not reach the module                      |
+| `src/test/resources/application.yaml` | what the application writes: the database and where the reports go                             |
+| `docker-compose.yaml`                 | gone: the application which takes the bundle runs the cockpit                                  |
 
 ## Running it
 
@@ -130,18 +126,16 @@ adapter of its BPMS once, for all its modules:
 
 ## How it works
 
-|                                File                                 |                                        Role                                         |
-|---------------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| `pom.xml`                                                           | the workflow module and the UI JAR, and per BPMS profile both adapters for the test |
-| `src/main/java/.../bundle/LoanApprovalBundleAutoConfiguration.java` | scans the module, and adds its package for entities and repositories                |
-| `src/main/resources/META-INF/spring/...AutoConfiguration.imports`   | names the auto-configuration, so Spring Boot loads it                               |
-| `src/test/java/blueprint/application/Application.java`              | an application in a package of its own, which says nothing about the module         |
-| `src/test/java/.../ApplicationSmokeTest.java`                       | the context starts, and every workflow module is wired                              |
-| `src/test/java/.../UserInterfaceSmokeTest.java`                     | the manifest comes from the UI JAR, and the form of an open task answers            |
+|                          File                          |                                        Role                                         |
+|--------------------------------------------------------|-------------------------------------------------------------------------------------|
+| `pom.xml`                                              | the workflow module and the UI JAR, and per BPMS profile both adapters for the test |
+| `src/test/java/blueprint/application/Application.java` | an application in a package of its own, which says nothing about the module         |
+| `src/test/java/.../ApplicationSmokeTest.java`          | the context starts, and every workflow module is wired                              |
+| `src/test/java/.../UserInterfaceSmokeTest.java`        | the manifest comes from the UI JAR, and the form of an open task answers            |
 
 The test application is in `blueprint.application`. The module is in
 `blueprint.workflowmodule.loanapproval`, which the scan of the application does not reach. So if the
-auto-configuration did not work, the module would have no beans. VanillaBP would find the process
+auto-configuration of the module did not work, the module would have no beans. VanillaBP would find the process
 and then miss the bean behind its tasks, and the boot would end. `ApplicationSmokeTest` also counts
 the modules on the class path against the ones VanillaBP wired.
 

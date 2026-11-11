@@ -50,6 +50,12 @@
     -->
     <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
     <businesscockpit-camunda8.version>0.9.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
+    <!--
+      The release train of Spring Cloud, for the gateway the workflow module can use to forward
+      its user interface to an nginx. 2025.1 is built against Spring Boot 4.0, and there is no
+      train for 4.1 yet. The Spring Boot parent wins for everything the two have in common.
+    -->
+    <spring-cloud.version>2025.1.4</spring-cloud.version>
   </properties>
 
   <dependencyManagement>
@@ -58,6 +64,13 @@
         <groupId>io.vanillabp</groupId>
         <artifactId>vanillabp-bom</artifactId>
         <version>${vanillabp.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${spring-cloud.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>

@@ -19,7 +19,8 @@
     The bundle takes the place of the application repository. It takes the workflow module of
     the backend and the JAR of the user interface which the frontend built, and publishes them
     as one library. An application which runs several workflow modules then adds one
-    dependency per module, and that dependency brings the module, its wiring and its forms.
+    dependency per module, and that dependency brings the module and its forms. The bundle has
+    no code. The workflow module wires itself with an auto-configuration of its own.
   -->
 
   <properties>

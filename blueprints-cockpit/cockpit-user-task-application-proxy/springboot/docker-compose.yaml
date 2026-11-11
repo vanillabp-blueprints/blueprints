@@ -18,7 +18,7 @@ services:
       - -jar
       - /application.jar
       # where the nginx is, inside this network
-      - --user-interface.address=http://user-interface:80
+      - --loan-approval.user-interface.address=http://user-interface:80
       # where the cockpit is, inside this network
       - --vanillabp.cockpit.rest.base-url=http://business-cockpit:8080
       # where the cockpit reaches this application. The module says localhost, which is

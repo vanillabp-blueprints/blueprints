@@ -1,8 +1,8 @@
 # cockpit-user-task-bundle
 
-A library which packs the workflow module `loan-approval`, the JAR of its user interface and the
-wiring of the module into one dependency, for an application which runs several workflow
-modules. A delta on top of `cockpit-user-task-application`.
+A library which packs the workflow module `loan-approval` and the JAR of its user interface into
+one dependency, for an application which runs several workflow modules. It has no code: the
+module wires itself. A delta on top of `cockpit-user-task-application`.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
@@ -26,22 +26,19 @@ Replace all of these consistently. They are the same in every blueprint.
 
 Names this blueprint adds:
 
-|                 Name                  |                           Where it occurs                            |
-|---------------------------------------|----------------------------------------------------------------------|
-| `LoanApprovalBundleAutoConfiguration` | the class, and its line in `AutoConfiguration.imports`               |
-| `loan-approval-bundle`                | the artifact id applications depend on                               |
-| `blueprint.application`               | the package of the test application, which does not reach the module |
-| `cockpit-user-task-backend.version`   | `pom.xml`: the version of the workflow module                        |
-| `cockpit-user-task-ui.version`        | `pom.xml`: the version of the UI JAR                                 |
+|                Name                 |                           Where it occurs                            |
+|-------------------------------------|----------------------------------------------------------------------|
+| `loan-approval-bundle`              | the artifact id applications depend on                               |
+| `blueprint.application`             | the package of the test application, which does not reach the module |
+| `cockpit-user-task-backend.version` | `pom.xml`: the version of the workflow module                        |
+| `cockpit-user-task-ui.version`      | `pom.xml`: the version of the UI JAR                                 |
 
 ## Core files
 
-|                                File                                 |                                                      Why it matters                                                       |
-|---------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| `pom.xml`                                                           | the workflow module and the UI JAR as dependencies. The BPMS adapter and the cockpit adapter in test scope only           |
-| `src/main/java/.../bundle/LoanApprovalBundleAutoConfiguration.java` | `@ComponentScan` of the module with fully qualified bean names, `@AutoConfigurationPackage` for entities and repositories |
-| `src/main/resources/META-INF/spring/...AutoConfiguration.imports`   | without this line the class is never loaded                                                                               |
-| `src/test/java/.../UserInterfaceSmokeTest.java`                     | asks for `/loan-approval/bc-manifest.json` and for the form of an open task                                               |
+|                      File                       |                                                 Why it matters                                                  |
+|-------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| `pom.xml`                                       | the workflow module and the UI JAR as dependencies. The BPMS adapter and the cockpit adapter in test scope only |
+| `src/test/java/.../UserInterfaceSmokeTest.java` | asks for `/loan-approval/bc-manifest.json` and for the form of an open task                                     |
 
 ## Boilerplate files
 
@@ -61,15 +58,10 @@ Names this blueprint adds:
    module as dependencies, the UI JAR in `runtime` scope.
 2. Do not add a BPMS adapter or a cockpit adapter outside test scope. The application chooses
    them once for all its modules.
-3. Add an auto-configuration in a package outside the module's package. Give it
-   `@ComponentScan` of the module's package with `FullyQualifiedAnnotationBeanNameGenerator`, and
-   `@AutoConfigurationPackage` with the module's package. Order it before
-   `HibernateJpaAutoConfiguration` and `DataJpaRepositoriesAutoConfiguration`. Do not use
-   `@EntityScan` or `@EnableJpaRepositories`. They replace what the application scans.
-4. Name it in `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
-5. Put a test application into a package which does not reach the module, and copy the two smoke
+3. Add no code to the bundle. The workflow module has to bring its auto-configuration, as
+   `cockpit-user-task-backend` shows. If it does not, add it to the module, not to the bundle.
+4. Put a test application into a package which does not reach the module, and copy the two smoke
    tests.
-6. If the module brings an auto-configuration of its own, leave out steps 3 and 4.
 
 ## Verifying
 
@@ -86,7 +78,8 @@ you report a failure of that profile as a defect of the generated code.
 Both smoke tests have to pass:
 
 - `ApplicationSmokeTest`: the context starts, and `loan-approval` is wired. If the boot ends with
-  a missing bean behind a `@WorkflowTask` method, the auto-configuration was not loaded.
+  a missing bean behind a `@WorkflowTask` method, the auto-configuration of the module was not
+  loaded.
 - `UserInterfaceSmokeTest`: `/loan-approval/bc-manifest.json` lists `UserTaskForm` and
   `UserTaskList`, and the form of an open "Assess risk" task answers with its loan request.
 
