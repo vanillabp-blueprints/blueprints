@@ -1,0 +1,38 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is in its
+# own configuration file (loan-approval/loan-approval.yaml inside the module JAR). That file also
+# says where the cockpit reaches the module: http://localhost:8080/loan-approval.
+#
+# Nothing about a BPMS is here either. That lives in a profile file per engine,
+# 'application-<bpms>.yaml', so switching engines is a profile and not an edit.
+spring:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, so
+  # 'application-<bpms>.yaml' is loaded without anybody having to name the profile twice.
+  # Tests get the same value as a system property.
+  profiles:
+    active: "@bpms@"
+  datasource:
+    url: jdbc:h2:mem:loan-approval;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+vanillabp:
+  # Where the reports about workflows and user tasks go. Which cockpit an application reports
+  # to is a matter of the application, not of the workflow module. This is the cockpit of
+  # 'docker-compose.yaml'. Every report goes through the outbox first, so a cockpit which is
+  # not running loses nothing. The reports wait until it is there.
+  # https://github.com/vanillabp/business-cockpit/wiki/Connecting-a-workflow-module#rest-kafka-or-a-way-of-your-own
+  cockpit:
+    rest:
+      base-url: http://localhost:9080
+      authentication:
+        basic: true
+        # The account the cockpit of 'docker-compose.yaml' accepts reports from. A real
+        # application takes both values from the environment.
+        username: loan-approval
+        password: loan-approval
+logging:
+  level:
+    blueprint.workflowmodule: INFO

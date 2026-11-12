@@ -10,6 +10,11 @@ here, the '<modules>' of the root POM, and the entries of blueprints.yaml.
   index 'available'      ->  the directory has to exist here
   index 'not-applicable' ->  the directory must NOT exist here
 
+A frontend of the Business Cockpit builds with npm. Its directory is
+'<group>/<blueprint-id>/<framework>/' with a package.json, the framework is its platform in
+the index, and it is not a module of the root POM. A pom.xml in it is an error: the frontend
+shows a build without Maven, and the Maven reactor would pick it up.
+
 The one thing which is deliberately NOT an error by default is a directory whose index
 entry still says 'planned': that is the state between adding a blueprint and the CI job
 having split it into its own repository, which is what flips the status. Pass --strict
@@ -31,6 +36,10 @@ import yaml
 MAVEN_NS = {"m": "http://maven.apache.org/POM/4.0.0"}
 PLATFORMS = ("springboot", "quarkus")
 
+# The UI frameworks a frontend of the Business Cockpit exists for. The index names them as the
+# platforms of a frontend, so they are platforms here as well.
+FRONTEND_PLATFORMS = ("react", "angular", "vue")
+
 # The group directory a blueprint of a category lives in. It keeps the top level of this
 # repository at a handful of entries, and it is a rule rather than a habit because this
 # check enforces it.
@@ -38,17 +47,18 @@ GROUP_OF_CATEGORY = {
     "module": "blueprints-modules",
     "persistence": "blueprints-persistence",
     "bpmn": "blueprints-bpmn",
+    "cockpit": "blueprints-cockpit",
     "showcase": "showcases",
 }
 
 
-def blueprint_directories(root):
+def blueprint_directories(root, marker="pom.xml", platforms=PLATFORMS):
     """Every blueprint directory, as (blueprint id, platform) -> group directory."""
     found = {}
-    for pom in root.glob("*/*/*/pom.xml"):
-        blueprint_id, platform = pom.parent.parent.name, pom.parent.name
-        group = pom.parent.parent.parent.name
-        if platform in PLATFORMS:
+    for file in root.glob(f"*/*/*/{marker}"):
+        blueprint_id, platform = file.parent.parent.name, file.parent.name
+        group = file.parent.parent.parent.name
+        if platform in platforms:
             found[(blueprint_id, platform)] = group
     return found
 
@@ -76,18 +86,31 @@ def main():
     index = yaml.safe_load(Path(args[0]).read_text(encoding="utf-8"))
 
     indexed = {
-        (blueprint["id"], platform): blueprint["platforms"][platform]["status"]
+        (blueprint["id"], platform): entry["status"]
         for blueprint in index["blueprints"]
-        for platform in PLATFORMS
+        for platform in PLATFORMS + FRONTEND_PLATFORMS
+        if (entry := blueprint["platforms"].get(platform)) is not None
     }
     category_of = {blueprint["id"]: blueprint["category"] for blueprint in index["blueprints"]}
-    directories = blueprint_directories(root)
+    maven_directories = blueprint_directories(root)
+    frontends = blueprint_directories(root, "package.json", FRONTEND_PLATFORMS)
+    directories = {**maven_directories, **frontends}
     modules = pom_modules(root)
 
     errors, warnings = [], []
 
+    for blueprint_id, platform in sorted(
+        blueprint_directories(root, "pom.xml", FRONTEND_PLATFORMS)
+    ):
+        errors.append(
+            f"{blueprint_id}/{platform}: has a pom.xml. A frontend builds with npm alone,"
+            " and the Maven reactor must not find it"
+        )
+
     for blueprint_id, platform in sorted(directories):
-        if (blueprint_id, platform) not in modules:
+        # A frontend is built by npm, so it is no <module> of the root POM.
+        is_maven = (blueprint_id, platform) in maven_directories
+        if is_maven and (blueprint_id, platform) not in modules:
             errors.append(
                 f"{blueprint_id}/{platform}: exists but is not a <module> of the root"
                 " POM, so it is never built"
@@ -118,7 +141,7 @@ def main():
             (errors if strict else warnings).append(message)
 
     for module in sorted(modules):
-        if module not in directories:
+        if module not in maven_directories:
             errors.append(
                 f"{'/'.join(str(part) for part in module)}: is a <module> of the root POM"
                 " but does not exist"

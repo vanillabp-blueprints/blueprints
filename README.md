@@ -34,7 +34,7 @@ blueprints/
 ├── pom.xml                  aggregator, formatting, BPMS profiles
 ├── formatting_conventions.xml
 ├── <group>/                 one per category: blueprints-modules, blueprints-persistence,
-│   │                        blueprints-bpmn, showcases
+│   │                        blueprints-bpmn, blueprints-cockpit, showcases
 │   └── <blueprint-id>/
 │       ├── springboot/      -> repository <blueprint-id>-springboot
 │       ├── quarkus/         -> repository <blueprint-id>-quarkus
@@ -43,14 +43,22 @@ blueprints/
 ```
 
 Blueprint IDs are `<category>-<aspect>` in lower case. The category is one of `module-`,
-`persistence-`, `bpmn-` or `showcase-`. `<platform>` is `springboot` or `quarkus`.
+`persistence-`, `bpmn-`, `cockpit-` or `showcase-`. `<platform>` is `springboot` or `quarkus`.
+
+A `cockpit-*` blueprint shows a workflow module whose user tasks the Business Cockpit shows.
+Such a module has a user interface, and that is built with npm, not with Maven. So the
+blueprint comes in parts, and each part is a blueprint ID of its own:
+`cockpit-user-task-backend` holds the API of the forms and the workflow module. The frontend
+and the application which joins both follow as parts of their own. Each part is split into a
+repository of its own, `cockpit-user-task-backend-springboot` for the backend.
 
 So far the blueprints here are the `module-*`, `persistence-*` and `bpmn-*` families, each
 blueprint for both platforms, except `persistence-active-record`, which is for Quarkus alone.
 Its subject is something Spring Boot does not have. The index records that as `not-applicable`
-with a reason, not as a gap. The blueprints live in a directory
-per category (`blueprints-modules`, `blueprints-persistence`, `blueprints-bpmn`, later
-`showcases`). So the top level stays readable, however many of them there are. The rest of this
+with a reason, not as a gap. The `cockpit-*` family has started on Spring Boot. Its Quarkus
+twins are `planned`, and they come in a Quarkus phase of their own, as they did for the other
+families. The blueprints live in a directory per category (`blueprints-modules`,
+`blueprints-persistence`, `blueprints-bpmn`, `blueprints-cockpit`, later `showcases`). So the top level stays readable, however many of them there are. The rest of this
 repository is the build, the formatting rules and the conventions the others follow.
 
 ## Building

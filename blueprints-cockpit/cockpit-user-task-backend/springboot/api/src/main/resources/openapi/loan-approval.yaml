@@ -1,0 +1,146 @@
+openapi: 3.0.3
+info:
+  title: Loan approval, user task forms
+  description: >
+    The endpoints the forms of the workflow module 'loan-approval' call. A form runs in the
+    browser, inside the Business Cockpit. It reaches the workflow module through the proxy of
+    the cockpit, which serves every workflow module below /wm/<workflow-module-id>. So the
+    server below is a path of the cockpit, not of the workflow module.
+
+    Each form has two endpoints. GET reads what the form shows. POST sends what the user
+    entered and completes the user task. Nothing is stored in between.
+  version: 1.0.0
+servers:
+  - url: /wm/loan-approval
+tags:
+  - name: user-tasks
+    description: The forms of the user tasks
+paths:
+  /api/user-tasks/{userTaskId}/assess-risk:
+    parameters:
+      - $ref: '#/components/parameters/UserTaskId'
+    get:
+      tags:
+        - user-tasks
+      operationId: getAssessRiskForm
+      summary: What the form of the user task "Assess risk" shows
+      responses:
+        '200':
+          description: The loan request whose risk is assessed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessRiskForm'
+        '404':
+          description: No open user task "Assess risk" has this id
+    post:
+      tags:
+        - user-tasks
+      operationId: completeAssessRisk
+      summary: Completes the user task "Assess risk"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessRiskInput'
+      responses:
+        '204':
+          description: The user task is completed
+        '400':
+          description: The input is missing or empty
+        '404':
+          description: No open user task "Assess risk" has this id
+  /api/user-tasks/{userTaskId}/check-documents:
+    parameters:
+      - $ref: '#/components/parameters/UserTaskId'
+    get:
+      tags:
+        - user-tasks
+      operationId: getCheckDocumentsForm
+      summary: What the form of the user task "Check documents" shows
+      responses:
+        '200':
+          description: The loan request whose documents are checked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckDocumentsForm'
+        '404':
+          description: No open user task "Check documents" has this id
+    post:
+      tags:
+        - user-tasks
+      operationId: completeCheckDocuments
+      summary: Completes the user task "Check documents"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckDocumentsInput'
+      responses:
+        '204':
+          description: The user task is completed
+        '400':
+          description: The input is missing or empty
+        '404':
+          description: No open user task "Check documents" has this id
+components:
+  parameters:
+    UserTaskId:
+      name: userTaskId
+      in: path
+      required: true
+      description: The id of the user task, as the cockpit knows it
+      schema:
+        type: string
+  schemas:
+    AssessRiskForm:
+      type: object
+      required:
+        - loanRequestId
+        - amount
+      properties:
+        loanRequestId:
+          type: string
+          description: The id of the loan request
+        amount:
+          type: integer
+          description: The amount requested
+        riskAssessment:
+          type: string
+          description: The assessment, once it was given. Empty while the task is open
+    AssessRiskInput:
+      type: object
+      required:
+        - riskAssessment
+      properties:
+        riskAssessment:
+          type: string
+          minLength: 1
+          description: What the user concluded about the risk
+    CheckDocumentsForm:
+      type: object
+      required:
+        - loanRequestId
+        - riskAssessment
+      properties:
+        loanRequestId:
+          type: string
+          description: The id of the loan request
+        riskAssessment:
+          type: string
+          description: The assessment the user task "Assess risk" gave
+        documentsNote:
+          type: string
+          description: The note, once it was given. Empty while the task is open
+    CheckDocumentsInput:
+      type: object
+      required:
+        - documentsNote
+      properties:
+        documentsNote:
+          type: string
+          minLength: 1
+          description: What the user noted about the documents
