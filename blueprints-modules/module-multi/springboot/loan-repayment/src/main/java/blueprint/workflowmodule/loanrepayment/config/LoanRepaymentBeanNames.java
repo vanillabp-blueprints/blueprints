@@ -1,4 +1,4 @@
-package blueprint.workflowmodule.loanrepayment;
+package blueprint.workflowmodule.loanrepayment.config;
 
 import blueprint.commons.WorkflowModuleBeanNameGenerator;
 

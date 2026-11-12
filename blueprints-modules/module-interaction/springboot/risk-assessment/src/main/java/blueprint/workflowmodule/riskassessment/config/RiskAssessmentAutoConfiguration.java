@@ -1,4 +1,4 @@
-package blueprint.workflowmodule.riskassessment;
+package blueprint.workflowmodule.riskassessment.config;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -6,7 +6,7 @@ import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-import blueprint.workflowmodule.riskassessment.config.RiskAssessmentProperties;
+import blueprint.workflowmodule.riskassessment.Service;
 
 /**
  * The second workflow module wires itself the same way the first one does: one class plus one
@@ -27,12 +27,16 @@ import blueprint.workflowmodule.riskassessment.config.RiskAssessmentProperties;
  * {@code risk-assessment_<SimpleName>}.
  * </p>
  *
- * @see blueprint.workflowmodule.loanapproval.LoanApprovalAutoConfiguration
+ * @see blueprint.workflowmodule.loanapproval.config.LoanApprovalAutoConfiguration
  */
 @AutoConfiguration
-@ComponentScan(nameGenerator = RiskAssessmentBeanNames.class)
-@EntityScan
-@EnableJpaRepositories(nameGenerator = RiskAssessmentBeanNames.class)
+@ComponentScan(
+    basePackageClasses = Service.class,
+    nameGenerator = RiskAssessmentBeanNames.class)
+@EntityScan(basePackageClasses = Service.class)
+@EnableJpaRepositories(
+    basePackageClasses = Service.class,
+    nameGenerator = RiskAssessmentBeanNames.class)
 @EnableConfigurationProperties(RiskAssessmentProperties.class)
 public class RiskAssessmentAutoConfiguration {
 }

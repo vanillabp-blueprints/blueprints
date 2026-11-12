@@ -1,4 +1,4 @@
-package blueprint.workflowmodule;
+package blueprint.workflowmodule.config;
 
 import javax.sql.DataSource;
 

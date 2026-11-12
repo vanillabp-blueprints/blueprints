@@ -1,4 +1,4 @@
-package blueprint.workflowmodule.riskassessment;
+package blueprint.workflowmodule.riskassessment.config;
 
 import blueprint.api.WorkflowModuleBeanNameGenerator;
 

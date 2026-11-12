@@ -1,8 +1,10 @@
-package com.acme.banking;
+package blueprint.commons.config;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
+
+import blueprint.commons.CustomerDirectory;
 
 /**
  * The library wires itself, for the same reason the workflow modules do: its package is not

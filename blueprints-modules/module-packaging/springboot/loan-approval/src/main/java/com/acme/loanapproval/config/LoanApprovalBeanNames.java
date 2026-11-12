@@ -1,6 +1,6 @@
-package blueprint.workflowmodule.loanapproval;
+package com.acme.loanapproval.config;
 
-import blueprint.commons.WorkflowModuleBeanNameGenerator;
+import com.acme.banking.WorkflowModuleBeanNameGenerator;
 
 /**
  * Names this module's beans {@code loan-approval_<SimpleName>}. One line per module, and the

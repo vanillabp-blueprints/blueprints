@@ -159,7 +159,7 @@ added or changed:
 | `loan-approval/.../loan-approval/db/changelog.xml`         | new: the module's own changelog, its aggregate table                                     |
 | `application/.../db/changelog.xml`                         | new: what the application applies, including VanillaBP's changelog from the artifact     |
 | `application/.../db/changelog-camunda7.xml`                | new: the same plus the engine's changelog, applied by the Camunda 7 build                |
-| `application/.../SchemaConfiguration.java`                 | new: the application's Liquibase bean, the changelog named by the engine profile         |
+| `application/.../config/SchemaConfiguration.java`          | new: the application's Liquibase bean, the changelog named by the engine profile         |
 | `application/src/main/resources/application.yaml`          | `ddl-auto: validate`, `create-schema: false`, the changelog to apply                     |
 | `application/src/main/resources/application-camunda7.yaml` | `database-schema-update: false` and the changelog including the engine's                 |
 | `loan-approval/.../model/Aggregate.java`                   | every column has an explicit name, so the entity and the migration cannot drift apart    |
@@ -263,7 +263,7 @@ That is after every migration ran.
 
 |                            File                            |                                                Role                                                 |
 |------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
-| `application/.../SchemaConfiguration.java`                 | the application's Liquibase: default bookkeeping tables, changelog per engine                       |
+| `application/.../config/SchemaConfiguration.java`          | the application's Liquibase: default bookkeeping tables, changelog per engine                       |
 | `application/src/main/resources/db/changelog.xml`          | includes VanillaBP's changelog and the workflow module's                                            |
 | `application/src/main/resources/db/changelog-camunda7.xml` | includes the above plus Camunda's own changelog                                                     |
 | `loan-approval/.../loan-approval/db/changelog.xml`         | the aggregate table of this workflow module                                                         |

@@ -1,1 +1,1 @@
-blueprint.workflowmodule.loanapproval.LoanApprovalAutoConfiguration
+blueprint.workflowmodule.loanapproval.config.LoanApprovalAutoConfiguration

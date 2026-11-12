@@ -157,7 +157,7 @@ added or changed:
 |                             File                             |                                                      Change                                                      |
 |--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
 | `loan-approval/.../loan-approval/db/migration/V1.0.0__*.sql` | new: the module's own migration, its aggregate table                                                             |
-| `application/.../SchemaConfiguration.java`                   | new: one Flyway instance and initializer per owner                                                               |
+| `application/.../config/SchemaConfiguration.java`            | new: one Flyway instance and initializer per owner                                                               |
 | `application/pom.xml`                                        | the `camunda7` profile takes the engine's scripts out of the engine JAR                                          |
 | `loan-approval/.../model/Aggregate.java`                     | every column has an explicit name, so entity and migration cannot drift apart                                    |
 | `application/src/main/resources/application.yaml`            | `ddl-auto: validate`, `create-schema: false`, the locations per owner                                            |
@@ -258,7 +258,7 @@ migration ran.
 
 |                            File                            |                                           Role                                            |
 |------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| `application/.../SchemaConfiguration.java`                 | one Flyway and one initializer per owner, each with its own history                       |
+| `application/.../config/SchemaConfiguration.java`          | one Flyway and one initializer per owner, each with its own history                       |
 | `application/src/main/resources/application.yaml`          | which locations belong to which owner                                                     |
 | `application/src/main/resources/application-camunda7.yaml` | the engine's migrations, added where the engine is embedded                               |
 | `application/pom.xml`, profile `camunda7`                  | takes Camunda's scripts out of the engine JAR and names them                              |
