@@ -62,18 +62,18 @@ controllers in line, or a form reaches nothing.
 
 ## Boilerplate files
 
-|                             File                             |                                                   Purpose                                                   |
-|--------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                   | the VanillaBP BOM import, the versions of the BPMS adapters and of the cockpit adapters                     |
-| `api/pom.xml`                                                | the OpenAPI as `io.vanillabp.blueprint:cockpit-user-task-api`, no code, read by the test of the module      |
-| `loan-approval/pom.xml`                                      | `vanillabp-spring-boot-support` and the cockpit `spi-for-java`; per BPMS profile both adapters for the test |
-| `loan-approval/src/test/resources/application.yaml`          | the database, a short outbox poll interval, the address of the simulator                                    |
-| `loan-approval/src/test/resources/application-camunda7.yaml` | the Camunda 7 settings of the test, and the same file per other BPMS                                        |
-| `loan-approval/src/test/resources/dev-shell-simulator.yaml`  | the users the simulator knows. It does not start without one                                                |
-| `loan-approval/src/test/java/.../ModuleTestApplication.java` | the minimal application the module's test boots. It scans nothing, the auto-configuration wires the module  |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`    | base class of the integration test: waits for workflow progress                                             |
-| `loan-approval/src/test/java/.../LocalBackend.java`          | runs the module with `spring-boot:test-run` for the development of the forms                                |
-| `docs/loan_approval.png`                                     | the picture of the process the README shows, rendered from the BPMN model                                   |
+|                             File                             |                                                                    Purpose                                                                    |
+|--------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                   | the VanillaBP BOM import, the versions of the BPMS adapters and of the cockpit adapters, the rule which keeps every adapter in the test scope |
+| `api/pom.xml`                                                | the OpenAPI as `io.vanillabp.blueprint:cockpit-user-task-api`, no code, read by the test of the module                                        |
+| `loan-approval/pom.xml`                                      | `vanillabp-spring-boot-support` and the cockpit `support`; per BPMS profile both adapters for the test                                        |
+| `loan-approval/src/test/resources/application.yaml`          | the database, a short outbox poll interval, the address of the simulator                                                                      |
+| `loan-approval/src/test/resources/application-camunda7.yaml` | the Camunda 7 settings of the test, and the same file per other BPMS                                                                          |
+| `loan-approval/src/test/resources/dev-shell-simulator.yaml`  | the users the simulator knows. It does not start without one                                                                                  |
+| `loan-approval/src/test/java/.../ModuleTestApplication.java` | the minimal application the module's test boots. It scans nothing, the auto-configuration wires the module                                    |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`    | base class of the integration test: waits for workflow progress                                                                               |
+| `loan-approval/src/test/java/.../LocalBackend.java`          | runs the module with `spring-boot:test-run` for the development of the forms                                                                  |
+| `docs/loan_approval.png`                                     | the picture of the process the README shows, rendered from the BPMN model                                                                     |
 
 `WorkflowModuleTest` is identical in every blueprint. Copy it unchanged. Do not take the
 `TestApplication` of other blueprints. Its component scan would register every bean of the
@@ -85,9 +85,11 @@ module a second time, under another name.
    `src/main/resources/openapi/<workflow-module-id>.yaml`. Give it the server
    `/wm/<workflow-module-id>`. The frontend reads this file through a git submodule of the
    backend repository. The JAR is for the test of the workflow module.
-2. Add `io.vanillabp.businesscockpit:spi-for-java` to the workflow module. Add the cockpit
-   adapter of your BPMS next to the BPMS adapter, wherever the BPMS adapter is declared:
-   `businesscockpit-<bpms>-adapter-spring-boot`.
+2. Add `io.vanillabp.businesscockpit:support` to the workflow module. Add the cockpit adapter
+   of your BPMS next to the BPMS adapter, wherever the BPMS adapter is declared:
+   `businesscockpit-<bpms>-adapter-spring-boot`. In the workflow module, both adapters stay in
+   the test scope. The rule `no-adapter-in-a-workflow-module` of the blueprint POM breaks the
+   build otherwise.
 3. Write the keys below `vanillabp.workflow-modules.<workflow-module-id>.cockpit` into the
    module's own configuration file: `workflow-module-uri` ending with `/<workflow-module-id>`,
    `ui-uri-type`, `ui-uri-path`, `i18n-languages`, `bpmn-description-language` and
@@ -107,8 +109,8 @@ module a second time, under another name.
    module id. The scans of `LoanApprovalAutoConfiguration` name the package of the module by its
    `Service`, so they still find every class of the module. Add
    `spring-cloud-gateway-server-webmvc` to the module as an optional dependency, with the
-   Spring Cloud BOM. The route class is the same for every module. A later support library of
-   the Business Cockpit will bring it.
+   Spring Cloud BOM. The route class is the same for every module. The `support` library of the
+   Business Cockpit does not have it yet.
 9. Copy `CockpitSimulator`, `dev-shell-simulator.yaml` and the dependency plugin execution of
    `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the test
    which checks every OpenAPI operation against the endpoints.

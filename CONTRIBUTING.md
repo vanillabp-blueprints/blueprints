@@ -59,6 +59,15 @@ apart.
 The root POM collects the blueprints (`<modules>`) and checks the formatting of the whole
 repository. It does nothing else.
 
+### The rule against adapters is copied, too
+
+The rule which keeps adapters out of a workflow module is a Maven Enforcer execution with the
+id `no-adapter-in-a-workflow-module`. `AGENTS.md` says what it checks. It sits in the POM of
+each blueprint and not in the root POM, for the reason above. In a blueprint with an
+application module, the parent POM declares it and the application switches it off with
+`<phase>none</phase>`. A blueprint without an application declares it and keeps it on.
+`module-standalone` has no such rule, because its application is the workflow module.
+
 ## Rule 2: a blueprint shows one aspect
 
 `module-single` is the base blueprint. All `bpmn-*` blueprints share its structure and only add

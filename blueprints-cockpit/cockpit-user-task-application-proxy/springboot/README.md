@@ -65,8 +65,9 @@ and port count. The key is below the id of the module, so each module of an appl
 address of its own. An application which does not set it serves the user interface from the UI
 jar, as `cockpit-user-task-application` does.
 
-The route is the same for every workflow module with a user interface. Only the id differs. So a
-later support library of the Business Cockpit will bring it, and the module will lose the class.
+The route is the same for every workflow module with a user interface. Only the id differs. So
+the `support` library of the Business Cockpit is the place for it. It does not have it yet. Once
+it does, the module will lose the class.
 
 The module also wires its beans, its entities and its repositories itself. So the package of
 `Application` is `blueprint.application`, which is not above the module. This application has

@@ -32,13 +32,14 @@
       <artifactId>vanillabp-spring-boot-support</artifactId>
     </dependency>
     <!--
-      The annotations and types of the Business Cockpit, such as @UserTaskDetailsProvider. Like
-      the line above, this knows no BPMS. The cockpit adapter of the BPMS is chosen by the
-      application, next to the BPMS adapter.
+      The same for the Business Cockpit: its annotations and types, such as
+      @UserTaskDetailsProvider, and classes a workflow module of the cockpit may share, such as
+      the details of the user who is logged in. Like the line above, this knows no BPMS. The
+      cockpit adapter of the BPMS is chosen by the application, next to the BPMS adapter.
     -->
     <dependency>
       <groupId>io.vanillabp.businesscockpit</groupId>
-      <artifactId>spi-for-java</artifactId>
+      <artifactId>support</artifactId>
       <version>${businesscockpit.version}</version>
     </dependency>
     <dependency>
