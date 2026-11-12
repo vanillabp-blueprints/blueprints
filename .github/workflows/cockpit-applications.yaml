@@ -168,6 +168,9 @@ jobs:
           name: ${{ matrix.artifact }}
           path: ${{ runner.temp }}/ui-jar
       - name: Put the backends and the one UI jar into the local repository
+        # Runs outside the checkout: in the root, Maven would read the whole reactor without
+        # the snapshot repository, and fail when the cache does not hold vanillabp-bom yet.
+        working-directory: ${{ runner.temp }}
         run: |
           mkdir -p ~/.m2/repository/io/vanillabp
           cp -r "$RUNNER_TEMP"/backends/* ~/.m2/repository/io/vanillabp/
