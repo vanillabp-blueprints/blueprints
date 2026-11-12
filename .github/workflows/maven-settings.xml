@@ -21,6 +21,17 @@
     <profiles>
         <profile>
             <id>github</id>
+            <!-- central-snapshots is asked only for the groups listed in
+                 .github/maven-repository-filters/groupId-central-snapshots.txt. Without the
+                 filter, a build with update-snapshots asks it for every SNAPSHOT of this
+                 repository too, which is never published there. Those requests are what makes
+                 Maven Central answer 429. GITHUB_WORKSPACE is empty outside a runner, and then
+                 the filter finds no file and lets everything through. A new group which a
+                 blueprint reads from there goes into that file. -->
+            <properties>
+                <aether.remoteRepositoryFilter.groupId>true</aether.remoteRepositoryFilter.groupId>
+                <aether.remoteRepositoryFilter.groupId.basedir>${env.GITHUB_WORKSPACE}/.github/maven-repository-filters</aether.remoteRepositoryFilter.groupId.basedir>
+            </properties>
             <repositories>
                 <repository>
                     <id>central</id>
