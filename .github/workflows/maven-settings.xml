@@ -21,6 +21,27 @@
     <profiles>
         <profile>
             <id>github</id>
+            <!-- central-snapshots is asked only for the groups listed in
+                 .github/maven-repository-filters/groupId-central-snapshots.txt. Without the
+                 filter, a build with update-snapshots asks it for every SNAPSHOT of this
+                 repository too, which is never published there. Those requests are what makes
+                 Maven Central answer 429. GITHUB_WORKSPACE is empty outside a runner, and then
+                 the filter finds no file and lets everything through. A new group which a
+                 blueprint reads from there goes into that file. -->
+            <properties>
+                <aether.remoteRepositoryFilter.groupId>true</aether.remoteRepositoryFilter.groupId>
+                <aether.remoteRepositoryFilter.groupId.basedir>${env.GITHUB_WORKSPACE}/.github/maven-repository-filters</aether.remoteRepositoryFilter.groupId.basedir>
+                <!-- Maven Central answers a runner with 429 and a Retry-After of about half an
+                     hour, counted for the runner's address, which other users share. A request
+                     during that time makes the block longer. So the resolver waits out the whole
+                     pause once, repeats only that request, and the build goes on. At most two
+                     repeats, at most 35 minutes before one; without a Retry-After the pause before
+                     repeat n is n times 15 seconds. The jobs have no timeout of their own. -->
+                <aether.connector.http.retryHandler.count>2</aether.connector.http.retryHandler.count>
+                <aether.connector.http.retryHandler.interval>15000</aether.connector.http.retryHandler.interval>
+                <aether.connector.http.retryHandler.intervalMax>2100000</aether.connector.http.retryHandler.intervalMax>
+                <aether.connector.http.retryHandler.serviceUnavailable>429,503</aether.connector.http.retryHandler.serviceUnavailable>
+            </properties>
             <repositories>
                 <repository>
                     <id>central</id>
