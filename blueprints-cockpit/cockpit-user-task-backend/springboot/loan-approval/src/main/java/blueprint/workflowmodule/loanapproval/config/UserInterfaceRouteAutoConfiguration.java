@@ -49,8 +49,8 @@ import org.springframework.web.servlet.function.ServerResponse;
  *
  * <p>
  * Nothing in this class is specific to the loan approval but its id. Every workflow module with
- * a user interface needs the same route, so a later support library of the Business Cockpit will
- * bring it.
+ * a user interface needs the same route. The library {@code support} of the Business Cockpit is
+ * the place for it, but it does not have it yet.
  * </p>
  */
 @AutoConfiguration
