@@ -8,6 +8,28 @@ Each blueprint directory has an `AGENTS.md` of its own. That one is for a differ
 agent which copies the blueprint into an application. Its sections are fixed, and
 `bin/check_docs_structure.py` checks them.
 
+## A workflow module brings no adapter
+
+A workflow module depends on `io.vanillabp:vanillabp-spring-boot-support` or
+`io.vanillabp:vanillabp-quarkus-support`. If its user tasks are shown in the Business Cockpit,
+it also depends on `io.vanillabp.businesscockpit:support`. These libraries know no BPMS.
+
+An adapter is a different thing. It connects the module to one BPMS or to the cockpit for one
+BPMS, for example `camunda8-adapter-spring-boot` or
+`businesscockpit-camunda8-adapter-spring-boot`. A workflow module names an adapter only in the
+test scope, because its tests have to run it. Outside the tests, the application brings the
+adapters, once for all its modules.
+
+The build checks this. The POM of each blueprint runs the Maven Enforcer rule
+`no-adapter-in-a-workflow-module` for its modules. It fails if a module names an adapter
+outside the test scope, directly or through another dependency. The application module
+switches the rule off, because it is where the adapters belong. There is no shared parent POM,
+so every blueprint carries its own copy of the rule (see Rule 1 in `CONTRIBUTING.md`). A new
+blueprint copies the rule with the rest of its POM.
+
+One blueprint is the exception: `module-standalone`. There the application is the workflow
+module, so it names the adapters like any application, and it has no such rule.
+
 ## How we write
 
 Most people who read this repository read English as a second language, and so does the

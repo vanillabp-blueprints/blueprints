@@ -57,7 +57,8 @@ Names this blueprint adds:
 1. Create a Maven project with `jar` packaging. Add the workflow module and the UI JAR of the
    module as dependencies, the UI JAR in `runtime` scope.
 2. Do not add a BPMS adapter or a cockpit adapter outside test scope. The application chooses
-   them once for all its modules.
+   them once for all its modules. The rule `no-adapter-in-a-workflow-module` in `pom.xml` breaks
+   the build otherwise.
 3. Add no code to the bundle. The workflow module has to bring its auto-configuration, as
    `cockpit-user-task-backend` shows. If it does not, add it to the module, not to the bundle.
 4. Put a test application into a package which does not reach the module, and copy the two smoke

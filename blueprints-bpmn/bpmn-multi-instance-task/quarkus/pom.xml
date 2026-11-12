@@ -34,6 +34,7 @@
     <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
     <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
     <maven-failsafe-plugin.version>3.6.1</maven-failsafe-plugin.version>
+    <maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
     <!-- Not part of the Quarkus BOM, so this blueprint says which version it uses. -->
     <lombok.version>1.18.48</lombok.version>
     <assertj.version>3.27.7</assertj.version>
@@ -147,6 +148,41 @@
             <quarkus.config.profile.parent>${bpms}</quarkus.config.profile.parent>
           </systemPropertyVariables>
         </configuration>
+      </plugin>
+      <!--
+        A workflow module never depends on an adapter, neither on a BPMS adapter nor on a
+        cockpit adapter. Its tests may use one, so the test scope is allowed. Outside the
+        tests, the application brings the adapters. This rule breaks the build if a module
+        of this blueprint names an adapter outside the test scope, directly or through
+        another dependency. The application module switches the rule off.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${maven-enforcer-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>no-adapter-in-a-workflow-module</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>io.vanillabp*:*-adapter-spring-boot*</exclude>
+                    <exclude>io.vanillabp*:*-adapter-quarkus*</exclude>
+                  </excludes>
+                  <includes>
+                    <include>io.vanillabp*:*-adapter-spring-boot*:*:*:test</include>
+                    <include>io.vanillabp*:*-adapter-quarkus*:*:*:test</include>
+                  </includes>
+                  <message>A workflow module depends on an adapter only in the test scope. The application brings the adapters.</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
