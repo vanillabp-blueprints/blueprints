@@ -1,0 +1,81 @@
+name: Build the cockpit frontends
+# The npm projects of the cockpit blueprints, blueprints-cockpit/*-frontend/<framework>. They
+# build with Node alone, apart from the Maven build in build.yaml: many companies give their
+# build agents Node or Java, not both, and a cockpit frontend shows how to live with that.
+#
+# A frontend needs one thing from its backend, the OpenAPI file. In a repository of its own it
+# reads the file from a git submodule. Here it reads it from the backend directory next to it,
+# so a change of the API and of the frontend builds together in one pull request.
+"on":
+  push:
+    branches:
+      - main
+    paths:
+      - "blueprints-cockpit/*-frontend/**"
+      - "blueprints-cockpit/*-backend/*/api/**"
+      - ".github/workflows/frontend.yaml"
+  pull_request:
+    paths:
+      - "blueprints-cockpit/*-frontend/**"
+      - "blueprints-cockpit/*-backend/*/api/**"
+      - ".github/workflows/frontend.yaml"
+  workflow_dispatch:
+concurrency:
+  group: frontend-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      frontends: "${{ steps.list.outputs.frontends }}"
+    steps:
+      - uses: actions/checkout@v7
+      - id: list
+        name: Collect the frontends
+        # The list of frontends is the directories which exist, so a new frontend builds
+        # without a change of this workflow.
+        run: |
+          frontends="$(find blueprints-cockpit -mindepth 3 -maxdepth 3 -path '*-frontend/*/package.json' -printf '%h\n' \
+            | sort | jq -R . | jq -cs .)"
+          echo "frontends=${frontends}" >> "$GITHUB_OUTPUT"
+          jq . <<< "${frontends}"
+
+  frontend:
+    needs: discover
+    if: needs.discover.outputs.frontends != '[]'
+    name: ${{ matrix.frontend }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        frontend: ${{ fromJSON(needs.discover.outputs.frontends) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.frontend }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install
+        run: npm ci
+      - name: Install Chromium for the browser tests
+        # Without --with-deps: the runner image already brings Chrome and the system
+        # libraries it needs. With it, Playwright installs them again through apt, and on the
+        # 11th of November 2026 the Ubuntu mirror of the runners could not be resolved for
+        # hours, which made both frontend jobs red although nothing here had changed.
+        run: npx playwright install chromium-headless-shell
+      - name: Build the micro-frontends, the UI jar and the nginx image
+        run: npm run build
+      - name: Test in the host of the module kit
+        run: npm test
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ui-jar-${{ strategy.job-index }}
+          path: |
+            ${{ matrix.frontend }}/dist/*.jar
+            ${{ matrix.frontend }}/dist/*.pom
+          if-no-files-found: error
+          retention-days: 7

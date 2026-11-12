@@ -36,9 +36,9 @@ quarkus:
 # attempts to override a value the module ships, and reading which of them arrives is the
 # point of 'ConfigurationLevelsIT':
 #
-#   - a workflow module's own file wins over application.yaml. The module knows its defaults
-#     better than the runtime assembling it does, so 'rating-scale' stays at what the module
-#     says and the 42 below never arrives.
+#   - application.yaml wins over a workflow module's own file. The module's file carries
+#     defaults, and the project which assembles the module decides what its environment
+#     needs. So 'rating-scale' becomes the 42 below, not the 100 the module ships.
 #   - what comes from outside - an environment variable, a system property - wins over both.
 #     That is where a deployment overrides a module, and 'rating-provider' shows it.
 #

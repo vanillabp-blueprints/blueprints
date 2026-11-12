@@ -1,0 +1,4 @@
+[submodule "backend"]
+	path = backend
+	url = https://github.com/vanillabp-blueprints/cockpit-user-task-backend-springboot.git
+	branch = main

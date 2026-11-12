@@ -5,19 +5,24 @@ A blueprint carries a README.md for humans and an AGENTS.md for AI agents. Both 
 fixed section structure, which is what makes them predictable: an agent which has read one
 AGENTS.md knows where to look in all of them.
 
-Checked per blueprint directory '<group>/<blueprint-id>/<platform>/':
+Checked per blueprint directory '<group>/<blueprint-id>/<platform>/'. A frontend of the
+Business Cockpit is a blueprint directory as well. Its platform is its UI framework, and it
+holds a package.json instead of a pom.xml:
 
   - README.md and AGENTS.md exist,
   - they contain the required '##' sections, in the defined order,
   - they contain no section outside the defined set,
   - they do not mention the other platform - a Spring Boot blueprint does not know that
-    Quarkus exists, and the other way round,
+    Quarkus exists, and the other way round. A frontend mentions neither, because it serves
+    an application of either platform,
   - the README points back at the monorepo: a blueprint repository is a read-only mirror,
     and a reader who found a bug has to know where the issue belongs,
   - the README shows the process in its first section, and the picture it points at is
-    there. A BPMN file is not something a reader reads (bin/render_bpmn_images.sh),
+    there. A BPMN file is not something a reader reads (bin/render_bpmn_images.sh). A
+    frontend has no BPMN, so the picture is the job of its backend,
   - LICENSE, NOTICE and .gitignore are there and are the ones of the repository root. The
-    split turns the directory into a repository, and the root files do not come along.
+    split turns the directory into a repository, and the root files do not come along. The
+    .gitignore of a frontend starts with the one of the root and adds what npm writes.
 
 The templates in templates/ are checked as well, minus the platform rule.
 
@@ -31,6 +36,10 @@ import sys
 from pathlib import Path
 
 PLATFORMS = ("springboot", "quarkus")
+
+# The UI frameworks a frontend of the Business Cockpit exists for. Such a directory builds with
+# npm, so package.json is what marks it.
+FRONTEND_PLATFORMS = ("react", "angular", "vue")
 
 # (section, required) in the order they have to appear.
 SECTIONS = {
@@ -59,6 +68,10 @@ FOREIGN_PLATFORM = {
     "springboot": re.compile(r"\bquarkus\b", re.IGNORECASE),
     "quarkus": re.compile(r"\bspring[ -]?boot\b", re.IGNORECASE),
 }
+# A frontend does not know which platform the application it is served by runs on. It may
+# name the other frameworks, though: they are its siblings and share its test ids.
+for framework in FRONTEND_PLATFORMS:
+    FOREIGN_PLATFORM[framework] = re.compile(r"\b(quarkus|spring[ -]?boot)\b", re.IGNORECASE)
 
 SECTION_PATTERN = re.compile(r"^## +(.+?)\s*$", re.MULTILINE)
 
@@ -122,6 +135,9 @@ def check_file(path, filename, required_sections, platform, errors, root):
             errors.append(
                 f"{display}:{line}: mentions '{match.group(0)}' - a {platform} blueprint"
                 " must not refer to the other platform"
+                if platform in PLATFORMS
+                else f"{display}:{line}: mentions '{match.group(0)}' - a frontend serves an"
+                " application of either platform and names neither"
             )
 
 
@@ -162,7 +178,7 @@ def check_process_picture(directory, errors, root):
             )
 
 
-def check_repository_files(directory, errors, root):
+def check_repository_files(directory, errors, root, frontend=False):
     """The files the split repository needs and only the root has."""
     for filename in REPOSITORY_FILES:
         copy = directory / filename
@@ -173,6 +189,14 @@ def check_repository_files(directory, errors, root):
                 f"{display}: is missing. After the split this directory is a repository"
                 f" of its own - run 'cp {filename} {directory.relative_to(root)}/'"
             )
+        elif frontend and filename == ".gitignore":
+            # npm writes node_modules/ and dist/, which a Maven build never does. So a
+            # frontend adds to the file of the root and keeps all of it.
+            if not copy.read_bytes().startswith(reference.read_bytes()):
+                errors.append(
+                    f"{display}: does not start with the {filename} of the repository"
+                    " root. A frontend keeps all of it and adds its own lines below"
+                )
         elif copy.read_bytes() != reference.read_bytes():
             errors.append(
                 f"{display}: differs from {filename} of the repository root -"
@@ -207,10 +231,11 @@ def main():
             root,
         )
 
-    for pom in sorted(root.glob("*/*/*/pom.xml")):
-        directory = pom.parent
+    for marker in sorted([*root.glob("*/*/*/pom.xml"), *root.glob("*/*/*/package.json")]):
+        directory = marker.parent
         blueprint_id, platform = directory.parent.name, directory.name
-        if platform not in PLATFORMS:
+        frontend = marker.name == "package.json"
+        if platform not in (FRONTEND_PLATFORMS if frontend else PLATFORMS):
             continue
         checked += 1
         for filename, sections in SECTIONS.items():
@@ -220,8 +245,9 @@ def main():
             check_file(
                 directory / filename, filename, required, platform, errors, root
             )
-        check_process_picture(directory, errors, root)
-        check_repository_files(directory, errors, root)
+        if not frontend:
+            check_process_picture(directory, errors, root)
+        check_repository_files(directory, errors, root, frontend)
 
     if errors:
         print("Blueprint documentation does not follow the templates:\n", file=sys.stderr)

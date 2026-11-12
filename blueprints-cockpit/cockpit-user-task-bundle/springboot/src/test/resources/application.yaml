@@ -1,0 +1,20 @@
+# The configuration of the application in the test. An application which takes the bundle
+# writes the same: a database, and where the reports to the cockpit go. The bundle brings the
+# configuration of the module itself, in loan-approval/loan-approval.yaml.
+spring:
+  datasource:
+    url: jdbc:h2:mem:loan-approval-bundle-test;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+vanillabp:
+  cockpit:
+    # Where the reports go. Nothing listens there during the test. Every report goes through
+    # the outbox first, so it waits there and the test does not notice.
+    rest:
+      base-url: http://localhost:9080
+logging:
+  level:
+    blueprint.workflowmodule: INFO

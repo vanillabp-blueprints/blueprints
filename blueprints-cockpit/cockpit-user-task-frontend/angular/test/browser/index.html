@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>loan-approval in the host of the module kit</title>
+  <style>
+    /* The styles of the page must not reach into the shadow DOM of a form. */
+    button { background: rgb(255, 0, 0); }
+  </style>
+  <script type="module" src="/host.js"></script>
+</head>
+<body>
+  <button id="outside">A button of the page</button>
+  <main id="user-task-page">
+    <div data-bc-area="body"></div>
+    <div data-bc-area="information"></div>
+    <div data-bc-area="actions"></div>
+  </main>
+</body>
+</html>

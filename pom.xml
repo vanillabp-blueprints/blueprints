@@ -105,6 +105,10 @@
     <module>blueprints-bpmn/bpmn-adhoc-subprocess/quarkus</module>
     <module>blueprints-bpmn/bpmn-process-sections/springboot</module>
     <module>blueprints-bpmn/bpmn-process-sections/quarkus</module>
+    <module>blueprints-cockpit/cockpit-user-task-backend/springboot</module>
+    <module>blueprints-cockpit/cockpit-user-task-application-proxy/springboot</module>
+    <module>blueprints-cockpit/cockpit-user-task-application/springboot</module>
+    <module>blueprints-cockpit/cockpit-user-task-bundle/springboot</module>
   </modules>
 
   <scm>
@@ -170,6 +174,13 @@
                 drops comments, and in a blueprint the comments are what is being taught.
               -->
               <exclude>**/src/**</exclude>
+              <!--
+                A docker-compose.yaml of a blueprint, and the files a cockpit application
+                mounts into its containers, say in comments what each container is for. The
+                formatter would drop them.
+              -->
+              <exclude>**/docker-compose.yaml</exclude>
+              <exclude>blueprints-cockpit/*/*/docker/**</exclude>
             </excludes>
             <jackson>
               <yamlFeatures>

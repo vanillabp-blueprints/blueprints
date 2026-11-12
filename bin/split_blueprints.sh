@@ -3,7 +3,9 @@
 # Push every blueprint of this monorepo into a repository of its own.
 #
 # The job is DIRECTORY DRIVEN and IDEMPOTENT: it iterates over the directories
-# '<group>/<blueprint-id>/<platform>/' which exist and splits what it finds. A blueprint whose
+# '<group>/<blueprint-id>/<platform>/' which exist and splits what it finds. A Java platform
+# ('springboot', 'quarkus') is a directory with a pom.xml. A frontend of a cockpit blueprint
+# ('react', 'angular', 'vue') is a directory with a package.json, because it is built with npm. A blueprint whose
 # platform directory does not exist yet is not mentioned anywhere - no repository is
 # created on stock, and the index keeps saying 'planned' until the directory arrives. A
 # later run picks it up without anybody having to remember it.
@@ -12,7 +14,9 @@
 #   1. the target repository vanillabp-blueprints/<id>-<platform> is created if missing,
 #      and its description and homepage are taken from blueprints.yaml,
 #   2. 'git subtree split' produces the blueprint's history without the rest of the
-#      monorepo, and that is force-pushed onto the mirror's main branch,
+#      monorepo, and that is force-pushed onto the mirror's main branch. A directory with a
+#      '.gitmodules' gets one commit more on top, which adds the submodules it names, see
+#      add_submodules below,
 #   3. the index entry is set to 'available' - so the catalogue can only advertise a
 #      repository which exists.
 #
@@ -32,6 +36,7 @@ INDEX_REPO="${ORG}/.github"
 INDEX_BRANCH="${INDEX_BRANCH:-main}"
 HOMEPAGE="https://github.com/${ORG}"
 PLATFORMS=(springboot quarkus)
+FRONTEND_PLATFORMS=(react angular vue)
 DRY_RUN="${DRY_RUN:-0}"
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)"
@@ -85,13 +90,77 @@ else:
 PYTHON
 }
 
+# A frontend of a cockpit blueprint reads the OpenAPI file of its backend from a git
+# submodule. Its directory carries the '.gitmodules', which names the mirror of the backend.
+# Inside this monorepo git ignores a '.gitmodules' below the root, and the frontend reads the
+# backend directory next to it instead. In the mirror the file lands at the root, and this adds
+# the submodule itself: a gitlink to the commit of the backend mirror which was split from the
+# same commit of this monorepo. So both mirrors show the same state of the blueprint.
+#
+# The extra commit takes author, committer and dates of the commit below it. A run on an
+# unchanged monorepo writes the same commit again, and the force push changes nothing.
+add_submodules() {
+  local prefix="$1" branch="$2"
+  local gitmodules="${prefix}/.gitmodules"
+  [ -f "${gitmodules}" ] || return 0
+  local index_file="${work}/submodule-index"
+  rm -f "${index_file}"
+  GIT_INDEX_FILE="${index_file}" git read-tree "${branch}"
+  local key path name url linked_repo linked_prefix linked_commit candidate
+  while read -r key path; do
+    name="${key#submodule.}"
+    name="${name%.path}"
+    url="$(git config -f "${gitmodules}" "submodule.${name}.url")"
+    linked_repo="$(basename "${url%.git}")"
+    linked_prefix=""
+    if [[ "${url}" == "https://github.com/${ORG}/"* ]]; then
+      for candidate in */*/*/; do
+        candidate="${candidate%/}"
+        if [ "$(basename "$(dirname "${candidate}")")-$(basename "${candidate}")" = "${linked_repo}" ]; then
+          linked_prefix="${candidate}"
+        fi
+      done
+    fi
+    if [ -z "${linked_prefix}" ]; then
+      echo "${gitmodules} names ${url}, which is no mirror of a directory of this monorepo." >&2
+      exit 1
+    fi
+    linked_commit="$(git subtree split -q --prefix="${linked_prefix}")"
+    GIT_INDEX_FILE="${index_file}" git update-index --add --cacheinfo "160000,${linked_commit},${path}"
+    echo "    submodule ${path} -> ${linked_repo} ${linked_commit}"
+  done < <(git config -f "${gitmodules}" --get-regexp '^submodule\..*\.path$')
+  local tree commit
+  tree="$(GIT_INDEX_FILE="${index_file}" git write-tree)"
+  commit="$(
+    GIT_AUTHOR_NAME="$(git log -1 --format=%an "${branch}")" \
+    GIT_AUTHOR_EMAIL="$(git log -1 --format=%ae "${branch}")" \
+    GIT_AUTHOR_DATE="$(git log -1 --format=%aI "${branch}")" \
+    GIT_COMMITTER_NAME="$(git log -1 --format=%cn "${branch}")" \
+    GIT_COMMITTER_EMAIL="$(git log -1 --format=%ce "${branch}")" \
+    GIT_COMMITTER_DATE="$(git log -1 --format=%cI "${branch}")" \
+    git commit-tree "${tree}" -p "${branch}" -m "build: link the submodules named in .gitmodules"
+  )"
+  git update-ref "refs/heads/${branch}" "${commit}"
+}
+
 split_count=0
 splitted=()
 
+# The file which marks a directory as a blueprint: the build file of its platform.
+markers=()
 for platform in "${PLATFORMS[@]}"; do
-  for pom in */*/"${platform}"/pom.xml; do
-    [ -f "${pom}" ] || continue
-    prefix="$(dirname "${pom}")"
+  markers+=("pom.xml:${platform}")
+done
+for platform in "${FRONTEND_PLATFORMS[@]}"; do
+  markers+=("package.json:${platform}")
+done
+
+for marker in "${markers[@]}"; do
+  build_file="${marker%%:*}"
+  platform="${marker#*:}"
+  for found in */*/"${platform}/${build_file}"; do
+    [ -f "${found}" ] || continue
+    prefix="$(dirname "${found}")"
     id="$(basename "$(dirname "${prefix}")")"
     repo="${id}-${platform}"
     branch="split-${id}-${platform}"
@@ -119,6 +188,7 @@ for platform in "${PLATFORMS[@]}"; do
     git branch -D "${branch}" >/dev/null 2>&1 || true
     git subtree split -q --prefix="${prefix}" -b "${branch}" >/dev/null
     echo "    split $(git rev-list --count "${branch}") commits"
+    add_submodules "${prefix}" "${branch}"
 
     if [ "${DRY_RUN}" = "1" ]; then
       echo "    would push ${branch} to ${ORG}/${repo} main"

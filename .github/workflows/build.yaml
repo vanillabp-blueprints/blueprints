@@ -272,6 +272,14 @@ jobs:
       # and not what the cache happened to carry in.
       - name: Mark the moment the build starts
         run: touch "${RUNNER_TEMP}/platform-snapshot-marker"
+      # The application and the bundle of a cockpit blueprint need the UI jar of a frontend,
+      # which npm builds. So they cannot build here. cockpit-applications.yaml builds them after
+      # the backend and the frontend. This writes them as a value for '-pl', each with '!'.
+      - name: Which modules only build after their frontend
+        run: |
+          leave_out="$(python3 bin/build_matrix.py --chained-modules)"
+          echo "LEAVE_OUT=${leave_out:+-pl ${leave_out}}" >> "$GITHUB_ENV"
+          echo "Left out: ${leave_out:-nothing}"
       - name: Build every blueprint through the aggregator
         # Both switches, because they belong to different plugins: Surefire reads
         # -DskipTests, Failsafe does not and wants -DskipITs. With only the first one the
@@ -280,7 +288,7 @@ jobs:
         # minutes for a cluster nobody had started.
         run: mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots -DskipTests -DskipITs
-          install
+          ${LEAVE_OUT} install
       - name: Resolve what the other engines need, so the cache holds that too
         # The build above runs the default profile, so the artifacts of the other engines
         # would be missing and every job of such an engine would fetch them itself. With
@@ -293,7 +301,7 @@ jobs:
           for engine in camunda8 operaton cibseven; do
             mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
               --batch-mode --no-transfer-progress --update-snapshots -P"$engine" \
-              -DskipTests -DskipITs dependency:go-offline
+              -DskipTests -DskipITs ${LEAVE_OUT} dependency:go-offline
           done
       - name: Resolve the test provider of Surefire and Failsafe, so the cache holds it too
         # Surefire and Failsafe fetch their JUnit provider only when tests run, and this job
@@ -301,13 +309,30 @@ jobs:
         # Maven Central answered more than two hundred of them with 429. The versions come
         # from the parents of Spring Boot and Quarkus and differ by blueprint, so they are
         # read from the plugins the build resolves, not written down here.
+        # They are read from what Maven prints, not from '-DoutputFile -DappendOutput=true':
+        # in a reactor build every module writes that file anew, so only the last module is
+        # left. When that was a module of packaging pom, no version was found, no provider
+        # was cached, and Maven Central answered the matrix with 403. The printed lists go to
+        # a file of their own, because they would fill the log with a list per module.
+        # They are not read from the directories in ~/.m2 either: the restored cache holds
+        # every version any earlier run needed, and fetching providers for all of them would
+        # ask Central for more, not less.
         run: |
-          plugins="${RUNNER_TEMP}/plugins.txt"
-          mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
-            --batch-mode --no-transfer-progress --quiet \
-            dependency:resolve-plugins -DoutputFile="${plugins}" -DappendOutput=true
-          for version in $(grep -ohE 'maven-(surefire|failsafe)-plugin:jar:[0-9][0-9.]*' "${plugins}" \
-              | sed 's/.*://' | sort -u); do
+          resolved="${RUNNER_TEMP}/plugins.txt"
+          if ! mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
+              --batch-mode --no-transfer-progress ${LEAVE_OUT} \
+              dependency:resolve-plugins > "${resolved}" 2>&1; then
+            tail -n 50 "${resolved}"
+            exit 1
+          fi
+          versions="$(grep -ohE 'maven-(surefire|failsafe)-plugin:jar:[0-9][0-9.]*' "${resolved}" \
+            | sed 's/.*://' | sort -u)"
+          if [ -z "${versions}" ]; then
+            echo "::error::Found no version of Surefire or Failsafe, so no provider gets into the cache"
+            exit 1
+          fi
+          echo "Surefire and Failsafe in use:" ${versions}
+          for version in ${versions}; do
             mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
               --batch-mode --no-transfer-progress \
               dependency:get -Dartifact="org.apache.maven.surefire:surefire-junit-platform:${version}"

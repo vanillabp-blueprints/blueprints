@@ -1,0 +1,2 @@
+blueprint.workflowmodule.loanapproval.config.LoanApprovalAutoConfiguration
+blueprint.workflowmodule.loanapproval.config.UserInterfaceRouteAutoConfiguration
