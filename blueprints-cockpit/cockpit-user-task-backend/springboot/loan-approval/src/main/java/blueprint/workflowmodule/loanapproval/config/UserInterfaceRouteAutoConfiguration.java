@@ -1,6 +1,6 @@
-package blueprint.workflowmodule.loanapproval;
+package blueprint.workflowmodule.loanapproval.config;
 
-import static blueprint.workflowmodule.loanapproval.LoanApprovalAutoConfiguration.WORKFLOW_MODULE_ID;
+import static blueprint.workflowmodule.loanapproval.config.LoanApprovalAutoConfiguration.WORKFLOW_MODULE_ID;
 import static org.springframework.web.servlet.function.RequestPredicates.GET;
 import static org.springframework.web.servlet.function.RequestPredicates.path;
 

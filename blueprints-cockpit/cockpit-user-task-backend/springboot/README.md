@@ -241,8 +241,8 @@ does. The frontend's README shows how.
 | `.../loanapproval/model/Aggregate.java`                                                | the id of each open task, and what the user entered in each form                                       |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays both tasks through, and checks what the cockpit was told                                         |
 | `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test                                               |
-| `.../loanapproval/LoanApprovalAutoConfiguration.java`                                  | wires the module into any application which has it as a dependency                                     |
-| `.../loanapproval/UserInterfaceRouteAutoConfiguration.java`                            | forwards the files of the user interface to an nginx, if `loan-approval.user-interface.address` is set |
+| `.../loanapproval/config/LoanApprovalAutoConfiguration.java`                           | wires the module into any application which has it as a dependency                                     |
+| `.../loanapproval/config/UserInterfaceRouteAutoConfiguration.java`                     | forwards the files of the user interface to an nginx, if `loan-approval.user-interface.address` is set |
 
 The order of events: the BPMS creates "Assess risk" and calls `WorkflowTaskHandler#assessRisk`.
 The handler hands the id over to `Service`, which keeps it on the aggregate. In the same moment
