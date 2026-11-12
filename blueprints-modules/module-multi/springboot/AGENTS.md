@@ -30,8 +30,9 @@ Names this blueprint adds, because it has more than one of everything:
 **The rules this blueprint is built on:**
 
 1. A workflow module contributes its own wiring. One `@AutoConfiguration` class per module,
-   registered in
-   `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`. The
+   in its sub-package `config`, registered in
+   `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`. Its
+   scans name the package of the module (`basePackageClasses = Service.class`). The
    application scans nothing.
 2. Wherever two modules share a namespace, names have to be per module: Java package, resource
    directory, bean names, JPA entity name, REST path, and the identifiers the BPMS (business
@@ -41,18 +42,18 @@ Names this blueprint adds, because it has more than one of everything:
 
 ## Core files
 
-|                                          File                                          |                                                                           Why it matters                                                                           |
-|----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/java/.../loanapproval/LoanApprovalAutoConfiguration.java`      | the recipe: `@ComponentScan`, `@EntityScan`, `@EnableJpaRepositories`, `@EnableConfigurationProperties`, each scan naming its beans through the module's generator |
-| `banking-commons/src/main/java/blueprint/commons/WorkflowModuleBeanNameGenerator.java` | names a module's beans `<module-id>_<SimpleName>`; each module adds the one line saying which module it is                                                         |
-| `loan-approval/src/test/java/.../ModuleTestApplication.java`                           | the module's own test boots it through its auto-configuration, without a scan, the way a consumer does                                                             |
-| `loan-approval/src/main/resources/META-INF/spring/...AutoConfiguration.imports`        | the one line which turns that class into an auto-configuration Spring Boot reads from the JAR                                                                      |
-| `loan-repayment/...`                                                                   | the same module structure a second time. The copy is the point, there is no shared base class                                                                      |
-| `banking-commons/src/main/java/blueprint/commons/*.java`                               | the shared library and its own auto-configuration; `@ConditionalOnMissingBean` lets an application replace the client                                              |
-| `application/src/main/java/blueprint/application/Application.java`                     | empty on purpose, and in a package which does not cover the modules                                                                                                |
-| `application/src/main/resources/application-camunda7.yaml`                             | `name-clash-avoidance: use-prefix`, the setting that keeps two modules apart inside the engine                                                                     |
-| `application/src/test/java/.../BeanNamesPerModuleIT.java`                              | the beans are called `loan-approval_Service` and `loan-repayment_Service`, and a fallback to the default names fails here                                          |
-| `application/src/test/java/.../ModuleConfigurationPerProfileIT.java`                   | proves `loan-approval-test.yaml` wins over `loan-approval.yaml` while the profile is active                                                                        |
+|                                           File                                           |                                                                           Why it matters                                                                           |
+|------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/java/.../loanapproval/config/LoanApprovalAutoConfiguration.java` | the recipe: `@ComponentScan`, `@EntityScan`, `@EnableJpaRepositories`, `@EnableConfigurationProperties`, each scan naming its beans through the module's generator |
+| `banking-commons/src/main/java/blueprint/commons/WorkflowModuleBeanNameGenerator.java`   | names a module's beans `<module-id>_<SimpleName>`; each module adds the one line saying which module it is                                                         |
+| `loan-approval/src/test/java/.../ModuleTestApplication.java`                             | the module's own test boots it through its auto-configuration, without a scan, the way a consumer does                                                             |
+| `loan-approval/src/main/resources/META-INF/spring/...AutoConfiguration.imports`          | the one line which turns that class into an auto-configuration Spring Boot reads from the JAR                                                                      |
+| `loan-repayment/...`                                                                     | the same module structure a second time. The copy is the point, there is no shared base class                                                                      |
+| `banking-commons/src/main/java/blueprint/commons/*.java`                                 | the shared library and its own auto-configuration; `@ConditionalOnMissingBean` lets an application replace the client                                              |
+| `application/src/main/java/blueprint/application/Application.java`                       | empty on purpose, and in a package which does not cover the modules                                                                                                |
+| `application/src/main/resources/application-camunda7.yaml`                               | `name-clash-avoidance: use-prefix`, the setting that keeps two modules apart inside the engine                                                                     |
+| `application/src/test/java/.../BeanNamesPerModuleIT.java`                                | the beans are called `loan-approval_Service` and `loan-repayment_Service`, and a fallback to the default names fails here                                          |
+| `application/src/test/java/.../ModuleConfigurationPerProfileIT.java`                     | proves `loan-approval-test.yaml` wins over `loan-approval.yaml` while the profile is active                                                                        |
 
 ## Boilerplate files
 
@@ -79,16 +80,19 @@ of the other blueprints. Its Javadoc gives the reason.
    different kind of project.
 2. Copy the module you have into a second Maven module: own artifact, own Java package, own
    resource directory named after its own module ID, own `META-INF/workflow-module`.
-3. Give both modules an auto-configuration and register it in
+3. Give both modules an auto-configuration in the sub-package `config` and register it in
    `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`. Without
    it, the beans of a module are found only while the application's package happens to sit
-   above it. That lucky accident ends when the module is published.
+   above it. That lucky accident ends when the module is published. Let every scan of the
+   auto-configuration name the package of the module, for example
+   `basePackageClasses = Service.class`. Otherwise it only searches `config`.
 4. Rename what collides. The compiler says nothing about any of it:
-   - bean names: give the module a `BeanNameGenerator` producing `<module-id>_<SimpleName>` and
-     hand it to `@ComponentScan(nameGenerator = ...)` and
-     `@EnableJpaRepositories(nameGenerator = ...)`. Otherwise the boot ends with *conflicts
-     with existing, non-compatible bean definition* for the classes every use case has, and
-     with a `BeanDefinitionOverrideException` for the repositories.
+   - bean names: give the module a `BeanNameGenerator` producing `<module-id>_<SimpleName>`,
+     next to the auto-configuration in `config`. Hand it to
+     `@ComponentScan(nameGenerator = ...)` and `@EnableJpaRepositories(nameGenerator = ...)`.
+     Otherwise the boot ends with *conflicts with existing, non-compatible bean definition* for
+     the classes every use case has, and with a `BeanDefinitionOverrideException` for the
+     repositories.
    - JPA entities: `@Entity(name = "LoanRepayment")`, because one persistence unit cannot hold
      two entities called `Aggregate`.
    - REST paths, one per module.

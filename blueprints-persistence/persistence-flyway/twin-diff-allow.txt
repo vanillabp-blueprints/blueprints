@@ -4,7 +4,7 @@
 # people deciding whether a difference is the platform or a mistake.
 
 31120fb94c65de07  only-springboot  application/src/main/java/blueprint/workflowmodule/Application.java  # one platform boots from a class of the application, the other one needs none
-bb8a564a3588a48e  only-springboot  application/src/main/java/blueprint/workflowmodule/SchemaConfiguration.java  # on this platform a Flyway instance per owner is a bean, and its initializer is what the entity manager factory waits for
+bb8a564a3588a48e  only-springboot  application/src/main/java/blueprint/workflowmodule/config/SchemaConfiguration.java  # on this platform a Flyway instance per owner is a bean, and its initializer is what the entity manager factory waits for
 9fb1f8af132dae40  differs  application/src/test/java/blueprint/workflowmodule/ApplicationSmokeTest.java  # asking the bean container whether a ProcessService exists is done in the container's own words
 cc740d2ddd7d2e16  only-springboot  application/src/test/java/blueprint/workflowmodule/MissingTableIT.java  # only one platform lets a test start an application and assert why it did not come up
 fa5c99c63d4aa742  differs  application/src/test/java/blueprint/workflowmodule/SchemaIT.java  # injection annotations, and what a history is on each platform: one per owner where the application declares its own Flyway instances, one for all where the platform applies a single configuration

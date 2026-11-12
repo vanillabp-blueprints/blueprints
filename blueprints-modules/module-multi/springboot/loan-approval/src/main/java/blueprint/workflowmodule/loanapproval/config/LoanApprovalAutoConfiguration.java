@@ -1,4 +1,4 @@
-package blueprint.workflowmodule.loanapproval;
+package blueprint.workflowmodule.loanapproval.config;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -6,7 +6,7 @@ import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-import blueprint.workflowmodule.loanapproval.config.LoanApprovalProperties;
+import blueprint.workflowmodule.loanapproval.Service;
 
 /**
  * The workflow module wires itself. This class is what turns a JAR into something an
@@ -33,6 +33,12 @@ import blueprint.workflowmodule.loanapproval.config.LoanApprovalProperties;
  * </ul>
  *
  * <p>
+ * The class is in the sub-package {@code config}, next to the other configuration of the module.
+ * So every scan names the package of the module itself, by {@link Service}. Without it, a scan
+ * would only search {@code config}.
+ * </p>
+ *
+ * <p>
  * Registered in
  * {@code META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports},
  * which Spring Boot reads from every JAR on the classpath. Without that file the class is
@@ -49,9 +55,13 @@ import blueprint.workflowmodule.loanapproval.config.LoanApprovalProperties;
 
  */
 @AutoConfiguration
-@ComponentScan(nameGenerator = LoanApprovalBeanNames.class)
-@EntityScan
-@EnableJpaRepositories(nameGenerator = LoanApprovalBeanNames.class)
+@ComponentScan(
+    basePackageClasses = Service.class,
+    nameGenerator = LoanApprovalBeanNames.class)
+@EntityScan(basePackageClasses = Service.class)
+@EnableJpaRepositories(
+    basePackageClasses = Service.class,
+    nameGenerator = LoanApprovalBeanNames.class)
 @EnableConfigurationProperties(LoanApprovalProperties.class)
 public class LoanApprovalAutoConfiguration {
 }

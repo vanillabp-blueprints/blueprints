@@ -45,7 +45,7 @@ somewhere. Liquibase would no longer recognize its rows and would run every chan
 | `loan-approval/src/main/resources/loan-approval/db/changelog.xml` | the module's schema: its aggregate table. It is inside the module's resource directory, because modules share one classpath           |
 | `application/src/main/resources/db/changelog.xml`                 | what the application applies: `<include>` of `vanillabp/schema/changelog.xml` from the artifact, plus the workflow module's           |
 | `application/src/main/resources/db/changelog-camunda7.xml`        | the same plus `<include>` of Camunda's changelog from the engine JAR. Applied by the Camunda 7 build only                             |
-| `application/src/main/java/.../SchemaConfiguration.java`          | the application's `SpringLiquibase` bean. The changelog to apply is a property the engine profile sets                                |
+| `application/src/main/java/.../config/SchemaConfiguration.java`   | the application's `SpringLiquibase` bean. The changelog to apply is a property the engine profile sets                                |
 | `application/src/main/resources/application.yaml`                 | `ddl-auto: validate`, `vanillabp.outbox.create-schema: false`, `blueprint.schema.changelog`                                           |
 | `application/src/main/resources/application-camunda7.yaml`        | `database-schema-update: false` and the changelog which includes the engine's                                                         |
 | `application/src/test/java/.../SchemaIT.java`                     | reads the artifact's changelog, asserts that the tables it describes exist, and that every owner can be told apart in the one history |

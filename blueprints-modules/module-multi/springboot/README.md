@@ -31,17 +31,24 @@ rely on that, and it works as long as the application sits above the module. It 
 as soon as a module is what it is meant to be: a JAR from somewhere else, published by another
 team, in a package this application never heard of.
 
-So each module brings an auto-configuration:
+So each module brings an auto-configuration, in its sub-package `config`:
 
 ```java
 @AutoConfiguration
-@ComponentScan(nameGenerator = LoanApprovalBeanNames.class)
-@EntityScan
-@EnableJpaRepositories(nameGenerator = LoanApprovalBeanNames.class)
+@ComponentScan(
+    basePackageClasses = Service.class,
+    nameGenerator = LoanApprovalBeanNames.class)
+@EntityScan(basePackageClasses = Service.class)
+@EnableJpaRepositories(
+    basePackageClasses = Service.class,
+    nameGenerator = LoanApprovalBeanNames.class)
 @EnableConfigurationProperties(LoanApprovalProperties.class)
 public class LoanApprovalAutoConfiguration {
 }
 ```
+
+Every scan names the package of the module by its `Service`. Without that, a scan searches
+the package of its own class, and that is only `config`.
 
 which is which is registered in the file Spring Boot reads from every JAR on the classpath:
 
@@ -171,7 +178,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 |-----------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
 | `loan-repayment/`                                               | the second workflow module, same structure, other use case, no shared code with the first                    |
 | `banking-commons/`                                              | the library both modules use, plus the auto-configuration contributing its bean                              |
-| `.../loanapproval/LoanApprovalAutoConfiguration.java`           | new: the module contributes its beans, entities, repositories and properties itself                          |
+| `.../loanapproval/config/LoanApprovalAutoConfiguration.java`    | new: the module contributes its beans, entities, repositories and properties itself                          |
 | `loan-approval/src/main/resources/META-INF/spring/...imports`   | new: the file which makes the auto-configuration one                                                         |
 | `.../loanapproval/*.java`                                       | every bean carries a name of its own, because the other module has classes of the same name                  |
 | `loan-approval/.../loan-approval-test.yaml`, `-prod.yaml`       | new: the module's configuration per environment                                                              |
@@ -255,12 +262,12 @@ Where they are served and how to log in is in the
 | `application/pom.xml`                                                | the whole application: two module dependencies and the BPMS profile deciding the adapter |
 | `application/.../Application.java`                                   | boots; its package is deliberately not above the modules                                 |
 | `application/src/main/resources/application.yaml`                    | the database and the profile, and nothing about either module                            |
-| `loan-approval/.../LoanApprovalAutoConfiguration.java`               | what the module contributes: beans, entities, repositories, properties                   |
+| `loan-approval/.../config/LoanApprovalAutoConfiguration.java`        | what the module contributes: beans, entities, repositories, properties                   |
 | `loan-approval/src/main/resources/META-INF/spring/...imports`        | makes that class an auto-configuration Spring Boot picks up from the JAR                 |
 | `loan-approval/src/main/resources/loan-approval/loan-approval*.yaml` | the module's configuration, one file per environment, named by profile                   |
 | `loan-repayment/...`                                                 | the same structure once more, for the second use case                                    |
 | `banking-commons/.../Money.java`, `.../CustomerDirectory.java`       | the shared library: a value object and a client, nothing a process is made of            |
-| `banking-commons/.../BankingCommonsAutoConfiguration.java`           | contributes the client, and steps aside for an application which brings its own          |
+| `banking-commons/.../config/BankingCommonsAutoConfiguration.java`    | contributes the client, and steps aside for an application which brings its own          |
 | `application/src/test/.../ApplicationSmokeTest.java`                 | boots the application and counts the modules: one `ProcessService` bean per module       |
 | `application/src/test/.../ModuleConfigurationPerProfileIT.java`      | proves the module file of the active profile wins over the module's base file            |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                     | the module's own test, against the module alone, exactly as in the base blueprint        |

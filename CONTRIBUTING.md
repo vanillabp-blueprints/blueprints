@@ -74,11 +74,19 @@ understanding all of them:
 ├── Service.java                     <- business code, never touches VanillaBP
 ├── Workflow.java                    <- outgoing: the application tells the process
 ├── WorkflowTaskHandler.java         <- incoming: the process tells the application
-├── config/<UseCase>Properties.java
+├── config/                          <- configuration and wiring
+│   └── <UseCase>Properties.java
 └── model/
     ├── Aggregate.java
     └── AggregateRepository.java
 ```
+
+Configuration and wiring go into the sub-package `config`: properties classes, auto-configurations,
+bean name generators, Quarkus producers whose only job is configuration. A reader who opens the
+package of the use case then sees the use case and not the wiring. A scan in a class of `config`,
+such as `@ComponentScan`, `@EntityScan` or `@EnableJpaRepositories`, must name the package of the
+use case, for example with `basePackageClasses = Service.class`. Without it, the scan only
+searches `config`.
 
 Talking to a BPMS goes in both directions, and each direction gets its own class:
 

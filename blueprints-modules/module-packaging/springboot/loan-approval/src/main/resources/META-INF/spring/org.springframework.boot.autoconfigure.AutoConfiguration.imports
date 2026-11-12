@@ -1,1 +1,1 @@
-com.acme.loanapproval.LoanApprovalAutoConfiguration
+com.acme.loanapproval.config.LoanApprovalAutoConfiguration

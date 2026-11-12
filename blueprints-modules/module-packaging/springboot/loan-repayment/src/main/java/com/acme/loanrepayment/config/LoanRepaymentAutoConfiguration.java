@@ -1,4 +1,4 @@
-package blueprint.workflowmodule.loanrepayment;
+package com.acme.loanrepayment.config;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -6,7 +6,7 @@ import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-import blueprint.workflowmodule.loanrepayment.config.LoanRepaymentProperties;
+import com.acme.loanrepayment.Service;
 
 /**
  * The second workflow module wires itself the same way the first one does, and that is the
@@ -20,12 +20,16 @@ import blueprint.workflowmodule.loanrepayment.config.LoanRepaymentProperties;
  * {@code loan-repayment_<SimpleName>}.
  * </p>
  *
- * @see blueprint.workflowmodule.loanapproval.LoanApprovalAutoConfiguration
+ * @see com.acme.loanapproval.config.LoanApprovalAutoConfiguration
  */
 @AutoConfiguration
-@ComponentScan(nameGenerator = LoanRepaymentBeanNames.class)
-@EntityScan
-@EnableJpaRepositories(nameGenerator = LoanRepaymentBeanNames.class)
+@ComponentScan(
+    basePackageClasses = Service.class,
+    nameGenerator = LoanRepaymentBeanNames.class)
+@EntityScan(basePackageClasses = Service.class)
+@EnableJpaRepositories(
+    basePackageClasses = Service.class,
+    nameGenerator = LoanRepaymentBeanNames.class)
 @EnableConfigurationProperties(LoanRepaymentProperties.class)
 public class LoanRepaymentAutoConfiguration {
 }

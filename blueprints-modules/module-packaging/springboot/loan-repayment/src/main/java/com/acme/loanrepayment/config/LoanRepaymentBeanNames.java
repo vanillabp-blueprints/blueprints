@@ -1,4 +1,4 @@
-package com.acme.loanrepayment;
+package com.acme.loanrepayment.config;
 
 import com.acme.banking.WorkflowModuleBeanNameGenerator;
 

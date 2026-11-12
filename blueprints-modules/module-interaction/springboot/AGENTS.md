@@ -57,16 +57,16 @@ Names this blueprint adds, because it has more than one of everything:
 
 ## Boilerplate files
 
-|                                         File                                         |                                              Purpose                                              |
-|--------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                                           | the four Maven modules, the BPMS profiles and the VanillaBP BOM import                            |
-| `banking-api/pom.xml`                                                                | no VanillaBP dependency at all: what crosses the module border knows nothing about processes      |
-| `loan-approval/pom.xml`, `risk-assessment/pom.xml`                                   | `vanillabp-spring-boot-support` and the API JAR, never an adapter outside the test scope          |
-| `application/pom.xml`                                                                | the two module dependencies, the BPMS adapter, and the profiles every test of this module runs in |
-| `.../LoanApprovalAutoConfiguration.java`, `.../RiskAssessmentAutoConfiguration.java` | each module wires itself, as in `module-multi`                                                    |
-| `.../LoanApprovalBeanNames.java`, `.../RiskAssessmentBeanNames.java`                 | bean names per module, as in `module-multi`                                                       |
-| `loan-approval/src/test/java/.../ModuleTestApplication.java`                         | the minimal application a module test boots: no scan, the auto-configuration does the wiring      |
-| `docs/loan_approval.png`, `docs/risk_assessment.png`                                 | the pictures of the two processes the README shows, rendered from the BPMN models                 |
+|                                                File                                                |                                              Purpose                                              |
+|----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                                                         | the four Maven modules, the BPMS profiles and the VanillaBP BOM import                            |
+| `banking-api/pom.xml`                                                                              | no VanillaBP dependency at all: what crosses the module border knows nothing about processes      |
+| `loan-approval/pom.xml`, `risk-assessment/pom.xml`                                                 | `vanillabp-spring-boot-support` and the API JAR, never an adapter outside the test scope          |
+| `application/pom.xml`                                                                              | the two module dependencies, the BPMS adapter, and the profiles every test of this module runs in |
+| `.../config/LoanApprovalAutoConfiguration.java`, `.../config/RiskAssessmentAutoConfiguration.java` | each module wires itself, as in `module-multi`                                                    |
+| `.../config/LoanApprovalBeanNames.java`, `.../config/RiskAssessmentBeanNames.java`                 | bean names per module, as in `module-multi`                                                       |
+| `loan-approval/src/test/java/.../ModuleTestApplication.java`                                       | the minimal application a module test boots: no scan, the auto-configuration does the wiring      |
+| `docs/loan_approval.png`, `docs/risk_assessment.png`                                               | the pictures of the two processes the README shows, rendered from the BPMN models                 |
 
 `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint. Copy them
 unchanged.

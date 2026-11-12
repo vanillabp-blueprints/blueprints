@@ -1,1 +1,1 @@
-com.acme.banking.BankingCommonsAutoConfiguration
+com.acme.banking.config.BankingCommonsAutoConfiguration
