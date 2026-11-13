@@ -14,3 +14,9 @@ defineProps<{ form: CheckDocumentsForm; texts: Texts; language: string }>();
     <dd data-testid="check-documents-risk">{{ form.riskAssessment }}</dd>
   </dl>
 </template>
+
+<style>
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0 0 1rem; }
+dt { font-weight: 600; }
+dd { margin: 0; white-space: pre-wrap; }
+</style>

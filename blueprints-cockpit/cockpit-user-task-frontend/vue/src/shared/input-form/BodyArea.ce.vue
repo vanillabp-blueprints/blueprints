@@ -3,8 +3,8 @@
 import { ref, watch } from 'vue';
 import type { BcUserTask } from '@vanillabp/bc-module-kit';
 import { useArea, useFormData, type AreaMessage } from '../input-form.ts';
-import InputField from './InputField.vue';
-import ProblemText from './ProblemText.vue';
+import InputField from './InputField.ce.vue';
+import ProblemText from './ProblemText.ce.vue';
 
 const area = useArea();
 const { definition, testId, texts, userTask } = area;

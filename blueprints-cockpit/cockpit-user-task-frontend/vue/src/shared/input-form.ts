@@ -20,10 +20,10 @@ import type { BcUserTask } from '@vanillabp/bc-module-kit';
 import { ApiError } from './api.ts';
 import { textsFor, type Texts } from './texts.ts';
 import { defineVueElement, useBcElement } from './vue-element.ts';
-import ActionsArea from './input-form/ActionsArea.vue';
-import AllArea from './input-form/AllArea.vue';
-import BodyArea from './input-form/BodyArea.vue';
-import InformationArea from './input-form/InformationArea.vue';
+import ActionsArea from './input-form/ActionsArea.ce.vue';
+import AllArea from './input-form/AllArea.ce.vue';
+import BodyArea from './input-form/BodyArea.ce.vue';
+import InformationArea from './input-form/InformationArea.ce.vue';
 
 export interface InputForm<Form> {
   /** The start of every data-testid of the form, for example 'assess-risk'. */

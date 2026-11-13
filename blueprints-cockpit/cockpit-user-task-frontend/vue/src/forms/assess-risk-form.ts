@@ -4,7 +4,7 @@
 import { loanApprovalApi, type AssessRiskForm } from '../shared/api.ts';
 import { defineInputForm } from '../shared/input-form.ts';
 import { ASSESS_RISK_ELEMENTS } from '../loan-approval.ts';
-import AssessRiskInformation from './AssessRiskInformation.vue';
+import AssessRiskInformation from './AssessRiskInformation.ce.vue';
 
 defineInputForm<AssessRiskForm>(ASSESS_RISK_ELEMENTS, {
   testId: 'assess-risk',

@@ -13,3 +13,10 @@ const emit = defineEmits<{ change: [value: string] }>();
       @input="emit('change', ($event.target as HTMLTextAreaElement).value)"></textarea>
   </div>
 </template>
+
+<style>
+.field { display: flex; flex-direction: column; gap: 0.375rem; }
+label { font-weight: 600; }
+textarea { font: inherit; min-height: 5rem; padding: 0.5rem; border: 1px solid #8a96a3; border-radius: 0.25rem; }
+textarea:focus { outline: 2px solid #2f6fbd; outline-offset: 1px; }
+</style>

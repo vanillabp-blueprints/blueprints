@@ -169,6 +169,10 @@ for (const cockpit of COCKPITS) {
       await page.getByTestId('assess-risk-input').fill('low, a steady income');
       // The styles of the page do not reach the button in the shadow DOM.
       assert.notEqual(await complete.evaluate((button) => getComputedStyle(button).backgroundColor), 'rgb(255, 0, 0)');
+      // The <style> blocks of CompleteButton.ce.vue and AssessRiskInformation.ce.vue reach their
+      // shadow roots: there the <div> around the button is a flexbox and the <dl> a grid.
+      assert.equal(await complete.evaluate((button) => getComputedStyle(button.parentElement).display), 'flex');
+      assert.equal(await page.getByTestId('assess-risk-loan-request').evaluate((dd) => getComputedStyle(dd.parentElement).display), 'grid');
       // click() waits until the button is enabled. That only happens when 'actions' got the value.
       await complete.click({ timeout: 5000 });
       await page.getByTestId('assess-risk-done').waitFor();

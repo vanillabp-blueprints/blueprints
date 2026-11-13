@@ -9,3 +9,7 @@ defineProps<{ testId: string; problem?: Problem; texts: Texts }>();
 <template>
   <p v-if="problem" class="problem" :data-testid="`${testId}-error`">{{ texts[problem] }}</p>
 </template>
+
+<style>
+.problem { color: #b3261e; }
+</style>

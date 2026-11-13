@@ -39,10 +39,10 @@ per page. Two modules which define the same name break each other.
 | `src/data/user-task-list.ts`           | data entry `UserTaskList`, the column `details.riskAssessment`                                                    |
 | `src/forms/assess-risk-form.ts`        | visual entry `AssessRiskForm`. It exports nothing, evaluating it defines the web components                       |
 | `src/forms/check-documents-form.ts`    | visual entry `CheckDocumentsForm`                                                                                 |
-| `src/forms/*Information.vue`           | the data each form shows to read                                                                                  |
+| `src/forms/*Information.ce.vue`        | the data each form shows to read                                                                                  |
 | `src/shared/input-form.ts`             | the composables of the four areas of a form, and the messages between the areas                                   |
-| `src/shared/input-form/*.vue`          | the four areas (`all`, `body`, `information`, `actions`) and the parts they are made of                           |
-| `src/shared/vue-element.ts`            | a Vue component as a web component: an application each, the properties through `provide`                         |
+| `src/shared/input-form/*.ce.vue`       | the four areas (`all`, `body`, `information`, `actions`) and the parts they are made of                           |
+| `src/shared/vue-element.ts`            | a Vue component as a web component: an application each, the properties through `provide`, the styles             |
 | `src/shared/api.ts`                    | the client of the module API, base path `/wm/loan-approval` from the server of the OpenAPI file                   |
 | `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, the plugin which compiles `.vue` files, and `bc-manifest.json` from esbuild's outputs |
 | `test/browser/user-task-forms.test.js` | the browser tests, with areas and with `all` only                                                                 |
@@ -59,7 +59,7 @@ per page. Two modules which define the same name break each other.
 | `scripts/build-image.mjs`   | the nginx image                                                                    |
 | `scripts/start.mjs`         | placeholder for the dev shell                                                      |
 | `src/shared/texts.ts`       | the texts in English and German                                                    |
-| `src/shared/style.ts`       | the styles, put into each shadow root                                              |
+| `src/shared/style.ts`       | the style of `:host`, put into each shadow root before the styles of components    |
 | `docker/Dockerfile`         | the nginx image                                                                    |
 | `docker/nginx.conf`         | serves `/loan-approval/`, the manifest without caching                             |
 | `test/browser/page.js`      | the test page with `createModuleHost`                                              |
@@ -80,9 +80,10 @@ per page. Two modules which define the same name break each other.
    inside it, and delete `config.openapiInMonorepo`. If your cockpit has a types library of its
    own, replace `@vanillabp/bc-module-kit` with it.
 5. Keep the data entries free of Vue. `npm run check:entries` fails otherwise.
-6. Never give a component a `<style>` block. The usual Vue tool chain puts it into the `<head>` of
-   the cockpit's page, where it does not reach the shadow root. Put styles into `src/shared/style.ts`. The build
-   fails on a `<style>` block.
+6. Name every component `*.ce.vue`, as in a Vite project which builds web components. Only the
+   `<style>` block of a `*.ce.vue` file goes into the shadow root. The build fails on a `<style>`
+   block in a plain `.vue` file, because the usual tool chain would put it into the `<head>` of
+   the cockpit's page, where it does not reach the shadow root. Write plain CSS, no `lang`.
 7. Read the properties of the cockpit with `useBcElement()`, not as props of the component. They
    reach the application through `provide`.
 

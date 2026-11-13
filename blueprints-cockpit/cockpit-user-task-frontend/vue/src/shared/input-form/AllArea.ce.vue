@@ -2,9 +2,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useArea, useCompletion, useFormData } from '../input-form.ts';
-import CompleteButton from './CompleteButton.vue';
-import InputField from './InputField.vue';
-import ProblemText from './ProblemText.vue';
+import CompleteButton from './CompleteButton.ce.vue';
+import InputField from './InputField.ce.vue';
+import ProblemText from './ProblemText.ce.vue';
 
 const area = useArea();
 const { definition, testId, texts, language } = area;

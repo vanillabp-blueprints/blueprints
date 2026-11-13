@@ -209,9 +209,9 @@ only says so, and the browser tests are the way to see the forms.
 | `src/data/user-task-list.ts`           | data entry `UserTaskList`: the column `details.riskAssessment` of the task list                     |
 | `src/forms/assess-risk-form.ts`        | visual entry `AssessRiskForm`: the form of "Assess risk"                                            |
 | `src/forms/check-documents-form.ts`    | visual entry `CheckDocumentsForm`: the form of "Check documents"                                    |
-| `src/forms/*Information.vue`           | the data each form shows to read                                                                    |
+| `src/forms/*Information.ce.vue`        | the data each form shows to read                                                                    |
 | `src/shared/input-form.ts`             | what the four areas of a form with one input field share, and the messages between them             |
-| `src/shared/input-form/*.vue`          | the four areas `all`, `body`, `information` and `actions`, and the parts they are made of           |
+| `src/shared/input-form/*.ce.vue`       | the four areas `all`, `body`, `information` and `actions`, and the parts they are made of           |
 | `src/shared/vue-element.ts`            | makes a Vue component a web component with `defineBcElement` of the kit                             |
 | `src/shared/api.ts`                    | the client of the module API, typed by the generated `src/generated/loan-approval.ts`               |
 | `scripts/build-micro-frontends.mjs`    | compiles the `.vue` files, bundles with esbuild and writes `bc-manifest.json` with `createManifest` |
@@ -296,16 +296,24 @@ The properties of the cockpit, such as `userTask` and `language`, go into the ap
 sets a property, the ref gets the new properties, and Vue draws again. The state of a component,
 the typed text for example, stays.
 
-The components are single-file components (`.vue`) with `<script setup lang="ts">`. Vite and its
-plugin `@vitejs/plugin-vue` usually compile them. Vite is not needed here: esbuild builds the other
+The components are single-file components with `<script setup lang="ts">`. Their names end with
+`.ce.vue`, as in a Vite project which builds web components. Vite and its plugin
+`@vitejs/plugin-vue` usually compile them. Vite is not needed here: esbuild builds the other
 two frontends, and the Vue compiler comes with the package `vue` as `vue/compiler-sfc`. So
 `scripts/build-micro-frontends.mjs` has a small esbuild plugin which hands every `.vue` file to the
 compiler and bundles the TypeScript it gets back. `npm run typecheck` runs `vue-tsc`, the type
 checker of Vue, which also checks the templates.
 
-A `<style>` block of a component would end up in the `<head>` of the page. From there it does not
-reach into a shadow root, but it does reach the cockpit. So the components have no `<style>` block,
-the build fails if one has, and `vue-element.ts` puts one `<style>` element into each shadow root.
+The styles of a component are in its `<style>` block. For a file named `*.ce.vue`,
+`@vitejs/plugin-vue` does not put the block into the `<head>` of the page. It puts the CSS into the
+list `styles` of the component, and Vue's `defineCustomElement` puts that list into the shadow root.
+From the `<head>` the styles would not reach into a shadow root, but they would reach the cockpit.
+This project does the same without Vite. The build script puts the CSS of each `*.ce.vue` file into
+the list `styles` of the component. Here the kit makes the web component, not
+`defineCustomElement`, so `vue-element.ts` puts the list into the shadow root when the component is
+set up, once per shadow root. Before them comes the style of `:host` from `src/shared/style.ts`.
+The build fails on a `<style>` block in a plain `.vue` file, because there it would have to go into
+the `<head>`.
 
 The four areas in `src/shared/input-form/` serve both forms. What differs, for example the label
 or the API call, comes in through `provide` under the key `INPUT_FORM`, and the composables in

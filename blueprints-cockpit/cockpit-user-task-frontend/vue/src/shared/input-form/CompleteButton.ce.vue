@@ -13,3 +13,9 @@ const emit = defineEmits<{ complete: [] }>();
     <span v-if="state === 'completed'" :data-testid="`${testId}-done`">{{ texts.completed }}</span>
   </div>
 </template>
+
+<style>
+.actions { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; }
+button { font: inherit; padding: 0.5rem 1.25rem; border: 0; border-radius: 0.25rem; background: #2f6fbd; color: #fff; cursor: pointer; }
+button:disabled { background: #b6c0ca; cursor: default; }
+</style>

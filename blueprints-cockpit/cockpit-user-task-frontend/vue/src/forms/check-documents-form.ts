@@ -4,7 +4,7 @@
 import { loanApprovalApi, type CheckDocumentsForm } from '../shared/api.ts';
 import { defineInputForm } from '../shared/input-form.ts';
 import { CHECK_DOCUMENTS_ELEMENTS } from '../loan-approval.ts';
-import CheckDocumentsInformation from './CheckDocumentsInformation.vue';
+import CheckDocumentsInformation from './CheckDocumentsInformation.ce.vue';
 
 defineInputForm<CheckDocumentsForm>(CHECK_DOCUMENTS_ELEMENTS, {
   testId: 'check-documents',

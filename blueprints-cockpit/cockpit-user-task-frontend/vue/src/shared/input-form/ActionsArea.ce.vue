@@ -6,8 +6,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useArea, useCompletion, type AreaMessage } from '../input-form.ts';
-import CompleteButton from './CompleteButton.vue';
-import ProblemText from './ProblemText.vue';
+import CompleteButton from './CompleteButton.ce.vue';
+import ProblemText from './ProblemText.ce.vue';
 
 const area = useArea();
 const { testId, texts, userTask } = area;
