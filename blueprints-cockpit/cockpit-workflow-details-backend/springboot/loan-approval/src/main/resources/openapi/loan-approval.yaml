@@ -1,0 +1,83 @@
+openapi: 3.0.3
+info:
+  title: Loan approval, case page
+  description: >
+    The endpoints the case page of the workflow module 'loan-approval' calls. The page runs in
+    the browser, inside the Business Cockpit. It reaches the workflow module through the proxy
+    of the cockpit, which serves every workflow module below /wm/<workflow-module-id>. So the
+    server below is a path of the cockpit, not of the workflow module.
+
+    The page knows its case by the business id the cockpit shows, which is the id of the loan
+    request. GET reads what the page shows. POST cancels the case. The open user tasks of the
+    case are not here: the page asks the cockpit for them.
+  version: 1.0.0
+servers:
+  - url: /wm/loan-approval
+tags:
+  - name: cases
+    description: The case page
+paths:
+  /api/cases/{loanRequestId}:
+    parameters:
+      - $ref: '#/components/parameters/LoanRequestId'
+    get:
+      tags:
+        - cases
+      operationId: getCase
+      summary: What the case page shows about the loan request
+      responses:
+        '200':
+          description: The case
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+        '404':
+          description: No case has this id
+  /api/cases/{loanRequestId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/LoanRequestId'
+    post:
+      tags:
+        - cases
+      operationId: cancelCase
+      summary: Cancels the case, through the event subprocess "Cancel case"
+      responses:
+        '204':
+          description: The case is cancelled
+        '404':
+          description: No case has this id
+        '409':
+          description: The case has ended already
+components:
+  parameters:
+    LoanRequestId:
+      name: loanRequestId
+      in: path
+      required: true
+      description: The id of the loan request, which the cockpit shows as the business id of the case
+      schema:
+        type: string
+  schemas:
+    Case:
+      type: object
+      required:
+        - loanRequestId
+        - applicant
+        - amount
+      properties:
+        loanRequestId:
+          type: string
+          description: The id of the loan request
+        applicant:
+          type: string
+          description: Who asks for the loan
+        amount:
+          type: integer
+          description: The amount requested
+        outcome:
+          type: string
+          enum:
+            - APPROVED
+            - CANCELLED
+          description: How the case ended. Missing while the case runs

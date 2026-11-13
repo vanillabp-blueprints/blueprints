@@ -109,6 +109,8 @@
     <module>blueprints-cockpit/cockpit-user-task-application-proxy/springboot</module>
     <module>blueprints-cockpit/cockpit-user-task-application/springboot</module>
     <module>blueprints-cockpit/cockpit-user-task-bundle/springboot</module>
+    <module>blueprints-cockpit/cockpit-workflow-details-backend/springboot</module>
+    <module>blueprints-cockpit/cockpit-workflow-details-application/springboot</module>
   </modules>
 
   <scm>

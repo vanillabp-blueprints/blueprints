@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToReviewLoanRequest</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToReviewLoanRequest" sourceRef="StartEvent_LoanRequested" targetRef="UserTask_ReviewLoanRequest" />
+    <!--
+      The one user task. It keeps the case open, so there is a case page to look at. Its form key
+      is the task definition. The @WorkflowTask method named after it is called when the task is
+      created, and the cockpit adapter reports the task to the cockpit.
+    -->
+    <bpmn:userTask id="UserTask_ReviewLoanRequest" name="Review loan request" camunda:formKey="reviewLoanRequest">
+      <bpmn:incoming>Flow_ToReviewLoanRequest</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanRequestReviewed</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanRequestReviewed" sourceRef="UserTask_ReviewLoanRequest" targetRef="EndEvent_LoanRequestReviewed" />
+    <bpmn:endEvent id="EndEvent_LoanRequestReviewed" name="Loan request reviewed">
+      <bpmn:incoming>Flow_ToLoanRequestReviewed</bpmn:incoming>
+    </bpmn:endEvent>
+    <!--
+      The button "Cancel case" on the case page ends up here. The workflow module correlates the
+      message, and this interrupting event subprocess ends whatever the case is doing, the open
+      user task included. Nothing about the correlation is modelled: the adapter correlates by
+      the id of the workflow aggregate.
+    -->
+    <bpmn:subProcess id="SubProcess_CancelCase" name="Cancel case" triggeredByEvent="true">
+      <bpmn:startEvent id="StartEvent_CaseCancelled" name="Cancel requested" isInterrupting="true">
+        <bpmn:outgoing>Flow_ToCaseCancelled</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="MessageEventDefinition_CancelLoanApproval" messageRef="Message_CancelLoanApproval" />
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_ToCaseCancelled" sourceRef="StartEvent_CaseCancelled" targetRef="EndEvent_CaseCancelled" />
+      <bpmn:endEvent id="EndEvent_CaseCancelled" name="Case cancelled">
+        <bpmn:incoming>Flow_ToCaseCancelled</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+  </bpmn:process>
+  <!-- The message name is the string the business code passes to 'correlateMessage'. -->
+  <bpmn:message id="Message_CancelLoanApproval" name="CancelLoanApproval" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="145" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_ReviewLoanRequest_di" bpmnElement="UserTask_ReviewLoanRequest">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanRequestReviewed_di" bpmnElement="EndEvent_LoanRequestReviewed">
+        <dc:Bounds x="402" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="376" y="145" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_CancelCase_di" bpmnElement="SubProcess_CancelCase" isExpanded="true">
+        <dc:Bounds x="140" y="210" width="320" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_CaseCancelled_di" bpmnElement="StartEvent_CaseCancelled">
+        <dc:Bounds x="192" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="168" y="305" width="85" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_CaseCancelled_di" bpmnElement="EndEvent_CaseCancelled">
+        <dc:Bounds x="372" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="352" y="305" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToReviewLoanRequest_di" bpmnElement="Flow_ToReviewLoanRequest">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanRequestReviewed_di" bpmnElement="Flow_ToLoanRequestReviewed">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="402" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToCaseCancelled_di" bpmnElement="Flow_ToCaseCancelled">
+        <di:waypoint x="228" y="280" />
+        <di:waypoint x="372" y="280" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

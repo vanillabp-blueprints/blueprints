@@ -1,0 +1,71 @@
+# A Business Cockpit and its MongoDB, to see the application report its cases and user tasks.
+#
+# The cockpit is the runnable JAR of the Business Cockpit. It takes its users from the dev shell
+# simulator of the cockpit, a second runnable JAR. Maven copies both to target/ first:
+#
+#   mvn dependency:copy@business-cockpit
+#   docker compose up -d
+#
+# Both containers use the network of your machine. So the cockpit reaches the application at
+# http://localhost:8080/loan-approval, the address the workflow module reports, and the
+# application reaches the cockpit at http://localhost:9080. On Docker Desktop, switch on host
+# networking in the settings.
+#
+# The cockpit JAR has no user interface of its own. Its APIs answer at http://localhost:9080,
+# with a user of 'docker/dev-shell-simulator.yaml' and the password 'test'.
+services:
+  mongo:
+    image: mongo:8.2
+    container_name: cockpit-workflow-details-mongo
+    network_mode: host
+    # The cockpit reads the change stream of MongoDB, and MongoDB offers it on a replica set
+    # only. So this is a replica set with one member.
+    command: [ "mongod", "--replSet", "rs0", "--bind_ip", "localhost" ]
+    # Starts the replica set the first time, and reports it healthy once it runs.
+    healthcheck:
+      test: >-
+        mongosh --quiet --eval "try { rs.status().ok } catch (e) {
+        rs.initiate({ _id: 'rs0', members: [ { _id: 0, host: 'localhost:27017' } ] }).ok }"
+      interval: 5s
+      retries: 30
+  # The user directory of the cockpit, on port 8079.
+  users:
+    image: eclipse-temurin:21-jre
+    container_name: cockpit-workflow-details-users
+    network_mode: host
+    volumes:
+      - ./target/dev-shell-simulator.jar:/dev-shell-simulator.jar:ro
+      - ./docker/dev-shell-simulator.yaml:/dev-shell-simulator.yaml:ro
+    command:
+      - java
+      - -jar
+      - /dev-shell-simulator.jar
+      - --spring.config.additional-location=/dev-shell-simulator.yaml
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8079" ]
+      interval: 5s
+      retries: 30
+  cockpit:
+    image: eclipse-temurin:21-jre
+    container_name: cockpit-workflow-details-cockpit
+    network_mode: host
+    depends_on:
+      mongo:
+        condition: service_healthy
+      users:
+        condition: service_healthy
+    volumes:
+      - ./target/business-cockpit.jar:/business-cockpit.jar:ro
+    # The profile 'local' brings the demo users and a signing key for the login. The rest
+    # fits it to this file. 'bpms-api' is the account the application reports with, the one
+    # in its application.yaml.
+    command:
+      - java
+      - -jar
+      - /business-cockpit.jar
+      - --spring.profiles.active=local
+      - --server.port=9080
+      - --spring.mongodb.uri=mongodb://localhost:27017/business-cockpit?directConnection=true
+      - --business-cockpit.application-uri=http://localhost:9080
+      - --bpms-api.username=loan-approval
+      - --bpms-api.password={noop}loan-approval
