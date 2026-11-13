@@ -24,18 +24,28 @@
       <bpmn:incoming>Flow_ToLoanRequestReviewed</bpmn:incoming>
     </bpmn:endEvent>
     <!--
-      The button "Cancel case" on the case page ends up here. The workflow module correlates the
-      message, and this interrupting event subprocess ends whatever the case is doing, the open
-      user task included.
+      The button "Withdraw loan request" on the case page ends up here. The workflow module
+      correlates the message, and this interrupting event subprocess ends whatever the case is
+      doing, the open user task included. The service task writes the status "withdrawn" to the
+      workflow aggregate, and the process reaches its end event: withdrawing is a business
+      decision, so the process ends the normal way.
     -->
-    <bpmn:subProcess id="SubProcess_CancelCase" name="Cancel case" triggeredByEvent="true">
-      <bpmn:startEvent id="StartEvent_CaseCancelled" name="Cancel requested" isInterrupting="true">
-        <bpmn:outgoing>Flow_ToCaseCancelled</bpmn:outgoing>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_CancelLoanApproval" messageRef="Message_CancelLoanApproval" />
+    <bpmn:subProcess id="SubProcess_WithdrawLoanRequest" name="Withdraw loan request" triggeredByEvent="true">
+      <bpmn:startEvent id="StartEvent_WithdrawalRequested" name="Withdrawal requested" isInterrupting="true">
+        <bpmn:outgoing>Flow_ToRecordWithdrawal</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="MessageEventDefinition_WithdrawLoanRequest" messageRef="Message_WithdrawLoanRequest" />
       </bpmn:startEvent>
-      <bpmn:sequenceFlow id="Flow_ToCaseCancelled" sourceRef="StartEvent_CaseCancelled" targetRef="EndEvent_CaseCancelled" />
-      <bpmn:endEvent id="EndEvent_CaseCancelled" name="Case cancelled">
-        <bpmn:incoming>Flow_ToCaseCancelled</bpmn:incoming>
+      <bpmn:sequenceFlow id="Flow_ToRecordWithdrawal" sourceRef="StartEvent_WithdrawalRequested" targetRef="ServiceTask_RecordWithdrawal" />
+      <bpmn:serviceTask id="ServiceTask_RecordWithdrawal" name="Record withdrawal">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="recordWithdrawal" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_ToRecordWithdrawal</bpmn:incoming>
+        <bpmn:outgoing>Flow_ToLoanRequestWithdrawn</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="Flow_ToLoanRequestWithdrawn" sourceRef="ServiceTask_RecordWithdrawal" targetRef="EndEvent_LoanRequestWithdrawn" />
+      <bpmn:endEvent id="EndEvent_LoanRequestWithdrawn" name="Loan request withdrawn">
+        <bpmn:incoming>Flow_ToLoanRequestWithdrawn</bpmn:incoming>
       </bpmn:endEvent>
     </bpmn:subProcess>
   </bpmn:process>
@@ -47,7 +57,7 @@
     the id of the workflow aggregate as its key, and 'loanRequestId' is the process variable
     which holds that id.
   -->
-  <bpmn:message id="Message_CancelLoanApproval" name="CancelLoanApproval">
+  <bpmn:message id="Message_WithdrawLoanRequest" name="WithdrawLoanRequest">
     <bpmn:extensionElements>
       <zeebe:subscription correlationKey="=loanRequestId" />
     </bpmn:extensionElements>
@@ -69,19 +79,22 @@
           <dc:Bounds x="376" y="145" width="88" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="SubProcess_CancelCase_di" bpmnElement="SubProcess_CancelCase" isExpanded="true">
-        <dc:Bounds x="140" y="210" width="320" height="140" />
+      <bpmndi:BPMNShape id="SubProcess_WithdrawLoanRequest_di" bpmnElement="SubProcess_WithdrawLoanRequest" isExpanded="true">
+        <dc:Bounds x="140" y="210" width="400" height="140" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StartEvent_CaseCancelled_di" bpmnElement="StartEvent_CaseCancelled">
+      <bpmndi:BPMNShape id="StartEvent_WithdrawalRequested_di" bpmnElement="StartEvent_WithdrawalRequested">
         <dc:Bounds x="192" y="262" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="168" y="305" width="85" height="14" />
+          <dc:Bounds x="166" y="305" width="88" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_CaseCancelled_di" bpmnElement="EndEvent_CaseCancelled">
-        <dc:Bounds x="372" y="262" width="36" height="36" />
+      <bpmndi:BPMNShape id="ServiceTask_RecordWithdrawal_di" bpmnElement="ServiceTask_RecordWithdrawal">
+        <dc:Bounds x="290" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanRequestWithdrawn_di" bpmnElement="EndEvent_LoanRequestWithdrawn">
+        <dc:Bounds x="452" y="262" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="352" y="305" width="77" height="14" />
+          <dc:Bounds x="428" y="305" width="85" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_ToReviewLoanRequest_di" bpmnElement="Flow_ToReviewLoanRequest">
@@ -92,9 +105,13 @@
         <di:waypoint x="340" y="120" />
         <di:waypoint x="402" y="120" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_ToCaseCancelled_di" bpmnElement="Flow_ToCaseCancelled">
+      <bpmndi:BPMNEdge id="Flow_ToRecordWithdrawal_di" bpmnElement="Flow_ToRecordWithdrawal">
         <di:waypoint x="228" y="280" />
-        <di:waypoint x="372" y="280" />
+        <di:waypoint x="290" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanRequestWithdrawn_di" bpmnElement="Flow_ToLoanRequestWithdrawn">
+        <di:waypoint x="390" y="280" />
+        <di:waypoint x="452" y="280" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

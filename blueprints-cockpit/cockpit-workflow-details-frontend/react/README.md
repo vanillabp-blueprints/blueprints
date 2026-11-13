@@ -25,7 +25,8 @@ nginx image.
 ## What this blueprint shows
 
 The process `loan_approval` has one user task, "Review loan request", and an interrupting event
-subprocess "Cancel case". The case page shows where a case stands and lets the user cancel it.
+subprocess "Withdraw loan request". The case page shows where a case stands and lets the user
+withdraw the loan request.
 This project shows:
 
 - one data entry `WorkflowPage` which picks the page of a case by its process,
@@ -35,12 +36,13 @@ This project shows:
 - the open user tasks of the case in `body`, from the cockpit through `workflow.getUserTasks(...)`,
   without a client of its own for the API of the cockpit,
 - the data of the loan request in `information`, from the module API,
-- the button "Cancel case" in `actions`, which calls the module API. The module ends the case
-  through the event subprocess, and the cockpit learns about it from the module,
-- areas which talk to each other: after "Cancel case", `actions` tells `body` and `information`
+- the button "Withdraw loan request" in `actions`, which calls the module API. The module ends
+  the case through the event subprocess, and the cockpit learns about it from the module,
+- areas which talk to each other: after "Withdraw loan request", `actions` tells `body` and
+  `information`
   to load their data again,
 - long content which wraps instead of widening the page,
-- the applicant and the outcome in two columns of the case list,
+- the applicant and the status in two columns of the case list,
 - browser tests which load the build the way a cockpit does, without a cockpit.
 
 ### The page of a case
@@ -51,12 +53,13 @@ buttons of the cockpit. All of the page belongs to the workflow module. A cockpi
 stays in place while a long `body` scrolls. A cockpit without areas shows the web component of
 `all`, which arranges everything itself.
 
-### Cancelled is a column
+### Withdrawn is a status, not an end reason
 
-The cockpit marks a case as cancelled by its `endReason`. But a case which ends in the event
-subprocess reached an end event, so the cockpit counts it as completed. Only the module knows
-that it was cancelled. So the backend puts the outcome into the details of the case, and the
-column "Outcome" of the case list shows it. The README of the backend says more.
+A withdrawn loan request is a business outcome. The process still ends the normal way, so the
+cockpit counts the case as completed. The backend puts the status of the loan request into the
+details of the case, and the column "Status" of the case list shows it. The cockpit says
+cancelled only when somebody of operations cancelled the process in the BPMS. The README of the
+backend says more.
 
 ## Running it
 
@@ -109,7 +112,7 @@ browser tests are the way to see the page.
 |--------------------------------------|----------------------------------------------------------------------------------------------------------------------|
 | `src/loan-approval.ts`               | the names shared with the backend and the cockpit: module id, process id, entry, web components, keys of the details |
 | `src/data/workflow-page.ts`          | data entry `WorkflowPage`: picks the page by `bpmnProcessId`                                                         |
-| `src/data/workflow-list.ts`          | data entry `WorkflowList`: the columns `details.applicant` and `details.outcome` of the case list                    |
+| `src/data/workflow-list.ts`          | data entry `WorkflowList`: the columns `details.applicant` and `details.status` of the case list                     |
 | `src/pages/loan-approval-page.tsx`   | visual entry `LoanApprovalPage`: the four web components of the page                                                 |
 | `src/shared/react-element.tsx`       | makes a React component a web component with `defineBcElement` of the kit                                            |
 | `src/shared/api.ts`                  | the client of the module API, typed by the generated `src/generated/loan-approval.ts`                                |
@@ -117,10 +120,10 @@ browser tests are the way to see the page.
 | `scripts/build-micro-frontends.mjs`  | builds the entries with esbuild and writes `bc-manifest.json` with `createManifest` of the kit                       |
 | `test/browser/workflow-page.test.js` | the browser tests in the host of the kit                                                                             |
 
-### From the list to a cancelled case
+### From the list to a withdrawn loan request
 
 1. For the case list, the cockpit loads the data entry `WorkflowList` and calls
-   `workflowListColumns`. The columns read `details.applicant` and `details.outcome`. The backend
+   `workflowListColumns`. The columns read `details.applicant` and `details.status`. The backend
    puts both there with its `@WorkflowDetailsProvider`.
 2. Somebody opens a case. The cockpit loads the data entry `WorkflowPage` and calls
    `workflowPage` with the case. The function compares `bpmnProcessId` and returns
@@ -136,10 +139,11 @@ browser tests are the way to see the page.
    again when the case changes, and `body` asks again.
 6. `information` and `actions` load the case from `/wm/loan-approval/api/cases/{businessId}`. The
    business id of the case is the id of the loan request. They share one request.
-7. "Cancel case" posts to `/wm/loan-approval/api/cases/{businessId}/cancel`. The module
-   correlates the message which starts the event subprocess, and the case ends. The page calls
-   `showNotification`, and `actions` tells `body` and `information` with `sendTo` to load their
-   data again. The button stays disabled for a case which has ended.
+7. "Withdraw loan request" posts to `/wm/loan-approval/api/cases/{businessId}/withdraw`. The
+   module correlates the message which starts the event subprocess, and the case ends normally
+   with the status `WITHDRAWN`. The page calls `showNotification`, and `actions` tells `body` and
+   `information` with `sendTo` to load their data again. The button is enabled only while the
+   status is `REQUESTED`.
 
 ### Test ids
 
@@ -152,11 +156,11 @@ browser tests are the way to see the page.
 | `case-loan-request`     | the id of the loan request (`information` or `all`)                   |
 | `case-applicant`        | the applicant                                                         |
 | `case-amount`           | the amount                                                            |
-| `case-outcome`          | running, approved or cancelled                                        |
+| `case-status`           | requested, approved or withdrawn                                      |
 | `case-error`            | the message shown when the module API fails or does not know the case |
-| `case-cancel`           | the button "Cancel case" (`actions` or `all`)                         |
-| `case-cancelled`        | the text shown once the case is cancelled                             |
-| `case-cancel-error`     | the message shown when the module refuses to cancel                   |
+| `case-withdraw`         | the button "Withdraw loan request" (`actions` or `all`)               |
+| `case-withdrawn`        | the text shown once the loan request is withdrawn                     |
+| `case-withdraw-error`   | the message shown when the module refuses to withdraw                 |
 
 ### The browser tests
 
@@ -166,9 +170,9 @@ backend. The tests answer the module API inside the browser, at the network leve
 answers `workflow.getUserTasks` with the user tasks a test gives it. Every case is tested twice:
 in a host with the areas `body`, `information` and `actions`, and in a host which only knows
 `all`. The tests check the data entries, that they load neither React nor the page, the open user
-tasks and the data of the case, the cancel and what the other areas do after it, a case which
-ended, a case the module does not know, a cancel the module refuses, and that words of 400
-letters do not widen the page.
+tasks and the data of the case, the withdrawal and what the other areas do after it, a case
+which ended, a case the module does not know, a withdrawal the module refuses, and that words of
+400 letters do not widen the page.
 
 ## Documentation
 

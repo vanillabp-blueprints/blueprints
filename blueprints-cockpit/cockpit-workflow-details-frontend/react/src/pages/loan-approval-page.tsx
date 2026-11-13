@@ -4,11 +4,11 @@
 //   all          the whole page in one web component, for a cockpit without areas
 //   body         the open user tasks of the case, which the cockpit lists
 //   information  the data of the loan request, which the workflow module gives
-//   actions      the button "Cancel case"
+//   actions      the button "Withdraw loan request"
 //
 // In a cockpit with areas, the three areas are three web components, and nothing is shared
-// between them but DOM events and the data this file loads once for all of them. When "Cancel
-// case" succeeds, 'actions' tells 'body' and 'information' with sendTo(), and they load their
+// between them but DOM events and the data this file loads once for all of them. When "Withdraw
+// loan request" succeeds, 'actions' tells 'body' and 'information' with sendTo(), and they load their
 // data again. The cockpit also sets the property 'workflow' again when it learns that the case
 // changed, and that loads the user tasks again as well.
 
@@ -21,7 +21,7 @@ import { textsFor, type Texts } from '../shared/texts.ts';
 import { LOAN_APPROVAL_PAGE_ELEMENTS } from '../loan-approval.ts';
 
 /** What one area tells another one of the same page. */
-type AreaMessage = { cancelled?: boolean };
+type AreaMessage = { withdrawn?: boolean };
 
 type Problem = 'notFound' | 'hasEnded' | 'failed';
 
@@ -93,12 +93,12 @@ function useOpenUserTasks(workflow: BcWorkflow, reload: number) {
   return { userTasks, failed };
 }
 
-/** Counts up whenever another area says that the case was cancelled. */
+/** Counts up whenever another area says that the loan request was withdrawn. */
 function useReloadOnMessage(workflow: BcWorkflow) {
   const [reload, setReload] = useState(0);
   useEffect(() => {
     const subscription = workflow.receiveMessage((message) => {
-      if ((message as AreaMessage | undefined)?.cancelled) setReload((count) => count + 1);
+      if ((message as AreaMessage | undefined)?.withdrawn) setReload((count) => count + 1);
     });
     return () => { subscription.unsubscribe(); };
     // The subscription belongs to the web component, which stays the same while the cockpit
@@ -144,34 +144,35 @@ function Information({ loaded, texts, language }: { loaded: Case; texts: Texts; 
       <dd data-testid="case-applicant">{loaded.applicant}</dd>
       <dt>{texts.amount}</dt>
       <dd data-testid="case-amount">{loaded.amount.toLocaleString(language)}</dd>
-      <dt>{texts.outcome}</dt>
-      <dd data-testid="case-outcome">{loaded.outcome ? texts[loaded.outcome] : texts.running}</dd>
+      <dt>{texts.status}</dt>
+      <dd data-testid="case-status">{texts[loaded.status]}</dd>
     </dl>
   );
 }
 
 /**
- * The button "Cancel case". It calls the module, and the module correlates the message which
- * starts the event subprocess. Only a running case has the button enabled.
+ * The button "Withdraw loan request". It calls the module, and the module correlates the message
+ * which starts the event subprocess. Only a loan request which waits for its review has the
+ * button enabled.
  */
-function CancelButton({ loaded, texts, showNotification, onCancelled }: {
+function WithdrawButton({ loaded, texts, showNotification, onWithdrawn }: {
   loaded?: Case;
   texts: Texts;
   showNotification: BcElementProps['showNotification'];
-  onCancelled: () => void;
+  onWithdrawn: () => void;
 }) {
-  const [state, setState] = useState<'open' | 'running' | 'cancelled'>('open');
+  const [state, setState] = useState<'open' | 'running' | 'withdrawn'>('open');
   const [problem, setProblem] = useState<Problem>();
-  const cancel = async () => {
+  const withdraw = async () => {
     setState('running');
     setProblem(undefined);
     try {
-      await loanApprovalApi.cancelCase(loaded!.loanRequestId);
+      await loanApprovalApi.withdrawLoanRequest(loaded!.loanRequestId);
       cases.delete(loaded!.loanRequestId);
-      setState('cancelled');
+      setState('withdrawn');
       // A cockpit which cannot show notifications refuses; the page says it anyway.
-      showNotification({ level: 'success', text: texts.cancelled }).catch(() => {});
-      onCancelled();
+      showNotification({ level: 'success', text: texts.withdrawn }).catch(() => {});
+      onWithdrawn();
     } catch (error) {
       setState('open');
       setProblem(problemOf(error));
@@ -180,11 +181,11 @@ function CancelButton({ loaded, texts, showNotification, onCancelled }: {
   };
   return (
     <div className="actions">
-      <ProblemText problem={problem} texts={texts} testId="case-cancel-error" />
-      <button type="button" data-testid="case-cancel" disabled={!loaded || loaded.outcome !== undefined || state !== 'open'} onClick={cancel}>
-        {texts.cancel}
+      <ProblemText problem={problem} texts={texts} testId="case-withdraw-error" />
+      <button type="button" data-testid="case-withdraw" disabled={!loaded || loaded.status !== 'REQUESTED' || state !== 'open'} onClick={withdraw}>
+        {texts.withdraw}
       </button>
-      {state === 'cancelled' ? <span data-testid="case-cancelled">{texts.cancelled}</span> : null}
+      {state === 'withdrawn' ? <span data-testid="case-withdrawn">{texts.withdrawn}</span> : null}
     </div>
   );
 }
@@ -202,7 +203,7 @@ function All(props: BcElementProps) {
       <ProblemText problem={problem} texts={texts} testId="case-error" />
       {loaded ? <Information loaded={loaded} texts={texts} language={language} /> : problem ? null : <p>{texts.loading}</p>}
       <UserTasks workflow={workflow} texts={texts} language={language} reload={reload} />
-      <CancelButton loaded={loaded} texts={texts} showNotification={props.showNotification} onCancelled={() => setReload((count) => count + 1)} />
+      <WithdrawButton loaded={loaded} texts={texts} showNotification={props.showNotification} onWithdrawn={() => setReload((count) => count + 1)} />
     </>
   );
 }
@@ -234,21 +235,21 @@ function InformationArea(props: BcElementProps) {
   );
 }
 
-/** The area 'actions': the button. It tells the other two areas when the case is cancelled. */
+/** The area 'actions': the button. It tells the other two areas when the loan request is withdrawn. */
 function Actions(props: BcElementProps) {
   const workflow = props.workflow as BcWorkflow;
   const texts = textsFor(props.language);
   const [reload, setReload] = useState(0);
   const { loaded } = useCase(loanRequestIdOf(workflow), reload);
-  const cancelled = () => {
+  const withdrawn = () => {
     setReload((count) => count + 1);
     // No such area in this cockpit means nobody to tell.
-    for (const area of ['body', 'information']) workflow.sendTo(area, { cancelled: true } satisfies AreaMessage).catch(() => {});
+    for (const area of ['body', 'information']) workflow.sendTo(area, { withdrawn: true } satisfies AreaMessage).catch(() => {});
   };
   return (
     <>
       <style>{STYLE}</style>
-      <CancelButton loaded={loaded} texts={texts} showNotification={props.showNotification} onCancelled={cancelled} />
+      <WithdrawButton loaded={loaded} texts={texts} showNotification={props.showNotification} onWithdrawn={withdrawn} />
     </>
   );
 }

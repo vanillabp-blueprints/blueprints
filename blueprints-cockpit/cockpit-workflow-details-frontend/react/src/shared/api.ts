@@ -3,8 +3,9 @@
 //
 // Every call goes to /wm/loan-approval/. That is the server of the OpenAPI file, and
 // scripts/fetch-openapi.mjs writes it to src/generated/server.ts. The cockpit forwards the path
-// to the workflow module. So the browser talks to one origin only. The module cancels the case
-// itself, and the cockpit learns about it from the cockpit adapter, like about every other end.
+// to the workflow module. So the browser talks to one origin only. The module withdraws the loan
+// request itself, and the cockpit learns about it from the cockpit adapter, like about every
+// other end.
 
 import createClient from 'openapi-fetch';
 import type { components, paths } from '../generated/loan-approval.ts';
@@ -35,6 +36,6 @@ const path = (loanRequestId: string) => ({ params: { path: { loanRequestId } } }
 export const loanApprovalApi = {
   getCase: async (loanRequestId: string) =>
     bodyOfSuccess(await api.GET('/api/cases/{loanRequestId}', path(loanRequestId))),
-  cancelCase: async (loanRequestId: string) =>
-    requireSuccess(await api.POST('/api/cases/{loanRequestId}/cancel', path(loanRequestId))),
+  withdrawLoanRequest: async (loanRequestId: string) =>
+    requireSuccess(await api.POST('/api/cases/{loanRequestId}/withdraw', path(loanRequestId))),
 };

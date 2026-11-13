@@ -31,8 +31,8 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * </p>
  *
  * <p>
- * The workflow module has an integration test of its own, which cancels a case. This test only
- * checks that the parts fit together in this application.
+ * The workflow module has an integration test of its own, which withdraws a loan request. This
+ * test only checks that the parts fit together in this application.
  * </p>
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -110,7 +110,7 @@ public class UserInterfaceSmokeTest {
         .containsEntry("loanRequestId", loanRequestId)
         .containsEntry("applicant", "Jane Doe")
         .containsEntry("amount", 5000)
-        .doesNotContainKey("outcome");
+        .containsEntry("status", "REQUESTED");
 
   }
 

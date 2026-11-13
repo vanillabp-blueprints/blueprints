@@ -20,7 +20,8 @@ import io.vanillabp.spi.service.WorkflowTask;
  * <p>
  * This is a driving adapter, the same kind of thing as {@link ApiController}: something
  * outside triggers, and the trigger is translated into a call to {@link Service}. The
- * {@code @WorkflowTask} method is called when the user task is created. The
+ * {@code @WorkflowTask} methods are called when the user task is created and when the
+ * service task runs. The
  * {@code @WorkflowDetailsProvider} method is called whenever the cockpit adapter reports the
  * workflow, and says what the Business Cockpit shows about the case.
  * </p>
@@ -45,16 +46,16 @@ public class WorkflowTaskHandler {
   /** The key of the applicant in the details of a case. A column of the case list reads it. */
   public static final String APPLICANT = "applicant";
 
-  /** The key of the outcome in the details of a case. A column of the case list reads it. */
-  public static final String OUTCOME = "outcome";
+  /** The key of the status in the details of a case. A column of the case list reads it. */
+  public static final String STATUS = "status";
 
   @Autowired
   private Service loanApproval;
 
   /**
    * Called by VanillaBP for the user task of the same name when it is created. Returning does
-   * not complete the task. It stays open until the loan request is approved, or until the case
-   * is cancelled.
+   * not complete the task. It stays open until the loan request is approved, or until it is
+   * withdrawn.
    *
    * @param loanRequest The workflow's aggregate.
    * @param taskId      The id of this user task. The cockpit knows the task by the same id.
@@ -69,15 +70,30 @@ public class WorkflowTaskHandler {
   }
 
   /**
+   * Called by VanillaBP for the service task "Record withdrawal" of the event subprocess
+   * "Withdraw loan request". The process goes on to its end event once the method returns.
+   *
+   * @param loanRequest The workflow's aggregate.
+   */
+  @WorkflowTask
+  public void recordWithdrawal(
+      final Aggregate loanRequest) {
+
+    loanApproval.recordWithdrawal(loanRequest);
+
+  }
+
+  /**
    * Says what the Business Cockpit shows about a case, beyond what the BPMN says. The cockpit
    * adapter calls it for every workflow of this process, whenever it reports one: when the
    * workflow starts, when it changes and when it ends.
    *
    * <p>
-   * The details are business data for the columns of the case list: the applicant, and once the
-   * case ended, its outcome. The outcome tells a cancelled case from an approved one. The cockpit
-   * cannot tell them apart by itself, because both end at an end event of the process, see the
-   * README.
+   * The details are business data for the columns of the case list: the applicant and the status
+   * of the loan request. The status tells a withdrawn loan request from an approved one. For the
+   * cockpit, both cases ended the normal way, at an end event of the process, and that is right:
+   * withdrawing is a business decision. The cockpit says {@code CANCELLED} only when somebody
+   * cancelled the process in the BPMS, see the README.
    * </p>
    *
    * <p>
@@ -97,9 +113,7 @@ public class WorkflowTaskHandler {
 
     final var columns = new HashMap<String, Object>();
     columns.put(APPLICANT, loanRequest.getApplicant());
-    if (loanRequest.getOutcome() != null) {
-      columns.put(OUTCOME, loanRequest.getOutcome().name());
-    }
+    columns.put(STATUS, loanRequest.getStatus().name());
     details.setDetails(columns);
 
     return details;

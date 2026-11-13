@@ -13,12 +13,13 @@ workflow module which implements it.
 
 ## What this blueprint shows
 
-![The loan approval process, with one user task and an event subprocess "Cancel case"](docs/loan_approval.png)
+![The loan approval process, with one user task and an event subprocess "Withdraw loan request"](docs/loan_approval.png)
 
 A loan approval with one user task, "Review loan request". It keeps the case open, so there is
-a case page to look at. An interrupting event subprocess "Cancel case" starts with a message and
-ends the case, the open user task included. The page has a button "Cancel case", and the button
-ends up in that event subprocess. The page itself is not here. It is a user interface, built
+a case page to look at. An interrupting event subprocess "Withdraw loan request" starts with a
+message, ends the open user task, writes the status "withdrawn" to the workflow aggregate and
+ends the case. The page has a button "Withdraw loan request", and the button ends up in that
+event subprocess. The page itself is not here. It is a user interface, built
 with npm, in a repository of its own. This repository holds what the page needs from the
 backend.
 
@@ -40,39 +41,41 @@ Why there are three, and in which order they are released, is explained in
 [`cockpit-user-task-backend`](https://github.com/vanillabp-blueprints/cockpit-user-task-backend-springboot#the-parts-of-a-workflow-module-with-a-user-interface).
 It holds for every workflow module with a user interface.
 
-### Cancelling goes through the process
+### Withdrawing goes through the process
 
 The cockpit does not start or end a case. It only shows what the workflow module reports. So
-"Cancel case" does not ask the cockpit. The page calls the module's own API,
-`POST /wm/loan-approval/api/cases/{loanRequestId}/cancel`, and the cockpit forwards the request
-to the module. The module writes the outcome to the workflow aggregate and correlates the message
-`CancelLoanApproval`. The event subprocess starts, ends the user task and then the case. The
+"Withdraw loan request" does not ask the cockpit. The page calls the module's own API,
+`POST /wm/loan-approval/api/cases/{loanRequestId}/withdraw`, and the cockpit forwards the request
+to the module. The module correlates the message `WithdrawLoanRequest`. The event subprocess
+starts and ends the user task. Its service task "Record withdrawal" sets the status of the
+aggregate to `WITHDRAWN`, and the case reaches the end event "Loan request withdrawn". The
 cockpit adapter reports both ends to the cockpit, the way it reports every other end.
 
-A case which ended cannot be cancelled again. The endpoint then answers 409.
+A loan request which does not wait for its review any more cannot be withdrawn. The endpoint
+then answers 409.
 
 The page knows its case by the business id the cockpit shows. That is the id of the workflow
 aggregate, here the id of the loan request. So the module finds the case without knowing an id
 of the cockpit or of the BPMS.
 
-### Approved or cancelled: the cockpit cannot tell
+### Withdrawn is not cancelled
 
-For the cockpit, a cancelled case ended the regular way. The process reached an end event, the
-one in the event subprocess, and the cockpit adapter reports that as `COMPLETED`. The cockpit
-says `CANCELLED` only for a case which somebody ended from outside the process, for example in
-the tools of the BPMS. So the `endReason` of the case does not help here.
+Withdrawing is a business decision: this loan request is not needed any more. The outcome is
+negative, but the process ends the normal way, and the status in the aggregate says what
+happened. So the cockpit reports the end as `COMPLETED`, and the column "Status" of the case
+list shows `WITHDRAWN`.
 
-The module knows the difference, because it wrote the outcome to the aggregate. Its
-`@WorkflowDetailsProvider` puts the outcome into the details of the case, and a column of the
-case list shows it. The integration test checks both: the column says `CANCELLED`, and
-`endReason` says `COMPLETED`.
+`CANCELLED` means something else. Somebody of operations cancelled the process in the BPMS, and
+the run did not reach its end the way it should. That can be needed now and then. The status in
+the aggregate does not change then. The cockpit will take the `deleteReason` of the engine as
+the first text of the comment on such a case (cockpit story 1847).
 
 ### What the cockpit shows about a case
 
 The cockpit adapter reports every workflow of the module without a line of code.
 `WorkflowTaskHandler#workflowDetails` carries `@WorkflowDetailsProvider` and adds business data
-to each report: the applicant under the key `applicant`, and once the case ended, the outcome
-under the key `outcome`. Two columns of the case list, which the frontend defines, show them.
+to each report: the applicant under the key `applicant`, and the status of the loan request
+under the key `status`. Two columns of the case list, which the frontend defines, show them.
 
 ### What the page gets from where
 
@@ -82,12 +85,12 @@ The page shows three things, and they come from two places:
 |---------------------------------|----------------------------------------------------------------------------------------------|
 | the open user tasks of the case | the cockpit, through `workflow.getUserTasks(...)` of the module kit. The module is not asked |
 | the data of the loan request    | the module, `GET /wm/loan-approval/api/cases/{loanRequestId}`                                |
-| the button "Cancel case"        | the module, `POST /wm/loan-approval/api/cases/{loanRequestId}/cancel`                        |
+| the button "Withdraw"           | the module, `POST /wm/loan-approval/api/cases/{loanRequestId}/withdraw`                      |
 
 The cockpit knows the user tasks already. So the page asks the cockpit for them, and the module
 needs no client for the API of the cockpit.
 
-### Who may cancel
+### Who may withdraw
 
 This blueprint shows no rights. Everybody who sees the case sees the button, and the endpoint
 checks no role. How a module protects its endpoints, and shows a button only to the users of a
@@ -105,20 +108,20 @@ to an nginx. Its user interface comes from the UI jar.
 
 Compared to [`cockpit-user-task-backend`](https://github.com/vanillabp-blueprints/cockpit-user-task-backend-springboot):
 
-|                File                |                                                  What is different                                                   |
-|------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| `openapi/loan-approval.yaml`       | the two endpoints of the case page instead of the four of the forms                                                  |
-| `loan_approval.bpmn`               | one user task, and the interrupting event subprocess "Cancel case" with a message start event                        |
-| `WorkflowTaskHandler.java`         | one `@WorkflowTask` method, and a `@WorkflowDetailsProvider` method instead of the `@UserTaskDetailsProvider` method |
-| `CasePageController.java`          | new, instead of `UserTaskFormController.java`: reads a case and cancels it, below `/loan-approval/api/cases`         |
-| `ApiController.java`               | starts a loan approval with an applicant, approves it and shows it                                                   |
-| `Service.java`                     | keeps the id of the user task, approves, and cancels by writing the outcome and correlating the message              |
-| `Workflow.java`                    | `correlateMessage` next to `startWorkflow` and `completeUserTask`                                                    |
-| `Aggregate.java`                   | the applicant, the id of the open user task and the outcome                                                          |
-| `AggregateRepository.java`         | no finders: the page finds the case by its id                                                                        |
-| `LoanApprovalIT.java`              | cancels a case through the endpoint, and checks the user tasks of the case and the details for the case list         |
-| `CockpitSimulator.java`            | reads a case by its business id, and the user tasks of a case                                                        |
-| `pom.xml`, `loan-approval/pom.xml` | no Spring Cloud and no gateway                                                                                       |
+|                File                |                                                     What is different                                                      |
+|------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `openapi/loan-approval.yaml`       | the two endpoints of the case page instead of the four of the forms                                                        |
+| `loan_approval.bpmn`               | one user task, and the interrupting event subprocess "Withdraw loan request" with a message start event and a service task |
+| `WorkflowTaskHandler.java`         | two `@WorkflowTask` methods, and a `@WorkflowDetailsProvider` method instead of the `@UserTaskDetailsProvider` method      |
+| `CasePageController.java`          | new, instead of `UserTaskFormController.java`: reads a case and withdraws it, below `/loan-approval/api/cases`             |
+| `ApiController.java`               | starts a loan approval with an applicant, approves it and shows it                                                         |
+| `Service.java`                     | keeps the id of the user task, approves, withdraws by correlating the message, and records the withdrawal                  |
+| `Workflow.java`                    | `correlateMessage` next to `startWorkflow` and `completeUserTask`                                                          |
+| `Aggregate.java`                   | the applicant, the id of the open user task and the status                                                                 |
+| `AggregateRepository.java`         | no finders: the page finds the case by its id                                                                              |
+| `LoanApprovalIT.java`              | withdraws a loan request through the endpoint, and checks the user tasks of the case and the details for the case list     |
+| `CockpitSimulator.java`            | reads a case by its business id, and the user tasks of a case                                                              |
+| `pom.xml`, `loan-approval/pom.xml` | no Spring Cloud and no gateway                                                                                             |
 
 There is no `UserInterfaceRouteAutoConfiguration`. The user interface comes from the UI jar, so
 the module needs no route to an nginx, and no Spring Cloud.
@@ -167,25 +170,25 @@ http://localhost:8080/loan-approval/api/loan-requests/<loan request id>/approve
 ```
 
 Approving stands in for the form of the user task, which this blueprint does not have. So you
-can see a case which ended the regular way next to a cancelled one. Cancelling is a POST, which
-the page sends.
+can see an approved loan request next to a withdrawn one. Withdrawing is a POST, which the page
+sends.
 
 ## How it works
 
-|                                          File                                          |                                                   Role                                                   |
-|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract between the page and the module: two operations, below the server `/wm/loan-approval`       |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: one user task, and the event subprocess "Cancel case" with the message `CancelLoanApproval` |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the same for Camunda 8, with the correlation key of the message in the model                             |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest                 |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of the user task, and says what the cockpit shows about a case                              |
-| `.../loanapproval/CasePageController.java`                                             | the endpoints of the case page: GET reads the case, POST cancels it                                      |
-| `.../loanapproval/Service.java`                                                        | writes the outcome, and tells `Workflow` to complete the task or to correlate the message                |
-| `.../loanapproval/Workflow.java`                                                       | `startWorkflow`, `completeUserTask` and `correlateMessage`, the only place `ProcessService` is used      |
-| `.../loanapproval/model/Aggregate.java`                                                | the loan request, the id of the open user task and the outcome                                           |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | cancels a case and approves another, and checks what the cockpit was told                                |
-| `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test, and reads cases and user tasks from it         |
-| `.../loanapproval/config/LoanApprovalAutoConfiguration.java`                           | wires the module into any application which has it as a dependency                                       |
+|                                          File                                          |                                                        Role                                                         |
+|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract between the page and the module: two operations, below the server `/wm/loan-approval`                  |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: one user task, and the event subprocess "Withdraw loan request" with the message `WithdrawLoanRequest` |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the same for Camunda 8, with the correlation key of the message in the model                                        |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest                            |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of the user task, records a withdrawal, and says what the cockpit shows about a case                   |
+| `.../loanapproval/CasePageController.java`                                             | the endpoints of the case page: GET reads the case, POST withdraws the loan request                                 |
+| `.../loanapproval/Service.java`                                                        | writes the status, and tells `Workflow` to complete the task or to correlate the message                            |
+| `.../loanapproval/Workflow.java`                                                       | `startWorkflow`, `completeUserTask` and `correlateMessage`, the only place `ProcessService` is used                 |
+| `.../loanapproval/model/Aggregate.java`                                                | the loan request, the id of the open user task and the status                                                       |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | withdraws a loan request and approves another, and checks what the cockpit was told                                 |
+| `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test, and reads cases and user tasks from it                    |
+| `.../loanapproval/config/LoanApprovalAutoConfiguration.java`                           | wires the module into any application which has it as a dependency                                                  |
 
 The order of events: the BPMS starts the workflow, and the cockpit adapter reports the case with
 the details of `WorkflowTaskHandler#workflowDetails`. The BPMS creates "Review loan request" and
@@ -197,12 +200,13 @@ asks the cockpit for the open user tasks of the case, and it calls
 `GET .../api/cases/{loanRequestId}` with the business id of the case for the data of the loan
 request.
 
-The user clicks "Cancel case", and the page sends `POST .../api/cases/{loanRequestId}/cancel`.
-`Service` writes the outcome `CANCELLED` to the aggregate, and `Workflow#cancelled` correlates
-the message in the same transaction. The event subprocess interrupts the process: the user task
-ends, and the workflow ends at "Case cancelled". The cockpit adapter reports the end of the task
+The user clicks "Withdraw loan request", and the page sends
+`POST .../api/cases/{loanRequestId}/withdraw`. `Workflow#withdrawalRequested` correlates the
+message. The event subprocess interrupts the process: the user task ends, and the BPMS calls
+`WorkflowTaskHandler#recordWithdrawal` for the service task, which sets the status `WITHDRAWN`.
+The workflow ends at "Loan request withdrawn". The cockpit adapter reports the end of the task
 and the end of the case. The report of the case reads the aggregate, so its details carry the
-outcome already.
+status `WITHDRAWN`.
 
 On Camunda 8 the message start event of an event subprocess needs a correlation key. The adapter
 writes one into the model for intermediate catch events and receive tasks, but not for start

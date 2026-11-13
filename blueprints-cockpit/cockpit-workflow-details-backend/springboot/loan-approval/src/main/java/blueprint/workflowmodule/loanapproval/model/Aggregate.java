@@ -18,10 +18,11 @@ import lombok.NoArgsConstructor;
  * stays a normal JPA entity your application can use like any other.
  *
  * <p>
- * Besides the data of the loan request, it holds two things about the process. One is the id of
- * the open user task, so the module knows which task is open. The other is the outcome. It is
- * empty while the case runs, and it says how the case ended once it ended: approved, or
- * cancelled on the case page.
+ * Besides the data of the loan request, it holds the id of the open user task, so the module
+ * knows which task is open, and the status of the loan request. The status is business data: a
+ * withdrawn loan request is a negative business outcome, but its process still ends the normal
+ * way. Only when somebody of operations cancels the process in the BPMS does the case end without
+ * reaching an end event. The status does not change then, see the README.
  * </p>
  *
  * <p>
@@ -43,12 +44,18 @@ import lombok.NoArgsConstructor;
 @NoSyncWithBPMS
 public class Aggregate {
 
-  /** How a case ended. */
-  public enum Outcome {
-    /** The loan request was reviewed and approved. The process reached its regular end. */
+  /** Where the loan request stands, in business terms. */
+  public enum Status {
+    /** The loan request waits for its review. */
+    REQUESTED,
+    /** The loan request was reviewed and approved. */
     APPROVED,
-    /** Somebody cancelled the case on its page. The event subprocess ended it. */
-    CANCELLED
+    /**
+     * The loan request is not needed any more, and somebody withdrew it on the case page. The
+     * event subprocess "Withdraw loan request" set this status, and the process ended the normal
+     * way.
+     */
+    WITHDRAWN
   }
 
   /**
@@ -73,9 +80,9 @@ public class Aggregate {
   @Column
   private String reviewTaskId;
 
-  /** How the case ended. Null while it runs. */
+  /** Where the loan request stands. */
   @Column
   @Enumerated(EnumType.STRING)
-  private Outcome outcome;
+  private Status status;
 
 }

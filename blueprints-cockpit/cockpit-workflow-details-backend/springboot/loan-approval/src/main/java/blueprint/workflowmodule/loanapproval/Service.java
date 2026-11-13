@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import blueprint.workflowmodule.loanapproval.model.Aggregate;
-import blueprint.workflowmodule.loanapproval.model.Aggregate.Outcome;
+import blueprint.workflowmodule.loanapproval.model.Aggregate.Status;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,13 +44,13 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class Service {
 
-  /** What became of a request to end a case. */
+  /** What became of a request to approve or withdraw a loan request. */
   public enum Change {
-    /** The case ends now. */
+    /** The loan request is approved, or it is being withdrawn. */
     DONE,
     /** There is no loan request of that id. */
     NOT_FOUND,
-    /** The case ended before, or it cannot end this way yet. Nothing changed. */
+    /** The loan request does not wait for its review (any more). Nothing changed. */
     NOT_POSSIBLE
   }
 
@@ -77,6 +77,7 @@ public class Service {
         .loanRequestId(loanRequestId)
         .applicant(applicant)
         .amount(amount)
+        .status(Status.REQUESTED)
         .build();
 
     workflow.loanRequested(loanRequest);
@@ -123,11 +124,11 @@ public class Service {
     }
     final var loanRequest = found.get();
     final var taskId = loanRequest.getReviewTaskId();
-    if ((taskId == null) || (loanRequest.getOutcome() != null)) {
+    if ((taskId == null) || (loanRequest.getStatus() != Status.REQUESTED)) {
       return Change.NOT_POSSIBLE;
     }
 
-    loanRequest.setOutcome(Outcome.APPROVED);
+    loanRequest.setStatus(Status.APPROVED);
     workflow.reviewed(loanRequest, taskId);
     loanRequest.setReviewTaskId(null);
 
@@ -138,14 +139,21 @@ public class Service {
   }
 
   /**
-   * Somebody cancelled the case on its page. The outcome is written in the same transaction which
-   * correlates the message. So the report of the workflow's end, which reads the aggregate,
-   * already says that it was cancelled.
+   * Somebody withdrew the loan request on the case page: it is not needed any more. This is a
+   * business decision, so the process handles it and ends the normal way. The message starts the
+   * event subprocess "Withdraw loan request", and its service task calls
+   * {@link #recordWithdrawal(Aggregate)}.
+   *
+   * <p>
+   * The id of the review task is removed right away, because the event subprocess ends that
+   * task. So a second request to withdraw or approve is refused, even on a BPMS which runs the
+   * event subprocess a moment later.
+   * </p>
    *
    * @param loanRequestId The natural id of the loan request.
-   * @return {@link Change#NOT_POSSIBLE} if the case ended before.
+   * @return {@link Change#NOT_POSSIBLE} if the loan request does not wait for its review.
    */
-  public Change cancel(
+  public Change withdraw(
       final String loanRequestId) {
 
     final var found = loanApprovals.findById(loanRequestId);
@@ -153,18 +161,33 @@ public class Service {
       return Change.NOT_FOUND;
     }
     final var loanRequest = found.get();
-    if (loanRequest.getOutcome() != null) {
+    if ((loanRequest.getReviewTaskId() == null) || (loanRequest.getStatus() != Status.REQUESTED)) {
       return Change.NOT_POSSIBLE;
     }
 
-    loanRequest.setOutcome(Outcome.CANCELLED);
-    workflow.cancelled(loanRequest);
-    // The event subprocess ends the user task, so its id does not lead to an open task any more.
+    workflow.withdrawalRequested(loanRequest);
     loanRequest.setReviewTaskId(null);
 
-    log.info("Loan approval '{}' was cancelled", loanRequestId);
+    log.info("Loan approval '{}' is being withdrawn", loanRequestId);
 
     return Change.DONE;
+
+  }
+
+  /**
+   * The process reached the service task "Record withdrawal" of the event subprocess. The status
+   * says from now on that the loan request was withdrawn. The process then reaches the end event
+   * of the event subprocess, a normal end. The report of that end reads the aggregate, so the
+   * cockpit shows the status {@link Status#WITHDRAWN}.
+   *
+   * @param loanRequest The workflow's aggregate.
+   */
+  public void recordWithdrawal(
+      final Aggregate loanRequest) {
+
+    loanRequest.setStatus(Status.WITHDRAWN);
+
+    log.info("Loan approval '{}' was withdrawn", loanRequest.getLoanRequestId());
 
   }
 

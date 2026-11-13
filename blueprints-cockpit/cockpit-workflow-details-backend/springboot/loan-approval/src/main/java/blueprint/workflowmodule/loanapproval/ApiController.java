@@ -61,7 +61,7 @@ public class ApiController {
    * <p>
    * In a real application, the form of the user task does this. Forms are the subject of the
    * blueprint {@code cockpit-user-task}, so this blueprint has none. This URL stands in for it,
-   * so you can see a case which ended the regular way next to one which was cancelled.
+   * so you can see an approved loan request next to a withdrawn one.
    * </p>
    *
    * @param loanRequestId The id returned by starting the process.

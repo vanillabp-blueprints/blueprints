@@ -8,8 +8,8 @@ info:
     server below is a path of the cockpit, not of the workflow module.
 
     The page knows its case by the business id the cockpit shows, which is the id of the loan
-    request. GET reads what the page shows. POST cancels the case. The open user tasks of the
-    case are not here: the page asks the cockpit for them.
+    request. GET reads what the page shows. POST withdraws the loan request. The open user tasks
+    of the case are not here: the page asks the cockpit for them.
   version: 1.0.0
 servers:
   - url: /wm/loan-approval
@@ -34,21 +34,24 @@ paths:
                 $ref: '#/components/schemas/Case'
         '404':
           description: No case has this id
-  /api/cases/{loanRequestId}/cancel:
+  /api/cases/{loanRequestId}/withdraw:
     parameters:
       - $ref: '#/components/parameters/LoanRequestId'
     post:
       tags:
         - cases
-      operationId: cancelCase
-      summary: Cancels the case, through the event subprocess "Cancel case"
+      operationId: withdrawLoanRequest
+      summary: Withdraws the loan request, through the event subprocess "Withdraw loan request"
+      description: >
+        The loan request is not needed any more. The event subprocess sets the status WITHDRAWN,
+        and the process ends the normal way.
       responses:
         '204':
-          description: The case is cancelled
+          description: The loan request is being withdrawn
         '404':
           description: No case has this id
         '409':
-          description: The case has ended already
+          description: The loan request does not wait for its review any more, the case has ended or is ending
 components:
   parameters:
     LoanRequestId:
@@ -65,6 +68,7 @@ components:
         - loanRequestId
         - applicant
         - amount
+        - status
       properties:
         loanRequestId:
           type: string
@@ -75,9 +79,10 @@ components:
         amount:
           type: integer
           description: The amount requested
-        outcome:
+        status:
           type: string
           enum:
+            - REQUESTED
             - APPROVED
-            - CANCELLED
-          description: How the case ended. Missing while the case runs
+            - WITHDRAWN
+          description: Where the loan request stands

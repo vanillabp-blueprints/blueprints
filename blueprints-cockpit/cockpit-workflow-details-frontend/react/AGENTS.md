@@ -2,8 +2,8 @@
 
 The case page of the workflow module `loan-approval` for a VanillaBP Business Cockpit, in React:
 a data entry which picks the page of a case, the page with the open user tasks, the data of the
-loan request and the button "Cancel case", and two columns of the case list. An npm project
-without Java. It builds the micro-frontends, the UI jar and an nginx image. The backend with the
+loan request and the button "Withdraw loan request", and two columns of the case list. An npm
+project without Java. It builds the micro-frontends, the UI jar and an nginx image. The backend with the
 API and the application are separate projects. The OpenAPI file of the backend comes in through
 the git submodule `backend/`.
 
@@ -38,7 +38,7 @@ per page. Two modules which define the same name break each other.
 |--------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `src/loan-approval.ts`               | module id, process id, entry name, web component names and the keys of the details, in one place                                                      |
 | `src/data/workflow-page.ts`          | data entry `WorkflowPage`. Plain TypeScript, it must never import React or the page                                                                   |
-| `src/data/workflow-list.ts`          | data entry `WorkflowList`, the columns `details.applicant` and `details.outcome`                                                                      |
+| `src/data/workflow-list.ts`          | data entry `WorkflowList`, the columns `details.applicant` and `details.status`                                                                       |
 | `src/pages/loan-approval-page.tsx`   | visual entry `LoanApprovalPage`: the four web components (`all`, `body`, `information`, `actions`), `getUserTasks` and the messages between the areas |
 | `src/shared/api.ts`                  | the client of the module API, base path `/wm/loan-approval` from the server of the OpenAPI file                                                       |
 | `src/shared/style.ts`                | the styles, put into each shadow root. `overflow-wrap: anywhere` keeps long content from widening the page                                            |

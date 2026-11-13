@@ -11,7 +11,7 @@ import io.vanillabp.spi.process.ProcessService;
  * What the application tells the process: the outgoing half of the BPMN wiring.
  *
  * <p>
- * {@link Service} calls in, naming what happened in business terms ({@code cancelled}), and
+ * {@link Service} calls in, naming what happened in business terms ({@code reviewed}), and
  * this class translates that into what the process needs: starting a workflow, completing a user
  * task or correlating a message. {@link ProcessService} is injected here and nowhere else.
  * </p>
@@ -26,7 +26,7 @@ import io.vanillabp.spi.process.ProcessService;
  * All methods have to run in a transaction, which is why the class carries
  * {@code @Transactional}: the aggregate is saved along with the answer, and on a remote BPMS
  * the answer is only sent after that transaction committed. A rollback therefore leaves the
- * process where it was, rather than cancelling a case for work that was undone.
+ * process where it was, rather than withdrawing a loan request for work that was undone.
  * </p>
  *
  * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-process">Wire up a
@@ -37,10 +37,10 @@ import io.vanillabp.spi.process.ProcessService;
 public class Workflow {
 
   /**
-   * The name of the message which starts the event subprocess "Cancel case". It is the name of
-   * the message in the BPMN file.
+   * The name of the message which starts the event subprocess "Withdraw loan request". It is the
+   * name of the message in the BPMN file.
    */
-  public static final String CANCEL_LOAN_APPROVAL = "CancelLoanApproval";
+  public static final String WITHDRAW_LOAN_REQUEST = "WithdrawLoanRequest";
 
   /**
    * Starting workflows, completing tasks and correlating messages happen through this bean. It
@@ -78,16 +78,16 @@ public class Workflow {
   }
 
   /**
-   * Somebody cancelled the case. The message starts the interrupting event subprocess "Cancel
-   * case", which ends the open user task and then the workflow. The adapter finds the workflow
-   * by the id of the aggregate.
+   * Somebody withdrew the loan request. The message starts the interrupting event subprocess
+   * "Withdraw loan request", which ends the open user task, records the withdrawal and ends the
+   * workflow at its end event. The adapter finds the workflow by the id of the aggregate.
    *
    * @param loanRequest The workflow's aggregate.
    */
-  public void cancelled(
+  public void withdrawalRequested(
       final Aggregate loanRequest) {
 
-    bpms.correlateMessage(loanRequest, CANCEL_LOAN_APPROVAL);
+    bpms.correlateMessage(loanRequest, WITHDRAW_LOAN_REQUEST);
 
   }
 

@@ -21,13 +21,13 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import org.yaml.snakeyaml.Yaml;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
-import blueprint.workflowmodule.loanapproval.model.Aggregate.Outcome;
+import blueprint.workflowmodule.loanapproval.model.Aggregate.Status;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
 /**
  * The integration test of this workflow module. It starts a real workflow in a real BPMS,
- * reports to the dev shell simulator as the Business Cockpit, and cancels the case through the
- * endpoint the case page calls.
+ * reports to the dev shell simulator as the Business Cockpit, and withdraws the loan request
+ * through the endpoint the case page calls.
  *
  * <p>
  * It asserts on two things. The workflow aggregate says how far the process came, as in every
@@ -78,7 +78,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   @Test
-  public void theCancelButtonEndsTheCaseThroughTheEventSubprocess() {
+  public void withdrawingEndsTheCaseNormallyWithTheStatusWithdrawn() {
 
     final var cockpit = CockpitSimulator.start();
     final var loanRequestId = UUID.randomUUID().toString();
@@ -95,7 +95,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(running.get("endedAt")).isNull();
     assertThat(details(running))
         .containsEntry(WorkflowTaskHandler.APPLICANT, "Jane Doe")
-        .doesNotContainKey(WorkflowTaskHandler.OUTCOME);
+        .containsEntry(WorkflowTaskHandler.STATUS, "REQUESTED");
 
     // What the case page shows: the open user task, from the cockpit ...
     final var workflowId = (String) running.get("id");
@@ -110,32 +110,33 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .containsEntry("loanRequestId", loanRequestId)
         .containsEntry("applicant", "Jane Doe")
         .containsEntry("amount", 5000)
-        .doesNotContainKey("outcome");
+        .containsEntry("status", "REQUESTED");
 
-    // The button "Cancel case".
-    assertThat(cancel(loanRequestId)).isEqualTo(204);
+    // The button "Withdraw loan request".
+    assertThat(withdraw(loanRequestId)).isEqualTo(204);
 
-    // The event subprocess ended the user task and the workflow.
+    // The event subprocess ended the user task, recorded the withdrawal and ended the workflow.
     final var loanRequest = awaitAggregate(
         loanApprovals,
         loanRequestId,
-        aggregate -> aggregate.getOutcome() == Outcome.CANCELLED);
+        aggregate -> aggregate.getStatus() == Status.WITHDRAWN);
     assertThat(loanRequest.getReviewTaskId()).isNull();
     cockpit.awaitUserTasksOfWorkflow(
         workflowId,
         tasks -> tasks.getFirst().get("endedAt") != null);
 
-    // The case list shows the case as ended, and the column says that it was cancelled. The
-    // cockpit itself counts the end as a regular one, because the process reached an end event.
-    final var cancelled = cockpit.awaitWorkflow(
+    // The case list shows the case as ended, and the column says that it was withdrawn. For the
+    // cockpit, the case ended normally: withdrawing is a business decision, and the process
+    // reached an end event.
+    final var withdrawn = cockpit.awaitWorkflow(
         loanRequestId,
         workflow -> workflow.get("endedAt") != null);
-    assertThat(details(cancelled))
+    assertThat(details(withdrawn))
         .containsEntry(WorkflowTaskHandler.APPLICANT, "Jane Doe")
-        .containsEntry(WorkflowTaskHandler.OUTCOME, "CANCELLED");
-    assertThat(cancelled.get("endReason")).isEqualTo("COMPLETED");
+        .containsEntry(WorkflowTaskHandler.STATUS, "WITHDRAWN");
+    assertThat(withdrawn.get("endReason")).isEqualTo("COMPLETED");
 
-    assertThat(read(loanRequestId)).containsEntry("outcome", "CANCELLED");
+    assertThat(read(loanRequestId)).containsEntry("status", "WITHDRAWN");
 
   }
 
@@ -153,29 +154,29 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     awaitAggregate(
         loanApprovals,
         loanRequestId,
-        aggregate -> aggregate.getOutcome() == Outcome.APPROVED);
+        aggregate -> aggregate.getStatus() == Status.APPROVED);
     final var approved = cockpit.awaitWorkflow(
         loanRequestId,
         workflow -> workflow.get("endedAt") != null);
-    assertThat(details(approved)).containsEntry(WorkflowTaskHandler.OUTCOME, "APPROVED");
+    assertThat(details(approved)).containsEntry(WorkflowTaskHandler.STATUS, "APPROVED");
     assertThat(approved.get("endReason")).isEqualTo("COMPLETED");
 
-    // A case which ended cannot be cancelled any more.
-    assertThat(cancel(loanRequestId)).isEqualTo(409);
-    assertThat(read(loanRequestId)).containsEntry("outcome", "APPROVED");
+    // An approved loan request cannot be withdrawn any more.
+    assertThat(withdraw(loanRequestId)).isEqualTo(409);
+    assertThat(read(loanRequestId)).containsEntry("status", "APPROVED");
 
   }
 
   @Test
-  public void aCaseCanBeCancelledOnce() {
+  public void aLoanRequestCanBeWithdrawnOnce() {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
     loanApproval.request(loanRequestId, "Jane Doe", 5000);
     awaitReviewTask(loanRequestId);
 
-    assertThat(cancel(loanRequestId)).isEqualTo(204);
-    assertThat(cancel(loanRequestId)).isEqualTo(409);
+    assertThat(withdraw(loanRequestId)).isEqualTo(204);
+    assertThat(withdraw(loanRequestId)).isEqualTo(409);
     assertThat(loanApproval.approve(loanRequestId)).isEqualTo(Service.Change.NOT_POSSIBLE);
 
   }
@@ -186,7 +187,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var unknown = UUID.randomUUID().toString();
 
     assertThat(status(unknown)).isEqualTo(404);
-    assertThat(cancel(unknown)).isEqualTo(404);
+    assertThat(withdraw(unknown)).isEqualTo(404);
 
   }
 
@@ -281,12 +282,12 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   }
 
-  private int cancel(
+  private int withdraw(
       final String loanRequestId) {
 
     return casePage
         .post()
-        .uri("/{loanRequestId}/cancel", loanRequestId)
+        .uri("/{loanRequestId}/withdraw", loanRequestId)
         .exchange((
             request,
             response) -> response.getStatusCode().value());

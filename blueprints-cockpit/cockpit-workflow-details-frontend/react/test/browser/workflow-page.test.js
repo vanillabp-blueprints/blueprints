@@ -28,7 +28,7 @@ const reviewLoanRequest = {
   taskDefinition: 'reviewLoanRequest',
   title: { en: 'Review loan request', de: 'Kreditantrag prüfen' },
 };
-const runningCase = { loanRequestId: 'LR-4711', applicant: 'Jane Doe', amount: 25000 };
+const runningCase = { loanRequestId: 'LR-4711', applicant: 'Jane Doe', amount: 25000, status: 'REQUESTED' };
 
 /** The two kinds of cockpit: with the areas of the default convention, and with 'all' only. */
 const COCKPITS = [
@@ -57,33 +57,33 @@ after(async () => {
 });
 
 /**
- * Answers the module API in the browser. GET returns `cases[0]` until the case was cancelled,
- * and `cases[1]` after that, or `status` if one is given. POST answers `cancelStatus`, 204 by
- * default, and keeps the id it got.
+ * Answers the module API in the browser. GET returns `cases[0]` until the loan request was
+ * withdrawn, and `cases[1]` after that, or `status` if one is given. POST answers
+ * `withdrawStatus`, 204 by default, and keeps the id it got.
  */
-async function mockApi(page, { cases = [runningCase, { ...runningCase, outcome: 'CANCELLED' }], status, cancelStatus = 204 } = {}) {
-  const cancelled = [];
+async function mockApi(page, { cases = [runningCase, { ...runningCase, status: 'WITHDRAWN' }], status, withdrawStatus = 204 } = {}) {
+  const withdrawn = [];
   await page.route('**/wm/loan-approval/api/cases/**', async (route) => {
     const request = route.request();
     const [, loanRequestId] = new URL(request.url()).pathname.match(/\/cases\/([^/]+)/);
     if (status) return route.fulfill({ status });
     if (request.method() === 'POST') {
-      if (cancelStatus === 204) cancelled.push(loanRequestId);
-      return route.fulfill({ status: cancelStatus });
+      if (withdrawStatus === 204) withdrawn.push(loanRequestId);
+      return route.fulfill({ status: withdrawStatus });
     }
-    return route.fulfill({ json: cancelled.length === 0 ? cases[0] : cases[1] });
+    return route.fulfill({ json: withdrawn.length === 0 ? cases[0] : cases[1] });
   });
-  return cancelled;
+  return withdrawn;
 }
 
 async function openPage(query, api) {
   const page = await browser.newPage();
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
-  const cancelled = await mockApi(page, api);
+  const withdrawn = await mockApi(page, api);
   await page.goto(`${server.url}/${query}`);
   await page.waitForFunction(() => window.bcTest !== undefined);
-  return { page, pageErrors, cancelled };
+  return { page, pageErrors, withdrawn };
 }
 
 /** Puts the user tasks the cockpit answers getUserTasks with. */
@@ -123,14 +123,14 @@ describe('the data entries', () => {
     await page.close();
   });
 
-  it('WorkflowList shows the applicant and the outcome from the details of a case', async () => {
+  it('WorkflowList shows the applicant and the status from the details of a case', async () => {
     const { page } = await openPage(COCKPITS[0].query);
     const columns = await page.evaluate(async (workflows) => Promise.all(
       workflows.map((workflow) => window.bcTest.host.ask('loan-approval', 'WorkflowList', [workflow])),
     ), [loanApproval, { ...loanApproval, bpmnProcessId: 'other' }]);
     assert.deepEqual(columns[0].map(({ path, title }) => [path, title]), [
       ['details.applicant', { en: 'Applicant', de: 'Antragsteller' }],
-      ['details.outcome', { en: 'Outcome', de: 'Ergebnis' }],
+      ['details.status', { en: 'Status', de: 'Status' }],
     ]);
     assert.equal(columns[1], undefined);
     await page.close();
@@ -168,17 +168,17 @@ for (const cockpit of COCKPITS) {
       await assertText(page.getByTestId('case-loan-request'), 'LR-4711');
       await assertText(page.getByTestId('case-applicant'), 'Jane Doe');
       await assertText(page.getByTestId('case-amount'), '25,000');
-      await assertText(page.getByTestId('case-outcome'), 'Running');
+      await assertText(page.getByTestId('case-status'), 'Requested');
       await assertText(page.getByTestId('case-user-task'), 'Review loan request');
 
       // The page asked the cockpit once, for the open user tasks of this case.
       assert.deepEqual(await page.evaluate(() => window.bcTest.userTaskRequests), [
         { workflowId: 'wf-1', activeOnly: true, limitListAccordingToCurrentUsersPermissions: false },
       ]);
-      const cancel = page.getByTestId('case-cancel');
-      await assertEnabled(cancel);
+      const withdraw = page.getByTestId('case-withdraw');
+      await assertEnabled(withdraw);
       // The styles of the page do not reach the button in the shadow DOM.
-      assert.notEqual(await cancel.evaluate((button) => getComputedStyle(button).backgroundColor), 'rgb(0, 128, 0)');
+      assert.notEqual(await withdraw.evaluate((button) => getComputedStyle(button).backgroundColor), 'rgb(0, 128, 0)');
 
       const loaded = await loadedFiles(page);
       assert.ok(loaded.some((path) => path.includes('/LoanApprovalPage-')), loaded.join(', '));
@@ -187,24 +187,24 @@ for (const cockpit of COCKPITS) {
       await page.close();
     });
 
-    it('"Cancel case" asks the module to cancel, and the page shows the case cancelled without its user task', async () => {
-      const { page, pageErrors, cancelled } = await openPage(cockpit.query);
+    it('"Withdraw loan request" asks the module to withdraw it, and the page shows it withdrawn without its user task', async () => {
+      const { page, pageErrors, withdrawn } = await openPage(cockpit.query);
       await cockpitHasUserTasks(page, [reviewLoanRequest]);
       await show(page);
       await assertText(page.getByTestId('case-user-task'), 'Review loan request');
 
       // Once the event subprocess ended the user task, the cockpit lists none.
       await cockpitHasUserTasks(page, []);
-      await page.getByTestId('case-cancel').click({ timeout: 5000 });
-      await page.getByTestId('case-cancelled').waitFor();
+      await page.getByTestId('case-withdraw').click({ timeout: 5000 });
+      await page.getByTestId('case-withdrawn').waitFor();
 
-      assert.deepEqual(cancelled, ['LR-4711']);
-      assert.deepEqual(await page.evaluate(() => window.bcTest.notifications), [{ level: 'success', text: 'The case is cancelled.', sticky: false }]);
+      assert.deepEqual(withdrawn, ['LR-4711']);
+      assert.deepEqual(await page.evaluate(() => window.bcTest.notifications), [{ level: 'success', text: 'The loan request is withdrawn.', sticky: false }]);
       // The other areas got the message and loaded their data again.
-      await assertText(page.getByTestId('case-outcome'), 'Cancelled');
+      await assertText(page.getByTestId('case-status'), 'Withdrawn');
       await page.getByTestId('case-no-user-tasks').waitFor({ timeout: 5000 });
       assert.equal(await page.getByTestId('case-user-task').count(), 0);
-      assert.equal(await page.getByTestId('case-cancel').isDisabled(), true);
+      assert.equal(await page.getByTestId('case-withdraw').isDisabled(), true);
       assert.deepEqual(pageErrors, []);
       await page.close();
     });
@@ -225,12 +225,12 @@ for (const cockpit of COCKPITS) {
       await page.close();
     });
 
-    it('a case which ended has no enabled "Cancel case"', async () => {
-      const { page, pageErrors } = await openPage(cockpit.query, { cases: [{ ...runningCase, outcome: 'APPROVED' }] });
+    it('an approved loan request has no enabled "Withdraw loan request"', async () => {
+      const { page, pageErrors } = await openPage(cockpit.query, { cases: [{ ...runningCase, status: 'APPROVED' }] });
       await show(page, { ...loanApproval, endedAt: '2026-11-13T09:00:00Z' });
-      await assertText(page.getByTestId('case-outcome'), 'Approved');
+      await assertText(page.getByTestId('case-status'), 'Approved');
       await page.getByTestId('case-no-user-tasks').waitFor({ timeout: 5000 });
-      assert.equal(await page.getByTestId('case-cancel').isDisabled(), true);
+      assert.equal(await page.getByTestId('case-withdraw').isDisabled(), true);
       assert.deepEqual(pageErrors, []);
       await page.close();
     });
@@ -263,17 +263,17 @@ for (const cockpit of COCKPITS) {
       await show(page);
       await assertText(page.getByTestId('case-error'), 'The workflow module does not know this case.');
       assert.equal(await page.getByTestId('case-applicant').count(), 0);
-      assert.equal(await page.getByTestId('case-cancel').isDisabled(), true);
+      assert.equal(await page.getByTestId('case-withdraw').isDisabled(), true);
       assert.deepEqual(pageErrors, []);
       await page.close();
     });
 
-    it('a cancel the module refuses shows why', async () => {
-      const { page, pageErrors } = await openPage(cockpit.query, { cancelStatus: 409 });
+    it('a withdrawal the module refuses shows why', async () => {
+      const { page, pageErrors } = await openPage(cockpit.query, { withdrawStatus: 409 });
       await show(page);
-      await page.getByTestId('case-cancel').click({ timeout: 5000 });
-      await assertText(page.getByTestId('case-cancel-error'), 'This case has ended already.');
-      assert.equal(await page.getByTestId('case-cancelled').count(), 0);
+      await page.getByTestId('case-withdraw').click({ timeout: 5000 });
+      await assertText(page.getByTestId('case-withdraw-error'), 'This case has ended already.');
+      assert.equal(await page.getByTestId('case-withdrawn').count(), 0);
       assert.deepEqual(await page.evaluate(() => window.bcTest.notifications), [{ level: 'error', text: 'This case has ended already.', sticky: false }]);
       assert.deepEqual(pageErrors, []);
       await page.close();

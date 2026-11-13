@@ -24,4 +24,4 @@ export const LOAN_APPROVAL_PAGE_ELEMENTS = {
 
 /** The keys the backend puts into the details of a case, see its WorkflowTaskHandler. */
 export const DETAILS_APPLICANT = 'applicant';
-export const DETAILS_OUTCOME = 'outcome';
+export const DETAILS_STATUS = 'status';

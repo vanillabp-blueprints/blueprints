@@ -60,18 +60,18 @@ public class CasePageController {
   }
 
   /**
-   * Cancels the case ({@code cancelCase}). The module correlates the message which starts the
-   * event subprocess "Cancel case". The cockpit learns that the case ended the way it learns
-   * about every other end, from the cockpit adapter.
+   * Withdraws the loan request ({@code withdrawLoanRequest}). The module correlates the message
+   * which starts the event subprocess "Withdraw loan request". The cockpit learns that the case
+   * ended the way it learns about every other end, from the cockpit adapter.
    *
    * @param loanRequestId The id of the loan request, the business id of the case.
    */
-  @PostMapping("/cancel")
+  @PostMapping("/withdraw")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void cancelCase(
+  public void withdrawLoanRequest(
       @PathVariable final String loanRequestId) {
 
-    final var change = loanApproval.cancel(loanRequestId);
+    final var change = loanApproval.withdraw(loanRequestId);
     if (change == Change.NOT_FOUND) {
       throw unknown(loanRequestId);
     }
@@ -87,11 +87,9 @@ public class CasePageController {
   private static Case caseOf(
       final Aggregate loanRequest) {
 
-    final var outcome = loanRequest.getOutcome() == null
-        ? null
-        : loanRequest.getOutcome().name();
     return new Case(
-        loanRequest.getLoanRequestId(), loanRequest.getApplicant(), loanRequest.getAmount(), outcome);
+        loanRequest.getLoanRequestId(), loanRequest.getApplicant(), loanRequest.getAmount(), loanRequest.getStatus()
+            .name());
 
   }
 
@@ -112,15 +110,15 @@ public class CasePageController {
    * @param loanRequestId The id of the loan request.
    * @param applicant     Who asks for the loan.
    * @param amount        The amount requested.
-   * @param outcome       How the case ended, {@code APPROVED} or {@code CANCELLED}. Missing
-   *                      while it runs.
+   * @param status        Where the loan request stands: {@code REQUESTED}, {@code APPROVED} or
+   *                      {@code WITHDRAWN}.
    */
   @JsonInclude(JsonInclude.Include.NON_NULL)
   public record Case(
                      String loanRequestId,
                      String applicant,
                      Integer amount,
-                     String outcome) {
+                     String status) {
   }
 
 }

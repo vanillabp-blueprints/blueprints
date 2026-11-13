@@ -12,10 +12,10 @@ interface, and it serves both. It has no code of its own apart from the class wh
 
 ## What this blueprint shows
 
-![The loan approval process, with one user task and an event subprocess "Cancel case"](docs/loan_approval.png)
+![The loan approval process, with one user task and an event subprocess "Withdraw loan request"](docs/loan_approval.png)
 
-A loan approval with one user task, "Review loan request", and an event subprocess "Cancel
-case". The process, the endpoints of the case page and what the cockpit has to know about the
+A loan approval with one user task, "Review loan request", and an event subprocess "Withdraw
+loan request". The process, the endpoints of the case page and what the cockpit has to know about the
 module are in the backend. The case page is in the frontend. This repository puts them together.
 
 It is built like
@@ -44,11 +44,11 @@ The cockpit forwards everything below `/wm/loan-approval/` to the address the mo
 module reports `http://localhost:8080/loan-approval`. So the API of the case page and the user
 interface are both below `/loan-approval` here:
 
-|           The browser asks the cockpit for           |               The application gets                |     It comes from      |
-|------------------------------------------------------|---------------------------------------------------|------------------------|
-| `/wm/loan-approval/bc-manifest.json`                 | `/loan-approval/bc-manifest.json`                 | the user interface JAR |
-| `/wm/loan-approval/api/cases/{loanRequestId}`        | `/loan-approval/api/cases/{loanRequestId}`        | the workflow module    |
-| `/wm/loan-approval/api/cases/{loanRequestId}/cancel` | `/loan-approval/api/cases/{loanRequestId}/cancel` | the workflow module    |
+|            The browser asks the cockpit for            |                The application gets                 |     It comes from      |
+|--------------------------------------------------------|-----------------------------------------------------|------------------------|
+| `/wm/loan-approval/bc-manifest.json`                   | `/loan-approval/bc-manifest.json`                   | the user interface JAR |
+| `/wm/loan-approval/api/cases/{loanRequestId}`          | `/loan-approval/api/cases/{loanRequestId}`          | the workflow module    |
+| `/wm/loan-approval/api/cases/{loanRequestId}/withdraw` | `/loan-approval/api/cases/{loanRequestId}/withdraw` | the workflow module    |
 
 The open user tasks of a case are not in this list. The page asks the cockpit for them, and the
 cockpit answers from its own data.
