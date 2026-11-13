@@ -12,7 +12,8 @@ agent which copies the blueprint into an application. Its sections are fixed, an
 
 A workflow module depends on `io.vanillabp:vanillabp-spring-boot-support` or
 `io.vanillabp:vanillabp-quarkus-support`. If its user tasks are shown in the Business Cockpit,
-it also depends on `io.vanillabp.businesscockpit:support`. These libraries know no BPMS.
+it also depends on `io.vanillabp.businesscockpit:business-cockpit-spring-boot-support`. These
+libraries know no BPMS.
 
 An adapter is a different thing. It connects the module to one BPMS or to the cockpit for one
 BPMS, for example `camunda8-adapter-spring-boot` or
