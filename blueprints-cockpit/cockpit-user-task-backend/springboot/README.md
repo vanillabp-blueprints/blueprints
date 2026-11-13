@@ -43,13 +43,13 @@ and this is the reason.
 
 ### The API is a file
 
-`api` holds the OpenAPI of the four endpoints the forms call, at
-`api/src/main/resources/openapi/loan-approval.yaml`. A frontend reads this file through a git
-submodule of this repository, at a commit it pins, and generates its client from it. It needs no
-Maven repository and no Java for that. React, Angular and Vue frontends all read the same file.
-The workflow module implements it in `UserTaskFormController`. Maven still builds `api` as the
-JAR `io.vanillabp.blueprint:cockpit-user-task-api`, because the test of the workflow module reads
-the file from there and checks every operation against the endpoints.
+The workflow module holds the OpenAPI of the four endpoints the forms call, at
+`loan-approval/src/main/resources/openapi/loan-approval.yaml`. A frontend reads this file through
+a git submodule of this repository, at a commit it pins, and generates its client from it. It
+needs no Maven repository and no Java for that. React and Angular frontends read the same file.
+The workflow module implements it in `UserTaskFormController`, and its test reads the file from
+the classpath and checks every operation against the endpoints. The file sits next to the code
+which implements it, so one pull request changes both.
 
 ### The way a form reaches the workflow module
 
@@ -136,7 +136,6 @@ Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user
 
 |                    File                    |                                                                   What is different                                                                   |
 |--------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `api/pom.xml`                              | new: the module which holds the OpenAPI, as a JAR for the test of the module                                                                          |
 | `openapi/loan-approval.yaml`               | new: the four endpoints of the forms                                                                                                                  |
 | `loan-approval/loan-approval.yaml`         | the keys the cockpit needs, below `vanillabp.workflow-modules.loan-approval.cockpit`                                                                  |
 | `loan_approval.bpmn`                       | two user tasks in a row, and no service task and no boundary event                                                                                    |
@@ -232,7 +231,7 @@ does. The frontend's README shows how.
 
 |                                          File                                          |                                                  Role                                                  |
 |----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| `api/src/main/resources/openapi/loan-approval.yaml`                                    | the contract between the forms and the module: four operations, below the server `/wm/loan-approval`   |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract between the forms and the module: four operations, below the server `/wm/loan-approval`   |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: two user tasks, each carrying its task definition                                         |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest               |
 | `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of each user task, and says what the cockpit shows about a task                           |
@@ -264,7 +263,7 @@ workflow ends, and the cockpit takes both tasks off the list.
 
 The endpoints are written by hand, rather than generated from the OpenAPI. Four endpoints read
 better as code than as the settings of a generator. The integration test reads the OpenAPI from
-the `api` JAR and checks that every operation in it has its endpoint, so the file and the code
+the classpath and checks that every operation in it has its endpoint, so the file and the code
 cannot drift apart unnoticed. An application with many forms may prefer to generate. Then the
 interfaces come from the same file, and the controller implements them.
 

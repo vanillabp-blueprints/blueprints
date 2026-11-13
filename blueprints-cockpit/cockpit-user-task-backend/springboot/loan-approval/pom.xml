@@ -88,16 +88,6 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
-    <!--
-      The OpenAPI the endpoints implement. The test reads it and checks that every operation
-      in it has an endpoint here, so the file and the code cannot drift apart unnoticed.
-    -->
-    <dependency>
-      <groupId>io.vanillabp.blueprint</groupId>
-      <artifactId>cockpit-user-task-api</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
