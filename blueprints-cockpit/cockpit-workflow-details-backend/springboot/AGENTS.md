@@ -81,8 +81,9 @@ controllers in line, or the page reaches nothing.
 ## Adding this blueprint to an existing project
 
 1. Start from `cockpit-user-task-backend` for everything a module with a user interface needs:
-   the cockpit `support` dependency, the cockpit adapters in the test scope, the keys below
-   `vanillabp.workflow-modules.<workflow-module-id>.cockpit`, and the auto-configuration.
+   the dependency `business-cockpit-spring-boot-support`, the cockpit adapters in the test
+   scope, the keys below `vanillabp.workflow-modules.<workflow-module-id>.cockpit`, and the
+   auto-configuration.
 2. Put the OpenAPI of the case page into the workflow module, at
    `src/main/resources/openapi/<workflow-module-id>.yaml`, with the server
    `/wm/<workflow-module-id>`. Key the paths by the id of the workflow aggregate. The cockpit
