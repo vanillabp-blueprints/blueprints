@@ -1,0 +1,56 @@
+# Configuration of the workflow module 'loan-approval'.
+#
+# The file is named after the workflow module ID and is loaded automatically, with a
+# lower priority than application.yaml. Everything only this module needs belongs here -
+# that is what keeps a workflow module a self-contained application inside the
+# application.
+loan-approval:
+  rating-scale: 100
+  # The rules of the bank about time. The due dates and the follow-up date of the user tasks
+  # are computed from them. They are business rules, so they are here and not in the BPMN.
+  call-customer-within: P1D
+  assess-risk-within: P2D
+  answer-promised-within: P5D
+  call-again-at: "09:00"
+  zone: Europe/Vienna
+  # The application in which advisors call their customers. The cockpit opens the user task
+  # "Call customer" there.
+  crm-address: https://crm.example.com
+
+vanillabp:
+  cockpit:
+    # Where the templates of the titles and the search texts are. The key is the same for
+    # every workflow module of an application, because the cockpit adapter reads it once.
+    # 'classpath:' names the root of the class path. Below it, the adapter looks in a
+    # directory named after the workflow module first, so this module finds its templates in
+    # 'loan-approval/', next to this file. Another module which writes the same value finds
+    # its own. An application which writes another value overrides this one for all modules.
+    # https://github.com/vanillabp/business-cockpit/wiki/Templates
+    template-loader-path: "classpath:"
+  workflow-modules:
+    loan-approval:
+      # What the Business Cockpit has to know about this module. Where the cockpit server is,
+      # is not a matter of the module. The application writes it, below 'vanillabp.cockpit'.
+      # https://github.com/vanillabp/business-cockpit/wiki/Configuration#what-a-workflow-module-tells-the-cockpit
+      cockpit:
+        # Where the cockpit reaches this module. The cockpit forwards a request of a form below
+        # '/wm/loan-approval/' to this address, so '/wm/loan-approval/api/loan-approval/...'
+        # reaches the endpoints of the forms. The application sets the address it runs at.
+        workflow-module-uri: http://localhost:8080
+        # The forms of a module are usually ES modules which the cockpit loads, listed in a
+        # manifest. That is the default of every user task of this module. A details provider
+        # may name another address for one task: "Call customer" opens the CRM.
+        ui-uri-type: ES_MODULES
+        ui-uri-path: /bc-manifest.json
+        # The languages every title is reported in. A template is looked up once per
+        # language, so 'task-title_de.ftl' is taken for German where it exists and
+        # 'task-title.ftl' otherwise. A title set in code needs a text for each of them.
+        i18n-languages:
+          - en
+          - de
+        # The language of the names in the BPMN files. They are the titles of every text
+        # which has neither a template nor a value set in code.
+        bpmn-description-language: en
+        # Who caused a report is known to this module only: the user who logged in when a
+        # loan was requested or a task was completed. The details providers set it.
+        initiator-source: by-application
