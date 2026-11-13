@@ -42,22 +42,22 @@ after tasks were stored, or they can no longer be read.
 
 ## Core files
 
-|                                            File                                            |                                                                                   Why it matters                                                                                    |
-|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | one `@UserTaskDetailsProvider` per task definition, and the `@WorkflowDetailsProvider`; every value is read from the aggregate; a provider never changes the aggregate              |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `lastActionBy` (the initiator), `advisor` (the assignee), `riskAssessedBy` (the excluded candidate), `requestedAt` and `answerPromisedBy` (the due dates)                           |
-| `loan-approval/src/main/java/.../loanapproval/model/usertask/Task.java`                    | `editors`: who worked on the task; the admitted users and the read access come from this one list                                                                                   |
-| `loan-approval/src/main/java/.../loanapproval/model/usertask/CallCustomerTaskData.java`    | `callAgainAt`, the follow-up date                                                                                                                                                   |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `@Transactional` on the class; writes the user who acted with every action; refuses the approval by the user who assessed the risk; the change of the advisor                       |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                               | `correlateMessage` for the change of the advisor; `BusinessCockpitService#aggregateChanged(loanRequest, taskId)` for changes the BPMS does not notice                               |
-| `loan-approval/src/main/java/.../loanapproval/UserTaskFormController.java`                 | GET with `@PreAuthorize("hasAuthority(...) or @userTaskAccess.mayRead(...)")`; `editable` tells which way let the user in; an editor is written when the form is delivered for work |
-| `loan-approval/src/main/java/.../loanapproval/UserTaskAccess.java`                         | reads only the editors of one task                                                                                                                                                  |
-| `loan-approval/src/main/java/.../loanapproval/config/Permission.java`                      | one authority per kind of task; the same constant is the candidate group                                                                                                            |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the rules about time; `template-loader-path`; `i18n-languages`, `initiator-source: by-application` and the other keys of the cockpit                                                |
-| `loan-approval/src/main/resources/loan-approval/**/*.ftl`                                  | the templates: per task definition in `loan_approval/<task-definition>/`, for the whole module directly in `loan-approval/`, one file per language with `_de` in its name           |
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | three user tasks with task definitions; a message boundary event on "Call customer" which leads back into it                                                                        |
-| `loan-approval/src/test/java/.../OrganizingUserTasksIT.java`                               | one test per pattern; asserts on what was reported to the cockpit; proves that tasks and their data are loaded only when read                                                       |
-| `loan-approval/src/test/java/.../ReportRecorder.java`                                      | keeps every report on its way to the dev shell simulator, because the simulator drops excluded candidates, admitted users and the kind of notification                              |
+|                                            File                                            |                                                                                                           Why it matters                                                                                                           |
+|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | one `@UserTaskDetailsProvider` per task definition, and the `@WorkflowDetailsProvider`; every value is read from the aggregate; a provider never changes the aggregate                                                             |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `lastActionBy` (the initiator), `advisor` (the assignee), `riskAssessedBy` (the excluded candidate), `requestedAt` and `answerPromisedBy` (the due dates)                                                                          |
+| `loan-approval/src/main/java/.../loanapproval/model/usertask/Task.java`                    | `editors`: who worked on the task; the admitted users and the read access come from this one list                                                                                                                                  |
+| `loan-approval/src/main/java/.../loanapproval/model/usertask/CallCustomerTaskData.java`    | `callAgainAt`, the follow-up date                                                                                                                                                                                                  |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `@Transactional` on the class; writes the user who acted with every action; refuses the approval by the user who assessed the risk; the change of the advisor                                                                      |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                               | `correlateMessage` for the change of the advisor; `BusinessCockpitService#aggregateChanged(loanRequest, taskId)` for changes the BPMS does not notice                                                                              |
+| `loan-approval/src/main/java/.../loanapproval/UserTaskFormController.java`                 | GET with `@PreAuthorize("hasAuthority(...) or @userTaskAccess.mayRead(...)")`; `editable` tells which way let the user in; an editor is written when the form is delivered for work                                                |
+| `loan-approval/src/main/java/.../loanapproval/UserTaskAccess.java`                         | reads only the editors of one task                                                                                                                                                                                                 |
+| `loan-approval/src/main/java/.../loanapproval/config/Permission.java`                      | one authority per kind of task; the same constant is the candidate group                                                                                                                                                           |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the rules about time; `i18n-languages`, `initiator-source: by-application` and the other keys of the cockpit                                                                                                                       |
+| `loan-approval/src/main/resources/loan-approval/business-cockpit-templates/**/*.ftl`       | the templates, all in the default directory of the module: per task definition in `loan_approval/<task-definition>/`, for the whole module directly in `business-cockpit-templates/`, one file per language with `_de` in its name |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | three user tasks with task definitions; a message boundary event on "Call customer" which leads back into it                                                                                                                       |
+| `loan-approval/src/test/java/.../OrganizingUserTasksIT.java`                               | one test per pattern; asserts on what was reported to the cockpit; proves that tasks and their data are loaded only when read                                                                                                      |
+| `loan-approval/src/test/java/.../ReportRecorder.java`                                      | keeps every report on its way to the dev shell simulator, because the simulator drops excluded candidates, admitted users and the kind of notification                                                                             |
 
 ## Boilerplate files
 
@@ -90,8 +90,8 @@ Apply `cockpit-usertasks-in-the-application` first. The tasks and their data loa
    the test scope.
 2. Write the keys of the cockpit into the configuration file of the module, below
    `vanillabp.workflow-modules.<module-id>.cockpit`: `i18n-languages`,
-   `bpmn-description-language` and `initiator-source: by-application`. Write
-   `vanillabp.cockpit.template-loader-path: "classpath:"` there as well.
+   `bpmn-description-language` and `initiator-source: by-application`. Write no
+   `template-loader-path`: the templates go into the default directory of the module (step 6).
 3. Write into the aggregate what the reports need and no BPMS records: the user who acted last,
    the person a task belongs to, the user who did a step the next one must be kept from, and
    the dates the due dates are counted from. Set them in `Service`, from the user who logged
@@ -102,10 +102,11 @@ Apply `cockpit-usertasks-in-the-application` first. The tasks and their data loa
    notification delivery and the details. Only read the aggregate. A provider runs inside the
    transaction of VanillaBP, so it may read the tasks and their data.
 5. Add a `@WorkflowDetailsProvider` which sets the initiator as well.
-6. Put the title templates into `<module-id>/<bpmn-process-id>/<task-definition>/task-title.ftl`,
-   one file per language with `_<language>` before `.ftl`. Pass a small record to
-   `setTemplateContext`. Put the search text into `<module-id>/task-fulltext-search.ftl`, with
-   the data no column shows.
+6. Put every template of the module into its default directory
+   `src/main/resources/<module-id>/business-cockpit-templates/`. The title templates go into
+   `<bpmn-process-id>/<task-definition>/task-title.ftl` below it, one file per language with
+   `_<language>` before `.ftl`. Pass a small record to `setTemplateContext`. Put the search text
+   directly into that directory as `task-fulltext-search.ftl`, with the data no column shows.
 7. Add `editors` to the task, write the user into it when the form is delivered for work, and
    report them with `setAdmittedUsers`. Copy `UserTaskAccess` and name it in `@PreAuthorize` of
    every endpoint which reads a form. Return whether the user may work on the form, and keep
@@ -146,8 +147,9 @@ you report a failure of that profile as a defect of the generated code.
 - loading the aggregate loads no task, and reading a task does not load its data.
 
 If a title arrives as the name of the BPMN task, the template was not found: check the
-directory names against the module id, the process id and the task definition, and check
-`template-loader-path`. If a report fails because it names no initiator, a provider does not set
+directory names against the module id, the process id and the task definition. Every template
+has to be below `<module-id>/business-cockpit-templates/`, and no `template-loader-path` may be
+set, because a key moves the cockpit away from that directory. If a report fails because it names no initiator, a provider does not set
 one. If a task never shows up in `tasks`, the wiring between BPMN and code is wrong, and the
 startup log names it.
 

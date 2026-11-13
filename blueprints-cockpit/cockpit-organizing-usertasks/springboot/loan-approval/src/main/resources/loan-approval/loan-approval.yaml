@@ -18,15 +18,10 @@ loan-approval:
   crm-address: https://crm.example.com
 
 vanillabp:
-  cockpit:
-    # Where the templates of the titles and the search texts are. The key is the same for
-    # every workflow module of an application, because the cockpit adapter reads it once.
-    # 'classpath:' names the root of the class path. Below it, the adapter looks in a
-    # directory named after the workflow module first, so this module finds its templates in
-    # 'loan-approval/', next to this file. Another module which writes the same value finds
-    # its own. An application which writes another value overrides this one for all modules.
-    # https://github.com/vanillabp/business-cockpit/wiki/Templates
-    template-loader-path: "classpath:"
+  # No key says where the templates of the titles and the search texts are. The cockpit
+  # adapter finds them in 'loan-approval/business-cockpit-templates/', the default directory
+  # of this module.
+  # https://github.com/vanillabp/business-cockpit/wiki/Templates
   workflow-modules:
     loan-approval:
       # What the Business Cockpit has to know about this module. Where the cockpit server is,

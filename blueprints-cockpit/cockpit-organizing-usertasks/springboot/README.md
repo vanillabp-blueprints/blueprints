@@ -133,9 +133,9 @@ The module reports every title in English and German, because `loan-approval.yam
 in `i18n-languages`. The blueprint shows three ways to fill the titles:
 
 - **A template per task definition.** "Assess risk" sets no title. The cockpit adapter renders
-  `loan-approval/loan_approval/assessRisk/task-title.ftl`, and `task-title_de.ftl` for German:
-  "Assess the risk of 5000 EUR for Jane Roe". Without the German file, the English one would
-  serve both languages.
+  `loan-approval/business-cockpit-templates/loan_approval/assessRisk/task-title.ftl`, and
+  `task-title_de.ftl` for German: "Assess the risk of 5000 EUR for Jane Roe". Without the German
+  file, the English one would serve both languages.
 - **A template name from the code.** After a failed call, "Call customer" sets the title
   `call-again.ftl` for both languages. That template is in the directory of the task, next to
   `task-title.ftl`, and says "Call Jane Roe again, attempt 2".
@@ -149,15 +149,16 @@ Every template reads what the provider passed to `setTemplateContext`: here the 
 Five texts can come from a template: `task-title.ftl`, `task-definition-title.ftl`,
 `workflow-title.ftl`, `task-fulltext-search.ftl` and `workflow-fulltext-search.ftl`. The
 adapter looks in the directory of the task definition first, then in the one of the process,
-then in the one of the module. A template directly in `loan-approval/` serves every task of
-the module. This blueprint has the title and the search text of the case there, and the search
+then in the one of the module. A template directly in `business-cockpit-templates/` serves
+every task of the module. This blueprint has the title and the search text of the case there, and the search
 text of every task.
 
-The templates are part of the module, so the module says where they are:
-`vanillabp.cockpit.template-loader-path: "classpath:"` in `loan-approval.yaml`. The key is the
-same for every module of an application. `classpath:` works for all of them, because the adapter
-looks below a directory named after the module. That directory is the one in which every
-resource of the module already is.
+The templates are part of the module, so they are in the module's default directory
+`src/main/resources/loan-approval/business-cockpit-templates/`. The cockpit adapter finds them
+there without any key. All templates of the module are in that directory, also those which
+belong to no task, like `task-fulltext-search.ftl`. The directory of the process,
+`loan_approval/`, and the directories of the task definitions are inside it. Do not set
+`template-loader-path`: a key moves the cockpit away from the default directory.
 
 ### How is a task found? `detailsFulltextSearch`
 
@@ -222,32 +223,32 @@ workflow report needs one like a task report does.
 
 Compared to [`cockpit-usertasks-in-the-application`](https://github.com/vanillabp-blueprints/cockpit-usertasks-in-the-application-springboot):
 
-|                File                |                                                                                    What is different                                                                                    |
-|------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`               | three user tasks in a row; a message boundary event on "Call customer" which leads back into it; no parallel branches                                                                   |
-| `WorkflowTaskHandler.java`         | a `@UserTaskDetailsProvider` method per task definition, and a `@WorkflowDetailsProvider` method                                                                                        |
-| `Aggregate.java`                   | who caused the last change, the advisor, the promised date, who assessed the risk; no multi-instance list                                                                               |
-| `Task.java`                        | `editors`, who worked on the task                                                                                                                                                       |
-| `CallCustomerTaskData.java`        | new: the attempts and the follow-up date of a call                                                                                                                                      |
-| `ApproveLoanTaskData.java`         | new: the decision                                                                                                                                                                       |
-| `CheckDocumentTaskData.java`       | gone, there is no document check                                                                                                                                                        |
-| `AggregateRepository.java`         | reads the editors of one task                                                                                                                                                           |
-| `UserTaskAccess.java`              | new: lets an earlier editor read a form                                                                                                                                                 |
-| `UserTaskFormController.java`      | GET with `@PreAuthorize`, which lets in the authority or an earlier editor; `editable` says which; POST completes; no PUT                                                               |
-| `Service.java`                     | writes the user with every action; the four-eyes check; the call which did not reach the customer; the change of the advisor                                                            |
-| `Workflow.java`                    | correlates `AdvisorChanged`; `taskDetailsChanged` calls `BusinessCockpitService#aggregateChanged`                                                                                       |
-| `ApiController.java`               | the start takes the advisor from the login; a GET hands a customer to another advisor                                                                                                   |
-| `Permission.java`                  | one authority per kind of task, used as candidate group as well, and two for starting and for handing over                                                                              |
-| `MethodSecurityConfiguration.java` | `@PreAuthorize` is checked as well                                                                                                                                                      |
-| `loan-approval.yaml`               | the rules about time, the address of the CRM, the template directory, and what the cockpit has to know about the module                                                                 |
-| `loan-approval/.../*.ftl`          | new: the templates of the titles and the search texts                                                                                                                                   |
-| `SecurityConfiguration.java`       | six demo users                                                                                                                                                                          |
-| `application.yaml`                 | where the reports go: the dev shell simulator                                                                                                                                           |
-| `OrganizingUserTasksIT.java`       | replaces `LoanApprovalIT` and `UserTaskFormSecurityIT`: one test per pattern, which checks what the cockpit was told, and the proof that tasks and their data are loaded only when read |
-| `CockpitSimulator.java`            | new: starts the dev shell simulator of the cockpit for the test                                                                                                                         |
-| `ReportRecorder.java`              | new: keeps a copy of every report on its way to the simulator                                                                                                                           |
-| `loan-approval/pom.xml`            | `business-cockpit-spring-boot-support` and Freemarker; the cockpit adapter next to the BPMS adapter; the simulator for the test                                                         |
-| `application/pom.xml`              | the cockpit adapter next to the BPMS adapter in every profile                                                                                                                           |
+|                        File                         |                                                                                    What is different                                                                                    |
+|-----------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | three user tasks in a row; a message boundary event on "Call customer" which leads back into it; no parallel branches                                                                   |
+| `WorkflowTaskHandler.java`                          | a `@UserTaskDetailsProvider` method per task definition, and a `@WorkflowDetailsProvider` method                                                                                        |
+| `Aggregate.java`                                    | who caused the last change, the advisor, the promised date, who assessed the risk; no multi-instance list                                                                               |
+| `Task.java`                                         | `editors`, who worked on the task                                                                                                                                                       |
+| `CallCustomerTaskData.java`                         | new: the attempts and the follow-up date of a call                                                                                                                                      |
+| `ApproveLoanTaskData.java`                          | new: the decision                                                                                                                                                                       |
+| `CheckDocumentTaskData.java`                        | gone, there is no document check                                                                                                                                                        |
+| `AggregateRepository.java`                          | reads the editors of one task                                                                                                                                                           |
+| `UserTaskAccess.java`                               | new: lets an earlier editor read a form                                                                                                                                                 |
+| `UserTaskFormController.java`                       | GET with `@PreAuthorize`, which lets in the authority or an earlier editor; `editable` says which; POST completes; no PUT                                                               |
+| `Service.java`                                      | writes the user with every action; the four-eyes check; the call which did not reach the customer; the change of the advisor                                                            |
+| `Workflow.java`                                     | correlates `AdvisorChanged`; `taskDetailsChanged` calls `BusinessCockpitService#aggregateChanged`                                                                                       |
+| `ApiController.java`                                | the start takes the advisor from the login; a GET hands a customer to another advisor                                                                                                   |
+| `Permission.java`                                   | one authority per kind of task, used as candidate group as well, and two for starting and for handing over                                                                              |
+| `MethodSecurityConfiguration.java`                  | `@PreAuthorize` is checked as well                                                                                                                                                      |
+| `loan-approval.yaml`                                | the rules about time, the address of the CRM, and what the cockpit has to know about the module                                                                                         |
+| `loan-approval/business-cockpit-templates/**/*.ftl` | new: the templates of the titles and the search texts                                                                                                                                   |
+| `SecurityConfiguration.java`                        | six demo users                                                                                                                                                                          |
+| `application.yaml`                                  | where the reports go: the dev shell simulator                                                                                                                                           |
+| `OrganizingUserTasksIT.java`                        | replaces `LoanApprovalIT` and `UserTaskFormSecurityIT`: one test per pattern, which checks what the cockpit was told, and the proof that tasks and their data are loaded only when read |
+| `CockpitSimulator.java`                             | new: starts the dev shell simulator of the cockpit for the test                                                                                                                         |
+| `ReportRecorder.java`                               | new: keeps a copy of every report on its way to the simulator                                                                                                                           |
+| `loan-approval/pom.xml`                             | `business-cockpit-spring-boot-support` and Freemarker; the cockpit adapter next to the BPMS adapter; the simulator for the test                                                         |
+| `application/pom.xml`                               | the cockpit adapter next to the BPMS adapter in every profile                                                                                                                           |
 
 Drafts work as in the base blueprint and are left out here, so the forms have no PUT.
 
@@ -326,21 +327,21 @@ What the cockpit got is in the log of the simulator, and in its API at
 
 ## How it works
 
-|                                           File                                           |                                                 Role                                                  |
-|------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn`   | the process: three user tasks, each with its task definition, and the boundary event which hands over |
-| `.../loanapproval/WorkflowTaskHandler.java`                                              | the `@WorkflowTask` methods, and how each user task is organized in the cockpit                       |
-| `.../loanapproval/Service.java`                                                          | writes who did what into the aggregate, and refuses an approval by the user who assessed the risk     |
-| `.../loanapproval/Workflow.java`                                                         | `ProcessService` and `BusinessCockpitService`, the only place either is used                          |
-| `.../loanapproval/UserTaskFormController.java`                                           | the endpoints of the forms; GET lets in the authority or an earlier editor, POST needs the authority  |
-| `.../loanapproval/UserTaskAccess.java`                                                   | whether a user worked on a task before                                                                |
-| `.../loanapproval/model/Aggregate.java`                                                  | everything the details providers read                                                                 |
-| `.../loanapproval/model/usertask/Task.java`                                              | one user task, with its editors                                                                       |
-| `.../loanapproval/config/Permission.java`                                                | the authorities, which are the candidate groups as well                                               |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                      | the rules about time, the template directory, and the keys of the cockpit                             |
-| `loan-approval/src/main/resources/loan-approval/loan_approval/assessRisk/task-title.ftl` | the title of "Assess risk", with `task-title_de.ftl` next to it                                       |
-| `loan-approval/src/test/.../OrganizingUserTasksIT.java`                                  | one test per pattern                                                                                  |
-| `loan-approval/src/test/.../ReportRecorder.java`                                         | keeps what the module reported, for the assertions                                                    |
+|                                                        File                                                         |                                                 Role                                                  |
+|---------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn`                              | the process: three user tasks, each with its task definition, and the boundary event which hands over |
+| `.../loanapproval/WorkflowTaskHandler.java`                                                                         | the `@WorkflowTask` methods, and how each user task is organized in the cockpit                       |
+| `.../loanapproval/Service.java`                                                                                     | writes who did what into the aggregate, and refuses an approval by the user who assessed the risk     |
+| `.../loanapproval/Workflow.java`                                                                                    | `ProcessService` and `BusinessCockpitService`, the only place either is used                          |
+| `.../loanapproval/UserTaskFormController.java`                                                                      | the endpoints of the forms; GET lets in the authority or an earlier editor, POST needs the authority  |
+| `.../loanapproval/UserTaskAccess.java`                                                                              | whether a user worked on a task before                                                                |
+| `.../loanapproval/model/Aggregate.java`                                                                             | everything the details providers read                                                                 |
+| `.../loanapproval/model/usertask/Task.java`                                                                         | one user task, with its editors                                                                       |
+| `.../loanapproval/config/Permission.java`                                                                           | the authorities, which are the candidate groups as well                                               |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                                                 | the rules about time and the keys of the cockpit                                                      |
+| `loan-approval/src/main/resources/loan-approval/business-cockpit-templates/loan_approval/assessRisk/task-title.ftl` | the title of "Assess risk", with `task-title_de.ftl` next to it                                       |
+| `loan-approval/src/test/.../OrganizingUserTasksIT.java`                                                             | one test per pattern                                                                                  |
+| `loan-approval/src/test/.../ReportRecorder.java`                                                                    | keeps what the module reported, for the assertions                                                    |
 
 The order of events: the advisor starts a loan approval. `Service#request` writes the advisor as
 the advisor of the customer and as the last one who acted. The BPMS rates the loan and creates
