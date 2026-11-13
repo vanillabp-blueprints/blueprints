@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+# The addresses of the systems around the module are not here. The integration test asks where
+# the simulator runs and sets them before the application starts.
+vanillabp:
+  # Every report to the cockpit goes through the outbox first. A short poll interval lets the
+  # test see the reports a moment after they were written. An application keeps the default.
+  outbox:
+    poll-interval: PT0.2S
+logging:
+  level:
+    blueprint: INFO

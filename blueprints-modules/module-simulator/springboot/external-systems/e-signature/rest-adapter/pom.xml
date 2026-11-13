@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+    <artifactId>module-simulator</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>e-signature-rest-adapter</artifactId>
+  <name>Adapter 'e-signature' over REST</name>
+  <description>Implements the port 'e-signature' with a REST client, and takes the callback of the e-signature service. The same adapter talks to the simulator and to the real system, only the addresses differ.</description>
+
+  <dependencies>
+    <!-- The port this adapter implements, and the one it calls back into. -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+      <artifactId>e-signature-port</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!-- The REST client of Spring, and JSON. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-restclient</artifactId>
+    </dependency>
+    <!-- The endpoint the e-signature service calls back. The application runs it. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+  </dependencies>
+</project>

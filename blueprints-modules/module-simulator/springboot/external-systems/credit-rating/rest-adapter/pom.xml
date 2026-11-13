@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+    <artifactId>module-simulator</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>credit-rating-rest-adapter</artifactId>
+  <name>Adapter 'credit rating' over REST</name>
+  <description>Implements the port 'credit rating' with a REST client. The same adapter talks to the simulator and to the real system, only the address differs.</description>
+
+  <dependencies>
+    <!-- The port this adapter implements. -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+      <artifactId>credit-rating-port</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!-- The REST client of Spring, and JSON. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-restclient</artifactId>
+    </dependency>
+  </dependencies>
+</project>

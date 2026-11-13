@@ -44,6 +44,7 @@ Checked for every '<group>/<blueprint-id>/<platform>/', across all of its source
 
 A source root is '<module>/src/<set>/resources' in a blueprint of several Maven modules,
 and 'src/<set>/resources' in a blueprint which is one module itself, like module-standalone.
+A module which runs no BPMS is left out, see MODULES_WITHOUT_A_BPMS.
 
 The twins of a blueprint are compared too, because each twin can agree with itself and
 still run another mode than its twin. That is what the Quarkus twins of the bpmn-*
@@ -77,6 +78,12 @@ SETTING = "name-clash-avoidance"
 # What an adapter does when no profile names the setting. It is the mode VanillaBP 1
 # deployed, which is why it is the default, and it is not the mode most blueprints want.
 DEFAULT_MODE = "by-adapter"
+
+# The Maven modules which run no BPMS at all, by the name of their directory. Their
+# 'application.yaml' configures another application, so no profile of a BPMS applies to them.
+# 'simulator' is the simulator of module-simulator, which plays the systems around the
+# application and runs no workflow.
+MODULES_WITHOUT_A_BPMS = ("simulator",)
 
 
 def merged(base, overlay):
@@ -152,6 +159,7 @@ def check_blueprint(blueprint, errors, root):
         for resources in sorted([*blueprint.glob("*/src/*/resources"),
                                  *blueprint.glob("src/*/resources")])
         if (resources / BASE_FILE).exists() or any(resources.glob(PROFILE_FILE))
+        if resources.parents[2].name not in MODULES_WITHOUT_A_BPMS
     ]
     profiles = sorted({
         profile.stem[len(PROFILE_PREFIX):]

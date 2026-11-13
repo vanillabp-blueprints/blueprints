@@ -243,6 +243,9 @@ every profile of every source root of a blueprint, main and test, and fails on a
 python3 bin/check_scoping_modes.py
 ```
 
+A Maven module which runs no BPMS has no BPMS profile to compare. The simulator of
+`module-simulator` is such a module, and `MODULES_WITHOUT_A_BPMS` in the script names it.
+
 It found `module-bpms-migration`, whose `camunda7` profile set `use-prefix` while its
 `camunda8` profile named nothing. So the migration the blueprint shows lost the message of
 every loan approval started before the switch. Later it found 42 test source roots which ran
@@ -360,6 +363,11 @@ A new family of blueprints may start on one platform. Its twins then come in a p
 own, as the Quarkus twins of the first families did. `CATEGORIES_BEFORE_THEIR_TWIN_PHASE` in the
 script names such a category, today `cockpit`. There a twin may be missing while the index says
 `planned` for it. Take the category out of the list when its twin phase starts.
+
+A single blueprint may also start on one platform, when it comes after the twin phase of its
+category. `BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE` names it, today `module-simulator`. The rule is
+the same: the index says `planned` for the missing twin, and the blueprint leaves the list when
+its twin is written.
 
 Where both twins are there, it compares their Java sources after removing package lines,
 imports and comments. So a different import or a Javadoc written for one platform is never a

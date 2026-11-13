@@ -1,0 +1,71 @@
+openapi: 3.0.3
+info:
+  title: E-signature
+  version: 1
+  description: |
+    The API of the e-signature service, as its vendor would publish it. Two parts of this blueprint follow it: the adapter in 'rest-adapter', which talks to it and takes its callback, and the simulator, which plays it. In a real project this file comes from the vendor.
+servers:
+  - url: /e-signature
+paths:
+  /api/v1/envelopes:
+    post:
+      operationId: createEnvelope
+      summary: Hands a document over for signing
+      description: |
+        The service takes the document and answers at once. When the signer signed, the service posts a Callback to the callbackUrl of the envelope.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Envelope"
+      responses:
+        "202":
+          description: The document waits for its signature
+      callbacks:
+        signed:
+          '{$request.body#/callbackUrl}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: "#/components/schemas/Callback"
+              responses:
+                "204":
+                  description: The receiver took the report
+                "404":
+                  description: The receiver does not know the contract
+components:
+  schemas:
+    Envelope:
+      type: object
+      required:
+        - contractId
+        - signer
+        - document
+        - callbackUrl
+      properties:
+        contractId:
+          type: string
+          description: The id the caller gives the document. The callback carries
+            it.
+        signer:
+          type: string
+        document:
+          type: string
+        callbackUrl:
+          type: string
+    Callback:
+      type: object
+      required:
+        - contractId
+        - status
+      properties:
+        contractId:
+          type: string
+        status:
+          type: string
+          enum:
+            - SIGNED

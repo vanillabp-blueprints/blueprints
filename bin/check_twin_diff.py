@@ -33,6 +33,10 @@ first families did. While a category is listed in CATEGORIES_BEFORE_THEIR_TWIN_P
 the index says 'planned' for may be missing. Take the category out of the list when its twin
 phase starts, and the check is strict for it again.
 
+A single blueprint may start on one platform in the same way, when it comes after the twin
+phase of its category. BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE names it, and the index says
+'planned' for its missing twin. Take it out of the list when its twin is written.
+
 Usage: bin/check_twin_diff.py [blueprints.yaml]
                                          fail on every unapproved difference (CI)
        bin/check_twin_diff.py --update   write the approvals, keeping the reasons already
@@ -52,6 +56,11 @@ ALLOW_FILE = "twin-diff-allow.txt"
 # phase of their own. A twin the index says 'planned' for may be missing there, nowhere else.
 # 'cockpit' started on Spring Boot. Its Quarkus twins follow in the Quarkus phase.
 CATEGORIES_BEFORE_THEIR_TWIN_PHASE = ("cockpit",)
+
+# The blueprints which exist on one platform so far, in a category whose twin phase is over.
+# A twin the index says 'planned' for may be missing there. 'module-simulator' started on
+# Spring Boot, and its Quarkus twin is written later.
+BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE = ("module-simulator",)
 
 TODO_REASON = "TODO: say why the twins differ here"
 
@@ -254,7 +263,8 @@ def planned_in_a_later_phase(index_file):
     """The twins which may still be missing, as (blueprint id, platform).
 
     A twin may be missing if the index says 'planned' for it and its blueprint belongs to a
-    category listed in CATEGORIES_BEFORE_THEIR_TWIN_PHASE. Returns None if no index was given.
+    category listed in CATEGORIES_BEFORE_THEIR_TWIN_PHASE or is listed in
+    BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE itself. Returns None if no index was given.
     """
 
     if index_file is None:
@@ -267,6 +277,7 @@ def planned_in_a_later_phase(index_file):
         (blueprint["id"], platform)
         for blueprint in index["blueprints"]
         if blueprint.get("category") in CATEGORIES_BEFORE_THEIR_TWIN_PHASE
+        or blueprint["id"] in BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE
         for platform in PLATFORMS
         if blueprint["platforms"][platform]["status"] == "planned"
     }
@@ -311,8 +322,8 @@ def main():
             elif all((blueprint_directory.name, platform) in later for platform in missing):
                 print(
                     f"{display}: only '{platforms[0]}' exists. The index says"
-                    f" '{', '.join(missing)}' is planned, and the twins of its category come in"
-                    " a phase of their own")
+                    f" '{', '.join(missing)}' is planned, and its twin comes in a phase of its"
+                    " own")
             else:
                 unpaired.append((display, missing))
             continue
