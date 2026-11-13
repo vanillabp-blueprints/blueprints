@@ -12,7 +12,8 @@ agent which copies the blueprint into an application. Its sections are fixed, an
 
 A workflow module depends on `io.vanillabp:vanillabp-spring-boot-support` or
 `io.vanillabp:vanillabp-quarkus-support`. If its user tasks are shown in the Business Cockpit,
-it also depends on `io.vanillabp.businesscockpit:support`. These libraries know no BPMS.
+it also depends on `io.vanillabp.businesscockpit:business-cockpit-spring-boot-support`. These
+libraries know no BPMS.
 
 An adapter is a different thing. It connects the module to one BPMS or to the cockpit for one
 BPMS, for example `camunda8-adapter-spring-boot` or
@@ -29,6 +30,15 @@ blueprint copies the rule with the rest of its POM.
 
 One blueprint is the exception: `module-standalone`. There the application is the workflow
 module, so it names the adapters like any application, and it has no such rule.
+
+## The service class says `@Transactional`
+
+Put `@Transactional` on the class of every business service in a workflow module, instead of
+on its methods. A method which throws a `TaskException` gets
+`@Transactional(noRollbackFor = TaskException.class)` on Spring Boot and
+`@Transactional(dontRollbackOn = TaskException.class)` on Quarkus. Without it the transaction of
+the task is marked for rollback, and VanillaBP fails the task. Never annotate the task handler.
+Rule 6 in `CONTRIBUTING.md` says why, and names the one exception, `persistence-custom`.
 
 ## How we write
 

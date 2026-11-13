@@ -56,15 +56,17 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `Aggregate.java`                        | `ratedBy` and `rejectionReason` in addition to the rating                                                        |
 | `LoanApprovalIT.java`                   | one test per outcome, with a simulator standing in for the provider                                              |
 
-The one difference worth understanding is the missing `@Transactional`. VanillaBP runs a task
-handler in a transaction it owns, and commits it for a `TaskException` on purpose. A
-transaction declared by the application would roll that back. It would throw away the rejection
-which the process is about to react to.
+The one difference worth understanding is where `@Transactional` is, and where it is not.
+VanillaBP runs a task handler in a transaction it owns, and commits it for a `TaskException` on
+purpose. A plain `@Transactional` would roll that back. It would throw away the rejection which
+the process is about to react to. So the handler has none. `Service` says `@Transactional` on
+the class, and `assessCreditRating` overrides it with
+`@Transactional(dontRollbackOn = TaskException.class)`.
 
 You do not have to remember that. An annotation on the handler or its class fails the boot with
-a message which names the method. One on a bean the handler calls fails the task while it runs.
-In the past such an annotation made a rejected loan look untouched in the database. Now it
-stops the application instead.
+a message which names the method. A plain one on a bean the handler calls fails the task while
+it runs. In the past such an annotation made a rejected loan look untouched in the database. Now
+it stops the application instead.
 
 ## Running it
 

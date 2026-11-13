@@ -70,9 +70,10 @@ catches is a valid outcome.
 2. Decide where to keep the data which the waiting workflows will need. **A signal transports
    nothing**, not even by way of an aggregate, because the sender has none. The answer is
    ordinary application data, which the task behind the catch event reads.
-3. Add a method to `Service` which stores that data and only then calls `Workflow`. Annotate it
-   with `@Transactional`. On a remote BPMS (business process management system) the broadcast
-   is sent after the commit. So the data is in place before any workflow reads it.
+3. Add a method to `Service` which stores that data and only then calls `Workflow`. It runs in a
+   transaction, because `Service` says `@Transactional` on the class. On a remote BPMS (business
+   process management system) the broadcast is sent after the commit. So the data is in place
+   before any workflow reads it.
 4. Add the `sendSignal` call to `Workflow`, and keep the signal name there as a constant. The
    method takes no workflow aggregate. Giving it one would be a design error, not a missing
    parameter.

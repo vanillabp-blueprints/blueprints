@@ -303,6 +303,25 @@ Then the next machine which needs another version passes `-Dmongodb.image=mongo:
 blueprint stays as it is. Where a platform starts the container for you, as Quarkus does with
 its dev services, let it. The version then comes with the platform and moves with it.
 
+## Rule 6: the service class says `@Transactional`
+
+Every business service of a workflow module carries `@Transactional` on the class, not on its
+methods. That is the class `Service`, and any other service class a blueprint has. A method
+called by a workflow task already runs in the transaction VanillaBP opened for the task, and it
+joins that transaction. The annotation still shows the reader that the method needs one.
+
+A method which throws a `TaskException` gets an annotation of its own:
+`@Transactional(noRollbackFor = TaskException.class)` on Spring Boot,
+`@Transactional(dontRollbackOn = TaskException.class)` on Quarkus. VanillaBP commits the
+transaction of a task for a `TaskException` on purpose, so the process can react to what the
+method wrote. A plain `@Transactional` would mark that transaction for rollback, and VanillaBP
+would fail the task. The attribute says this in the code, next to the `throw`.
+
+The task handler never carries `@Transactional`. VanillaBP fails the boot if it does.
+
+`persistence-custom` is the one exception. Its store is not part of a platform transaction. So
+its service opens the unit of work itself and carries no annotation.
+
 ## The test harness
 
 Every blueprint needs the same for that. So it is written once and copied:

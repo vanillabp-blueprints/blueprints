@@ -173,11 +173,13 @@ the workflow in the same transaction, so an aggregate without a workflow, or the
 round, cannot happen. The BPMS then reaches the service task and calls
 `WorkflowTaskHandler#retrieveCreditRating`, which does nothing but hand over to
 `Service#assessCreditRating`, with the aggregate loaded before and saved after the call. This
-happens in a transaction VanillaBP owns, so neither of the two classes declares one of its own.
-Only the method the API calls does, because starting a workflow has to run in a transaction. If
+happens in a transaction VanillaBP owns, so the handler declares none of its own. `Service` says
+`@Transactional` on the class. A method the handler calls joins the transaction of the task, and
+a method the API calls gets one, because starting a workflow needs it. A method of `Service`
+which throws a `TaskException` needs `@Transactional(noRollbackFor = TaskException.class)`. If
 you put `@Transactional` on a task handler anyway, the boot fails with a message naming the
-method. If you put it on a bean the handler calls, the task fails while it runs. So VanillaBP
-enforces this rule, and you do not have to remember it.
+method. If a plain one on a bean the handler calls meets a `TaskException`, the task fails while
+it runs. So VanillaBP enforces this rule, and you do not have to remember it.
 
 The test waits instead of asserting at once, and that is on purpose. A BPMS runs tasks in its
 own transactions, and a remote one runs them some time later. A test which assumes otherwise
