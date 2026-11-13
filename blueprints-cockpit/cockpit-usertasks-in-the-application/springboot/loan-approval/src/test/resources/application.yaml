@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    # No database session stays open while a response is written. The tasks of a loan
+    # approval and their data are loaded only when read, so every read has to happen inside
+    # a transaction of the service. This setting makes a read outside of one fail at once,
+    # instead of working by chance in a web request and failing anywhere else.
+    open-in-view: false
+logging:
+  level:
+    blueprint.workflowmodule: INFO
