@@ -23,17 +23,24 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  *
  * <p>
- * Note where {@code @Transactional} sits. It is on the method the API calls, because
- * starting a workflow has to run in a transaction. It is deliberately absent from
- * {@link #assessCreditRating}: VanillaBP already runs a task handler in a transaction of
- * its own, and a second one declared here would roll back on {@code TaskException} and
- * throw away exactly the state the BPMN error is supposed to leave behind. VanillaBP sees
- * the transaction it can no longer commit and fails the task naming it, so the mistake shows
- * up rather than costing data.
+ * Every method runs in a transaction, so the class says {@code @Transactional}. A method
+ * called by a workflow task already runs in the transaction VanillaBP opened for it and joins
+ * it, but the annotation still shows that the method needs one.
+ * </p>
+ *
+ * <p>
+ * {@link #assessCreditRating} throws a {@code TaskException} when the rating is too low, and
+ * that is the subject of this blueprint. So it says
+ * {@code @Transactional(dontRollbackOn = TaskException.class)}. VanillaBP commits its
+ * transaction for that exception on purpose, so what the method wrote before is kept for the
+ * process to react to. A plain {@code @Transactional} would mark the transaction for rollback
+ * instead. VanillaBP sees the transaction it can no longer commit and fails the task naming
+ * it, so the mistake shows up rather than costing data.
  * </p>
  */
 @Slf4j
 @ApplicationScoped
+@Transactional
 public class Service {
 
   /**
@@ -61,7 +68,6 @@ public class Service {
    * @param loanRequestId The natural id of the loan request.
    * @param amount        The amount requested.
    */
-  @Transactional
   public void request(
       final String loanRequestId,
       final int amount) {
@@ -102,6 +108,7 @@ public class Service {
    * @param loanApproval The loan approval to rate.
    * @param provider     The rating provider to ask, mapped in the BPMN.
    */
+  @Transactional(dontRollbackOn = TaskException.class)
   public void assessCreditRating(
       final Aggregate loanApproval,
       final String provider) {

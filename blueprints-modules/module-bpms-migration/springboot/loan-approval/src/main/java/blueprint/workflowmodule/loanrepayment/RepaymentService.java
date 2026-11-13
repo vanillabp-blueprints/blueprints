@@ -13,9 +13,16 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * The business service of the repayment use case. Deliberately small: this workflow is part
  * of the blueprint because of where it runs, not because of what it does.
+ *
+ * <p>
+ * Every method runs in a transaction, so the class says {@code @Transactional}. A method
+ * called by a workflow task already runs in the transaction VanillaBP opened for it and joins
+ * it, but the annotation still shows that the method needs one.
+ * </p>
  */
 @Slf4j
 @org.springframework.stereotype.Service
+@Transactional
 public class RepaymentService {
 
   @Autowired
@@ -30,7 +37,6 @@ public class RepaymentService {
    * @param repaymentId The natural id of the repayment.
    * @param amount      The amount owed.
    */
-  @Transactional
   public void initiate(
       final String repaymentId,
       final int amount) {
@@ -67,7 +73,6 @@ public class RepaymentService {
    * @param repaymentId The natural id of the repayment.
    * @return The adapter id of the BPMS running this workflow.
    */
-  @Transactional
   public Optional<String> bpmsHolding(
       final String repaymentId) {
 
@@ -93,7 +98,6 @@ public class RepaymentService {
    * @param repaymentId The natural id of the repayment.
    * @return The repayment, if it exists.
    */
-  @Transactional
   public Optional<Repayment> get(
       final String repaymentId) {
 

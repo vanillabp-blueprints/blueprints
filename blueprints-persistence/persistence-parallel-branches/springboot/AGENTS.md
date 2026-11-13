@@ -80,9 +80,10 @@ extends `WorkflowModuleTest`, never in the base class.
 4. Add a `@WorkflowTask` method per branch. Each calls `Service`, as everywhere else. Neither
    method may read or write what the other branch owns. If they have to, the split in step 2 is
    wrong.
-5. Never put `@Transactional` on the methods a task handler calls. The transaction of a task
-   belongs to VanillaBP. The methods the API calls do need one. If you choose a version
-   attribute instead of this data model, the retry belongs in that transaction.
+5. Put `@Transactional` on the class `Service`. The transaction of a task belongs to VanillaBP,
+   and a method the task handler calls joins it. The methods the API calls need a transaction of
+   their own, and the annotation opens it. If you choose a version attribute instead of this
+   data model, the retry belongs in that transaction.
 6. Copy `LoanApprovalIT` together with the simulator. A test which does not make the two
    transactions overlap does not test this at all. It passes on a fast machine and hides the
    defect. Let the application put the branches in order, both of them wait for it. Make one of
