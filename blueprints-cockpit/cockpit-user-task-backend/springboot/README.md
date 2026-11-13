@@ -118,8 +118,8 @@ a module reads itself. The keys below `vanillabp` belong to VanillaBP and the co
 and they refuse keys they do not read.
 
 This route is the same for every workflow module with a user interface. Only the id differs. So
-the `support` library of the Business Cockpit is the place for it. It does not have it yet. Once
-it does, the module will lose the class.
+the library `business-cockpit-spring-boot-support` of the Business Cockpit is the place for it. It
+does not have it yet. Once it does, the module will lose the class.
 
 The module's own test boots it the same way. `ModuleTestApplication` scans nothing, so the
 auto-configuration wires the module, as in every application which uses it.
