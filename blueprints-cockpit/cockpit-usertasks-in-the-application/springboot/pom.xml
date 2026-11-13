@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.2</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>io.vanillabp.blueprint.cockpit-usertasks-in-the-application-springboot</groupId>
+  <artifactId>cockpit-usertasks-in-the-application</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Blueprint: user tasks in the application</name>
+  <description>Several user tasks open at the same time, each one a row of its own next to the workflow aggregate, with a draft that reaches the aggregate only when the task is completed.</description>
+
+  <modules>
+    <module>loan-approval</module>
+    <module>application</module>
+  </modules>
+
+  <properties>
+    <!--
+      The name of the BPMS profile, set by every BPMS profile of the modules below. It is used
+      twice: the build filters it into 'application.yaml', so the application loads
+      'application-<bpms>.yaml', and the tests get it as a system property. That way the BPMS
+      is named ONCE, on the Maven command line.
+    -->
+    <bpms>none</bpms>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <java.version>21</java.version>
+    <!-- All VanillaBP artifacts are version managed by the VanillaBP BOM. -->
+    <vanillabp.version>2.0.0-SNAPSHOT</vanillabp.version>
+    <!-- BPMS adapters are released independently of the platform, so they carry their own version. -->
+    <camunda7-adapter.version>2.0.0-SNAPSHOT</camunda7-adapter.version>
+    <camunda8-adapter.version>2.0.0-8.10-SNAPSHOT</camunda8-adapter.version>
+    <cibseven-adapter.version>2.0.0-2.2-SNAPSHOT</cibseven-adapter.version>
+    <operaton-adapter.version>2.0.0-SNAPSHOT</operaton-adapter.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.vanillabp</groupId>
+        <artifactId>vanillabp-bom</artifactId>
+        <version>${vanillabp.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <plugins>
+      <!--
+        A blueprint must never show a deprecated API - it is copied, and what is copied
+        spreads. Making the compiler say so is cheaper than noticing it years later.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <!--
+            Lombok is an annotation processor found on the classpath. A JDK 23 or newer does not
+            run such a processor unless the build says so, and then the getters and the logger it
+            writes are simply absent. Saying it here keeps the blueprint building on every JDK
+            from 21 upwards.
+          -->
+          <proc>full</proc>
+          <compilerArgs>
+            <arg>-Xlint:deprecation,removal</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <!-- The BPMS profile of the build, so a test loads the same configuration as the application. -->
+            <spring.profiles.active>${bpms}</spring.profiles.active>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <!-- Tests named *IT are integration tests and run in 'verify', not in 'test'. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <!-- The BPMS profile of the build, for the same reason surefire gets it: an
+                 integration test has to read the configuration the application reads,
+                 'application-<bpms>.yaml' included. Without it the profile files are never
+                 loaded and the adapter is only configured where the environment happens to
+                 provide it. -->
+            <spring.profiles.active>${bpms}</spring.profiles.active>
+          </systemPropertyVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        A workflow module never depends on an adapter, neither on a BPMS adapter nor on a
+        cockpit adapter. Its tests may use one, so the test scope is allowed. Outside the
+        tests, the application brings the adapters. This rule breaks the build if a module
+        of this blueprint names an adapter outside the test scope, directly or through
+        another dependency. The application module switches the rule off.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>no-adapter-in-a-workflow-module</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>io.vanillabp*:*-adapter-spring-boot*</exclude>
+                    <exclude>io.vanillabp*:*-adapter-quarkus*</exclude>
+                  </excludes>
+                  <includes>
+                    <include>io.vanillabp*:*-adapter-spring-boot*:*:*:test</include>
+                    <include>io.vanillabp*:*-adapter-quarkus*:*:*:test</include>
+                  </includes>
+                  <message>A workflow module depends on an adapter only in the test scope. The application brings the adapters.</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!--
+    The BPMS is a Maven profile, never a code change: '-Pcamunda7' (the default) or
+    '-Pcamunda8'. Not a single Java file of this blueprint differs between them - only
+    which adapter is on the classpath and which directory the BPMN files are read from.
+
+    The profiles are declared by the modules which need the adapter: the application, and
+    the workflow module for the sake of its test. Declaring them here as well would only
+    repeat the choice in a place that does not act on it.
+  -->
+</project>
