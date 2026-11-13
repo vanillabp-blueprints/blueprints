@@ -69,8 +69,8 @@ Blueprint-specific names, each occurring in more than one place:
    the train the cockpit takes. The comment in `pom.xml` says why it is not newer.
 4. Make sure the workflow module brings `UserInterfaceRouteAutoConfiguration`, as
    `cockpit-user-task-backend` shows. Do not write a route in the application. The route class
-   is the same for every module. The `support` library of the Business Cockpit is the place for
-   it, but it does not have it yet.
+   is the same for every module. The library `business-cockpit-spring-boot-support` of the
+   Business Cockpit is the place for it, but it does not have it yet.
 5. Add `<workflow-module-id>.user-interface.address` to `application.yaml`, once per module, and
    set it per stage, for example by an environment variable.
 6. Copy `UserInterfaceProxyIT` and the property `user-interface.image` in `pom.xml`. Point the

@@ -27,9 +27,16 @@ import lombok.extern.slf4j.Slf4j;
  * Nothing here knows the loan approval. The answer is published, not delivered: a module
  * which knew its callers could not be deployed without them.
  * </p>
+ *
+ * <p>
+ * Every method runs in a transaction, so the class says {@code @Transactional}. A method
+ * called by a workflow task already runs in the transaction VanillaBP opened for it and joins
+ * it, but the annotation still shows that the method needs one.
+ * </p>
  */
 @Slf4j
 @ApplicationScoped
+@Transactional
 public class Service implements RiskAssessments {
 
   @Inject
@@ -45,7 +52,6 @@ public class Service implements RiskAssessments {
   Event<RiskAssessed> events;
 
   @Override
-  @Transactional
   public void request(
       final String caseId,
       final int amount) {
@@ -106,7 +112,6 @@ public class Service implements RiskAssessments {
    * @param caseId The id of the case.
    * @return The assessment, if it exists.
    */
-  @Transactional
   public Optional<Aggregate> get(
       final String caseId) {
 

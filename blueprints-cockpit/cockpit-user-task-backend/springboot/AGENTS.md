@@ -64,7 +64,7 @@ controllers in line, or a form reaches nothing.
 |                             File                             |                                                                    Purpose                                                                    |
 |--------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
 | `pom.xml` (blueprint root)                                   | the VanillaBP BOM import, the versions of the BPMS adapters and of the cockpit adapters, the rule which keeps every adapter in the test scope |
-| `loan-approval/pom.xml`                                      | `vanillabp-spring-boot-support` and the cockpit `support`; per BPMS profile both adapters for the test                                        |
+| `loan-approval/pom.xml`                                      | `vanillabp-spring-boot-support` and `business-cockpit-spring-boot-support`; per BPMS profile both adapters for the test                       |
 | `loan-approval/src/test/resources/application.yaml`          | the database, a short outbox poll interval, the address of the simulator                                                                      |
 | `loan-approval/src/test/resources/application-camunda7.yaml` | the Camunda 7 settings of the test, and the same file per other BPMS                                                                          |
 | `loan-approval/src/test/resources/dev-shell-simulator.yaml`  | the users the simulator knows. It does not start without one                                                                                  |
@@ -83,11 +83,11 @@ module a second time, under another name.
    `src/main/resources/openapi/<workflow-module-id>.yaml`. Give it the server
    `/wm/<workflow-module-id>`. The frontend reads this file through a git submodule of the
    backend repository. The test of the workflow module reads it from the classpath.
-2. Add `io.vanillabp.businesscockpit:support` to the workflow module. Add the cockpit adapter
-   of your BPMS next to the BPMS adapter, wherever the BPMS adapter is declared:
-   `businesscockpit-<bpms>-adapter-spring-boot`. In the workflow module, both adapters stay in
-   the test scope. The rule `no-adapter-in-a-workflow-module` of the blueprint POM breaks the
-   build otherwise.
+2. Add `io.vanillabp.businesscockpit:business-cockpit-spring-boot-support` to the workflow
+   module. Add the cockpit adapter of your BPMS next to the BPMS adapter, wherever the BPMS
+   adapter is declared: `businesscockpit-<bpms>-adapter-spring-boot`. In the workflow module,
+   both adapters stay in the test scope. The rule `no-adapter-in-a-workflow-module` of the
+   blueprint POM breaks the build otherwise.
 3. Write the keys below `vanillabp.workflow-modules.<workflow-module-id>.cockpit` into the
    module's own configuration file: `workflow-module-uri` ending with `/<workflow-module-id>`,
    `ui-uri-type`, `ui-uri-path`, `i18n-languages`, `bpmn-description-language` and
@@ -107,8 +107,8 @@ module a second time, under another name.
    module id. The scans of `LoanApprovalAutoConfiguration` name the package of the module by its
    `Service`, so they still find every class of the module. Add
    `spring-cloud-gateway-server-webmvc` to the module as an optional dependency, with the
-   Spring Cloud BOM. The route class is the same for every module. The `support` library of the
-   Business Cockpit does not have it yet.
+   Spring Cloud BOM. The route class is the same for every module. The library
+   `business-cockpit-spring-boot-support` does not have it yet.
 9. Copy `CockpitSimulator`, `dev-shell-simulator.yaml` and the dependency plugin execution of
    `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the test
    which checks every OpenAPI operation against the endpoints.

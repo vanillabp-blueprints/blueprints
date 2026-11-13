@@ -44,7 +44,7 @@ says something about that where it brought the persistence itself.
 |--------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | extends `PanacheEntityBase`, natural ID as `@Id`, plus the typed finder `byId`. There is deliberately no repository next to it |
 | `loan-approval/src/main/java/.../credithistory/model/Aggregate.java`                       | extends `PanacheMongoEntityBase`, natural ID as `@BsonId`, plus `byId`. The second use case, stored in MongoDB                 |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `get` calls `Aggregate.byId` and carries the `@Transactional` the finder needs; the task path carries none                     |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `get` calls `Aggregate.byId`; the `@Transactional` of the class gives the finder its transaction                               |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | reads through `Aggregate::byId` and asserts that a workflow started on a remote engine keeps its aggregate                     |
 | `loan-approval/src/test/java/.../CreditHistoryIT.java`                                     | the same two assertions for the aggregate MongoDB stores                                                                       |
 | `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the process, one service task. Unchanged from the base blueprint                                                               |
@@ -87,13 +87,14 @@ extends `WorkflowModuleTest`, never in the base class.
 4. Put a finder on the aggregate for every question the application asks. Name it after the
    question (`byId` here), not after the query. The inherited `findByIdOptional` is generic and
    gives the caller a `PanacheEntityBase`, which is not worth reading.
-5. Give every method which reads the aggregate a transaction: `@Transactional` on the business
-   method the API calls, as `Service#get` shows. Without one, the finder has nothing to read
-   from. The failure then happens at runtime, not at compile time.
-6. Leave the task path alone. `@WorkflowTask` methods and the business methods they call must
-   not declare a transaction. VanillaBP owns the one a task runs in and commits it for a
-   `TaskException`. A transaction of yours would roll that back. VanillaBP fails the boot if
-   the handler has such an annotation, and fails the task if a method further down has one.
+5. Give every method which reads the aggregate a transaction: `@Transactional` on the class of
+   the business service, as `Service` shows. Without one, the finder has nothing to read from.
+   The failure then happens at runtime, not at compile time.
+6. Leave the task path alone. `@WorkflowTask` methods must not declare a transaction. VanillaBP
+   owns the one a task runs in and commits it for a `TaskException`. A transaction of yours
+   would roll that back. The business methods they call join it through the annotation of their
+   class. VanillaBP fails the boot if the handler has such an annotation. It fails the task if a
+   method further down has a plain one and a `TaskException` passes it.
 7. The workflow module needs `quarkus-hibernate-orm-panache`. The index of its classes
    (`jandex-maven-plugin`) makes the aggregate visible at build time. Without the index the
    idiom cannot be resolved, and the build ends with a message about it.

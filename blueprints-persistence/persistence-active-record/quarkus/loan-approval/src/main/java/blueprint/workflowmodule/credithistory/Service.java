@@ -20,14 +20,14 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  *
  * <p>
- * The transactions sit where they sit in the loan approval, and for the same reason: on the
- * methods the API calls, because starting a workflow needs one and reading an active record
- * needs one too, and never on the methods a task handler calls, because VanillaBP owns that
- * transaction.
+ * The transaction sits where it sits in the loan approval, and for the same reason: on the
+ * class, so every method runs in one. Reading an active record needs one, and a method a task
+ * handler calls joins the one VanillaBP opened for the task.
  * </p>
  */
 @Slf4j
 @ApplicationScoped
+@Transactional
 public class Service {
 
   /** Credit histories are reported quarterly, so a year contributes four entries. */
@@ -42,7 +42,6 @@ public class Service {
    * @param creditHistoryId The natural id of the request.
    * @param years           How many years back the customer asked for.
    */
-  @Transactional
   public void request(
       final String creditHistoryId,
       final int years) {
@@ -86,7 +85,6 @@ public class Service {
    * @param creditHistoryId The natural id of the request.
    * @return The credit history, if it exists.
    */
-  @Transactional
   public Optional<Aggregate> get(
       final String creditHistoryId) {
 
