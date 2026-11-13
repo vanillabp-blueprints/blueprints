@@ -27,14 +27,21 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  *
  * <p>
- * Note where {@code @Transactional} sits. It is on the methods an API calls, because starting a
- * workflow, completing a user task and correlating a message have to run in a transaction. It is
- * deliberately absent from the method a task handler calls: VanillaBP already runs a task in a
- * transaction it owns.
+ * Every method runs in a transaction, so the class says {@code @Transactional}. Starting a
+ * workflow, completing a user task and correlating a message need one. The method a task handler
+ * calls already runs in the transaction VanillaBP opened for the task and joins it, but the
+ * annotation still shows that the method needs one.
+ * </p>
+ *
+ * <p>
+ * No method here throws a {@code TaskException}. One which does, so the process can react,
+ * needs {@code @Transactional(noRollbackFor = TaskException.class)}: VanillaBP commits its
+ * transaction for that exception, and a plain {@code @Transactional} would mark it for rollback.
  * </p>
  */
 @Slf4j
 @org.springframework.stereotype.Service
+@Transactional
 public class Service {
 
   /** What became of a request to end a case. */
@@ -60,7 +67,6 @@ public class Service {
    * @param applicant     Who asks for the loan.
    * @param amount        The amount requested.
    */
-  @Transactional
   public void request(
       final String loanRequestId,
       final String applicant,
@@ -108,7 +114,6 @@ public class Service {
    * @param loanRequestId The natural id of the loan request.
    * @return {@link Change#NOT_POSSIBLE} if the user task is not open.
    */
-  @Transactional
   public Change approve(
       final String loanRequestId) {
 
@@ -140,7 +145,6 @@ public class Service {
    * @param loanRequestId The natural id of the loan request.
    * @return {@link Change#NOT_POSSIBLE} if the case ended before.
    */
-  @Transactional
   public Change cancel(
       final String loanRequestId) {
 

@@ -26,8 +26,9 @@ import io.vanillabp.spi.service.WorkflowTask;
  * </p>
  *
  * <p>
- * There is no {@code @Transactional} here, and adding one would be a mistake. VanillaBP loads
- * the aggregate, runs the method and saves the aggregate in one transaction it owns.
+ * There is no {@code @Transactional} here. VanillaBP loads the aggregate, runs the method and
+ * saves the aggregate in one transaction it owns, and the method of {@link Service} called here
+ * joins it.
  * </p>
  *
  * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-task">Wire up a task</a>
