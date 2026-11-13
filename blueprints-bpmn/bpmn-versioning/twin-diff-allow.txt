@@ -7,7 +7,7 @@
 9fb1f8af132dae40  differs  application/src/test/java/blueprint/workflowmodule/ApplicationSmokeTest.java  # asking the bean container whether a ProcessService exists is done in the container's own words
 79a1a89cba757af0  only-springboot  application/src/test/java/blueprint/workflowmodule/SecondDeploymentIT.java  # only one platform lets a test boot the application twice, the first boot with an older model, which is what a second deployment is
 f6e4425d0b9d8fb8  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/ApiController.java  # the same GET endpoints, written with the HTTP annotations of the platform
-7f2e99f9e8c0b2df  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/Service.java  # bean and injection annotations, the configuration accessor, and the transaction reading an entity needs on Quarkus
+d0ed610914d1dad6  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/Service.java  # bean and injection annotations, the configuration accessor, and each platform's way of reading an entity by its id
 ff41610897ec70b7  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/Workflow.java  # bean and injection annotations only; both inject ProcessService here and nowhere else
 42d9ab2c68e075e8  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/WorkflowTaskHandler.java  # bean and injection annotations only; the VanillaBP annotations are identical, which is the point
 addb049b43d3d06e  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/config/LoanApprovalProperties.java  # configuration is bound to a class on one platform and to an interface on the other

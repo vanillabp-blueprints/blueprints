@@ -26,15 +26,21 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  *
  * <p>
- * Note where {@code @Transactional} sits. It is on the methods the API calls, because
- * starting a workflow and answering a task have to run in a transaction. It is deliberately
- * absent from the methods a task handler calls: VanillaBP already runs a task in a
- * transaction it owns, and a transaction declared here would break the guarantees that come
- * with it.
+ * Every method runs in a transaction, so the class says {@code @Transactional}. A method
+ * called by a workflow task already runs in the transaction VanillaBP opened for it and joins
+ * it, but the annotation still shows that the method needs one.
+ * </p>
+ *
+ * <p>
+ * No method here throws a {@code TaskException}. One which does, so the process can react,
+ * needs {@code @Transactional(dontRollbackOn = TaskException.class)}: VanillaBP commits its
+ * transaction for that exception, and a plain {@code @Transactional} would mark it for
+ * rollback.
  * </p>
  */
 @Slf4j
 @ApplicationScoped
+@Transactional
 public class Service {
 
   @Inject
@@ -55,7 +61,6 @@ public class Service {
    * @param loanRequestId The natural id of the loan request.
    * @param amount        The amount requested.
    */
-  @Transactional
   public void request(
       final String loanRequestId,
       final int amount) {
@@ -131,7 +136,6 @@ public class Service {
    * @param loanRequestId The natural id of the loan request.
    * @param approvedBy    Who approved.
    */
-  @Transactional
   public void approvePartnerRequest(
       final String loanRequestId,
       final String approvedBy) {
@@ -194,7 +198,6 @@ public class Service {
    *
    * @param loanRequestId The natural id of the loan request.
    */
-  @Transactional
   public void documentsReady(
       final String loanRequestId) {
 
@@ -271,7 +274,6 @@ public class Service {
    * @param loanRequestId The natural id of the loan request.
    * @return The loan approval, if it exists.
    */
-  @Transactional
   public Optional<Aggregate> get(
       final String loanRequestId) {
 

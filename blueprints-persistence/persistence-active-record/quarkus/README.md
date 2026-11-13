@@ -76,8 +76,9 @@ why nothing changed.
 most of all a transaction. Without it the application reads through the static finder of the
 aggregate. That needs a transaction or an active request context of its own:
 
-- The `get` methods of both `Service` classes carry `@Transactional`, as they do in the base
-  blueprint. Here it is not a formality. It is the only place left to declare the transaction.
+- Both `Service` classes carry `@Transactional` on the class, as they do in the base blueprint.
+  For the `get` methods it is not a formality. It is the only place left to declare the
+  transaction.
 - the integration tests read in a transaction of their own per poll. The shared test harness
   does that anyway. Without it, the finder would have nothing to read from.
 
