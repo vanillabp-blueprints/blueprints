@@ -48,7 +48,7 @@ after tasks were stored, or they can no longer be read.
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `lastActionBy` (the initiator), `advisor` (the assignee), `riskAssessedBy` (the excluded candidate), `requestedAt` and `answerPromisedBy` (the due dates)                           |
 | `loan-approval/src/main/java/.../loanapproval/model/usertask/Task.java`                    | `editors`: who worked on the task; the admitted users and the read access come from this one list                                                                                   |
 | `loan-approval/src/main/java/.../loanapproval/model/usertask/CallCustomerTaskData.java`    | `callAgainAt`, the follow-up date                                                                                                                                                   |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | writes the user who acted with every action; refuses the approval by the user who assessed the risk; the change of the advisor                                                      |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `@Transactional` on the class; writes the user who acted with every action; refuses the approval by the user who assessed the risk; the change of the advisor                       |
 | `loan-approval/src/main/java/.../loanapproval/Workflow.java`                               | `correlateMessage` for the change of the advisor; `BusinessCockpitService#aggregateChanged(loanRequest, taskId)` for changes the BPMS does not notice                               |
 | `loan-approval/src/main/java/.../loanapproval/UserTaskFormController.java`                 | GET with `@PreAuthorize("hasAuthority(...) or @userTaskAccess.mayRead(...)")`; `editable` tells which way let the user in; an editor is written when the form is delivered for work |
 | `loan-approval/src/main/java/.../loanapproval/UserTaskAccess.java`                         | reads only the editors of one task                                                                                                                                                  |
@@ -56,30 +56,36 @@ after tasks were stored, or they can no longer be read.
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the rules about time; `template-loader-path`; `i18n-languages`, `initiator-source: by-application` and the other keys of the cockpit                                                |
 | `loan-approval/src/main/resources/loan-approval/**/*.ftl`                                  | the templates: per task definition in `loan_approval/<task-definition>/`, for the whole module directly in `loan-approval/`, one file per language with `_de` in its name           |
 | `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | three user tasks with task definitions; a message boundary event on "Call customer" which leads back into it                                                                        |
-| `loan-approval/src/test/java/.../OrganizingUserTasksIT.java`                               | one test per pattern; asserts on what was reported to the cockpit                                                                                                                   |
+| `loan-approval/src/test/java/.../OrganizingUserTasksIT.java`                               | one test per pattern; asserts on what was reported to the cockpit; proves that tasks and their data are loaded only when read                                                       |
 | `loan-approval/src/test/java/.../ReportRecorder.java`                                      | keeps every report on its way to the dev shell simulator, because the simulator drops excluded candidates, admitted users and the kind of notification                              |
 
 ## Boilerplate files
 
-|                            File                             |                                                        Purpose                                                         |
-|-------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                  | the VanillaBP BOM import, the cockpit version and the rule which keeps adapters out of the workflow module             |
-| `loan-approval/pom.xml`                                     | `vanillabp-spring-boot-support`, `support` of the cockpit and Freemarker, never an adapter; both adapters for the test |
-| `application/pom.xml`                                       | the BPMS adapter and the cockpit adapter of the same BPMS, the only place a BPMS is named                              |
-| `application/src/main/java/.../Application.java`            | the Spring Boot application, in the parent package of the module                                                       |
-| `application/src/main/java/.../SecurityConfiguration.java`  | how users log in: HTTP Basic for `/api/**`, six demo users; replace it with the login of your application              |
-| `application/src/main/resources/application.yaml`           | the datasource, where the reports go, and the profile the Maven build filters in                                       |
-| `loan-approval/src/test/java/.../CockpitSimulator.java`     | starts the dev shell simulator of the cockpit for the test                                                             |
-| `loan-approval/src/test/resources/dev-shell-simulator.yaml` | the users of the simulator                                                                                             |
-| `loan-approval/src/test/java/.../TestApplication.java`      | the minimal application the module's test boots                                                                        |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`   | base class of the integration tests: waits for workflow progress                                                       |
-| `application/src/test/java/.../ApplicationSmokeTest.java`   | boots the application, which validates the BPMN-to-code wiring                                                         |
-| `docs/loan_approval.png`                                    | the picture of the process the README shows, rendered from the BPMN model                                              |
+|                            File                             |                                                                                    Purpose                                                                                     |
+|-------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                  | the VanillaBP BOM import, the cockpit version and the rule which keeps adapters out of the workflow module                                                                     |
+| `loan-approval/pom.xml`                                     | `vanillabp-spring-boot-support`, `support` of the cockpit and Freemarker, never an adapter; `hibernate-maven-plugin`, which makes `Task#data` lazy; both adapters for the test |
+| `application/pom.xml`                                       | the BPMS adapter and the cockpit adapter of the same BPMS, the only place a BPMS is named                                                                                      |
+| `application/src/main/java/.../Application.java`            | the Spring Boot application, in the parent package of the module                                                                                                               |
+| `application/src/main/java/.../SecurityConfiguration.java`  | how users log in: HTTP Basic for `/api/**`, six demo users; replace it with the login of your application                                                                      |
+| `application/src/main/resources/application.yaml`           | the datasource, `open-in-view: false`, where the reports go, and the profile the Maven build filters in                                                                        |
+| `loan-approval/src/main/java/.../loanapproval/support/`     | `UnknownTaskException`, `TaskNotOpenException` and their answers 404 and 409, as in the base blueprint                                                                         |
+| `loan-approval/src/test/java/.../StoredLoanApprovals.java`  | reads a loan approval for a test inside a transaction, with all tasks and their data                                                                                           |
+| `loan-approval/src/test/java/.../CockpitSimulator.java`     | starts the dev shell simulator of the cockpit for the test                                                                                                                     |
+| `loan-approval/src/test/resources/dev-shell-simulator.yaml` | the users of the simulator                                                                                                                                                     |
+| `loan-approval/src/test/java/.../TestApplication.java`      | the minimal application the module's test boots                                                                                                                                |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`   | base class of the integration tests: waits for workflow progress                                                                                                               |
+| `application/src/test/java/.../ApplicationSmokeTest.java`   | boots the application, which validates the BPMN-to-code wiring                                                                                                                 |
+| `docs/loan_approval.png`                                    | the picture of the process the README shows, rendered from the BPMN model                                                                                                      |
 
 `TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
 blueprint. Copy them unchanged.
 
 ## Adding this blueprint to an existing project
+
+Apply `cockpit-usertasks-in-the-application` first. The tasks and their data loaded lazily,
+`@Transactional` on `Service` and the package `support` come from there. The package `support`
+of the module is not the `support` library of the cockpit.
 
 1. Add `io.vanillabp.businesscockpit:support` and `org.freemarker:freemarker` to the workflow
    module. Add the cockpit adapter of your BPMS to the application, and to the module only in
@@ -95,7 +101,8 @@ blueprint. Copy them unchanged.
 4. Add one `@UserTaskDetailsProvider(taskDefinition = ...)` per task definition to the class
    with `@WorkflowService`. Set the initiator, the candidate group (the authority of the form),
    the assignee where the aggregate names one, the excluded candidates, the due date, the
-   notification delivery and the details. Only read the aggregate.
+   notification delivery and the details. Only read the aggregate. A provider runs inside the
+   transaction of VanillaBP, so it may read the tasks and their data.
 5. Add a `@WorkflowDetailsProvider` which sets the initiator as well.
 6. Put the title templates into `<module-id>/<bpmn-process-id>/<task-definition>/task-title.ftl`,
    one file per language with `_<language>` before `.ftl`. Pass a small record to
@@ -137,7 +144,8 @@ you report a failure of that profile as a defect of the generated code.
 - "Approve loan" excludes the user who assessed the risk, the module refuses that user, and
   another approver completes it,
 - a user who opened a form for work is an admitted user and may still read the form without
-  the authority, while a stranger is refused.
+  the authority, while a stranger is refused,
+- loading the aggregate loads no task, and reading a task does not load its data.
 
 If a title arrives as the name of the BPMN task, the template was not found: check the
 directory names against the module id, the process id and the task definition, and check

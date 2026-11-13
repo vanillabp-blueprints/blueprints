@@ -102,6 +102,24 @@
   <build>
     <plugins>
       <!--
+        Rewrites the compiled entities so that the persistence layer can load a single
+        attribute only when it is read. The data of a user task is such an attribute (see
+        Task#data): a form reads the data of its own task, and nobody else needs it. Without
+        this step, JPA loads every attribute with the row, whatever the entity asks for.
+      -->
+      <plugin>
+        <groupId>org.hibernate.orm</groupId>
+        <artifactId>hibernate-maven-plugin</artifactId>
+        <version>${hibernate.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>enhance</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
         Copies the runnable JAR of the dev shell simulator to target/, where the integration
         test starts it. It is not a dependency, because it is a whole application and none of
         its classes belong on the classpath of the test.

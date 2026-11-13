@@ -45,6 +45,12 @@ import blueprint.workflowmodule.loanapproval.model.usertask.Task;
  * <p>
  * Completing a task needs the authority, always. A POST is never let in by an earlier visit.
  * </p>
+ *
+ * <p>
+ * A task id which is unknown gets 404, a task which is not open any more gets 409. That is
+ * the same for every form, so {@code UserTaskExceptionHandler} of the package {@code support}
+ * answers it.
+ * </p>
  */
 @RestController
 @RequestMapping("/api/loan-approval/{loanRequestId}")
@@ -235,37 +241,6 @@ public class UserTaskFormController {
       final Authentication user) {
 
     loanApproval.decide(loanRequestId, taskId, input.approved(), input.comment(), user.getName());
-
-  }
-
-  /**
-   * A task id which does not belong to the loan request, or belongs to a task of another
-   * kind.
-   *
-   * @param e What the service found.
-   * @return The message, for the form to show.
-   */
-  @ExceptionHandler
-  @ResponseStatus(HttpStatus.NOT_FOUND)
-  public String unknownTask(
-      final Service.UnknownTask e) {
-
-    return e.getMessage();
-
-  }
-
-  /**
-   * A task which was completed or canceled before, for example a form sent twice.
-   *
-   * @param e What the service found.
-   * @return The message, for the form to show.
-   */
-  @ExceptionHandler
-  @ResponseStatus(HttpStatus.CONFLICT)
-  public String taskNotOpen(
-      final Service.TaskNotOpen e) {
-
-    return e.getMessage();
 
   }
 

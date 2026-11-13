@@ -20,6 +20,8 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.UserTaskFormController.ApproveLoanInput;
@@ -32,6 +34,7 @@ import blueprint.workflowmodule.loanapproval.model.usertask.ApproveLoanTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.CallCustomerTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.TaskData;
+import jakarta.persistence.EntityManagerFactory;
 
 /**
  * Plays every pattern of the blueprint through, each in a test of its own, and checks what the
@@ -59,7 +62,16 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
   private UserTaskFormController forms;
 
   @Autowired
+  private StoredLoanApprovals stored;
+
+  @Autowired
   private AggregateRepository loanApprovals;
+
+  @Autowired
+  private EntityManagerFactory entityManagerFactory;
+
+  @Autowired
+  private PlatformTransactionManager transactionManager;
 
   @DynamicPropertySource
   static void reportToTheSimulator(
@@ -177,7 +189,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     api.changeAdvisor(loanRequestId, "erin", logIn("lea", Permission.CHANGE_ADVISOR));
 
     final var loanRequest = awaitAggregate(
-        loanApprovals,
+        stored::find,
         loanRequestId,
         found -> found.getTask(firstCall).orElseThrow()
             .isCanceled() && openTaskId(found, CallCustomerTaskData.class) != null);
@@ -261,7 +273,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     assertThat(forms.getApproveLoanForm(loanRequestId, approval, dave).editable()).isTrue();
     forms.completeApproveLoan(loanRequestId, approval, new ApproveLoanInput(true, "fine"), dave);
 
-    assertThat(awaitAggregate(loanApprovals, loanRequestId, found -> found.getLoanApproved() != null))
+    assertThat(awaitAggregate(stored::find, loanRequestId, found -> found.getLoanApproved() != null))
         .extracting(Aggregate::getLoanApproved, Aggregate::getDecidedBy)
         .containsExactly(true, "dave");
 
@@ -301,6 +313,37 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
 
   }
 
+  /**
+   * The tasks of a loan approval and the data of each task are loaded only when they are
+   * read, as in the base blueprint.
+   */
+  @Test
+  public void theTasksAndTheirDataAreLoadedOnlyWhenRead() {
+
+    final var loanRequestId = requestLoanAs("alice");
+    final var call = openTask(loanRequestId, CallCustomerTaskData.class);
+    final var persistence = entityManagerFactory.getPersistenceUnitUtil();
+
+    new TransactionTemplate(transactionManager).executeWithoutResult(transaction -> {
+
+      final var loanRequest = loanApprovals
+          .findById(loanRequestId)
+          .orElseThrow();
+      assertThat(persistence.isLoaded(loanRequest, "tasks")).isFalse();
+
+      final var task = loanRequest
+          .getTask(call)
+          .orElseThrow();
+      assertThat(persistence.isLoaded(loanRequest, "tasks")).isTrue();
+      assertThat(persistence.isLoaded(task, "data")).isFalse();
+
+      assertThat(task.<CallCustomerTaskData>getData()).isEqualTo(CallCustomerTaskData.empty());
+      assertThat(persistence.isLoaded(task, "data")).isTrue();
+
+    });
+
+  }
+
   private ReportRecorder cockpit() {
 
     return CockpitSimulator.start();
@@ -335,7 +378,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
       final Class<? extends TaskData> kind) {
 
     return openTaskId(awaitAggregate(
-        loanApprovals,
+        stored::find,
         loanRequestId,
         found -> openTaskId(found, kind) != null), kind);
 
@@ -359,8 +402,8 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
   private Aggregate aggregate(
       final String loanRequestId) {
 
-    return loanApprovals
-        .findById(loanRequestId)
+    return stored
+        .find(loanRequestId)
         .orElseThrow();
 
   }

@@ -20,6 +20,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
@@ -111,14 +112,22 @@ public class Aggregate {
    * The tasks are rows of a table of their own. Each of them also keeps who worked on it,
    * which the cockpit gets as the admitted users of the task.
    * </p>
+   *
+   * <p>
+   * Loaded lazily, when somebody reads it. A service task or the start of the workflow never
+   * needs the tasks, and the list grows with every task the workflow opens. So read the tasks
+   * inside a transaction, as {@code Service} does. Left out of {@code equals} and
+   * {@code hashCode}, which would load them.
+   * </p>
    */
-  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   @MapKey(name = "taskId")
   @JoinTable(
       name = "LOAN_APPROVAL_TASKS",
       joinColumns = @JoinColumn(name = "LOAN_REQUEST_ID"),
       inverseJoinColumns = @JoinColumn(name = "TASK_ID"))
   @Builder.Default
+  @EqualsAndHashCode.Exclude
   private Map<String, Task> tasks = new HashMap<>();
 
   /** What the customer said on the phone, the result of the user task "Call customer". */

@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.Basic;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -56,7 +57,18 @@ public class Task {
   @Id
   private String taskId;
 
-  /** The draft while the task is open, and what the user sent once it is completed. */
+  /**
+   * The draft while the task is open, and what the user sent once it is completed.
+   *
+   * <p>
+   * Loaded lazily, when somebody reads it. Reading the tasks of a loan approval, to find one
+   * or to know which are open, does not load the forms of all of them. Only the form which is
+   * read is loaded. JPA can do that for a single attribute only when the entity was rewritten
+   * by the bytecode enhancement of Hibernate, which {@code loan-approval/pom.xml} switches on.
+   * The JSON may be large, so this is worth the plugin.
+   * </p>
+   */
+  @Basic(fetch = FetchType.LAZY)
   @Column(length = 4000)
   @Convert(converter = TaskDataConverter.class)
   @Getter(AccessLevel.NONE)
@@ -124,6 +136,11 @@ public class Task {
 
   /**
    * Whether the task holds the data of the given kind of user task.
+   *
+   * <p>
+   * It reads the data, so it loads it. When you look through many tasks, ask
+   * {@link #isOpen()} first, so that only the data of the open tasks is loaded.
+   * </p>
    *
    * @param type The record of a kind of user task.
    * @return Whether this task is of that kind.
