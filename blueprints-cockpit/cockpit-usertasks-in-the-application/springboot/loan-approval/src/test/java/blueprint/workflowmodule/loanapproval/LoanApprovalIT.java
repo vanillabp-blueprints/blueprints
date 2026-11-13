@@ -8,6 +8,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.model.Aggregate;
@@ -16,6 +18,9 @@ import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.CheckDocumentTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.Task;
 import blueprint.workflowmodule.loanapproval.model.usertask.TaskData;
+import blueprint.workflowmodule.loanapproval.support.TaskNotOpenException;
+import blueprint.workflowmodule.loanapproval.support.UnknownTaskException;
+import jakarta.persistence.EntityManagerFactory;
 
 /**
  * The integration test of this workflow module: it starts a real workflow in a real BPMS,
@@ -24,7 +29,8 @@ import blueprint.workflowmodule.loanapproval.model.usertask.TaskData;
  * <p>
  * Each test asserts on the workflow aggregate and its tasks, never on the engine. The main
  * point is the second test: a saved draft stays in its task and does not reach the
- * aggregate.
+ * aggregate. The last test proves that the tasks and their data are loaded only when they
+ * are read.
  * </p>
  */
 public class LoanApprovalIT extends WorkflowModuleTest {
@@ -36,15 +42,24 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   private Service loanApproval;
 
   @Autowired
+  private StoredLoanApprovals stored;
+
+  @Autowired
   private AggregateRepository loanApprovals;
+
+  @Autowired
+  private EntityManagerFactory entityManagerFactory;
+
+  @Autowired
+  private PlatformTransactionManager transactionManager;
 
   @Test
   public void everyOpenUserTaskIsARowOfItsOwn() {
 
     final var loanRequestId = requestLoanAndWaitForTheTasks();
 
-    final var loanRequest = loanApprovals
-        .findById(loanRequestId)
+    final var loanRequest = stored
+        .find(loanRequestId)
         .orElseThrow();
 
     // One risk assessment and one document check per document, all open at the same time.
@@ -68,8 +83,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     loanApproval.saveRiskAssessmentDraft(loanRequestId, riskAssessment, false, "first impression");
 
-    final var loanRequest = loanApprovals
-        .findById(loanRequestId)
+    final var loanRequest = stored
+        .find(loanRequestId)
         .orElseThrow();
     final var task = loanRequest
         .getTask(riskAssessment)
@@ -103,7 +118,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     }
 
     final var loanRequest = awaitAggregate(
-        loanApprovals,
+        stored::find,
         loanRequestId,
         aggregate -> Boolean.TRUE.equals(aggregate.getLoanApproved()));
 
@@ -146,7 +161,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // A too high risk ends the workflow at a terminate end event, which cancels the open
     // document checks. Each handler is called with CANCELED and marks its task.
     final var loanRequest = awaitAggregate(
-        loanApprovals,
+        stored::find,
         loanRequestId,
         aggregate -> Boolean.FALSE.equals(aggregate.getLoanApproved()) && aggregate
             .getTasks()
@@ -163,7 +178,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .<CheckDocumentTaskData>getData()
         .remark()).isEqualTo("blurred copy");
     assertThatThrownBy(() -> loanApproval.checkDocument(loanRequestId, documentCheck, true, "", "clerk"))
-        .isInstanceOf(Service.TaskNotOpen.class);
+        .isInstanceOf(TaskNotOpenException.class);
 
   }
 
@@ -177,18 +192,57 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // The same form sent a second time, or a draft saved after completing.
     assertThatThrownBy(() -> loanApproval.checkDocument(loanRequestId, documentCheck, false, "", "clerk"))
-        .isInstanceOf(Service.TaskNotOpen.class);
+        .isInstanceOf(TaskNotOpenException.class);
     assertThatThrownBy(() -> loanApproval.saveDocumentCheckDraft(loanRequestId, documentCheck, false, ""))
-        .isInstanceOf(Service.TaskNotOpen.class);
+        .isInstanceOf(TaskNotOpenException.class);
     // A task id of another kind is refused, even when it is open.
     assertThatThrownBy(() -> loanApproval.checkDocument(
         loanRequestId, taskId(loanRequestId, AssessRiskTaskData.class), true, "", "clerk"))
-        .isInstanceOf(Service.UnknownTask.class);
+        .isInstanceOf(UnknownTaskException.class);
 
-    assertThat(loanApprovals
-        .findById(loanRequestId)
+    assertThat(stored
+        .find(loanRequestId)
         .orElseThrow()
         .getDocumentChecks()).hasSize(1);
+
+  }
+
+  @Test
+  public void theTasksAndTheirDataAreLoadedOnlyWhenRead() {
+
+    final var loanRequestId = requestLoanAndWaitForTheTasks();
+    final var riskAssessment = taskId(loanRequestId, AssessRiskTaskData.class);
+    final var persistence = entityManagerFactory.getPersistenceUnitUtil();
+
+    new TransactionTemplate(transactionManager).executeWithoutResult(transaction -> {
+
+      final var loanRequest = loanApprovals
+          .findById(loanRequestId)
+          .orElseThrow();
+
+      // Loading the aggregate, as VanillaBP does before every task of the workflow, leaves
+      // the tasks in the database.
+      assertThat(persistence.isLoaded(loanRequest, "tasks")).isFalse();
+
+      // Reading the tasks loads their rows, but not the data of any of them.
+      final var tasks = loanRequest
+          .getTasks()
+          .values();
+      assertThat(tasks).hasSize(1 + DOCUMENTS.size());
+      assertThat(persistence.isLoaded(loanRequest, "tasks")).isTrue();
+      assertThat(tasks).noneMatch(task -> persistence.isLoaded(task, "data"));
+
+      // Reading the data of one task loads the data of this task and of no other.
+      final var task = loanRequest
+          .getTask(riskAssessment)
+          .orElseThrow();
+      assertThat(task.<AssessRiskTaskData>getData()).isEqualTo(AssessRiskTaskData.empty());
+      assertThat(persistence.isLoaded(task, "data")).isTrue();
+      assertThat(tasks)
+          .filteredOn(other -> other != task)
+          .noneMatch(other -> persistence.isLoaded(other, "data"));
+
+    });
 
   }
 
@@ -199,7 +253,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     loanApproval.request(loanRequestId, 5000);
 
     awaitAggregate(
-        loanApprovals,
+        stored::find,
         loanRequestId,
         aggregate -> aggregate.getTasks().size() == 1 + DOCUMENTS.size());
 
@@ -220,8 +274,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
       final String loanRequestId,
       final Class<? extends TaskData> kind) {
 
-    return openTasks(loanApprovals
-        .findById(loanRequestId)
+    return openTasks(stored
+        .find(loanRequestId)
         .orElseThrow(), kind)
         .stream()
         .map(Task::getTaskId)

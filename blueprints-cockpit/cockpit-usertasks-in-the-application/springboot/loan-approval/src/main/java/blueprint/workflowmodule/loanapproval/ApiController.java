@@ -63,8 +63,7 @@ public class ApiController {
       @PathVariable final String loanRequestId) {
 
     return loanApproval
-        .get(loanRequestId)
-        .map(Object::toString)
+        .describe(loanRequestId)
         .orElse("unknown loan request '"
             + loanRequestId
             + "'");

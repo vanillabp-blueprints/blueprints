@@ -15,10 +15,10 @@ import org.springframework.security.test.context.support.WithMockUser;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.UserTaskFormController.AssessRiskInput;
 import blueprint.workflowmodule.loanapproval.config.Permission;
-import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.CheckDocumentTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.TaskData;
+import blueprint.workflowmodule.loanapproval.support.UnknownTaskException;
 
 /**
  * Who may call the endpoints of a form. The test calls {@link UserTaskFormController} as a
@@ -34,7 +34,7 @@ public class UserTaskFormSecurityIT extends WorkflowModuleTest {
   private Service loanApproval;
 
   @Autowired
-  private AggregateRepository loanApprovals;
+  private StoredLoanApprovals stored;
 
   @Test
   @WithMockUser(username = "risk-officer", authorities = Permission.ASSESS_RISK)
@@ -80,7 +80,7 @@ public class UserTaskFormSecurityIT extends WorkflowModuleTest {
     // But the id of a risk assessment, sent to the endpoint of a document check, is unknown
     // there. The authority of an endpoint only covers tasks of its own kind.
     assertThatThrownBy(() -> forms.getCheckDocumentForm(loanRequestId, riskAssessment))
-        .isInstanceOf(Service.UnknownTask.class);
+        .isInstanceOf(UnknownTaskException.class);
 
   }
 
@@ -102,7 +102,7 @@ public class UserTaskFormSecurityIT extends WorkflowModuleTest {
     loanApproval.request(loanRequestId, 5000);
 
     awaitAggregate(
-        loanApprovals,
+        stored::find,
         loanRequestId,
         aggregate -> aggregate.getTasks().size() == 3);
 
@@ -114,8 +114,8 @@ public class UserTaskFormSecurityIT extends WorkflowModuleTest {
       final String loanRequestId,
       final Class<? extends TaskData> kind) {
 
-    return loanApprovals
-        .findById(loanRequestId)
+    return stored
+        .find(loanRequestId)
         .orElseThrow()
         .getTasks()
         .values()

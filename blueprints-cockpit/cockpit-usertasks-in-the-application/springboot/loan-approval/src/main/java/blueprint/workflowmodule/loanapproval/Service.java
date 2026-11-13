@@ -13,6 +13,8 @@ import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.CheckDocumentTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.Task;
 import blueprint.workflowmodule.loanapproval.model.usertask.TaskData;
+import blueprint.workflowmodule.loanapproval.support.TaskNotOpenException;
+import blueprint.workflowmodule.loanapproval.support.UnknownTaskException;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -34,12 +36,16 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  *
  * <p>
- * {@code @Transactional} is on the methods the API calls. It is absent from the methods a
- * task handler calls, because VanillaBP runs a task in a transaction it owns.
+ * {@code @Transactional} is on the class, so every method runs in a transaction. The
+ * methods a task handler calls join the transaction VanillaBP runs the task in. The
+ * annotation does no harm there, and it shows that they need a transaction as well: the
+ * tasks of the aggregate and their data are loaded only when they are read. The methods
+ * which only read say {@code readOnly = true}.
  * </p>
  */
 @Slf4j
 @org.springframework.stereotype.Service
+@Transactional
 @EnableConfigurationProperties(LoanApprovalProperties.class)
 public class Service {
 
@@ -58,7 +64,6 @@ public class Service {
    * @param loanRequestId The natural id of the loan request.
    * @param amount        The amount requested.
    */
-  @Transactional
   public void request(
       final String loanRequestId,
       final int amount) {
@@ -177,11 +182,17 @@ public class Service {
    * The loan request, if the given task belongs to it and is of the given kind. Used to read
    * a form, which works for a task that is open as well as for one that is done.
    *
+   * <p>
+   * Checking the kind reads the data of the task. So the tasks and the data of this one task
+   * are loaded when the transaction ends, and the caller can show the form after it. The data
+   * of the other tasks is not loaded.
+   * </p>
+   *
    * @param loanRequestId The natural id of the loan request.
    * @param taskId        The id of the user task.
    * @param kind          The data of the kind of user task the caller expects.
    * @return The loan request.
-   * @throws UnknownTask If there is no such task of that kind.
+   * @throws UnknownTaskException If there is no such task of that kind.
    */
   @Transactional(readOnly = true)
   public Aggregate withTask(
@@ -191,11 +202,11 @@ public class Service {
 
     final var loanRequest = loanApprovals
         .findById(loanRequestId)
-        .orElseThrow(() -> new UnknownTask(loanRequestId, taskId));
+        .orElseThrow(() -> new UnknownTaskException(loanRequestId, taskId));
     loanRequest
         .getTask(taskId)
         .filter(task -> task.holds(kind))
-        .orElseThrow(() -> new UnknownTask(loanRequestId, taskId));
+        .orElseThrow(() -> new UnknownTaskException(loanRequestId, taskId));
     return loanRequest;
 
   }
@@ -209,7 +220,6 @@ public class Service {
    * @param riskAcceptable What the user has chosen so far, may be empty.
    * @param comment        What the user has written so far, may be empty.
    */
-  @Transactional
   public void saveRiskAssessmentDraft(
       final String loanRequestId,
       final String taskId,
@@ -237,7 +247,6 @@ public class Service {
    * @param comment        Why.
    * @param user           Who completed the task.
    */
-  @Transactional
   public void assessRisk(
       final String loanRequestId,
       final String taskId,
@@ -277,7 +286,6 @@ public class Service {
    * @param valid         What the user has chosen so far, may be empty.
    * @param remark        What the user has written so far, may be empty.
    */
-  @Transactional
   public void saveDocumentCheckDraft(
       final String loanRequestId,
       final String taskId,
@@ -306,7 +314,6 @@ public class Service {
    * @param remark        What the user noted.
    * @param user          Who completed the task.
    */
-  @Transactional
   public void checkDocument(
       final String loanRequestId,
       final String taskId,
@@ -370,15 +377,24 @@ public class Service {
   }
 
   /**
-   * The state of a loan approval, as far as the process has come.
+   * The state of a loan approval, as far as the process has come, as text: the aggregate
+   * with every user task and its data.
+   *
+   * <p>
+   * The text is written here, inside the transaction. The tasks and their data are loaded
+   * when they are read, which is not possible any more once the transaction has ended.
+   * </p>
    *
    * @param loanRequestId The natural id of the loan request.
-   * @return The loan approval, if it exists.
+   * @return The loan approval as text, if it exists.
    */
-  public Optional<Aggregate> get(
+  @Transactional(readOnly = true)
+  public Optional<String> describe(
       final String loanRequestId) {
 
-    return loanApprovals.findById(loanRequestId);
+    return loanApprovals
+        .findById(loanRequestId)
+        .map(Aggregate::toString);
 
   }
 
@@ -405,48 +421,10 @@ public class Service {
         .getTask(taskId)
         .orElseThrow()
         .isOpen()) {
-      throw new TaskNotOpen(loanRequestId, taskId);
+      throw new TaskNotOpenException(loanRequestId, taskId);
     }
 
     return loanRequest;
-
-  }
-
-  /** There is no user task of that id and kind in that loan request. */
-  public static class UnknownTask extends RuntimeException {
-
-    private static final long serialVersionUID = 1L;
-
-    UnknownTask(
-        final String loanRequestId,
-        final String taskId) {
-
-      super("Loan approval '"
-          + loanRequestId
-          + "' has no such user task '"
-          + taskId
-          + "'");
-
-    }
-
-  }
-
-  /** The user task exists, but it was completed or canceled already. */
-  public static class TaskNotOpen extends RuntimeException {
-
-    private static final long serialVersionUID = 1L;
-
-    TaskNotOpen(
-        final String loanRequestId,
-        final String taskId) {
-
-      super("The user task '"
-          + taskId
-          + "' of loan approval '"
-          + loanRequestId
-          + "' is not open any more");
-
-    }
 
   }
 
