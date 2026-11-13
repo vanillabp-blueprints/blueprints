@@ -126,11 +126,11 @@ here and not the form in the browser. The file is the contract between the two p
 is the only thing this project takes from the backend.
 
 The file comes in through a git submodule. `backend/` is the backend repository at a fixed
-commit, and `.gitmodules` says which repository that is. `config.openapi` in `package.json` names
-the file inside it:
+commit, and `.gitmodules` says which repository that is. The file lies in the workflow module of
+the backend, and `config.openapi` in `package.json` names it:
 
 ```text
-backend/api/src/main/resources/openapi/loan-approval.yaml
+backend/loan-approval/src/main/resources/openapi/loan-approval.yaml
 ```
 
 Why a submodule and not a released jar? The frontend builds without the backend being built or

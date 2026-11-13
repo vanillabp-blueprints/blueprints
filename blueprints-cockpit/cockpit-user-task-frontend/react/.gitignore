@@ -61,7 +61,7 @@ build/
 ### npm ###
 node_modules/
 dist/
-# the OpenAPI file of the module API, copied there by scripts/fetch-openapi.mjs
+# the OpenAPI file of the workflow module, copied there by scripts/fetch-openapi.mjs
 build/
 # the typed client and its base URL, generated from the OpenAPI file
 src/generated/

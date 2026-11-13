@@ -14,16 +14,15 @@
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Blueprint: user tasks in the Business Cockpit, backend</name>
-  <description>The backend of a workflow module whose user tasks the Business Cockpit shows: the API of the forms, and the workflow module which implements it.</description>
+  <description>The backend of a workflow module whose user tasks the Business Cockpit shows: the workflow module, with the OpenAPI of its forms.</description>
 
   <!--
-    The backend is one of three repositories. It holds what needs Java and Maven only: the API
-    of the forms and the workflow module. The frontend reads the API and builds the user
-    interface with npm. The application takes the workflow module and the user interface and
+    The backend is one of three repositories. It holds what needs Java and Maven only: the
+    workflow module, with the OpenAPI of its forms in src/main/resources/openapi. The frontend
+    reads that file and builds the user interface with npm. The application takes the workflow module and the user interface and
     runs them. The README says why the three are apart and in which order they are released.
   -->
   <modules>
-    <module>api</module>
     <module>loan-approval</module>
   </modules>
 

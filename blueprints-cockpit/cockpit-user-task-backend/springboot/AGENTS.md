@@ -1,8 +1,8 @@
 # cockpit-user-task-backend
 
 Adds what the Business Cockpit needs from a workflow module whose user tasks it shows: the
-OpenAPI of the forms as a JAR of its own, the endpoints which implement it, a details provider,
-and the cockpit configuration of the module. A delta on top of `bpmn-user-task`.
+OpenAPI of the forms in the workflow module, the endpoints which implement it, a details
+provider, and the cockpit configuration of the module. A delta on top of `bpmn-user-task`.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
@@ -26,17 +26,16 @@ Replace all of these consistently. They are the same in every blueprint.
 
 Blueprint-specific names, each occurring in more than one place:
 
-|          Name           |                                                             Where it occurs                                                              |
-|-------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| `assessRisk`            | the `@WorkflowTask` method, the Camunda 7 `camunda:formKey` and the Camunda 8 `zeebe:formDefinition externalReference` of the first task |
-| `checkDocuments`        | the same for the second task                                                                                                             |
-| `assess-risk`           | the path of the first form's endpoints, in the OpenAPI and in `UserTaskFormController`                                                   |
-| `check-documents`       | the path of the second form's endpoints                                                                                                  |
-| `riskAssessment`        | the key in the details of a user task (`WorkflowTaskHandler.RISK_ASSESSMENT`), the field of the first form, the column of the frontend   |
-| `documentsNote`         | the field of the second form                                                                                                             |
-| `/wm/loan-approval`     | the server of the OpenAPI: the path the cockpit serves the module at                                                                     |
-| `/loan-approval`        | the path every endpoint of the module starts with, and the path of `workflow-module-uri`                                                 |
-| `cockpit-user-task-api` | the artifact id of the OpenAPI JAR, which the test of the workflow module reads. The frontend reads the file through a git submodule     |
+|        Name         |                                                             Where it occurs                                                              |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| `assessRisk`        | the `@WorkflowTask` method, the Camunda 7 `camunda:formKey` and the Camunda 8 `zeebe:formDefinition externalReference` of the first task |
+| `checkDocuments`    | the same for the second task                                                                                                             |
+| `assess-risk`       | the path of the first form's endpoints, in the OpenAPI and in `UserTaskFormController`                                                   |
+| `check-documents`   | the path of the second form's endpoints                                                                                                  |
+| `riskAssessment`    | the key in the details of a user task (`WorkflowTaskHandler.RISK_ASSESSMENT`), the field of the first form, the column of the frontend   |
+| `documentsNote`     | the field of the second form                                                                                                             |
+| `/wm/loan-approval` | the server of the OpenAPI: the path the cockpit serves the module at                                                                     |
+| `/loan-approval`    | the path every endpoint of the module starts with, and the path of `workflow-module-uri`                                                 |
 
 The cockpit replaces `/wm/loan-approval` by the path of `workflow-module-uri` when it forwards a
 request. Keep the server of the OpenAPI, the path of `workflow-module-uri` and the prefix of the
@@ -46,7 +45,7 @@ controllers in line, or a form reaches nothing.
 
 |                                       File                                        |                                                               Why it matters                                                               |
 |-----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| `api/src/main/resources/openapi/loan-approval.yaml`                               | the contract with the frontend: four operations, `servers: /wm/loan-approval`. Change it together with `UserTaskFormController`            |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                     | the contract with the frontend: four operations, `servers: /wm/loan-approval`. Change it together with `UserTaskFormController`            |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`               | `vanillabp.workflow-modules.loan-approval.cockpit.*`: `workflow-module-uri`, `ui-uri-type: ES_MODULES`, `ui-uri-path`                      |
 | `loan-approval/src/main/java/.../WorkflowTaskHandler.java`                        | one `@WorkflowTask` method per user task, keeping `@TaskId`, and the `@UserTaskDetailsProvider` method filling `details`                   |
 | `loan-approval/src/main/java/.../UserTaskFormController.java`                     | the endpoints of the forms, below `/loan-approval/api/user-tasks/{userTaskId}`. GET reads, POST completes, 404 if not open                 |
@@ -65,7 +64,6 @@ controllers in line, or a form reaches nothing.
 |                             File                             |                                                                    Purpose                                                                    |
 |--------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
 | `pom.xml` (blueprint root)                                   | the VanillaBP BOM import, the versions of the BPMS adapters and of the cockpit adapters, the rule which keeps every adapter in the test scope |
-| `api/pom.xml`                                                | the OpenAPI as `io.vanillabp.blueprint:cockpit-user-task-api`, no code, read by the test of the module                                        |
 | `loan-approval/pom.xml`                                      | `vanillabp-spring-boot-support` and the cockpit `support`; per BPMS profile both adapters for the test                                        |
 | `loan-approval/src/test/resources/application.yaml`          | the database, a short outbox poll interval, the address of the simulator                                                                      |
 | `loan-approval/src/test/resources/application-camunda7.yaml` | the Camunda 7 settings of the test, and the same file per other BPMS                                                                          |
@@ -81,10 +79,10 @@ module a second time, under another name.
 
 ## Adding this blueprint to an existing project
 
-1. Add a Maven module `api` with the OpenAPI of your forms in
+1. Put the OpenAPI of your forms into the workflow module, at
    `src/main/resources/openapi/<workflow-module-id>.yaml`. Give it the server
    `/wm/<workflow-module-id>`. The frontend reads this file through a git submodule of the
-   backend repository. The JAR is for the test of the workflow module.
+   backend repository. The test of the workflow module reads it from the classpath.
 2. Add `io.vanillabp.businesscockpit:support` to the workflow module. Add the cockpit adapter
    of your BPMS next to the BPMS adapter, wherever the BPMS adapter is declared:
    `businesscockpit-<bpms>-adapter-spring-boot`. In the workflow module, both adapters stay in

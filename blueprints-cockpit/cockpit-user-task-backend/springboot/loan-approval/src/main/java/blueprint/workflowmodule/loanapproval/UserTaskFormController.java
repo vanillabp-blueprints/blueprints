@@ -15,8 +15,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * The endpoints the forms of the two user tasks call. They implement
- * {@code openapi/loan-approval.yaml} of the module {@code api}, which the frontends read to
- * generate their client.
+ * {@code src/main/resources/openapi/loan-approval.yaml} of this module, which the frontends read
+ * to generate their client.
  *
  * <p>
  * A form runs in the browser, inside the Business Cockpit. It calls

@@ -12,12 +12,12 @@ name: Build the cockpit frontends
       - main
     paths:
       - "blueprints-cockpit/*-frontend/**"
-      - "blueprints-cockpit/*-backend/*/api/**"
+      - "blueprints-cockpit/*-backend/*/*/src/main/resources/openapi/**"
       - ".github/workflows/frontend.yaml"
   pull_request:
     paths:
       - "blueprints-cockpit/*-frontend/**"
-      - "blueprints-cockpit/*-backend/*/api/**"
+      - "blueprints-cockpit/*-backend/*/*/src/main/resources/openapi/**"
       - ".github/workflows/frontend.yaml"
   workflow_dispatch:
 concurrency:
