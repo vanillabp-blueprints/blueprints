@@ -78,8 +78,9 @@ base class does not make the test a bean.
    the boot. Never catch what the business code throws.
 4. Add the business method to `Service`. Start it with a check on the aggregate which returns
    early if the work was already done. Throw `TaskException(<error code>)` for an outcome the
-   BPMN models, after you wrote to the aggregate what the process needs to know. Let technical
-   failures through untouched.
+   BPMN models, after you wrote to the aggregate what the process needs to know. Give that
+   method `@Transactional(dontRollbackOn = TaskException.class)`, while the class says
+   `@Transactional`. Let technical failures through untouched.
 5. Extend the workflow aggregate by the attributes the task writes.
 6. Add a simulator for the surrounding system to the test sources. It extends `Simulator` and
    is annotated `@Alternative`, `@Priority(1)` and `@ApplicationScoped`. So it takes the place
@@ -87,9 +88,11 @@ base class does not make the test a bean.
 7. Copy `LoanApprovalIT` and write one test per outcome the task has.
 
 If the project already has a business service for this use case, add the methods there instead
-of creating a second one. Keep `@Transactional` off the methods a task handler calls. VanillaBP
-cannot see such an annotation while booting. But the task fails when it runs, with a message
-which names the workflow module, the process, the task and the handler method.
+of creating a second one. Put `@Transactional` on the class `Service`. A method a task handler
+calls joins the transaction of the task. If it throws a `TaskException`, it needs
+`@Transactional(dontRollbackOn = TaskException.class)`. VanillaBP cannot see a plain annotation
+there while booting. But the task fails when it runs, with a message which names the workflow
+module, the process, the task and the handler method.
 
 ## Verifying
 
@@ -109,8 +112,9 @@ All three tests of `LoanApprovalIT` have to pass. They prove the aspect:
 - a rejected loan keeps its `rejectionReason`. That proves that a `TaskException` commits.
 
 You no longer have to guess a `@Transactional` which reaches the task from a failing assertion.
-On the handler it fails the boot. On a bean the handler calls it fails the task. Both messages
-name the method. If a task never runs, the wiring between BPMN and code is wrong. The startup
-log then names the BPMN task without a method, or the method without a task.
+On the handler it fails the boot. On a bean the handler calls, a plain one fails the task once a
+`TaskException` passes it. Both messages name the method. If a task never runs, the wiring
+between BPMN and code is wrong. The startup log then names the BPMN task without a method, or
+the method without a task.
 
 Do not report success without having run this.

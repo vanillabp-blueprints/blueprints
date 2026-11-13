@@ -174,12 +174,14 @@ and starts the process in the same transaction, so you never get an aggregate wi
 workflow, or the other way round. The BPMS then reaches the service task and calls
 `WorkflowTaskHandler#retrieveCreditRating`. That method only hands over to
 `Service#assessCreditRating`. VanillaBP loads the aggregate before the call and saves it after.
-This happens in a transaction VanillaBP owns, so neither of the two classes declares one of its
-own. Only the methods the API calls do, because starting a workflow has to run in a
-transaction, and so does reading an entity. If you put `@Transactional` on a task handler
-anyway, the boot fails with a message naming the method. If you put it on a bean the handler
-calls, the task fails while it runs. So VanillaBP enforces this rule, and you do not have to
-remember it.
+This happens in a transaction VanillaBP owns, so the handler declares none of its own. `Service`
+says `@Transactional` on the class. A method the handler calls joins the transaction of the
+task, and a method the API calls gets one, because starting a workflow and reading an entity
+need it. A method of `Service` which throws a `TaskException` needs
+`@Transactional(dontRollbackOn = TaskException.class)`. If you put `@Transactional` on a task
+handler anyway, the boot fails with a message naming the method. If a plain one on a bean the
+handler calls meets a `TaskException`, the task fails while it runs. So VanillaBP enforces this
+rule, and you do not have to remember it.
 
 Where the BPMN files are read from is a convention on both sides. In the application this
 module is a dependency, so VanillaBP looks for its models below its ID. In its own test the

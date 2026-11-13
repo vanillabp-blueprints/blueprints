@@ -75,10 +75,10 @@ does not make the test a bean.
    cancellation. It calls `Service` for each of the two. Do not complete the task there, and
    never throw `TaskException` in it. When the task is created, there is nothing to complete by
    BPMN error.
-4. Add the business methods to `Service`. The first stores the id and does whatever notifies
-   the people who have to act. The second drops the id when the task was canceled. Then add one
-   per answer the API accepts. Annotate the ones the API calls with `@Transactional`, never the
-   ones the task handler calls.
+4. Add the business methods to `Service`. The first stores the id and does whatever notifies the
+   people who have to act. The second drops the id when the task was canceled. Then add one per
+   answer the API accepts. Put `@Transactional` on the class `Service`, so every method runs in
+   a transaction. The ones the task handler calls join the transaction of the task.
 5. Let the answering methods reject a task id which is not the one stored on the aggregate. A
    task id reaches the application as a link somebody kept. So it can live longer than the
    task.

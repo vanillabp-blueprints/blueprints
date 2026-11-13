@@ -62,8 +62,9 @@ correlation reaches no waiting event. The call then fails at runtime, not at sta
    never travels to the BPMS (business process management system).** So anything the process or
    a later step may need has to be there.
 3. Add a method to `Service` which loads the aggregate, writes those attributes, and only then
-   calls `Workflow`. Annotate it with `@Transactional`. The aggregate is saved with the
-   correlation. On a remote BPMS the correlation is sent after the commit.
+   calls `Workflow`. It runs in a transaction, because `Service` says `@Transactional` on the
+   class. The aggregate is saved with the correlation. On a remote BPMS the correlation is sent
+   after the commit.
 4. Decide what a second delivery of the same message means, and implement that decision in
    `Service`. Without a correlation id VanillaBP does not drop repeats, on purpose. The same
    message may arrive more than once, and that can be correct. The usual answer is an early

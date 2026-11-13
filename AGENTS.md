@@ -31,6 +31,15 @@ blueprint copies the rule with the rest of its POM.
 One blueprint is the exception: `module-standalone`. There the application is the workflow
 module, so it names the adapters like any application, and it has no such rule.
 
+## The service class says `@Transactional`
+
+Put `@Transactional` on the class of every business service in a workflow module, instead of
+on its methods. A method which throws a `TaskException` gets
+`@Transactional(noRollbackFor = TaskException.class)` on Spring Boot and
+`@Transactional(dontRollbackOn = TaskException.class)` on Quarkus. Without it the transaction of
+the task is marked for rollback, and VanillaBP fails the task. Never annotate the task handler.
+Rule 6 in `CONTRIBUTING.md` says why, and names the one exception, `persistence-custom`.
+
 ## How we write
 
 Most people who read this repository read English as a second language, and so does the
