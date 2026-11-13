@@ -4,6 +4,7 @@ import java.security.Principal;
 import java.time.OffsetDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -20,6 +21,7 @@ import blueprint.workflowmodule.loanapproval.config.Permission;
 import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.CheckDocumentTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.Task;
+import io.vanillabp.cockpit.support.usertask.BcUserTaskExceptionHandler;
 
 /**
  * The endpoints the forms of the two user tasks call. Each form has three of them, on the
@@ -49,11 +51,13 @@ import blueprint.workflowmodule.loanapproval.model.usertask.Task;
  *
  * <p>
  * A task id which is unknown gets 404, a task which is not open any more gets 409. That is
- * the same for every form, so {@code UserTaskExceptionHandler} of the package {@code support}
- * answers it.
+ * the same for every form of every module, so the Spring Boot support of the Business Cockpit
+ * brings both exceptions and {@link BcUserTaskExceptionHandler}, which answers them. Nothing
+ * registers the handler on its own, so the controller imports it.
  * </p>
  */
 @RestController
+@Import(BcUserTaskExceptionHandler.class)
 @RequestMapping("/api/loan-approval/{loanRequestId}")
 public class UserTaskFormController {
 

@@ -18,7 +18,7 @@ import blueprint.workflowmodule.loanapproval.config.Permission;
 import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.CheckDocumentTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.TaskData;
-import blueprint.workflowmodule.loanapproval.support.UnknownTaskException;
+import io.vanillabp.cockpit.support.usertask.BcUnknownTaskException;
 
 /**
  * Who may call the endpoints of a form. The test calls {@link UserTaskFormController} as a
@@ -80,7 +80,7 @@ public class UserTaskFormSecurityIT extends WorkflowModuleTest {
     // But the id of a risk assessment, sent to the endpoint of a document check, is unknown
     // there. The authority of an endpoint only covers tasks of its own kind.
     assertThatThrownBy(() -> forms.getCheckDocumentForm(loanRequestId, riskAssessment))
-        .isInstanceOf(UnknownTaskException.class);
+        .isInstanceOf(BcUnknownTaskException.class);
 
   }
 

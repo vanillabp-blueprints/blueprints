@@ -59,10 +59,12 @@ checks. Without a second check, the clerk could send the id of a risk assessment
 endpoint of a document check and complete it there. So `Service` also checks the kind of the
 task, and answers 404 when the id belongs to a task of another kind.
 
-Two exceptions say what is wrong with a task id: `UnknownTaskException` (404) and
-`TaskNotOpenException` (409). Every application with forms needs them, so they are in the
-package `support` of the module, together with `UserTaskExceptionHandler`, which turns them into
-the answer. Nothing in `support` names the loan approval. Copy the package as it is.
+Two exceptions say what is wrong with a task id: `BcUnknownTaskException` (404) and
+`BcTaskNotOpenException` (409). Every module with forms needs them, so they come from
+`io.vanillabp.businesscockpit:business-cockpit-spring-boot-support`, together with
+`BcUserTaskExceptionHandler`, which turns them into the answer. The handler sends the message as
+plain text, for the form to show. `UserTaskFormController` imports the handler with
+`@Import(BcUserTaskExceptionHandler.class)`, because nothing registers it on its own.
 
 When is the simple case enough?
 [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user-task-springboot) keeps the
@@ -74,26 +76,25 @@ time, and its form keeps no drafts. If one of them is not true, take this bluepr
 
 Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user-task-springboot):
 
-|                File                |                                                                  What is different                                                                   |
-|------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`               | two branches at the same time: the risk assessment, and a multi-instance user task per document; a terminate end event                               |
-| `Aggregate.java`                   | `tasks`, a lazily loaded map from the task id to a `Task`, instead of one task id; the results of the user tasks                                     |
-| `Task.java`                        | new: one user task with its dates, who completed it, and its `TaskData`, which is loaded lazily                                                      |
-| `TaskData.java`                    | new: the content of a form, one record per kind of user task, stored as JSON                                                                         |
-| `TaskDataConverter.java`           | new: writes `TaskData` as JSON into one column                                                                                                       |
-| `WorkflowTaskHandler.java`         | the handler of the multi-instance user task, which gets its document as `@MultiInstanceElement`                                                      |
-| `Service.java`                     | adds a task when it opens, saves drafts into the task, moves the result into the aggregate when the task is completed; `@Transactional` on the class |
-| `support/`                         | new: `UnknownTaskException`, `TaskNotOpenException` and `UserTaskExceptionHandler`, which every application with forms needs                         |
-| `UserTaskFormController.java`      | new: per form, GET reads, PUT saves a draft, POST completes; each endpoint protected by its authority                                                |
-| `Permission.java`                  | new: the authorities of the module, one per kind of user task                                                                                        |
-| `MethodSecurityConfiguration.java` | new: switches on `@Secured` for the module                                                                                                           |
-| `SecurityConfiguration.java`       | new, in the application: HTTP Basic and two demo users                                                                                               |
-| `loan-approval.yaml`               | the documents to check, and the declaration of the list the model loops over                                                                         |
-| `LoanApprovalIT.java`              | the tasks as rows, a draft which stays in its task, completion, cancellation, a task sent twice, tasks and data loaded only when read                |
-| `StoredLoanApprovals.java`         | new, in the tests: reads a loan approval with all tasks and their data inside a transaction                                                          |
-| `UserTaskFormSecurityIT.java`      | new: who may read, save and complete which form                                                                                                      |
-| `loan-approval/pom.xml`            | Spring Security, and its test support; `hibernate-maven-plugin`, which makes the data of a task lazy                                                 |
-| `application.yaml`                 | `open-in-view: false`, so nothing reads the tasks after the transaction                                                                              |
+|                File                |                                                                                What is different                                                                                |
+|------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`               | two branches at the same time: the risk assessment, and a multi-instance user task per document; a terminate end event                                                          |
+| `Aggregate.java`                   | `tasks`, a lazily loaded map from the task id to a `Task`, instead of one task id; the results of the user tasks                                                                |
+| `Task.java`                        | new: one user task with its dates, who completed it, and its `TaskData`, which is loaded lazily                                                                                 |
+| `TaskData.java`                    | new: the content of a form, one record per kind of user task, stored as JSON                                                                                                    |
+| `TaskDataConverter.java`           | new: writes `TaskData` as JSON into one column                                                                                                                                  |
+| `WorkflowTaskHandler.java`         | the handler of the multi-instance user task, which gets its document as `@MultiInstanceElement`                                                                                 |
+| `Service.java`                     | adds a task when it opens, saves drafts into the task, moves the result into the aggregate when the task is completed; `@Transactional` on the class                            |
+| `UserTaskFormController.java`      | new: per form, GET reads, PUT saves a draft, POST completes; each endpoint protected by its authority; imports `BcUserTaskExceptionHandler`                                     |
+| `Permission.java`                  | new: the authorities of the module, one per kind of user task                                                                                                                   |
+| `MethodSecurityConfiguration.java` | new: switches on `@Secured` for the module                                                                                                                                      |
+| `SecurityConfiguration.java`       | new, in the application: HTTP Basic and two demo users                                                                                                                          |
+| `loan-approval.yaml`               | the documents to check, and the declaration of the list the model loops over                                                                                                    |
+| `LoanApprovalIT.java`              | the tasks as rows, a draft which stays in its task, completion, cancellation, a task sent twice, tasks and data loaded only when read                                           |
+| `StoredLoanApprovals.java`         | new, in the tests: reads a loan approval with all tasks and their data inside a transaction                                                                                     |
+| `UserTaskFormSecurityIT.java`      | new: who may read, save and complete which form                                                                                                                                 |
+| `loan-approval/pom.xml`            | Spring Security, and its test support; `business-cockpit-spring-boot-support` for the exceptions about a task id; `hibernate-maven-plugin`, which makes the data of a task lazy |
+| `application.yaml`                 | `open-in-view: false`, so nothing reads the tasks after the transaction                                                                                                         |
 
 The withdrawal of the base blueprint is not here. The terminate end event shows a canceled user
 task instead, and it works on every BPMS.
@@ -180,22 +181,21 @@ are then marked as canceled, and their drafts stay where they were.
 
 ## How it works
 
-|                                          File                                          |                                                     Role                                                     |
-|----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: two branches, a multi-instance user task, a gateway on the result, a terminate end event        |
-| `.../loanapproval/model/Aggregate.java`                                                | the tasks by their id, and the results of completed tasks                                                    |
-| `.../loanapproval/model/usertask/Task.java`                                            | one user task: open, saved, completed or canceled                                                            |
-| `.../loanapproval/model/usertask/TaskData.java`                                        | the content of a form, with `AssessRiskTaskData` and `CheckDocumentTaskData` as the two kinds                |
-| `.../loanapproval/model/usertask/TaskDataConverter.java`                               | the JSON column                                                                                              |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | `CREATED` adds a task, `CANCELED` marks it                                                                   |
-| `.../loanapproval/Service.java`                                                        | drafts into the task, results into the aggregate, and the check that a task is open and of the expected kind |
-| `.../loanapproval/UserTaskFormController.java`                                         | GET, PUT and POST per form, each with `@Secured`                                                             |
-| `.../loanapproval/support/`                                                            | the exceptions about a task id, and their answers 404 and 409                                                |
-| `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                              |
-| `.../loanapproval/config/Permission.java`                                              | the authorities of the module                                                                                |
-| `application/src/main/java/.../SecurityConfiguration.java`                             | how users log in: HTTP Basic, two demo users                                                                 |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays the tasks through and waits for the aggregate                                                          |
-| `loan-approval/src/test/.../UserTaskFormSecurityIT.java`                               | calls the form endpoints as users with and without the authority                                             |
+|                                          File                                          |                                                       Role                                                        |
+|----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: two branches, a multi-instance user task, a gateway on the result, a terminate end event             |
+| `.../loanapproval/model/Aggregate.java`                                                | the tasks by their id, and the results of completed tasks                                                         |
+| `.../loanapproval/model/usertask/Task.java`                                            | one user task: open, saved, completed or canceled                                                                 |
+| `.../loanapproval/model/usertask/TaskData.java`                                        | the content of a form, with `AssessRiskTaskData` and `CheckDocumentTaskData` as the two kinds                     |
+| `.../loanapproval/model/usertask/TaskDataConverter.java`                               | the JSON column                                                                                                   |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | `CREATED` adds a task, `CANCELED` marks it                                                                        |
+| `.../loanapproval/Service.java`                                                        | drafts into the task, results into the aggregate, and the check that a task is open and of the expected kind      |
+| `.../loanapproval/UserTaskFormController.java`                                         | GET, PUT and POST per form, each with `@Secured`; imports `BcUserTaskExceptionHandler`, which answers 404 and 409 |
+| `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                                   |
+| `.../loanapproval/config/Permission.java`                                              | the authorities of the module                                                                                     |
+| `application/src/main/java/.../SecurityConfiguration.java`                             | how users log in: HTTP Basic, two demo users                                                                      |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays the tasks through and waits for the aggregate                                                               |
+| `loan-approval/src/test/.../UserTaskFormSecurityIT.java`                               | calls the form endpoints as users with and without the authority                                                  |
 
 The order of events: the service task rates the loan request. Then the BPMS opens the risk
 assessment and one document check per entry of `documentIds`. For each of them it calls

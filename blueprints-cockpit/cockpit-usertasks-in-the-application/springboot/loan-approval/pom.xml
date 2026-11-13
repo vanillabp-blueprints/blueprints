@@ -22,6 +22,16 @@
       <groupId>io.vanillabp</groupId>
       <artifactId>vanillabp-spring-boot-support</artifactId>
     </dependency>
+    <!--
+      The exceptions about a task id, and the handler which answers them with 404 and 409, are
+      the same in every module with forms. So the Business Cockpit ships them, and the module
+      takes them from there. Like the line above, this knows no BPMS.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>business-cockpit-spring-boot-support</artifactId>
+      <version>${businesscockpit.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>

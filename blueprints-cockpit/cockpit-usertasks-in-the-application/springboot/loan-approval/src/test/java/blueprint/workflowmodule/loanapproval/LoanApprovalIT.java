@@ -2,12 +2,14 @@ package blueprint.workflowmodule.loanapproval;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -18,8 +20,9 @@ import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.CheckDocumentTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.Task;
 import blueprint.workflowmodule.loanapproval.model.usertask.TaskData;
-import blueprint.workflowmodule.loanapproval.support.TaskNotOpenException;
-import blueprint.workflowmodule.loanapproval.support.UnknownTaskException;
+import io.vanillabp.cockpit.support.usertask.BcTaskNotOpenException;
+import io.vanillabp.cockpit.support.usertask.BcUnknownTaskException;
+import io.vanillabp.cockpit.support.usertask.BcUserTaskExceptionHandler;
 import jakarta.persistence.EntityManagerFactory;
 
 /**
@@ -52,6 +55,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Autowired
   private PlatformTransactionManager transactionManager;
+
+  @Autowired
+  private BcUserTaskExceptionHandler userTaskExceptionHandler;
 
   @Test
   public void everyOpenUserTaskIsARowOfItsOwn() {
@@ -178,7 +184,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .<CheckDocumentTaskData>getData()
         .remark()).isEqualTo("blurred copy");
     assertThatThrownBy(() -> loanApproval.checkDocument(loanRequestId, documentCheck, true, "", "clerk"))
-        .isInstanceOf(TaskNotOpenException.class);
+        .isInstanceOf(BcTaskNotOpenException.class);
 
   }
 
@@ -192,18 +198,41 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // The same form sent a second time, or a draft saved after completing.
     assertThatThrownBy(() -> loanApproval.checkDocument(loanRequestId, documentCheck, false, "", "clerk"))
-        .isInstanceOf(TaskNotOpenException.class);
+        .isInstanceOf(BcTaskNotOpenException.class);
     assertThatThrownBy(() -> loanApproval.saveDocumentCheckDraft(loanRequestId, documentCheck, false, ""))
-        .isInstanceOf(TaskNotOpenException.class);
+        .isInstanceOf(BcTaskNotOpenException.class);
     // A task id of another kind is refused, even when it is open.
     assertThatThrownBy(() -> loanApproval.checkDocument(
         loanRequestId, taskId(loanRequestId, AssessRiskTaskData.class), true, "", "clerk"))
-        .isInstanceOf(UnknownTaskException.class);
+        .isInstanceOf(BcUnknownTaskException.class);
 
     assertThat(stored
         .find(loanRequestId)
         .orElseThrow()
         .getDocumentChecks()).hasSize(1);
+
+  }
+
+  @Test
+  public void aFormSentTwiceGets409AndAMessageToShow() {
+
+    final var loanRequestId = requestLoanAndWaitForTheTasks();
+    final var documentCheck = taskId(loanRequestId, CheckDocumentTaskData.class);
+
+    loanApproval.checkDocument(loanRequestId, documentCheck, true, "in order", "clerk");
+    final var refused = catchThrowableOfType(
+        BcTaskNotOpenException.class,
+        () -> loanApproval.checkDocument(loanRequestId, documentCheck, true, "in order", "clerk"));
+
+    // The module imports the handler of the Business Cockpit, so the handler is a bean here.
+    // It answers what the service refused, as the form receives it.
+    final var answer = userTaskExceptionHandler.taskNotOpen(refused);
+    assertThat(answer.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    assertThat(answer.getBody()).isEqualTo("The user task '"
+        + documentCheck
+        + "' of '"
+        + loanRequestId
+        + "' is not open any more");
 
   }
 
