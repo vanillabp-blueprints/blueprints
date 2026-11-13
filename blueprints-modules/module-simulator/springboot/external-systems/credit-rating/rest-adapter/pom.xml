@@ -20,6 +20,15 @@
       <artifactId>credit-rating-port</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!--
+      The client of the credit rating, generated from 'credit-rating.yaml'. This adapter writes
+      no HTTP calls and no JSON types of its own.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+      <artifactId>credit-rating-api-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <!-- The REST client of Spring, and JSON. -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

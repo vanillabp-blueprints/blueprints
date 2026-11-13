@@ -1,0 +1,51 @@
+openapi: 3.0.3
+info:
+  title: E-signature
+  version: 1
+  description: |
+    The API of the e-signature service, as its vendor would publish it. The service answers later, through a callback. That callback is the second file next to this one, 'e-signature-callback.yaml'. The Maven module 'client' generates the Java client of this API, and the module 'server' generates the Java interface the simulator implements. In a real project this file comes from the vendor.
+servers:
+  - url: /e-signature
+tags:
+  - name: Envelopes
+    description: Documents handed over for signing
+paths:
+  /api/v1/envelopes:
+    post:
+      tags:
+        - Envelopes
+      operationId: createEnvelope
+      summary: Hands a document over for signing
+      description: |
+        The service takes the document and answers at once. When the signer signed, the service posts a Callback to the callbackUrl of the envelope. 'e-signature-callback.yaml' describes that request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Envelope"
+      responses:
+        "202":
+          description: The document waits for its signature
+components:
+  schemas:
+    Envelope:
+      type: object
+      required:
+        - contractId
+        - signer
+        - document
+        - callbackUrl
+      properties:
+        contractId:
+          type: string
+          description: The id the caller gives the document. The callback carries
+            it.
+        signer:
+          type: string
+        document:
+          type: string
+        callbackUrl:
+          type: string
+          description: |
+            Where the service posts the callback. The receiver offers the API of 'e-signature-callback.yaml' there, so the address ends with the path of that API.

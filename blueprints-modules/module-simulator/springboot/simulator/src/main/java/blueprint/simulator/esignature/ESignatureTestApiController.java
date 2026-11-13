@@ -10,6 +10,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+
+import blueprint.externalsystems.esignature.api.server.model.Envelope;
+import blueprint.externalsystems.esignature.callback.client.SignatureCallbackApi;
+import blueprint.externalsystems.esignature.callback.client.model.Callback;
 
 /**
  * The test API of the simulated e-signature service. It shows what the service was given, and it
@@ -27,15 +34,9 @@ public class ESignatureTestApiController {
 
   private static final Logger log = LoggerFactory.getLogger(ESignatureTestApiController.class);
 
-  /** What the service reports, in its own words. */
-  record Callback(
-                  String contractId,
-                  String status) {
-  }
-
   private final Envelopes envelopes;
 
-  private final RestClient callbacks;
+  private final RestClient.Builder restClients;
 
   /**
    * Creates the controller.
@@ -48,7 +49,7 @@ public class ESignatureTestApiController {
       final RestClient.Builder restClients) {
 
     this.envelopes = envelopes;
-    this.callbacks = restClients.build();
+    this.restClients = restClients;
 
   }
 
@@ -78,7 +79,8 @@ public class ESignatureTestApiController {
    *
    * @param contractId The id the caller gave the document.
    * @return The status the application answered the callback with. 404 if the service holds no
-   *         document of this id, 502 if the application did not answer.
+   *         document of this id. 502 if the application did not answer, or if the callback
+   *         address does not end with the path of the callback API.
    */
   @GetMapping("/sign")
   public ResponseEntity<String> sign(
@@ -93,53 +95,94 @@ public class ESignatureTestApiController {
               + "' waits for a signature");
     }
 
+    final var callbackUrl = envelope
+        .get()
+        .callbackUrl();
+    if (!callbackUrl.endsWith(SignatureCallbackApi.PATH_REPORT_SIGNATURE)) {
+      return ResponseEntity
+          .status(HttpStatus.BAD_GATEWAY)
+          .body("Contract '"
+              + contractId
+              + "' signed, but its callback address "
+              + callbackUrl
+              + " does not end with "
+              + SignatureCallbackApi.PATH_REPORT_SIGNATURE
+              + ", the path of the callback API");
+    }
+
+    int answer;
     try {
 
-      final var answer = callbacks
-          .post()
-          .uri(envelope
-              .get()
-              .callbackUrl())
-          .body(new Callback(contractId, "SIGNED"))
-          .exchange((
-              request,
-              response) -> response
-                  .getStatusCode()
-                  .value());
+      answer = callbackTo(callbackUrl)
+          .reportSignature(new Callback(contractId, Callback.StatusEnum.SIGNED))
+          .getStatusCode()
+          .value();
 
-      log.info(
-          "Contract '{}' signed, reported to {}, which answered {}",
-          contractId,
-          envelope
-              .get()
-              .callbackUrl(),
-          answer);
+    } catch (RestClientResponseException e) {
 
-      return ResponseEntity.ok("Contract '"
-          + contractId
-          + "' signed. The application answered the callback with "
-          + answer
-          + ".");
+      // The application answered, but with an error, for example 404 for an unknown contract.
+      answer = e
+          .getStatusCode()
+          .value();
 
     } catch (ResourceAccessException e) {
 
       log.warn(
           "Contract '{}' signed, but nobody answers at {}",
           contractId,
-          envelope
-              .get()
-              .callbackUrl());
+          callbackUrl);
 
       return ResponseEntity
           .status(HttpStatus.BAD_GATEWAY)
           .body("Contract '"
               + contractId
               + "' signed, but nobody answers at "
-              + envelope
-                  .get()
-                  .callbackUrl());
+              + callbackUrl);
 
     }
+
+    log.info(
+        "Contract '{}' signed, reported to {}, which answered {}",
+        contractId,
+        callbackUrl,
+        answer);
+
+    return ResponseEntity.ok("Contract '"
+        + contractId
+        + "' signed. The application answered the callback with "
+        + answer
+        + ".");
+
+  }
+
+  /**
+   * The generated client of the callback API, aimed at one callback address.
+   *
+   * <p>
+   * The envelope carries the whole address of the callback. The generated client adds the path
+   * of the callback API itself, so it gets the address without that path as its base.
+   * </p>
+   *
+   * @param callbackUrl The callback address of an envelope. It ends with the path of the API.
+   * @return The client.
+   */
+  private SignatureCallbackApi callbackTo(
+      final String callbackUrl) {
+
+    final var baseUrl = callbackUrl.substring(
+        0,
+        callbackUrl.length() - SignatureCallbackApi.PATH_REPORT_SIGNATURE.length());
+
+    // The builder of Spring Boot is shared by every call, so each callback gets a copy of it.
+    final var restClient = restClients
+        .clone()
+        .baseUrl(baseUrl)
+        .build();
+
+    return HttpServiceProxyFactory
+        .builderFor(RestClientAdapter.create(restClient))
+        .build()
+        .createClient(SignatureCallbackApi.class);
 
   }
 

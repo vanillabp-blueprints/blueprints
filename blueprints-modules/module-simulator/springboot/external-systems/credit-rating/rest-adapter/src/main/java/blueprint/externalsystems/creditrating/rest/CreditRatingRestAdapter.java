@@ -2,22 +2,24 @@ package blueprint.externalsystems.creditrating.rest;
 
 import java.util.Optional;
 
-import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import blueprint.externalsystems.creditrating.CreditRating;
 import blueprint.externalsystems.creditrating.CreditRatingUnavailableException;
 import blueprint.externalsystems.creditrating.CreditScore;
+import blueprint.externalsystems.creditrating.api.client.CreditRatingApi;
 
 /**
- * The credit rating, reached over REST. The interface it speaks is described in
- * {@code external-systems/credit-rating/openapi.yaml} of this blueprint.
+ * The credit rating, reached over REST. The API is described in
+ * {@code external-systems/credit-rating/credit-rating-api/credit-rating.yaml} of this blueprint,
+ * and {@link CreditRatingApi} is the client generated from it.
  *
  * <p>
- * This class is the only place which knows the API of the credit rating: its paths, its JSON
- * and its status codes. It translates all of it into the types of the port. So the workflow
- * module reads {@code creditRating.scoreOf(customerId)} and never sees HTTP.
+ * This class translates between the generated client and the port. It turns the score of the
+ * credit rating into a {@link CreditScore}, and the status codes into what the port promises.
+ * So the workflow module reads {@code creditRating.scoreOf(customerId)} and never sees HTTP.
  * </p>
  *
  * <p>
@@ -27,24 +29,18 @@ import blueprint.externalsystems.creditrating.CreditScore;
  */
 public class CreditRatingRestAdapter implements CreditRating {
 
-  /** The answer of the credit rating, in its own words. Only this class sees it. */
-  record ScoreResponse(
-                       String customerId,
-                       int score) {
-  }
-
-  private final RestClient creditRating;
+  private final CreditRatingApi creditRating;
 
   private final String baseUrl;
 
   /**
    * Creates the adapter.
    *
-   * @param creditRating A REST client whose base address is the credit rating.
+   * @param creditRating The generated client, whose base address is the credit rating.
    * @param baseUrl      The same address, for the messages of this class.
    */
   public CreditRatingRestAdapter(
-      final RestClient creditRating,
+      final CreditRatingApi creditRating,
       final String baseUrl) {
 
     this.creditRating = creditRating;
@@ -58,23 +54,21 @@ public class CreditRatingRestAdapter implements CreditRating {
 
     try {
 
-      return creditRating
-          .get()
-          .uri("/api/v1/customers/{customerId}/score", customerId)
-          .exchange((
-              request,
-              response) -> {
-            if (response.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)) {
-              return Optional.empty();
-            }
-            if (response.getStatusCode().isError()) {
-              throw new CreditRatingUnavailableException("The credit rating at '"
-                  + baseUrl
-                  + "' answered "
-                  + response.getStatusCode().value(), null);
-            }
-            return Optional.of(new CreditScore(response.bodyTo(ScoreResponse.class).score()));
-          });
+      return Optional.of(new CreditScore(creditRating
+          .getScore(customerId)
+          .score()));
+
+    } catch (HttpClientErrorException.NotFound e) {
+
+      // The API answers 404 for a customer it does not know. That is an answer, not a failure.
+      return Optional.empty();
+
+    } catch (RestClientResponseException e) {
+
+      throw new CreditRatingUnavailableException("The credit rating at '"
+          + baseUrl
+          + "' answered "
+          + e.getStatusCode().value(), e);
 
     } catch (ResourceAccessException e) {
 

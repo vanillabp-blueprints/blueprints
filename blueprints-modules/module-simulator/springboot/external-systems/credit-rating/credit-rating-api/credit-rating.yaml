@@ -3,12 +3,17 @@ info:
   title: Credit rating
   version: 1
   description: |
-    The API of the credit rating, as its vendor would publish it. Two parts of this blueprint follow it: the adapter in 'rest-adapter', which talks to it, and the simulator, which plays it. In a real project this file comes from the vendor, and the simulator is written against it.
+    The API of the credit rating, as its vendor would publish it. The Maven module 'client' generates the Java client from this file, and the adapter in 'rest-adapter' uses it. The Maven module 'server' generates the Java interface the simulator implements. In a real project this file comes from the vendor.
 servers:
   - url: /credit-rating
+tags:
+  - name: CreditRating
+    description: The credit score of a customer
 paths:
   /api/v1/customers/{customerId}/score:
     get:
+      tags:
+        - CreditRating
       operationId: getScore
       summary: The credit score of a customer
       parameters:

@@ -25,6 +25,21 @@
       <artifactId>dev-shell-simulator</artifactId>
       <version>${businesscockpit.version}</version>
     </dependency>
+    <!--
+      The APIs the simulator plays, generated from their OpenAPI files: the interfaces its
+      controllers implement, and the client of the e-signature callback. These are the 'server'
+      modules. The application uses the 'client' modules of the same files.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+      <artifactId>credit-rating-api-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+      <artifactId>e-signature-api-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>

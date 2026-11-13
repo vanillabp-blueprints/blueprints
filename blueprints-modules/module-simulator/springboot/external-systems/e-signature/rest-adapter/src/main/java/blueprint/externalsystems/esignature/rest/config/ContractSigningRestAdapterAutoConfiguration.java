@@ -6,8 +6,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import blueprint.externalsystems.esignature.ContractSigning;
+import blueprint.externalsystems.esignature.api.client.EnvelopesApi;
+import blueprint.externalsystems.esignature.callback.server.SignatureCallbackApi;
 import blueprint.externalsystems.esignature.rest.CallbackController;
 import blueprint.externalsystems.esignature.rest.ContractSigningRestAdapter;
 
@@ -52,18 +56,26 @@ public class ContractSigningRestAdapterAutoConfiguration {
           'e-signature.callback-url' to the address of this application followed by '%s', as \
           the e-signature service reaches it. For a local run that is \
           http://localhost:8080%s."""
-          .formatted(CallbackController.PATH, CallbackController.PATH));
+          .formatted(
+              SignatureCallbackApi.PATH_REPORT_SIGNATURE,
+              SignatureCallbackApi.PATH_REPORT_SIGNATURE));
     }
 
     final var timeouts = new SimpleClientHttpRequestFactory();
     timeouts.setConnectTimeout(properties.timeout());
     timeouts.setReadTimeout(properties.timeout());
 
-    return new ContractSigningRestAdapter(
-        restClients
-            .baseUrl(properties.baseUrl())
-            .requestFactory(timeouts)
-            .build(), properties.baseUrl(), properties.callbackUrl());
+    // The generated client is an interface. Spring implements it with a RestClient.
+    final var restClient = restClients
+        .baseUrl(properties.baseUrl())
+        .requestFactory(timeouts)
+        .build();
+    final var client = HttpServiceProxyFactory
+        .builderFor(RestClientAdapter.create(restClient))
+        .build()
+        .createClient(EnvelopesApi.class);
+
+    return new ContractSigningRestAdapter(client, properties.baseUrl(), properties.callbackUrl());
 
   }
 

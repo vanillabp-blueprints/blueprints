@@ -6,9 +6,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Component;
 
+import blueprint.externalsystems.esignature.api.server.model.Envelope;
+
 /**
  * The documents the simulated e-signature service holds, by the id the caller gave them. Held in
- * memory, like everything in this simulator.
+ * memory, like everything in this simulator. A document is kept as the generated
+ * {@link Envelope} it arrived in, so the test API shows exactly what the service was given.
  */
 @Component
 public class Envelopes {

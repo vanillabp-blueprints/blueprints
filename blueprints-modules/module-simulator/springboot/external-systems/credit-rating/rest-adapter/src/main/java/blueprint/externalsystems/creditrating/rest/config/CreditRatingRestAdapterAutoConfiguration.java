@@ -5,8 +5,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import blueprint.externalsystems.creditrating.CreditRating;
+import blueprint.externalsystems.creditrating.api.client.CreditRatingApi;
 import blueprint.externalsystems.creditrating.rest.CreditRatingRestAdapter;
 
 /**
@@ -46,11 +49,17 @@ public class CreditRatingRestAdapterAutoConfiguration {
     timeouts.setConnectTimeout(properties.timeout());
     timeouts.setReadTimeout(properties.timeout());
 
-    return new CreditRatingRestAdapter(
-        restClients
-            .baseUrl(properties.baseUrl())
-            .requestFactory(timeouts)
-            .build(), properties.baseUrl());
+    // The generated client is an interface. Spring implements it with a RestClient.
+    final var restClient = restClients
+        .baseUrl(properties.baseUrl())
+        .requestFactory(timeouts)
+        .build();
+    final var client = HttpServiceProxyFactory
+        .builderFor(RestClientAdapter.create(restClient))
+        .build()
+        .createClient(CreditRatingApi.class);
+
+    return new CreditRatingRestAdapter(client, properties.baseUrl());
 
   }
 

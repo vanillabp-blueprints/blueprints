@@ -22,8 +22,10 @@
     tests run against it, comes from a dependency in loan-approval/pom.xml.
   -->
   <modules>
+    <module>external-systems/credit-rating/credit-rating-api</module>
     <module>external-systems/credit-rating/port</module>
     <module>external-systems/credit-rating/rest-adapter</module>
+    <module>external-systems/e-signature/e-signature-api</module>
     <module>external-systems/e-signature/port</module>
     <module>external-systems/e-signature/rest-adapter</module>
     <module>simulator</module>
@@ -56,6 +58,8 @@
     -->
     <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
     <businesscockpit-camunda8.version>0.9.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
+    <!-- Generates the Java code of the APIs below 'external-systems' from their OpenAPI files. -->
+    <openapi-generator.version>7.27.0</openapi-generator.version>
   </properties>
 
   <dependencyManagement>
@@ -71,6 +75,45 @@
   </dependencyManagement>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <!--
+          The settings every API module shares. Each 'client' and 'server' module adds an
+          execution per OpenAPI file, with its packages and its side:
+
+            client  library 'spring-http-interface': an interface with @HttpExchange, which
+                    the caller turns into a client with a RestClient
+            server  'interfaceOnly': an interface with @RequestMapping, which a controller
+                    implements
+
+          The generated code needs no library beyond Spring Web, Jackson and Jakarta
+          annotations: no Swagger annotations, no jackson-databind-nullable, no bean
+          validation. The models are Java records.
+        -->
+        <plugin>
+          <groupId>org.openapitools</groupId>
+          <artifactId>openapi-generator-maven-plugin</artifactId>
+          <version>${openapi-generator.version}</version>
+          <configuration>
+            <generatorName>spring</generatorName>
+            <generateSupportingFiles>false</generateSupportingFiles>
+            <configOptions>
+              <useSpringBoot4>true</useSpringBoot4>
+              <useTags>true</useTags>
+              <useRecords>true</useRecords>
+              <useJspecify>true</useJspecify>
+              <openApiNullable>false</openApiNullable>
+              <useBeanValidation>false</useBeanValidation>
+              <documentationProvider>none</documentationProvider>
+              <annotationLibrary>none</annotationLibrary>
+              <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              <generateJsonIncludeAnnotations>false</generateJsonIncludeAnnotations>
+              <generateJsonSetterNullsAnnotations>false</generateJsonSetterNullsAnnotations>
+            </configOptions>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <!--
         A blueprint must never show a deprecated API - it is copied, and what is copied

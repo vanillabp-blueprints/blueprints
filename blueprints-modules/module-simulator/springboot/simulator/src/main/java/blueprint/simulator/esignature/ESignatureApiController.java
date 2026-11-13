@@ -3,15 +3,17 @@ package blueprint.simulator.esignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import blueprint.externalsystems.esignature.api.server.EnvelopesApi;
+import blueprint.externalsystems.esignature.api.server.model.Envelope;
+
 /**
- * The API of the e-signature service, as {@code external-systems/e-signature/openapi.yaml}
- * describes it. The adapter of the application talks to this exactly as it talks to the real
+ * The API of the e-signature service. The path, the method and the JSON come from
+ * {@link EnvelopesApi}, the interface generated from
+ * {@code external-systems/e-signature/e-signature-api/e-signature.yaml}. This class only
+ * implements it. The adapter of the application talks to this exactly as it talks to the real
  * system.
  *
  * <p>
@@ -21,8 +23,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  * </p>
  */
 @RestController
-@RequestMapping("/e-signature/api/v1")
-public class ESignatureApiController {
+public class ESignatureApiController implements EnvelopesApi {
 
   private static final Logger log = LoggerFactory.getLogger(ESignatureApiController.class);
 
@@ -46,9 +47,9 @@ public class ESignatureApiController {
    * @param envelope The document, and where to report its signature.
    * @return 202, because the signature comes later.
    */
-  @PostMapping("/envelopes")
+  @Override
   public ResponseEntity<Void> createEnvelope(
-      @RequestBody final Envelope envelope) {
+      final Envelope envelope) {
 
     envelopes.add(envelope);
 

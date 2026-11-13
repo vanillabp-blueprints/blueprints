@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+    <artifactId>credit-rating-api</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>credit-rating-api-server</artifactId>
+  <name>API 'credit rating': server</name>
+  <description>The server interface of the credit rating, generated from credit-rating.yaml. The simulator implements it.</description>
+
+  <!--
+    Only what the generated sources import: the annotations of Spring Web, of Jackson and of
+    Jakarta. No Spring Boot starter, so the module stays a small library.
+  -->
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        Generates the interface of the credit rating from '../credit-rating.yaml'. A controller of
+        the simulator implements it.
+        The settings all generated code shares are in the POM of the blueprint.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>credit-rating-server</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/../credit-rating.yaml</inputSpec>
+              <apiPackage>blueprint.externalsystems.creditrating.api.server</apiPackage>
+              <modelPackage>blueprint.externalsystems.creditrating.api.server.model</modelPackage>
+              <configOptions>
+                <!-- Only the interface. A controller implements it. -->
+                <interfaceOnly>true</interfaceOnly>
+                <skipDefaultInterface>true</skipDefaultInterface>
+                <!-- The path of the servers entry goes onto the interface, so two APIs fit into one application. -->
+                <requestMappingMode>api_interface</requestMappingMode>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

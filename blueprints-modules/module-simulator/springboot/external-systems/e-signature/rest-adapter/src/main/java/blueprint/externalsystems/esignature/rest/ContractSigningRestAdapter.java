@@ -1,16 +1,18 @@
 package blueprint.externalsystems.esignature.rest;
 
 import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 import blueprint.externalsystems.esignature.ContractSigning;
 import blueprint.externalsystems.esignature.ContractSigningUnavailableException;
 import blueprint.externalsystems.esignature.ContractToSign;
+import blueprint.externalsystems.esignature.api.client.EnvelopesApi;
+import blueprint.externalsystems.esignature.api.client.model.Envelope;
 
 /**
- * The e-signature service, reached over REST. The interface it speaks is described in
- * {@code external-systems/e-signature/openapi.yaml} of this blueprint.
+ * The e-signature service, reached over REST. The API is described in
+ * {@code external-systems/e-signature/e-signature-api/e-signature.yaml} of this blueprint, and
+ * {@link EnvelopesApi} is the client generated from it.
  *
  * <p>
  * The service answers in two steps. This class hands the contract over and tells the service
@@ -20,15 +22,7 @@ import blueprint.externalsystems.esignature.ContractToSign;
  */
 public class ContractSigningRestAdapter implements ContractSigning {
 
-  /** A contract handed over, in the words of the e-signature service. Only this adapter sees it. */
-  record Envelope(
-                  String contractId,
-                  String signer,
-                  String document,
-                  String callbackUrl) {
-  }
-
-  private final RestClient eSignature;
+  private final EnvelopesApi eSignature;
 
   private final String baseUrl;
 
@@ -37,13 +31,13 @@ public class ContractSigningRestAdapter implements ContractSigning {
   /**
    * Creates the adapter.
    *
-   * @param eSignature  A REST client whose base address is the e-signature service.
+   * @param eSignature  The generated client, whose base address is the e-signature service.
    * @param baseUrl     The same address, for the messages of this class.
    * @param callbackUrl Where the e-signature service reports a signature: the address of
    *                    {@link CallbackController}, as the service reaches it.
    */
   public ContractSigningRestAdapter(
-      final RestClient eSignature,
+      final EnvelopesApi eSignature,
       final String baseUrl,
       final String callbackUrl) {
 
@@ -59,12 +53,8 @@ public class ContractSigningRestAdapter implements ContractSigning {
 
     try {
 
-      eSignature
-          .post()
-          .uri("/api/v1/envelopes")
-          .body(new Envelope(contract.contractId(), contract.signer(), contract.text(), callbackUrl))
-          .retrieve()
-          .toBodilessEntity();
+      eSignature.createEnvelope(new Envelope(
+          contract.contractId(), contract.signer(), contract.text(), callbackUrl));
 
     } catch (ResourceAccessException | RestClientResponseException e) {
 

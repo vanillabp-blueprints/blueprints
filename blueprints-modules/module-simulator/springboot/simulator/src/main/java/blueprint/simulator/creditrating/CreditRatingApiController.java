@@ -1,24 +1,20 @@
 package blueprint.simulator.creditrating;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import blueprint.externalsystems.creditrating.api.server.CreditRatingApi;
+import blueprint.externalsystems.creditrating.api.server.model.Score;
+
 /**
- * The API of the credit rating, as {@code external-systems/credit-rating/openapi.yaml} describes
- * it. The adapter of the application talks to this exactly as it talks to the real system.
+ * The API of the credit rating. The path, the method and the JSON come from
+ * {@link CreditRatingApi}, the interface generated from
+ * {@code external-systems/credit-rating/credit-rating-api/credit-rating.yaml}. This class only
+ * implements it. The adapter of the application talks to this exactly as it talks to the real
+ * system.
  */
 @RestController
-@RequestMapping("/credit-rating/api/v1")
-public class CreditRatingApiController {
-
-  /** What the credit rating answers, in its own words. */
-  record Score(
-               String customerId,
-               int score) {
-  }
+public class CreditRatingApiController implements CreditRatingApi {
 
   private final CreditScores scores;
 
@@ -40,9 +36,9 @@ public class CreditRatingApiController {
    * @param customerId The id of the customer.
    * @return The score, or 404 for a customer the credit rating does not know.
    */
-  @GetMapping("/customers/{customerId}/score")
-  public ResponseEntity<Score> score(
-      @PathVariable final String customerId) {
+  @Override
+  public ResponseEntity<Score> getScore(
+      final String customerId) {
 
     return ResponseEntity.of(scores
         .of(customerId)
