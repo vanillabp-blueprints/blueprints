@@ -24,9 +24,22 @@ import lombok.extern.slf4j.Slf4j;
  * whether it is the simulator or the real system, this class cannot tell, and it does not have
  * to.
  * </p>
+ *
+ * <p>
+ * Every method runs in a transaction, so the class says {@code @Transactional}. A method called
+ * by a workflow task already runs in the transaction VanillaBP opened for it and joins it, but
+ * the annotation still shows that the method needs one.
+ * </p>
+ *
+ * <p>
+ * No method here throws a {@code TaskException}. One which does, so the process can react,
+ * needs {@code @Transactional(noRollbackFor = TaskException.class)}: VanillaBP commits its
+ * transaction for that exception, and a plain {@code @Transactional} would mark it for rollback.
+ * </p>
  */
 @Slf4j
 @org.springframework.stereotype.Service
+@Transactional
 public class Service {
 
   @Autowired
@@ -49,9 +62,9 @@ public class Service {
    * and only a customer with a good enough score gets a workflow.
    *
    * <p>
-   * There is no {@code @Transactional} here, on purpose. The credit rating is asked outside of a
-   * transaction, so no database connection waits for it. {@link Workflow} opens the transaction
-   * which stores the aggregate and starts the workflow.
+   * The credit rating is asked inside the transaction, so a database connection waits for its
+   * answer. The adapter gives up after a short timeout, which keeps that wait short. A system
+   * which may take long is asked before the transaction starts, in a class of its own.
    * </p>
    *
    * @param loanRequestId The natural id of the loan request.
@@ -135,7 +148,6 @@ public class Service {
    * @param taskId        The id of the user task "Prepare contract".
    * @param interestRate  The interest rate written into the contract, in percent.
    */
-  @Transactional
   public void prepareContract(
       final String loanRequestId,
       final String taskId,
@@ -202,7 +214,6 @@ public class Service {
    * @param loanRequestId The natural id of the loan request, which is the id of the contract.
    * @return {@code false} if there is no loan approval of this id.
    */
-  @Transactional
   public boolean contractSigned(
       final String loanRequestId) {
 

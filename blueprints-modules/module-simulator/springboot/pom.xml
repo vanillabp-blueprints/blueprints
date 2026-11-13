@@ -17,8 +17,9 @@
   <description>A small application of its own plays the systems a workflow module talks to: a credit rating, an e-signature service which calls back, and the Business Cockpit. The application mocks nothing. Its real adapters talk to the simulator.</description>
 
   <!--
-    The order is the order of the build. The simulator comes before the workflow module,
-    because the integration tests of the module run against it.
+    Maven sorts these modules by their dependencies. The order below only shows how they
+    belong together. That the simulator is built before the workflow module, whose integration
+    tests run against it, comes from a dependency in loan-approval/pom.xml.
   -->
   <modules>
     <module>external-systems/credit-rating/port</module>

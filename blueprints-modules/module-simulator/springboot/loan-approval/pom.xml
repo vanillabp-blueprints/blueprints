@@ -81,8 +81,15 @@
     </dependency>
     <!--
       Only for the order of the build: the simulator has to be built before these tests run.
-      The exclusion keeps every class of the simulator off the classpath of the tests. The
-      tests talk to the simulator over HTTP, as the application does.
+      Putting it first in the parent's <modules> is not enough. Maven sorts the modules by their
+      dependencies and keeps the order of <modules> only between modules which do not depend on
+      each other, and a parallel build ('-T') builds such modules at the same time. Only this
+      dependency makes Maven wait for the simulator's JAR, and only this dependency brings the
+      simulator into 'mvn -pl loan-approval -am'.
+
+      It puts nothing on a classpath: the type 'pom' adds no JAR, and the exclusion keeps the
+      simulator's own dependencies away. The tests talk to the simulator over HTTP, as the
+      application does.
     -->
     <dependency>
       <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>

@@ -252,7 +252,8 @@ EXTERNAL_SYSTEMS=real CREDIT_RATING_URL=... E_SIGNATURE_URL=... \
 | `application/src/test/.../ExternalSystemUnavailableIT.java`                               | the profile `real` with no system there, and the 503 a user gets                     |
 
 The order of events: the API asks `Service` for a loan. `Service` asks the credit rating through
-its port, outside of a transaction, so no database connection waits for the answer. A good score
+its port. Like every method of `Service`, this runs in a transaction, so a database connection
+waits for the answer, but only as long as the adapter's short timeout allows. A good score
 starts the workflow. The user task "Prepare contract" arrives in `WorkflowTaskHandler`, and the
 cockpit adapter reports it to the cockpit. The API completes it. The service task hands the
 contract to the e-signature service and notes it in the aggregate. The test waits for that note

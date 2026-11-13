@@ -44,6 +44,8 @@ Names this blueprint adds:
 4. The test API of the simulator lives below `/simulator/test-api/{system}/{action}` and knows
    nothing about the workflow. The caller gives the ids, or reserves one with `next-id`.
 5. A test waits for the state of the workflow aggregate, never for a fixed time.
+6. The service class says `@Transactional`, also where a workflow task already brings the
+   transaction of VanillaBP.
 
 ## Core files
 
@@ -110,7 +112,8 @@ Names this blueprint adds:
    simulator. Package it with the classifier `runnable`.
 7. Copy the profile `start-stop-simulator` into the POM of the module which has the
    integration tests, and the test scope dependency on the simulator with `<type>pom</type>`,
-   which only orders the build.
+   which only orders the build. The order of `<modules>` is not enough, above all in a
+   parallel build (`-T`).
 8. Copy `SimulatorExtension` and `SimulatorTestApi`, and write the integration test against the
    simulator. Wait for the aggregate after every step.
 9. Map the exception of a system the user waits for to a 503 which names its role.
