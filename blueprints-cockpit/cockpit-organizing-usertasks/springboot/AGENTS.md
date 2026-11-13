@@ -61,22 +61,21 @@ after tasks were stored, or they can no longer be read.
 
 ## Boilerplate files
 
-|                            File                             |                                                                                    Purpose                                                                                     |
-|-------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                  | the VanillaBP BOM import, the cockpit version and the rule which keeps adapters out of the workflow module                                                                     |
-| `loan-approval/pom.xml`                                     | `vanillabp-spring-boot-support`, `support` of the cockpit and Freemarker, never an adapter; `hibernate-maven-plugin`, which makes `Task#data` lazy; both adapters for the test |
-| `application/pom.xml`                                       | the BPMS adapter and the cockpit adapter of the same BPMS, the only place a BPMS is named                                                                                      |
-| `application/src/main/java/.../Application.java`            | the Spring Boot application, in the parent package of the module                                                                                                               |
-| `application/src/main/java/.../SecurityConfiguration.java`  | how users log in: HTTP Basic for `/api/**`, six demo users; replace it with the login of your application                                                                      |
-| `application/src/main/resources/application.yaml`           | the datasource, `open-in-view: false`, where the reports go, and the profile the Maven build filters in                                                                        |
-| `loan-approval/src/main/java/.../loanapproval/support/`     | `UnknownTaskException`, `TaskNotOpenException` and their answers 404 and 409, as in the base blueprint                                                                         |
-| `loan-approval/src/test/java/.../StoredLoanApprovals.java`  | reads a loan approval for a test inside a transaction, with all tasks and their data                                                                                           |
-| `loan-approval/src/test/java/.../CockpitSimulator.java`     | starts the dev shell simulator of the cockpit for the test                                                                                                                     |
-| `loan-approval/src/test/resources/dev-shell-simulator.yaml` | the users of the simulator                                                                                                                                                     |
-| `loan-approval/src/test/java/.../TestApplication.java`      | the minimal application the module's test boots                                                                                                                                |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`   | base class of the integration tests: waits for workflow progress                                                                                                               |
-| `application/src/test/java/.../ApplicationSmokeTest.java`   | boots the application, which validates the BPMN-to-code wiring                                                                                                                 |
-| `docs/loan_approval.png`                                    | the picture of the process the README shows, rendered from the BPMN model                                                                                                      |
+|                            File                             |                                                                                           Purpose                                                                                            |
+|-------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                  | the VanillaBP BOM import, the cockpit version and the rule which keeps adapters out of the workflow module                                                                                   |
+| `loan-approval/pom.xml`                                     | `vanillabp-spring-boot-support`, `business-cockpit-spring-boot-support` and Freemarker, never an adapter; `hibernate-maven-plugin`, which makes `Task#data` lazy; both adapters for the test |
+| `application/pom.xml`                                       | the BPMS adapter and the cockpit adapter of the same BPMS, the only place a BPMS is named                                                                                                    |
+| `application/src/main/java/.../Application.java`            | the Spring Boot application, in the parent package of the module                                                                                                                             |
+| `application/src/main/java/.../SecurityConfiguration.java`  | how users log in: HTTP Basic for `/api/**`, six demo users; replace it with the login of your application                                                                                    |
+| `application/src/main/resources/application.yaml`           | the datasource, `open-in-view: false`, where the reports go, and the profile the Maven build filters in                                                                                      |
+| `loan-approval/src/test/java/.../StoredLoanApprovals.java`  | reads a loan approval for a test inside a transaction, with all tasks and their data                                                                                                         |
+| `loan-approval/src/test/java/.../CockpitSimulator.java`     | starts the dev shell simulator of the cockpit for the test                                                                                                                                   |
+| `loan-approval/src/test/resources/dev-shell-simulator.yaml` | the users of the simulator                                                                                                                                                                   |
+| `loan-approval/src/test/java/.../TestApplication.java`      | the minimal application the module's test boots                                                                                                                                              |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`   | base class of the integration tests: waits for workflow progress                                                                                                                             |
+| `application/src/test/java/.../ApplicationSmokeTest.java`   | boots the application, which validates the BPMN-to-code wiring                                                                                                                               |
+| `docs/loan_approval.png`                                    | the picture of the process the README shows, rendered from the BPMN model                                                                                                                    |
 
 `TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
 blueprint. Copy them unchanged.
@@ -84,10 +83,9 @@ blueprint. Copy them unchanged.
 ## Adding this blueprint to an existing project
 
 Apply `cockpit-usertasks-in-the-application` first. The tasks and their data loaded lazily,
-`@Transactional` on `Service` and the package `support` come from there. The package `support`
-of the module is not the `support` library of the cockpit.
+`@Transactional` on `Service` and the exceptions about a task id come from there.
 
-1. Add `io.vanillabp.businesscockpit:support` and `org.freemarker:freemarker` to the workflow
+1. Add `io.vanillabp.businesscockpit:business-cockpit-spring-boot-support` and `org.freemarker:freemarker` to the workflow
    module. Add the cockpit adapter of your BPMS to the application, and to the module only in
    the test scope.
 2. Write the keys of the cockpit into the configuration file of the module, below

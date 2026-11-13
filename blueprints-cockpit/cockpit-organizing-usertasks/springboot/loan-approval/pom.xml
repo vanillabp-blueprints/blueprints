@@ -29,13 +29,13 @@
     </dependency>
     <!--
       The same for the Business Cockpit: its annotations and types, such as
-      @UserTaskDetailsProvider and BusinessCockpitService. Like the line above, this knows no
-      BPMS. The cockpit adapter of the BPMS is chosen by the application, next to the BPMS
-      adapter.
+      @UserTaskDetailsProvider and BusinessCockpitService, and the exceptions about a task id
+      with their answers 404 and 409. Like the line above, this knows no BPMS. The cockpit
+      adapter of the BPMS is chosen by the application, next to the BPMS adapter.
     -->
     <dependency>
       <groupId>io.vanillabp.businesscockpit</groupId>
-      <artifactId>support</artifactId>
+      <artifactId>business-cockpit-spring-boot-support</artifactId>
       <version>${businesscockpit.version}</version>
     </dependency>
     <!--

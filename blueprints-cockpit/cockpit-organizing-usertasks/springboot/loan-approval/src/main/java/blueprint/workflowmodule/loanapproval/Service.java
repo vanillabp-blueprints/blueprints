@@ -16,8 +16,8 @@ import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.CallCustomerTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.Task;
 import blueprint.workflowmodule.loanapproval.model.usertask.TaskData;
-import blueprint.workflowmodule.loanapproval.support.TaskNotOpenException;
-import blueprint.workflowmodule.loanapproval.support.UnknownTaskException;
+import io.vanillabp.cockpit.support.usertask.BcTaskNotOpenException;
+import io.vanillabp.cockpit.support.usertask.BcUnknownTaskException;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -217,7 +217,7 @@ public class Service {
    * @param taskId        The id of the user task.
    * @param kind          The data of the kind of user task the caller expects.
    * @return The loan request.
-   * @throws UnknownTaskException If there is no such task of that kind.
+   * @throws BcUnknownTaskException If there is no such task of that kind.
    */
   @Transactional(readOnly = true)
   public Aggregate withTask(
@@ -227,11 +227,11 @@ public class Service {
 
     final var loanRequest = loanApprovals
         .findById(loanRequestId)
-        .orElseThrow(() -> new UnknownTaskException(loanRequestId, taskId));
+        .orElseThrow(() -> new BcUnknownTaskException(loanRequestId, taskId));
     loanRequest
         .getTask(taskId)
         .filter(task -> task.holds(kind))
-        .orElseThrow(() -> new UnknownTaskException(loanRequestId, taskId));
+        .orElseThrow(() -> new BcUnknownTaskException(loanRequestId, taskId));
     return loanRequest;
 
   }
@@ -257,10 +257,10 @@ public class Service {
 
     final var loanRequest = loanApprovals
         .findById(loanRequestId)
-        .orElseThrow(() -> new UnknownTaskException(loanRequestId, taskId));
+        .orElseThrow(() -> new BcUnknownTaskException(loanRequestId, taskId));
     final var task = loanRequest
         .getTask(taskId)
-        .orElseThrow(() -> new UnknownTaskException(loanRequestId, taskId));
+        .orElseThrow(() -> new BcUnknownTaskException(loanRequestId, taskId));
 
     if (task.isOpen() && task.addEditor(user)) {
       workflow.taskDetailsChanged(loanRequest, taskId);
@@ -524,7 +524,7 @@ public class Service {
         .getTask(taskId)
         .orElseThrow()
         .isOpen()) {
-      throw new TaskNotOpenException(loanRequestId, taskId);
+      throw new BcTaskNotOpenException(loanRequestId, taskId);
     }
 
     return loanRequest;

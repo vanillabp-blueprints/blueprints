@@ -2,6 +2,7 @@ package blueprint.workflowmodule.loanapproval;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.assertj.core.api.Assertions.within;
 
 import java.time.OffsetDateTime;
@@ -13,6 +14,7 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -34,6 +36,8 @@ import blueprint.workflowmodule.loanapproval.model.usertask.ApproveLoanTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.CallCustomerTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.TaskData;
+import io.vanillabp.cockpit.support.usertask.BcTaskNotOpenException;
+import io.vanillabp.cockpit.support.usertask.BcUserTaskExceptionHandler;
 import jakarta.persistence.EntityManagerFactory;
 
 /**
@@ -72,6 +76,9 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
 
   @Autowired
   private PlatformTransactionManager transactionManager;
+
+  @Autowired
+  private BcUserTaskExceptionHandler userTaskExceptionHandler;
 
   @DynamicPropertySource
   static void reportToTheSimulator(
@@ -276,6 +283,15 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     assertThat(awaitAggregate(stored::find, loanRequestId, found -> found.getLoanApproved() != null))
         .extracting(Aggregate::getLoanApproved, Aggregate::getDecidedBy)
         .containsExactly(true, "dave");
+
+    // The same form sent a second time. The module imports the handler of the cockpit, which
+    // answers that the task is done with 409.
+    final var refused = catchThrowableOfType(
+        BcTaskNotOpenException.class,
+        () -> forms.completeApproveLoan(loanRequestId, approval, new ApproveLoanInput(true, "fine"), dave));
+    assertThat(userTaskExceptionHandler
+        .taskNotOpen(refused)
+        .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
   }
 

@@ -246,16 +246,17 @@ Compared to [`cockpit-usertasks-in-the-application`](https://github.com/vanillab
 | `OrganizingUserTasksIT.java`       | replaces `LoanApprovalIT` and `UserTaskFormSecurityIT`: one test per pattern, which checks what the cockpit was told, and the proof that tasks and their data are loaded only when read |
 | `CockpitSimulator.java`            | new: starts the dev shell simulator of the cockpit for the test                                                                                                                         |
 | `ReportRecorder.java`              | new: keeps a copy of every report on its way to the simulator                                                                                                                           |
-| `loan-approval/pom.xml`            | the `support` library of the cockpit and Freemarker; the cockpit adapter next to the BPMS adapter; the simulator for the test                                                           |
+| `loan-approval/pom.xml`            | `business-cockpit-spring-boot-support` and Freemarker; the cockpit adapter next to the BPMS adapter; the simulator for the test                                                         |
 | `application/pom.xml`              | the cockpit adapter next to the BPMS adapter in every profile                                                                                                                           |
 
 Drafts work as in the base blueprint and are left out here, so the forms have no PUT.
 
 The rest is the same as in the base blueprint. The tasks and their data are loaded lazily,
 `Service` carries `@Transactional` on the class, and the application sets
-`open-in-view: false`. The package `support` of the module holds `UnknownTaskException` and
-`TaskNotOpenException`, with their answers 404 and 409. It has nothing to do with the `support`
-library of the cockpit. The details providers run inside the transaction of VanillaBP, so they
+`open-in-view: false`. `BcUnknownTaskException` and `BcTaskNotOpenException` of the cockpit's
+`business-cockpit-spring-boot-support` say what is wrong with a task id, and
+`BcUserTaskExceptionHandler`, which `UserTaskFormController` imports, answers them with 404 and
+409. The details providers run inside the transaction of VanillaBP, so they
 may read the tasks.
 
 ## Running it
