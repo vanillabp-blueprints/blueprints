@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
+    <artifactId>module-under-load</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>loan-approval</artifactId>
+  <name>Workflow module 'loan-approval'</name>
+  <description>The workflow module: BPMN models and the code implementing them, packaged as a JAR.</description>
+
+  <dependencies>
+    <!--
+      The workflow module knows the VanillaBP APIs, but no BPMS: 'vanillabp-quarkus-support'
+      deliberately does not expose any BPMS API, so the hexagonal architecture cannot be
+      broken by accident. The adapter is chosen by the application (see ../application).
+    -->
+    <dependency>
+      <groupId>io.vanillabp</groupId>
+      <artifactId>vanillabp-quarkus-support</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-hibernate-orm-panache</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <!--
+      Testing the workflow module means running it: the test sources add a database and a
+      BPMS adapter, and Quarkus boots the module out of this Maven module. This is the
+      normal case - a workflow module is a JAR and is not deployed on its own.
+    -->
+    <dependency>
+      <groupId>io.vanillabp</groupId>
+      <artifactId>vanillabp-quarkus-integration</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jdbc-h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-config-yaml</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        The API of this module is written as the OpenAPI file
+        'src/main/resources/openapi/loan-approval.yaml'. This plugin generates the Java interface
+        'LoanApprovalApi' from it, with the paths, the parameters and the answers. 'ApiController'
+        implements the interface and holds nothing but the code of each call.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>${openapi-generator.version}</version>
+        <!-- The settings every API of this module shares. -->
+        <configuration>
+          <!-- Jakarta REST, which Quarkus REST implements. -->
+          <generatorName>jaxrs-spec</generatorName>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <configOptions>
+            <useJakartaEe>true</useJakartaEe>
+            <!-- Where the build looks for sources. The default of this generator is a folder it does not. -->
+            <sourceFolder>src/main/java</sourceFolder>
+            <!-- One interface per tag, named after it. -->
+            <useTags>true</useTags>
+            <!-- Only the interface. The resource class implements it. -->
+            <interfaceOnly>true</interfaceOnly>
+            <!-- A method returns the answer itself. Quarkus turns it into the response. -->
+            <returnResponse>false</returnResponse>
+            <!-- No library beyond Jakarta REST and Jackson: no Swagger annotations, no bean validation. -->
+            <useSwaggerAnnotations>false</useSwaggerAnnotations>
+            <useMicroProfileOpenAPIAnnotations>false</useMicroProfileOpenAPIAnnotations>
+            <useBeanValidation>false</useBeanValidation>
+            <generatePom>false</generatePom>
+            <hideGenerationTimestamp>true</hideGenerationTimestamp>
+          </configOptions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>loan-approval-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        A workflow module is a Maven module of its own, so the application's build does not
+        see its classes. The index is what makes them visible: without it, the
+        '@WorkflowService' class of this module is never found.
+      -->
+      <plugin>
+        <groupId>io.smallrye</groupId>
+        <artifactId>jandex-maven-plugin</artifactId>
+        <version>${jandex-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>make-index</id>
+            <goals>
+              <goal>jandex</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!--
+    The test of a workflow module names the BPMS it runs on once: the adapter it puts on the
+    test classpath. It never reaches the module's main sources - the module knows no BPMS.
+  -->
+  <profiles>
+    <profile>
+      <id>camunda7</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <bpms>camunda7</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda7-adapter-quarkus</artifactId>
+          <version>${camunda7-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>camunda8</id>
+      <properties>
+        <bpms>camunda8</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda8-adapter-quarkus</artifactId>
+          <version>${camunda8-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>operaton</id>
+      <properties>
+        <bpms>operaton</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>operaton-adapter-quarkus</artifactId>
+          <version>${operaton-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>cibseven</id>
+      <properties>
+        <bpms>cibseven</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>cibseven-adapter-quarkus</artifactId>
+          <version>${cibseven-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>

@@ -1,0 +1,49 @@
+openapi: 3.0.3
+info:
+  title: Load run
+  description: >
+    Starting a load run and reading its report. It has GET requests only, so a person can do both
+    in a browser, without any tool and without a request body.
+
+    The build generates the Java interface 'LoadRunApi' from this file, and 'LoadRunController'
+    implements it.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: load-run
+    description: Putting the workflow module under load
+paths:
+  /api/load-run/start:
+    get:
+      tags:
+        - load-run
+      operationId: start
+      summary: Starts a load run in the background
+      parameters:
+        - name: size
+          in: query
+          description: The name of a run size, one of the keys below 'load-run.sizes'
+          schema:
+            type: string
+            default: small
+      responses:
+        '200':
+          description: A sentence which says whether the run started, and where its report is
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/load-run/report:
+    get:
+      tags:
+        - load-run
+      operationId: report
+      summary: The report of the last run, or how far the current run has come
+      responses:
+        '200':
+          description: The report as text, the same the log shows at the end of a run
+          content:
+            text/plain:
+              schema:
+                type: string

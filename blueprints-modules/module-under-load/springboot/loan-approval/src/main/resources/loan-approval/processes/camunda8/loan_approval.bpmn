@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToRequestCreditScore</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRequestCreditScore" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_RequestCreditScore" />
+    <!-- The first service task. It asks a neighbour system, which answers later with a message. -->
+    <bpmn:serviceTask id="ServiceTask_RequestCreditScore" name="Ask the credit bureau">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="requestCreditScore" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToRequestCreditScore</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToBureauAnswer</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToBureauAnswer" sourceRef="ServiceTask_RequestCreditScore" targetRef="Gateway_BureauAnswer" />
+    <!--
+      Whichever comes first wins: the answer of the credit bureau, or the end of the time
+      the process gives it. A neighbour system which never answers must not keep a
+      workflow waiting for good.
+    -->
+    <bpmn:eventBasedGateway id="Gateway_BureauAnswer" name="Does the bureau answer?">
+      <bpmn:incoming>Flow_ToBureauAnswer</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToCreditScoreReceived</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToNoAnswer</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:sequenceFlow id="Flow_ToCreditScoreReceived" sourceRef="Gateway_BureauAnswer" targetRef="CatchEvent_CreditScoreReceived" />
+    <bpmn:sequenceFlow id="Flow_ToNoAnswer" sourceRef="Gateway_BureauAnswer" targetRef="CatchEvent_NoAnswer" />
+    <bpmn:intermediateCatchEvent id="CatchEvent_CreditScoreReceived" name="Credit score received">
+      <bpmn:incoming>Flow_ToCreditScoreReceived</bpmn:incoming>
+      <bpmn:outgoing>Flow_ScoreToAssessLoan</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_CreditScoreReceived" messageRef="Message_CreditScoreReceived" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="CatchEvent_NoAnswer" name="No answer in time">
+      <bpmn:incoming>Flow_ToNoAnswer</bpmn:incoming>
+      <bpmn:outgoing>Flow_NoAnswerToAssessLoan</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_NoAnswer">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ScoreToAssessLoan" sourceRef="CatchEvent_CreditScoreReceived" targetRef="UserTask_AssessLoan" />
+    <bpmn:sequenceFlow id="Flow_NoAnswerToAssessLoan" sourceRef="CatchEvent_NoAnswer" targetRef="UserTask_AssessLoan" />
+    <!-- The user task. A clerk holds it while thinking, with or without the score. -->
+    <bpmn:userTask id="UserTask_AssessLoan" name="Assess the loan">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition externalReference="assessLoan" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ScoreToAssessLoan</bpmn:incoming>
+      <bpmn:incoming>Flow_NoAnswerToAssessLoan</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToApproved</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_ToApproved" sourceRef="UserTask_AssessLoan" targetRef="Gateway_Approved" />
+    <!-- The share of each branch is not in the model. The load profile says it. -->
+    <bpmn:exclusiveGateway id="Gateway_Approved" name="Approved?" default="Flow_ToInformRejection">
+      <bpmn:incoming>Flow_ToApproved</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToPayoutRun</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToInformRejection</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_ToPayoutRun" name="yes" sourceRef="Gateway_Approved" targetRef="CatchEvent_PayoutRun">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=approved</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToInformRejection" name="no" sourceRef="Gateway_Approved" targetRef="ServiceTask_InformRejection" />
+    <!--
+      The timer which wakes many workflows at once. Every loan approved before the next
+      payout run gets the same due date from the aggregate. So they all wait here, and
+      they all wake up in the same moment.
+    -->
+    <bpmn:intermediateCatchEvent id="CatchEvent_PayoutRun" name="Next payout run">
+      <bpmn:incoming>Flow_ToPayoutRun</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToPayOut</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_PayoutRun">
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">=date and time(payoutRunAt)</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ToPayOut" sourceRef="CatchEvent_PayoutRun" targetRef="ServiceTask_PayOut" />
+    <bpmn:serviceTask id="ServiceTask_PayOut" name="Pay out the loan">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="payOut" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToPayOut</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanPaidOut</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanPaidOut" sourceRef="ServiceTask_PayOut" targetRef="EndEvent_LoanPaidOut" />
+    <bpmn:endEvent id="EndEvent_LoanPaidOut" name="Loan paid out">
+      <bpmn:incoming>Flow_ToLoanPaidOut</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="ServiceTask_InformRejection" name="Inform the customer">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="informRejection" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToInformRejection</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanRejected</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanRejected" sourceRef="ServiceTask_InformRejection" targetRef="EndEvent_LoanRejected" />
+    <bpmn:endEvent id="EndEvent_LoanRejected" name="Loan rejected">
+      <bpmn:incoming>Flow_ToLoanRejected</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <!-- The message name is the string the business code passes to 'correlateMessage'. -->
+  <bpmn:message id="Message_CreditScoreReceived" name="CreditScoreReceived" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="132" y="145" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RequestCreditScore_di" bpmnElement="ServiceTask_RequestCreditScore">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_BureauAnswer_di" bpmnElement="Gateway_BureauAnswer">
+        <dc:Bounds x="395" y="95" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="380" y="58" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CatchEvent_CreditScoreReceived_di" bpmnElement="CatchEvent_CreditScoreReceived">
+        <dc:Bounds x="492" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="472" y="145" width="77" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CatchEvent_NoAnswer_di" bpmnElement="CatchEvent_NoAnswer">
+        <dc:Bounds x="492" y="212" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="467" y="255" width="87" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_AssessLoan_di" bpmnElement="UserTask_AssessLoan">
+        <dc:Bounds x="590" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Approved_di" bpmnElement="Gateway_Approved" isMarkerVisible="true">
+        <dc:Bounds x="745" y="95" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="733" y="65" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CatchEvent_PayoutRun_di" bpmnElement="CatchEvent_PayoutRun">
+        <dc:Bounds x="852" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="831" y="145" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_PayOut_di" bpmnElement="ServiceTask_PayOut">
+        <dc:Bounds x="940" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanPaidOut_di" bpmnElement="EndEvent_LoanPaidOut">
+        <dc:Bounds x="1092" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1076" y="145" width="69" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_InformRejection_di" bpmnElement="ServiceTask_InformRejection">
+        <dc:Bounds x="940" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanRejected_di" bpmnElement="EndEvent_LoanRejected">
+        <dc:Bounds x="1092" y="212" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1076" y="255" width="69" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRequestCreditScore_di" bpmnElement="Flow_ToRequestCreditScore">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToBureauAnswer_di" bpmnElement="Flow_ToBureauAnswer">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="395" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToCreditScoreReceived_di" bpmnElement="Flow_ToCreditScoreReceived">
+        <di:waypoint x="445" y="120" />
+        <di:waypoint x="492" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToNoAnswer_di" bpmnElement="Flow_ToNoAnswer">
+        <di:waypoint x="420" y="145" />
+        <di:waypoint x="420" y="230" />
+        <di:waypoint x="492" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ScoreToAssessLoan_di" bpmnElement="Flow_ScoreToAssessLoan">
+        <di:waypoint x="528" y="120" />
+        <di:waypoint x="590" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_NoAnswerToAssessLoan_di" bpmnElement="Flow_NoAnswerToAssessLoan">
+        <di:waypoint x="528" y="230" />
+        <di:waypoint x="640" y="230" />
+        <di:waypoint x="640" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToApproved_di" bpmnElement="Flow_ToApproved">
+        <di:waypoint x="690" y="120" />
+        <di:waypoint x="745" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToPayoutRun_di" bpmnElement="Flow_ToPayoutRun">
+        <di:waypoint x="795" y="120" />
+        <di:waypoint x="852" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="812" y="102" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToPayOut_di" bpmnElement="Flow_ToPayOut">
+        <di:waypoint x="888" y="120" />
+        <di:waypoint x="940" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanPaidOut_di" bpmnElement="Flow_ToLoanPaidOut">
+        <di:waypoint x="1040" y="120" />
+        <di:waypoint x="1092" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToInformRejection_di" bpmnElement="Flow_ToInformRejection">
+        <di:waypoint x="770" y="145" />
+        <di:waypoint x="770" y="230" />
+        <di:waypoint x="940" y="230" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="779" y="185" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanRejected_di" bpmnElement="Flow_ToLoanRejected">
+        <di:waypoint x="1040" y="230" />
+        <di:waypoint x="1092" y="230" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
