@@ -1,0 +1,57 @@
+openapi: 3.0.3
+info:
+  title: Credit history
+  description: >
+    The API of the use case 'credit-history'. It has GET requests only, so a person can walk through
+    the process in a browser, without any tool and without a request body.
+
+    The build generates the Java interface 'CreditHistoryApi' from this file, and 'ApiController'
+    implements it. So the paths, the parameters and the answers below are the contract, and nobody
+    writes them by hand.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: credit-history
+    description: Operating the use case 'credit-history'
+paths:
+  /api/credit-history/start:
+    get:
+      tags:
+        - credit-history
+      operationId: start
+      summary: Requests a credit history
+      parameters:
+        - name: years
+          in: query
+          description: How many years back to look
+          schema:
+            type: integer
+            default: 3
+      responses:
+        '200':
+          description: The id of the request started
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/credit-history/{creditHistoryId}:
+    get:
+      tags:
+        - credit-history
+      operationId: show
+      summary: Shows what the process did
+      parameters:
+        - name: creditHistoryId
+          in: path
+          required: true
+          description: The id returned by starting the process
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The workflow aggregate as it is stored right now
+          content:
+            text/plain:
+              schema:
+                type: string

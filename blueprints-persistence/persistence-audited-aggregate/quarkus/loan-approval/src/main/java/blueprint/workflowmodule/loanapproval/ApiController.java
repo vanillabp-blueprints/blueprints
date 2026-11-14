@@ -2,14 +2,10 @@ package blueprint.workflowmodule.loanapproval;
 
 import java.util.UUID;
 
+import blueprint.workflowmodule.loanapproval.api.LoanApprovalApi;
 import blueprint.workflowmodule.loanapproval.audit.ChangeBeingMade;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -24,11 +20,16 @@ import lombok.extern.slf4j.Slf4j;
  * around the call which opens the transaction, because Envers writes the revision when
  * that transaction commits.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanApprovalApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-approval.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @ApplicationScoped
-@Path("/api/loan-approval")
-public class ApiController {
+public class ApiController implements LoanApprovalApi {
 
   @Inject
   Service loanApproval;
@@ -41,13 +42,10 @@ public class ApiController {
    * @param requestedBy Who asks for the loan, which is what the trail will name.
    * @return The id of the loan request started.
    */
-  @GET
-  @Path("/start")
+  @Override
   public String start(
-      @QueryParam("amount")
-      @DefaultValue("5000") final int amount,
-      @QueryParam("requestedBy")
-      @DefaultValue("the customer") final String requestedBy) {
+      final Integer amount,
+      final String requestedBy) {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
@@ -73,15 +71,12 @@ public class ApiController {
    * @param decidedBy        Who assessed it, which is what the trail will name.
    * @return What was done, for the browser to show.
    */
-  @GET
-  @Path("/{loanRequestId}/assess-risk/{taskId}")
+  @Override
   public String assessRisk(
-      @PathParam("loanRequestId") final String loanRequestId,
-      @PathParam("taskId") final String taskId,
-      @QueryParam("riskIsAcceptable")
-      @DefaultValue("true") final boolean riskIsAcceptable,
-      @QueryParam("decidedBy")
-      @DefaultValue("paula") final String decidedBy) {
+      final String loanRequestId,
+      final String taskId,
+      final Boolean riskIsAcceptable,
+      final String decidedBy) {
 
     ChangeBeingMade.attributeTo(
         decidedBy,
@@ -99,10 +94,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GET
-  @Path("/{loanRequestId}")
+  @Override
   public String show(
-      @PathParam("loanRequestId") final String loanRequestId) {
+      final String loanRequestId) {
 
     return loanApproval
         .get(loanRequestId)
@@ -120,10 +114,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return The trail, oldest change first.
    */
-  @GET
-  @Path("/{loanRequestId}/trail")
+  @Override
   public String trail(
-      @PathParam("loanRequestId") final String loanRequestId) {
+      final String loanRequestId) {
 
     final var trail = loanApproval.getTrail(loanRequestId);
 

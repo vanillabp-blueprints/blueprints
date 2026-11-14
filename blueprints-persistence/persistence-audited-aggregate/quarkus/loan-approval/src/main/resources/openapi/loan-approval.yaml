@@ -1,0 +1,121 @@
+openapi: 3.0.3
+info:
+  title: Loan approval
+  description: >
+    The API of the use case 'loan-approval'. It has GET requests only, so a person can walk through
+    the process in a browser, without any tool and without a request body.
+
+    The build generates the Java interface 'LoanApprovalApi' from this file, and 'ApiController'
+    implements it. So the paths, the parameters and the answers below are the contract, and nobody
+    writes them by hand.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: loan-approval
+    description: Operating the use case 'loan-approval'
+paths:
+  /api/loan-approval/start:
+    get:
+      tags:
+        - loan-approval
+      operationId: start
+      summary: Starts a loan approval
+      parameters:
+        - name: amount
+          in: query
+          description: The amount requested
+          schema:
+            type: integer
+            default: 5000
+        - name: requestedBy
+          in: query
+          description: Who asks for the loan, which is what the trail will name
+          schema:
+            type: string
+            default: the customer
+      responses:
+        '200':
+          description: The id of the loan request started
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/loan-approval/{loanRequestId}/assess-risk/{taskId}:
+    get:
+      tags:
+        - loan-approval
+      operationId: assessRisk
+      summary: Answers the open risk assessment, which completes the user task and lets the process continue to the payout
+      parameters:
+        - name: loanRequestId
+          in: path
+          required: true
+          description: The id returned by starting the process
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          description: The id of the user task, taken from the logged URL
+          schema:
+            type: string
+        - name: riskIsAcceptable
+          in: query
+          description: What the assessment concluded
+          schema:
+            type: boolean
+            default: true
+        - name: decidedBy
+          in: query
+          description: Who assessed it, which is what the trail will name
+          schema:
+            type: string
+            default: paula
+      responses:
+        '200':
+          description: What was done, for the browser to show
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/loan-approval/{loanRequestId}:
+    get:
+      tags:
+        - loan-approval
+      operationId: show
+      summary: Shows what the process did, which is the second half of operating it in a browser
+      parameters:
+        - name: loanRequestId
+          in: path
+          required: true
+          description: The id returned by starting the process
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The workflow aggregate as it is stored right now
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/loan-approval/{loanRequestId}/trail:
+    get:
+      tags:
+        - loan-approval
+      operationId: trail
+      summary: Shows every state the loan approval went through and who caused it
+      parameters:
+        - name: loanRequestId
+          in: path
+          required: true
+          description: The id returned by starting the process
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The trail, oldest change first
+          content:
+            text/plain:
+              schema:
+                type: string
