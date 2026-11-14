@@ -245,8 +245,7 @@ Compared to [`cockpit-usertasks-in-the-application`](https://github.com/vanillab
 | `SecurityConfiguration.java`                        | six demo users                                                                                                                                                                          |
 | `application.yaml`                                  | where the reports go: the dev shell simulator                                                                                                                                           |
 | `OrganizingUserTasksIT.java`                        | replaces `LoanApprovalIT` and `UserTaskFormSecurityIT`: one test per pattern, which checks what the cockpit was told, and the proof that tasks and their data are loaded only when read |
-| `CockpitSimulator.java`                             | new: starts the dev shell simulator of the cockpit for the test                                                                                                                         |
-| `ReportRecorder.java`                               | new: keeps a copy of every report on its way to the simulator                                                                                                                           |
+| `CockpitSimulator.java`                             | new: starts the dev shell simulator of the cockpit for the test, and reads the reports back from it                                                                                     |
 | `loan-approval/pom.xml`                             | `business-cockpit-spring-boot-support` and Freemarker; the cockpit adapter next to the BPMS adapter; the simulator for the test                                                         |
 | `application/pom.xml`                               | the cockpit adapter next to the BPMS adapter in every profile                                                                                                                           |
 
@@ -323,7 +322,9 @@ http://localhost:8080/api/loan-approval/0f7c…/change-advisor?advisor=erin
 ```
 
 What the cockpit got is in the log of the simulator, and in its API at
-`http://localhost:8079/official-api/v1/usertask/{taskId}`.
+`http://localhost:8079/official-api/v1/usertask/{taskId}`. The last report about a task, with the
+excluded candidates, the admitted users and the kind of notification which that API does not
+show, is at `http://localhost:8079/simulator-api/usertask/{taskId}/report`.
 
 ## How it works
 
@@ -341,7 +342,7 @@ What the cockpit got is in the log of the simulator, and in its API at
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                                                 | the rules about time and the keys of the cockpit                                                      |
 | `loan-approval/src/main/resources/loan-approval/business-cockpit-templates/loan_approval/assessRisk/task-title.ftl` | the title of "Assess risk", with `task-title_de.ftl` next to it                                       |
 | `loan-approval/src/test/.../OrganizingUserTasksIT.java`                                                             | one test per pattern                                                                                  |
-| `loan-approval/src/test/.../ReportRecorder.java`                                                                    | keeps what the module reported, for the assertions                                                    |
+| `loan-approval/src/test/.../CockpitSimulator.java`                                                                  | runs the dev shell simulator, and reads what the module reported from it, for the assertions          |
 
 The order of events: the advisor starts a loan approval. `Service#request` writes the advisor as
 the advisor of the customer and as the last one who acted. The BPMS rates the loan and creates
@@ -357,12 +358,14 @@ A details provider only reads. VanillaBP does not save the aggregate after a pro
 a provider which changed something would compete with the writes of the workflow.
 
 The integration test runs the module with its real cockpit adapter. It starts the dev shell
-simulator of the cockpit as a process of its own, with a small recorder in front of it, and
-points `vanillabp.cockpit.rest.base-url` at the recorder. The simulator does not keep the
-excluded candidates, the admitted users and the kind of notification. The recorder keeps a copy
-of every report, and the test asserts on that copy. Maven copies the runnable JAR of the
-simulator to `target/` before the integration tests run, and the test writes the simulator's
-log to `target/dev-shell-simulator.log`.
+simulator of the cockpit as a process of its own, and points `vanillabp.cockpit.rest.base-url`
+at it. The official API of the cockpit does not show the excluded candidates, the admitted users
+and the kind of notification. The simulator keeps them anyway, and it answers the last report
+about a user task, as the module sent it, at `/simulator-api/usertask/{id}/report`. The test
+asserts on that report. What a user of the cockpit sees, such as the end of a task or the
+workflow, it reads from the official API. Maven copies the runnable JAR of the simulator to
+`target/` before the integration tests run, and the test writes the simulator's log to
+`target/dev-shell-simulator.log`.
 
 ## Documentation
 
