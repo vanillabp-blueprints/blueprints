@@ -7,3 +7,9 @@ vanillabp:
       # configuration the blueprint ships. Without this line the test would fall back to the
       # default 'by-adapter' and address Camunda 7 differently than the application does.
       name-clash-avoidance: use-prefix
+      # The same format and plugin as in the application's profile file, so the test stores
+      # the list the way the application does.
+      serialization-format: application/json
+      engine-plugins:
+        spin:
+          plugin-class: org.camunda.spin.plugin.impl.SpinProcessEnginePlugin

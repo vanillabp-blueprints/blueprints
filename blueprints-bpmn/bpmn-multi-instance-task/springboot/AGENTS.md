@@ -44,20 +44,20 @@ the BPMS (business process management system) did supply.
 
 ## Boilerplate files
 
-|                               File                                |                                             Purpose                                             |
-|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                        | the BPMS profiles and the VanillaBP BOM import                                                  |
-| `loan-approval/pom.xml`                                           | `vanillabp-spring-boot-support`, never an adapter                                               |
-| `application/pom.xml`                                             | the BPMS adapter, the only place a BPMS is named                                                |
-| `application/src/main/java/.../Application.java`                  | the Spring Boot application, in the parent package of the module                                |
-| `application/src/main/resources/application.yaml`                 | the datasource, and the profile the Maven build filters in                                      |
-| `application/src/main/resources/application-camunda7.yaml`        | the Camunda 7 settings: the name-clash-avoidance mode and the demo user of its web applications |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                             |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`      | starts the workflow                                                                             |
-| `loan-approval/src/test/java/.../TestApplication.java`            | the minimal application the module's test boots                                                 |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                 |
-| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                                  |
-| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model                       |
+|                               File                                |                                                               Purpose                                                               |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                        | the BPMS profiles and the VanillaBP BOM import, and the engine versions the JSON dataformat needs                                   |
+| `loan-approval/pom.xml`                                           | `vanillabp-spring-boot-support`, never an adapter                                                                                   |
+| `application/pom.xml`                                             | the BPMS adapter and the JSON dataformat of its engine, the only place a BPMS is named                                              |
+| `application/src/main/java/.../Application.java`                  | the Spring Boot application, in the parent package of the module                                                                    |
+| `application/src/main/resources/application.yaml`                 | the datasource, and the profile the Maven build filters in                                                                          |
+| `application/src/main/resources/application-camunda7.yaml`        | the Camunda 7 settings: the name-clash-avoidance mode, the JSON format of the shared list and the demo user of its web applications |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                                                                 |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`      | starts the workflow                                                                                                                 |
+| `loan-approval/src/test/java/.../TestApplication.java`            | the minimal application the module's test boots                                                                                     |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                                                     |
+| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                                                                      |
+| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model                                                           |
 
 `TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
 blueprint. Copy them unchanged.
@@ -70,6 +70,11 @@ blueprint. Copy them unchanged.
 2. Add the multi-instance element to the BPMN and let it read that attribute
    (`camunda:collection="${partnerIds}"` on Camunda 7, `inputCollection="=partnerIds"` on
    Camunda 8). Never push a collection into the process as a variable.
+   On Camunda 7, Operaton and CIB seven the list travels as an object variable. Set
+   `serialization-format: application/json` and the SPIN engine plugin in the profile file of
+   that engine, and add the SPIN JSON dataformat to its Maven profile, as
+   `application-camunda7.yaml` and `application/pom.xml` show. Without them the engine stores
+   the list with Java serialization, and the adapter warns about it.
 3. Annotate the parameters of the `@WorkflowTask` method with `@MultiInstanceElement`,
    `@MultiInstanceIndex` or `@MultiInstanceTotal`, whichever the business code needs. Give each
    of them **the ID of the multi-instance element**.
