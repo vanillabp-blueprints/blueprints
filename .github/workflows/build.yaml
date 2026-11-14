@@ -16,7 +16,16 @@ concurrency:
   cancel-in-progress: true
 permissions:
   contents: read
+  # reads the VanillaBP snapshots from GitHub Packages, see VBP_SNAPSHOTS_FROM below
+  packages: read
 env:
+  # Where Maven reads the VanillaBP snapshots from, see .github/maven/settings.xml: from
+  # GitHub Packages once the vanillabp organization sets the Actions variable
+  # VANILLABP_SNAPSHOTS_FROM to 'github-packages', else from the snapshot repository of Maven
+  # Central. Reading GitHub Packages needs a token even for public packages. The GITHUB_TOKEN
+  # of the run is enough, with 'packages: read' above.
+  VBP_SNAPSHOTS_FROM: "${{ vars.VANILLABP_SNAPSHOTS_FROM == 'github-packages' && 'github-packages' || 'central' }}"
+  VBP_PACKAGES_READ_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
   # The branch of vanillabp-blueprints/.github the index is read from - it says which
   # BPMS a blueprint is built against.
   INDEX_REF: main
@@ -183,7 +192,7 @@ jobs:
         # them get "not found" from Maven Central for artifacts which are there. The script
         # repeats only what the log proves to be a transfer, never a failed test.
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
-          -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
+          -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
           -P${{ matrix.bpms }} install
       # In the summary of this job, because this is where a red blueprint is read. The
@@ -286,7 +295,7 @@ jobs:
         # integration tests of the Quarkus blueprints ran here, in a job which starts
         # neither a Camunda 8 cluster nor anything else they need, and the build waited ten
         # minutes for a cluster nobody had started.
-        run: mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
+        run: mvn -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots -DskipTests -DskipITs
           ${LEAVE_OUT} install
       - name: Resolve what the other engines need, so the cache holds that too
@@ -299,7 +308,7 @@ jobs:
         # out of the restored cache, and only their own --update-snapshots saved them.
         run: |
           for engine in camunda8 operaton cibseven; do
-            mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
+            mvn -s "$GITHUB_WORKSPACE/.github/maven/settings.xml" \
               --batch-mode --no-transfer-progress --update-snapshots -P"$engine" \
               -DskipTests -DskipITs ${LEAVE_OUT} dependency:go-offline
           done
@@ -319,7 +328,7 @@ jobs:
         # ask Central for more, not less.
         run: |
           resolved="${RUNNER_TEMP}/plugins.txt"
-          if ! mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
+          if ! mvn -s "$GITHUB_WORKSPACE/.github/maven/settings.xml" \
               --batch-mode --no-transfer-progress ${LEAVE_OUT} \
               dependency:resolve-plugins > "${resolved}" 2>&1; then
             tail -n 50 "${resolved}"
@@ -333,7 +342,7 @@ jobs:
           fi
           echo "Surefire and Failsafe in use:" ${versions}
           for version in ${versions}; do
-            mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
+            mvn -s "$GITHUB_WORKSPACE/.github/maven/settings.xml" \
               --batch-mode --no-transfer-progress \
               dependency:get -Dartifact="org.apache.maven.surefire:surefire-junit-platform:${version}"
           done
@@ -345,7 +354,7 @@ jobs:
           # so they are read from the engines the build put into the repository.
           for engine in ~/.m2/repository/org/junit/platform/junit-platform-engine/*/; do
             version="$(basename "${engine}")"
-            mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
+            mvn -s "$GITHUB_WORKSPACE/.github/maven/settings.xml" \
               --batch-mode --no-transfer-progress \
               dependency:get -Dartifact="org.junit.platform:junit-platform-launcher:${version}"
           done

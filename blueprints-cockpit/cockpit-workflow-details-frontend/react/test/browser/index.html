@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>loan-approval in the host of the module kit</title>
+  <style>
+    /* The styles of the page must not reach into the shadow DOM of the case page. */
+    button { background: rgb(0, 128, 0); }
+    /* A narrow page, the way a cockpit gives a case page a column of its own. */
+    #workflow-page { width: 32rem; }
+  </style>
+  <script type="module" src="/host.js"></script>
+</head>
+<body>
+  <button id="outside">A button of the page</button>
+  <main id="workflow-page">
+    <div data-bc-area="body"></div>
+    <div data-bc-area="information"></div>
+    <div data-bc-area="actions"></div>
+  </main>
+</body>
+</html>

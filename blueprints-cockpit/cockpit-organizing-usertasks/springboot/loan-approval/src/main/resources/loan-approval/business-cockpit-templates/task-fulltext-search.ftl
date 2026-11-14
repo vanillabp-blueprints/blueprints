@@ -1,0 +1,2 @@
+<#-- What the search box of the task list finds every user task of this module by. It has the phone number, which no column shows, so a clerk with a customer on the phone finds the case. -->
+${customer} ${phone} ${advisor} ${loanRequestId}

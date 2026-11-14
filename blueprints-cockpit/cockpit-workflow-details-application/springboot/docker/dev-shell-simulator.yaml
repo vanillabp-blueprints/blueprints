@@ -1,0 +1,10 @@
+# The users of the cockpit in 'docker-compose.yaml'. The cockpit asks the dev shell simulator
+# for them when it starts, and the simulator refuses to start without any. Log in to the
+# cockpit as one of them, with the password 'test'.
+dev-shell-simulator:
+  users:
+    - id: jane
+      email: jane@doe.com
+      first-name: Jane
+      last-name: Doe
+      groups: LOAN_APPROVAL

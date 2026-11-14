@@ -22,9 +22,16 @@ import lombok.extern.slf4j.Slf4j;
  * the library {@code banking-commons}, which holds a value object and a client, and nothing
  * a process is made of.
  * </p>
+ *
+ * <p>
+ * Every method runs in a transaction, so the class says {@code @Transactional}. A method
+ * called by a workflow task already runs in the transaction VanillaBP opened for it and joins
+ * it, but the annotation still shows that the method needs one.
+ * </p>
  */
 @Slf4j
 @org.springframework.stereotype.Service
+@Transactional
 public class Service {
 
   @Autowired
@@ -46,7 +53,6 @@ public class Service {
    * @param customerId  The customer paying it back.
    * @param amount      The amount owed.
    */
-  @Transactional
   public void initiate(
       final String repaymentId,
       final String customerId,

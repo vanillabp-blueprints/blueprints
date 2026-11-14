@@ -12,12 +12,12 @@ name: Build the cockpit frontends
       - main
     paths:
       - "blueprints-cockpit/*-frontend/**"
-      - "blueprints-cockpit/*-backend/*/api/**"
+      - "blueprints-cockpit/*-backend/*/*/src/main/resources/openapi/**"
       - ".github/workflows/frontend.yaml"
   pull_request:
     paths:
       - "blueprints-cockpit/*-frontend/**"
-      - "blueprints-cockpit/*-backend/*/api/**"
+      - "blueprints-cockpit/*-backend/*/*/src/main/resources/openapi/**"
       - ".github/workflows/frontend.yaml"
   workflow_dispatch:
 concurrency:
@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
       - name: Install
         run: npm ci
       - name: Install Chromium for the browser tests

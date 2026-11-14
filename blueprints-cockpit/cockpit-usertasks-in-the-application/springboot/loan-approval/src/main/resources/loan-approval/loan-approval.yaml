@@ -1,0 +1,24 @@
+# Configuration of the workflow module 'loan-approval'.
+#
+# The file is named after the workflow module ID and is loaded automatically, with a
+# lower priority than application.yaml. Everything only this module needs belongs here -
+# that is what keeps a workflow module a self-contained application inside the
+# application.
+loan-approval:
+  rating-scale: 100
+  # The documents somebody checks for every loan request. The workflow opens one user task
+  # "Check document" per entry, all of them at the same time.
+  required-documents:
+    - id-card
+    - income-statement
+
+# The list the model loops over reaches the BPMS, and a list is neither a boolean nor a
+# text, so it is declared. A multi-instance task needs the collection itself: it counts the
+# entries to know how often it runs, and no boolean getter can answer that.
+vanillabp:
+  workflow-modules:
+    loan-approval:
+      workflows:
+        loan_approval:
+          declared-aggregate-values:
+            - documentIds
