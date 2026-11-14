@@ -11,6 +11,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,8 +48,8 @@ import jakarta.persistence.EntityManagerFactory;
  * <p>
  * The test calls the controllers as beans, as the user who would be logged in. So the method
  * security of the module is checked, without the login of an application in front of it. The
- * reports go to the dev shell simulator, and the {@link ReportRecorder} in front of it keeps a
- * copy for the assertions.
+ * reports go to the dev shell simulator, and the test reads them back from there, see
+ * {@link CockpitSimulator}.
  * </p>
  */
 public class OrganizingUserTasksIT extends WorkflowModuleTest {
@@ -106,10 +107,13 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var loanRequestId = requestLoanAs("alice");
     final var call = openTask(loanRequestId, CallCustomerTaskData.class);
 
-    assertThat(cockpit().awaitUserTaskReport(call, "created", report -> true))
+    assertThat(cockpit().awaitUserTaskReport(call, report -> true))
         .containsEntry("initiator", "alice");
-    assertThat(cockpit().awaitWorkflowReport(loanRequestId, "created", report -> true))
-        .containsEntry("initiator", "alice")
+    final var workflow = cockpit().awaitWorkflow(loanRequestId, found -> true);
+    assertThat(workflow.get("initiator"))
+        .asInstanceOf(InstanceOfAssertFactories.MAP)
+        .containsEntry("id", "alice");
+    assertThat(workflow)
         .containsEntry("title", Map.of(
             "en", "Loan request of Jane Roe over 5000 EUR",
             "de", "Kreditantrag von Jane Roe über 5000 EUR"));
@@ -118,7 +122,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var riskAssessment = openTask(loanRequestId, AssessRiskTaskData.class);
 
     // The risk assessment was opened because alice completed her call.
-    assertThat(cockpit().awaitUserTaskReport(riskAssessment, "created", report -> true))
+    assertThat(cockpit().awaitUserTaskReport(riskAssessment, report -> true))
         .containsEntry("initiator", "alice");
 
   }
@@ -133,7 +137,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var loanRequestId = requestLoanAs("alice");
     final var call = openTask(loanRequestId, CallCustomerTaskData.class);
 
-    final var report = cockpit().awaitUserTaskReport(call, "created", found -> true);
+    final var report = cockpit().awaitUserTaskReport(call, found -> true);
 
     assertThat(report)
         .containsEntry("assignee", "alice")
@@ -163,7 +167,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var user = logIn("alice", Permission.CALL_CUSTOMER);
     forms.customerNotReached(loanRequestId, call, user);
 
-    final var report = cockpit().awaitUserTaskReport(call, "updated", found -> found.get("followUpDate") != null);
+    final var report = cockpit().awaitUserTaskReport(call, found -> found.get("followUpDate") != null);
 
     final var vienna = ZoneId.of("Europe/Vienna");
     final var tomorrowAtNine = OffsetDateTime
@@ -203,8 +207,8 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var secondCall = openTaskId(loanRequest, CallCustomerTaskData.class);
 
     assertThat(secondCall).isNotEqualTo(firstCall);
-    cockpit().awaitUserTaskReport(firstCall, "cancelled", report -> true);
-    assertThat(cockpit().awaitUserTaskReport(secondCall, "created", report -> true))
+    cockpit().awaitUserTask(firstCall, userTask -> "CANCELLED".equals(userTask.get("endReason")));
+    assertThat(cockpit().awaitUserTaskReport(secondCall, report -> true))
         .containsEntry("assignee", "erin")
         .containsEntry("initiator", "lea");
 
@@ -223,7 +227,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     callTheCustomer(loanRequestId, openTask(loanRequestId, CallCustomerTaskData.class), "alice");
     final var riskAssessment = openTask(loanRequestId, AssessRiskTaskData.class);
 
-    final var report = cockpit().awaitUserTaskReport(riskAssessment, "created", found -> true);
+    final var report = cockpit().awaitUserTaskReport(riskAssessment, found -> true);
 
     assertThat(report.get("assignee")).isNull();
     assertThat(report)
@@ -257,7 +261,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
             "carol", Permission.ASSESS_RISK, Permission.APPROVE_LOAN));
     final var approval = openTask(loanRequestId, ApproveLoanTaskData.class);
 
-    final var report = cockpit().awaitUserTaskReport(approval, "created", found -> true);
+    final var report = cockpit().awaitUserTaskReport(approval, found -> true);
     assertThat(report)
         .containsEntry("initiator", "carol")
         .containsEntry("candidateGroups", List.of(Permission.APPROVE_LOAN))
@@ -311,7 +315,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     assertThat(forms.getAssessRiskForm(loanRequestId, riskAssessment, logIn("bob", Permission.ASSESS_RISK))
         .editable()).isTrue();
     cockpit().awaitUserTaskReport(
-        riskAssessment, "updated", report -> List.of("bob").equals(report.get("admittedUsers")));
+        riskAssessment, report -> List.of("bob").equals(report.get("admittedUsers")));
 
     // bob moved to another team and has no authority of this module any more.
     final var bobInAnotherTeam = logIn("bob");
@@ -360,7 +364,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
 
   }
 
-  private ReportRecorder cockpit() {
+  private CockpitSimulator cockpit() {
 
     return CockpitSimulator.start();
 
