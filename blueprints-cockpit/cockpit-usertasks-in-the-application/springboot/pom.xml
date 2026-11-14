@@ -43,6 +43,8 @@
       its Spring Boot support, for the exceptions about a task id.
     -->
     <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
+    <!-- Generates the Java interfaces of the APIs from their OpenAPI files. -->
+    <openapi-generator.version>7.27.0</openapi-generator.version>
   </properties>
 
   <dependencyManagement>

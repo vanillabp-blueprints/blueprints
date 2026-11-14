@@ -214,7 +214,8 @@ events. So the Camunda 8 model names it itself: `=loanRequestId`, the process va
 holds the id of the aggregate. Camunda 7 correlates by the business key, and its models need
 nothing.
 
-The endpoints are written by hand, as in `cockpit-user-task-backend`. The integration test reads
+The build generates the interface `CasesApi` and the record `Case` from the OpenAPI, as in
+`cockpit-user-task-backend`, and `CasePageController` implements it. The integration test reads
 the OpenAPI from the classpath and checks that every operation in it has its endpoint.
 
 The integration test talks to the module the way the page does, only without the proxy of the

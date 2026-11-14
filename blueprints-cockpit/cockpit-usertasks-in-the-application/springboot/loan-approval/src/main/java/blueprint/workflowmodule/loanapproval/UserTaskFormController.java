@@ -1,22 +1,21 @@
 package blueprint.workflowmodule.loanapproval;
 
-import java.security.Principal;
-import java.time.OffsetDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import blueprint.workflowmodule.loanapproval.api.UserTaskFormsApi;
+import blueprint.workflowmodule.loanapproval.api.model.AssessRiskForm;
+import blueprint.workflowmodule.loanapproval.api.model.AssessRiskInput;
+import blueprint.workflowmodule.loanapproval.api.model.CheckDocumentForm;
+import blueprint.workflowmodule.loanapproval.api.model.CheckDocumentInput;
+import blueprint.workflowmodule.loanapproval.api.model.TaskState;
 import blueprint.workflowmodule.loanapproval.config.Permission;
 import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.CheckDocumentTaskData;
@@ -55,11 +54,16 @@ import io.vanillabp.cockpit.support.usertask.BcUserTaskExceptionHandler;
  * brings both exceptions and {@link BcUserTaskExceptionHandler}, which answers them. Nothing
  * registers the handler on its own, so the controller imports it.
  * </p>
+ *
+ * <p>
+ * The paths and the records of the requests and answers come from {@link UserTaskFormsApi}, the
+ * interface the build generates from {@code src/main/resources/openapi/user-task-forms.yaml}.
+ * This class only implements it, and adds the permission of each endpoint.
+ * </p>
  */
 @RestController
 @Import(BcUserTaskExceptionHandler.class)
-@RequestMapping("/api/loan-approval/{loanRequestId}")
-public class UserTaskFormController {
+public class UserTaskFormController implements UserTaskFormsApi {
 
   @Autowired
   private Service loanApproval;
@@ -71,11 +75,11 @@ public class UserTaskFormController {
    * @param taskId        The id of the user task.
    * @return The loan request, the values of the form and the state of the task.
    */
-  @GetMapping("/assess-risk/{taskId}")
+  @Override
   @Secured(Permission.ASSESS_RISK)
   public AssessRiskForm getAssessRiskForm(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId) {
+      final String loanRequestId,
+      final String taskId) {
 
     final var loanRequest = loanApproval.withTask(loanRequestId, taskId, AssessRiskTaskData.class);
     final var task = loanRequest
@@ -85,7 +89,7 @@ public class UserTaskFormController {
 
     return new AssessRiskForm(
         loanRequest.getLoanRequestId(), loanRequest.getAmount(), loanRequest.getCreditRating(), data
-            .riskAcceptable(), data.comment(), TaskState.of(task));
+            .riskAcceptable(), data.comment(), stateOf(task));
 
   }
 
@@ -96,13 +100,12 @@ public class UserTaskFormController {
    * @param taskId        The id of the user task.
    * @param input         What the form holds right now, may be incomplete.
    */
-  @PutMapping("/assess-risk/{taskId}")
+  @Override
   @Secured(Permission.ASSESS_RISK)
-  @ResponseStatus(HttpStatus.NO_CONTENT)
   public void saveAssessRiskForm(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId,
-      @RequestBody final AssessRiskInput input) {
+      final String loanRequestId,
+      final String taskId,
+      final AssessRiskInput input) {
 
     loanApproval.saveRiskAssessmentDraft(loanRequestId, taskId, input.riskAcceptable(), input.comment());
 
@@ -113,19 +116,16 @@ public class UserTaskFormController {
    *
    * @param loanRequestId The id of the loan request.
    * @param taskId        The id of the user task.
-   * @param input         What the user sent at the end.
-   * @param user          The user logged in, who completes the task.
+   * @param input         What the user sent at the end. The user logged in completes the task.
    */
-  @PostMapping("/assess-risk/{taskId}")
+  @Override
   @Secured(Permission.ASSESS_RISK)
-  @ResponseStatus(HttpStatus.NO_CONTENT)
   public void completeAssessRisk(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId,
-      @RequestBody final AssessRiskInput input,
-      final Principal user) {
+      final String loanRequestId,
+      final String taskId,
+      final AssessRiskInput input) {
 
-    loanApproval.assessRisk(loanRequestId, taskId, input.riskAcceptable(), input.comment(), user.getName());
+    loanApproval.assessRisk(loanRequestId, taskId, input.riskAcceptable(), input.comment(), whoIsLoggedIn());
 
   }
 
@@ -142,11 +142,11 @@ public class UserTaskFormController {
    * @param taskId        The id of the user task.
    * @return The document, the values of the form and the state of the task.
    */
-  @GetMapping("/check-document/{taskId}")
+  @Override
   @Secured(Permission.CHECK_DOCUMENT)
   public CheckDocumentForm getCheckDocumentForm(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId) {
+      final String loanRequestId,
+      final String taskId) {
 
     final var loanRequest = loanApproval.withTask(loanRequestId, taskId, CheckDocumentTaskData.class);
     final var task = loanRequest
@@ -156,7 +156,7 @@ public class UserTaskFormController {
 
     return new CheckDocumentForm(
         loanRequest.getLoanRequestId(), data.documentId(), data.valid(), data.remark(), loanRequest
-            .getRiskAcceptable(), TaskState.of(task));
+            .getRiskAcceptable(), stateOf(task));
 
   }
 
@@ -167,13 +167,12 @@ public class UserTaskFormController {
    * @param taskId        The id of the user task.
    * @param input         What the form holds right now, may be incomplete.
    */
-  @PutMapping("/check-document/{taskId}")
+  @Override
   @Secured(Permission.CHECK_DOCUMENT)
-  @ResponseStatus(HttpStatus.NO_CONTENT)
   public void saveCheckDocumentForm(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId,
-      @RequestBody final CheckDocumentInput input) {
+      final String loanRequestId,
+      final String taskId,
+      final CheckDocumentInput input) {
 
     loanApproval.saveDocumentCheckDraft(loanRequestId, taskId, input.valid(), input.remark());
 
@@ -184,19 +183,16 @@ public class UserTaskFormController {
    *
    * @param loanRequestId The id of the loan request.
    * @param taskId        The id of the user task.
-   * @param input         What the user sent at the end.
-   * @param user          The user logged in, who completes the task.
+   * @param input         What the user sent at the end. The user logged in completes the task.
    */
-  @PostMapping("/check-document/{taskId}")
+  @Override
   @Secured(Permission.CHECK_DOCUMENT)
-  @ResponseStatus(HttpStatus.NO_CONTENT)
   public void completeCheckDocument(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId,
-      @RequestBody final CheckDocumentInput input,
-      final Principal user) {
+      final String loanRequestId,
+      final String taskId,
+      final CheckDocumentInput input) {
 
-    loanApproval.checkDocument(loanRequestId, taskId, input.valid(), input.remark(), user.getName());
+    loanApproval.checkDocument(loanRequestId, taskId, input.valid(), input.remark(), whoIsLoggedIn());
 
   }
 
@@ -216,90 +212,32 @@ public class UserTaskFormController {
   }
 
   /**
+   * The user Spring Security logged in for this request. The generated interface knows nothing
+   * about security, so the name is taken from the security context and never from the request.
+   *
+   * @return The name of the user.
+   */
+  private static String whoIsLoggedIn() {
+
+    return SecurityContextHolder
+        .getContext()
+        .getAuthentication()
+        .getName();
+
+  }
+
+  /**
    * The state of a user task, the same for every form.
    *
-   * @param createdAt   When the BPMS opened the task.
-   * @param updatedAt   When a draft was saved last.
-   * @param completedAt When the task was completed or canceled.
-   * @param completedBy Who completed it, empty if the workflow canceled it.
-   * @param open        Whether somebody can still work on it.
+   * @param task The user task.
+   * @return When it was opened, saved and completed, by whom, and whether it is still open.
    */
-  public record TaskState(
-                          OffsetDateTime createdAt,
-                          OffsetDateTime updatedAt,
-                          OffsetDateTime completedAt,
-                          String completedBy,
-                          boolean open) {
+  private static TaskState stateOf(
+      final Task task) {
 
-    static TaskState of(
-        final Task task) {
+    return new TaskState(
+        task.getCreatedAt(), task.getUpdatedAt(), task.getCompletedAt(), task.getCompletedBy(), task.isOpen());
 
-      return new TaskState(
-          task.getCreatedAt(), task.getUpdatedAt(), task.getCompletedAt(), task.getCompletedBy(), task.isOpen());
-
-    }
-
-  }
-
-  /**
-   * What the form "Assess risk" shows.
-   *
-   * @param loanRequestId  The id of the loan request.
-   * @param amount         The amount requested.
-   * @param creditRating   The rating of the service task before.
-   * @param riskAcceptable The draft, or the result once the task is completed.
-   * @param comment        The draft, or the result once the task is completed.
-   * @param task           The state of the task.
-   */
-  public record AssessRiskForm(
-                               String loanRequestId,
-                               Integer amount,
-                               Integer creditRating,
-                               Boolean riskAcceptable,
-                               String comment,
-                               TaskState task) {
-  }
-
-  /**
-   * What the user entered in the form "Assess risk".
-   *
-   * @param riskAcceptable Whether the risk is acceptable. Needed to complete, not to save.
-   * @param comment        Why.
-   */
-  public record AssessRiskInput(
-                                Boolean riskAcceptable,
-                                String comment) {
-  }
-
-  /**
-   * What a form "Check document" shows.
-   *
-   * @param loanRequestId  The id of the loan request.
-   * @param documentId     The document to check.
-   * @param valid          The draft, or the result once the task is completed.
-   * @param remark         The draft, or the result once the task is completed.
-   * @param riskAcceptable The result of the risk assessment, empty until that task is
-   *                       completed.
-   * @param task           The state of the task.
-   */
-  public record CheckDocumentForm(
-                                  String loanRequestId,
-                                  String documentId,
-                                  Boolean valid,
-                                  String remark,
-                                  Boolean riskAcceptable,
-                                  TaskState task) {
-  }
-
-  /**
-   * What the user entered in a form "Check document".
-   *
-   * @param valid  Whether the document is in order. Needed to complete, not to save.
-   * @param remark What the user noted.
-   */
-  public record CheckDocumentInput(
-                                   Boolean valid,
-                                   String remark) {
   }
 
 }

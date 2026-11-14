@@ -64,6 +64,8 @@ components:
   schemas:
     Case:
       type: object
+      # A value which is not there is left out of the JSON, rather than sent as null.
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
       required:
         - loanRequestId
         - applicant
