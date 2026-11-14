@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+vanillabp:
+  # Every report to the cockpit goes through the outbox first. A short poll interval lets the
+  # test see the reports a moment after they were written. An application keeps the default.
+  outbox:
+    poll-interval: PT0.2S
+  cockpit:
+    # Where the reports go: the dev shell simulator, on the port it uses by default. That is
+    # the setup for developing the user interface against this backend. The integration test
+    # starts a simulator of its own on a free port and overrides this address.
+    rest:
+      base-url: http://localhost:8079
+logging:
+  level:
+    blueprint.workflowmodule: INFO

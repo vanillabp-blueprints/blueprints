@@ -29,7 +29,16 @@ concurrency:
   cancel-in-progress: true
 permissions:
   contents: read
+  # reads the VanillaBP snapshots from GitHub Packages, see VBP_SNAPSHOTS_FROM below
+  packages: read
 env:
+  # Where Maven reads the VanillaBP snapshots from, see .github/maven/settings.xml: from
+  # GitHub Packages once the vanillabp organization sets the Actions variable
+  # VANILLABP_SNAPSHOTS_FROM to 'github-packages', else from the snapshot repository of Maven
+  # Central. Reading GitHub Packages needs a token even for public packages. The GITHUB_TOKEN
+  # of the run is enough, with 'packages: read' above.
+  VBP_SNAPSHOTS_FROM: "${{ vars.VANILLABP_SNAPSHOTS_FROM == 'github-packages' && 'github-packages' || 'central' }}"
+  VBP_PACKAGES_READ_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
   BACKEND: blueprints-cockpit/cockpit-user-task-backend/springboot
   FRONTEND: blueprints-cockpit/cockpit-user-task-frontend/react
   APPLICATION: blueprints-cockpit/cockpit-user-task-application-proxy/springboot
@@ -79,7 +88,7 @@ jobs:
       #    Its own tests run in build.yaml, so they are skipped here.
       - name: Install the backend
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
-          -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
+          -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
           -f "$BACKEND/pom.xml" -P${{ matrix.bpms }} -DskipTests -DskipITs install
 
@@ -98,7 +107,7 @@ jobs:
       # 3. The application, and its integration test against the image just built.
       - name: Build and test the application
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
-          -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
+          -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
           -f "$APPLICATION/pom.xml" -P${{ matrix.bpms }} install
 

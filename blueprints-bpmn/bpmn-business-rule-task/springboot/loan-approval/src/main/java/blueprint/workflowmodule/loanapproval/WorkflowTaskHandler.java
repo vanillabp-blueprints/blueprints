@@ -35,13 +35,14 @@ import io.vanillabp.spi.service.WorkflowTask;
  * </p>
  *
  * <p>
- * There is no {@code @Transactional} here, and adding one would be a mistake. VanillaBP
- * loads the aggregate, runs the method and saves the aggregate in one transaction it owns,
- * and it commits that transaction for a {@code TaskException} on purpose. A transaction
- * declared by the application would roll back instead and throw away what the handler
- * wrote for the process to react to. VanillaBP does not let that happen unnoticed: such an
- * annotation on this class or on a {@code @WorkflowTask} method fails the boot naming the
- * method, and one on a bean further down the call chain fails the task while it runs.
+ * There is no {@code @Transactional} here, and adding one would be a mistake. VanillaBP loads
+ * the aggregate, runs the method and saves the aggregate in one transaction it owns, and it
+ * commits that transaction for a {@code TaskException} on purpose. A transaction declared by
+ * the application would roll back instead and throw away what the handler wrote for the
+ * process to react to. VanillaBP does not let that happen unnoticed: such an annotation on
+ * this class or on a {@code @WorkflowTask} method fails the boot naming the method, and a
+ * plain one on a bean further down the call chain fails the task as soon as a
+ * {@code TaskException} passes it.
  * </p>
  *
  * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-task">Wire up a task</a>

@@ -20,9 +20,16 @@ import lombok.extern.slf4j.Slf4j;
  * signal is broadcast per workflow module, so the loan approval's broadcast reaches this
  * process too, and neither side knows about the other.
  * </p>
+ *
+ * <p>
+ * Every method runs in a transaction, so the class says {@code @Transactional}. A method
+ * called by a workflow task already runs in the transaction VanillaBP opened for it and joins
+ * it, but the annotation still shows that the method needs one.
+ * </p>
  */
 @Slf4j
 @ApplicationScoped
+@Transactional
 public class Service {
 
   @Inject
@@ -36,7 +43,6 @@ public class Service {
    *
    * @param watchId The natural id of this watch.
    */
-  @Transactional
   public void startWatching(
       final String watchId) {
 

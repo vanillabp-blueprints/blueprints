@@ -93,16 +93,16 @@ Inheriting it from the base class does not make the test a bean.
    instead of adding a second one.
 5. Add `WorkflowTaskHandler` with the `@WorkflowService` annotation and one `@WorkflowTask`
    method per BPMN task, each doing nothing but calling `Service`. Never annotate the handler
-   or the service methods it calls with `@Transactional`. VanillaBP runs a task in a
-   transaction of its own and commits it for a `TaskException`. A transaction declared here
-   would roll that back. VanillaBP rejects both cases: the annotation on the handler fails the
-   boot, and the one on a bean it calls fails the task. So an annotation left in place shows up
-   as an error which names the method. Add `Workflow` with one method per business event the
-   process has to learn about. Add `Service` with the business methods. If the project already
-   has a business service for this use case, add the methods there instead of creating a second
-   one. Never inject `ProcessService` into it, and never merge the two workflow classes.
-   `Service` uses `Workflow` and is used by `WorkflowTaskHandler`, so merging them creates a
-   circular bean reference.
+   with `@Transactional`. VanillaBP runs a task in a transaction of its own and commits it for a
+   `TaskException`. An annotation on the handler would roll that back, so it fails the boot with
+   an error which names the method. Add `Workflow` with one method per business event the
+   process has to learn about. Add `Service` with the business methods, and put `@Transactional`
+   on the class. Its methods join the transaction of the task. A method which throws a
+   `TaskException` needs `@Transactional(dontRollbackOn = TaskException.class)`, otherwise
+   VanillaBP fails the task and names the method. If the project already has a business service
+   for this use case, add the methods there instead of creating a second one. Never inject
+   `ProcessService` into it, and never merge the two workflow classes. `Service` uses `Workflow`
+   and is used by `WorkflowTaskHandler`, so merging them creates a circular bean reference.
 6. Add GET endpoints starting the process and showing the aggregate.
 7. Copy `LoanApprovalIT` and adapt it to the use case.
 

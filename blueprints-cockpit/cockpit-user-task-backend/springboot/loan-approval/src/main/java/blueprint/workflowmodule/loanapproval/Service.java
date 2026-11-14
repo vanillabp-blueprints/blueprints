@@ -34,14 +34,21 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  *
  * <p>
- * Note where {@code @Transactional} sits. It is on the methods the API calls, because starting
- * a workflow and completing a user task have to run in a transaction. It is deliberately
- * absent from the methods a task handler calls: VanillaBP already runs a task in a transaction
- * it owns.
+ * Every method runs in a transaction, so the class says {@code @Transactional}. A method
+ * called by a workflow task already runs in the transaction VanillaBP opened for it and joins
+ * it, but the annotation still shows that the method needs one.
+ * </p>
+ *
+ * <p>
+ * No method here throws a {@code TaskException}. One which does, so the process can react,
+ * needs {@code @Transactional(noRollbackFor = TaskException.class)}: VanillaBP commits its
+ * transaction for that exception, and a plain {@code @Transactional} would mark it for
+ * rollback.
  * </p>
  */
 @Slf4j
 @org.springframework.stereotype.Service
+@Transactional
 public class Service {
 
   @Autowired
@@ -56,7 +63,6 @@ public class Service {
    * @param loanRequestId The natural id of the loan request.
    * @param amount        The amount requested.
    */
-  @Transactional
   public void request(
       final String loanRequestId,
       final int amount) {
@@ -116,7 +122,6 @@ public class Service {
    * @param riskAssessment What the user entered.
    * @return False if no user task "Assess risk" is open under this id.
    */
-  @Transactional
   public boolean assessRisk(
       final String taskId,
       final String riskAssessment) {
@@ -183,7 +188,6 @@ public class Service {
    * @param documentsNote What the user entered.
    * @return False if no user task "Check documents" is open under this id.
    */
-  @Transactional
   public boolean checkDocuments(
       final String taskId,
       final String documentsNote) {

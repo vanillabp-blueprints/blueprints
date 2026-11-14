@@ -1,4 +1,4 @@
-// Copies the OpenAPI file of the module API to build/openapi/loan-approval.yaml, where
+// Copies the OpenAPI file of the workflow module to build/openapi/loan-approval.yaml, where
 // `npm run generate:client` reads it. It also writes the server URL of the file to
 // src/generated/server.ts, and the API client takes that as its base URL.
 //

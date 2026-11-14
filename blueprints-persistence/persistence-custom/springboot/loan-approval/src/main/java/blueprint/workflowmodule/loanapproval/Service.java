@@ -37,9 +37,9 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  *
  * <p>
- * The methods a task handler calls bracket nothing, exactly as everywhere else: VanillaBP has
- * already opened the unit of work for the task, and it commits it for a {@code TaskException}
- * on purpose so the process can react to what the handler wrote.
+ * The methods a task handler calls bracket nothing: VanillaBP has already opened the unit of
+ * work for the task, and it commits it for a {@code TaskException} on purpose so the process
+ * can react to what the handler wrote.
  * </p>
  */
 @Slf4j

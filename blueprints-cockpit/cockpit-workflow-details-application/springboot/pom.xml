@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.2</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>io.vanillabp.blueprint.cockpit-workflow-details-application-springboot</groupId>
+  <artifactId>cockpit-workflow-details-application</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <name>Blueprint: the page of a case in the Business Cockpit, application</name>
+  <description>The application which runs the workflow module and serves its user interface to the Business Cockpit.</description>
+
+  <!--
+    The application is the last of three repositories. It takes the workflow module of the
+    backend and the JAR of the user interface which the frontend built, and runs both. It has
+    no code of its own apart from the class which starts it. The README says why the three are
+    apart and in which order they are released.
+  -->
+
+  <properties>
+    <!--
+      The name of the BPMS profile, set by every BPMS profile below. It is used twice: the
+      build filters it into 'application.yaml', so the application loads
+      'application-<bpms>.yaml', and the tests get it as a system property. That way the BPMS
+      is named ONCE, on the Maven command line.
+    -->
+    <bpms>none</bpms>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <java.version>21</java.version>
+    <!-- All VanillaBP artifacts are version managed by the VanillaBP BOM. -->
+    <vanillabp.version>2.0.0-SNAPSHOT</vanillabp.version>
+    <!-- BPMS adapters are released independently of the platform, so they carry their own version. -->
+    <camunda7-adapter.version>2.0.0-SNAPSHOT</camunda7-adapter.version>
+    <camunda8-adapter.version>2.0.0-8.10-SNAPSHOT</camunda8-adapter.version>
+    <cibseven-adapter.version>2.0.0-2.2-SNAPSHOT</cibseven-adapter.version>
+    <operaton-adapter.version>2.0.0-SNAPSHOT</operaton-adapter.version>
+    <!--
+      The cockpit adapters are released with the Business Cockpit, not with VanillaBP. There
+      is one per BPMS. The one for Camunda 8 carries the Camunda 8 line in its version, like
+      the BPMS adapter it belongs to.
+    -->
+    <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
+    <businesscockpit-camunda8.version>0.9.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
+    <!--
+      The two parts this application is made of. Each one has a release of its own: first the
+      backend, then the frontend, then this application. A bot such as Renovate moves these
+      two lines from a snapshot to a release.
+    -->
+    <cockpit-workflow-details-backend.version>1.0.0-SNAPSHOT</cockpit-workflow-details-backend.version>
+    <cockpit-workflow-details-ui.version>1.0.0-SNAPSHOT</cockpit-workflow-details-ui.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.vanillabp</groupId>
+        <artifactId>vanillabp-bom</artifactId>
+        <version>${vanillabp.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!-- The workflow module, released by the backend. -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.cockpit-workflow-details-backend-springboot</groupId>
+      <artifactId>loan-approval</artifactId>
+      <version>${cockpit-workflow-details-backend.version}</version>
+    </dependency>
+    <!--
+      The user interface of the workflow module, released by the frontend. The JAR holds no
+      class. Its files are below 'META-INF/resources/loan-approval/', and Spring Boot serves
+      that directory of every JAR at '/'. So the cockpit finds the manifest at
+      '/loan-approval/bc-manifest.json'.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint</groupId>
+      <artifactId>cockpit-workflow-details-ui</artifactId>
+      <version>${cockpit-workflow-details-ui.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        A blueprint must never show a deprecated API - it is copied, and what is copied
+        spreads. Making the compiler say so is cheaper than noticing it years later.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <compilerArgs>
+            <arg>-Xlint:deprecation,removal</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <!-- The BPMS profile of the build, so a test loads the same configuration as the application. -->
+            <spring.profiles.active>${bpms}</spring.profiles.active>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <!--
+        Copies the runnable JARs of the Business Cockpit and of the dev shell simulator to
+        target/, where 'docker-compose.yaml' starts them. The cockpit asks the simulator for its
+        users. This is not part of the build, because only somebody who wants to see the module
+        in a cockpit needs it. Run it by hand:
+
+          mvn dependency:copy@business-cockpit
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>business-cockpit</id>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <phase>none</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>io.vanillabp.businesscockpit</groupId>
+                  <artifactId>container</artifactId>
+                  <version>${businesscockpit.version}</version>
+                  <classifier>runnable</classifier>
+                  <destFileName>business-cockpit.jar</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>io.vanillabp.businesscockpit</groupId>
+                  <artifactId>dev-shell-simulator</artifactId>
+                  <version>${businesscockpit.version}</version>
+                  <classifier>runnable</classifier>
+                  <destFileName>dev-shell-simulator.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!--
+    The BPMS is a Maven profile, never a code change: '-Pcamunda7' (the default),
+    '-Pcamunda8', '-Poperaton' or '-Pcibseven'. Each profile adds two adapters: the BPMS
+    adapter, which runs the workflows, and the cockpit adapter of the same BPMS, which reports
+    their cases and user tasks to the cockpit. The workflow module knows neither of them.
+  -->
+  <profiles>
+    <profile>
+      <id>camunda7</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <bpms>camunda7</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda7-adapter-spring-boot</artifactId>
+          <version>${camunda7-adapter.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-camunda7-adapter-spring-boot</artifactId>
+          <version>${businesscockpit.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>camunda8</id>
+      <properties>
+        <bpms>camunda8</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda8-adapter-spring-boot</artifactId>
+          <version>${camunda8-adapter.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-camunda8-adapter-spring-boot</artifactId>
+          <version>${businesscockpit-camunda8.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>operaton</id>
+      <properties>
+        <bpms>operaton</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>operaton-adapter-spring-boot</artifactId>
+          <version>${operaton-adapter.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-operaton-adapter-spring-boot</artifactId>
+          <version>${businesscockpit.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>cibseven</id>
+      <properties>
+        <bpms>cibseven</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>cibseven-adapter-spring-boot</artifactId>
+          <version>${cibseven-adapter.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-cibseven-adapter-spring-boot</artifactId>
+          <version>${businesscockpit.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>
