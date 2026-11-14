@@ -1,0 +1,16 @@
+# The users the dev shell simulator knows. It refuses to start without any. A dev shell lets
+# you switch between them, to see the cockpit as somebody of another group sees it. Jane is a
+# loan officer and sees the button "Request a loan" in the header. John is not, so the cockpit
+# does not list the workflow module for him, and he sees no button.
+dev-shell-simulator:
+  users:
+    - id: jane
+      email: jane@doe.com
+      first-name: Jane
+      last-name: Doe
+      groups: LOAN_OFFICERS
+    - id: john
+      email: john@doe.com
+      first-name: John
+      last-name: Doe
+      groups: CUSTOMER_SERVICE
