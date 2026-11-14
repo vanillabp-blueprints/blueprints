@@ -11,6 +11,7 @@ import java.util.function.Predicate;
 
 import org.awaitility.core.ConditionTimeoutException;
 
+import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 
 /**
@@ -127,7 +128,6 @@ public final class SimulatorTestApi {
    * @param contractId The id the application gave the contract.
    * @return The document, as the e-signature service received it, or empty if there is none.
    */
-  @SuppressWarnings("unchecked")
   public Optional<Map<String, Object>> envelope(
       final String contractId) {
 
@@ -136,7 +136,7 @@ public final class SimulatorTestApi {
         .get("/e-signature/envelope");
 
     return response.statusCode() == 200
-        ? Optional.ofNullable((Map<String, Object>) response.as(Map.class))
+        ? Optional.ofNullable(asMap(response))
         : Optional.empty();
 
   }
@@ -210,7 +210,6 @@ public final class SimulatorTestApi {
 
   }
 
-  @SuppressWarnings("unchecked")
   private Optional<Map<String, Object>> userTask(
       final String userTaskId) {
 
@@ -221,8 +220,24 @@ public final class SimulatorTestApi {
     // The simulator answers a task it does not know with an error. That only means the report
     // has not arrived yet.
     return response.statusCode() == 200
-        ? Optional.ofNullable((Map<String, Object>) response.as(Map.class))
+        ? Optional.ofNullable(asMap(response))
         : Optional.empty();
+
+  }
+
+  /**
+   * Reads a JSON object into plain Java maps and lists. {@code response.as(Map.class)} would ask
+   * RestAssured's Jackson, and that registers every Jackson module on the classpath. The Operaton
+   * engine brings the Scala module, which turns a nested JSON object into a Scala map. Such a map
+   * equals no Java map, so an assertion on the details of a task fails although the values are
+   * the same. JsonPath parses with Groovy and returns Java maps on every BPMS.
+   */
+  private static Map<String, Object> asMap(
+      final Response response) {
+
+    return response
+        .jsonPath()
+        .getMap("$");
 
   }
 
