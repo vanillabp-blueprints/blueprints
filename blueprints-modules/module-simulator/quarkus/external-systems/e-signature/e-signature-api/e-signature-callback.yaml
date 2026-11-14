@@ -1,0 +1,43 @@
+openapi: 3.0.3
+info:
+  title: E-signature callback
+  version: 1
+  description: |
+    The callback of the e-signature service. This API goes the other way: the application offers it, and the e-signature service calls it when a document was signed. The address of the application is the callbackUrl of the envelope, see 'e-signature.yaml'. The Maven module 'client' generates the Java interface the application implements. The module 'server' generates the Java client the simulator calls back with.
+tags:
+  - name: SignatureCallback
+    description: Reports of the e-signature service
+paths:
+  /e-signature/callback:
+    post:
+      tags:
+        - SignatureCallback
+      operationId: reportSignature
+      summary: Reports that a document was signed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Callback"
+      responses:
+        "204":
+          description: The receiver took the report
+        "400":
+          description: The receiver does not know the status
+        "404":
+          description: The receiver does not know the contract
+components:
+  schemas:
+    Callback:
+      type: object
+      required:
+        - contractId
+        - status
+      properties:
+        contractId:
+          type: string
+        status:
+          type: string
+          enum:
+            - SIGNED
