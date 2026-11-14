@@ -61,13 +61,13 @@ after tasks were stored, or they can no longer be read.
 
 |                                File                                 |                                                                                                       Purpose                                                                                                        |
 |---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                          | the VanillaBP BOM import and the rule which keeps adapters out of the workflow module                                                                                                                                |
+| `pom.xml` (blueprint root)                                          | the VanillaBP BOM import and the rule which keeps adapters out of the workflow module, and the engine versions the JSON dataformat needs                                                                             |
 | `loan-approval/pom.xml`                                             | `vanillabp-spring-boot-support`, `business-cockpit-spring-boot-support` and `spring-boot-starter-security`, never an adapter; `hibernate-maven-plugin`, which makes `Task#data` lazy; the BPMS profiles for the test |
-| `application/pom.xml`                                               | the BPMS adapter, the only place a BPMS is named                                                                                                                                                                     |
+| `application/pom.xml`                                               | the BPMS adapter and the JSON dataformat of its engine, the only place a BPMS is named                                                                                                                               |
 | `application/src/main/java/.../Application.java`                    | the Spring Boot application, in the parent package of the module                                                                                                                                                     |
 | `application/src/main/java/.../SecurityConfiguration.java`          | how users log in: HTTP Basic for `/api/**`, two demo users; replace it with the login of your application                                                                                                            |
 | `application/src/main/resources/application.yaml`                   | the datasource, `open-in-view: false`, and the profile the Maven build filters in                                                                                                                                    |
-| `application/src/main/resources/application-camunda7.yaml`          | the Camunda 7 settings: the name-clash-avoidance mode and the demo user of its web applications                                                                                                                      |
+| `application/src/main/resources/application-camunda7.yaml`          | the Camunda 7 settings: the name-clash-avoidance mode, the JSON format of the shared list and the demo user of its web applications                                                                                  |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | the documents to check, and `declared-aggregate-values` for the list the model loops over                                                                                                                            |
 | `loan-approval/src/test/java/.../TestApplication.java`              | the minimal application the module's test boots                                                                                                                                                                      |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of the integration tests: waits for workflow progress                                                                                                                                                     |
@@ -93,6 +93,11 @@ blueprint. Copy them unchanged.
    `CREATED` add `Task.opened(taskId, <empty record>)` to the aggregate. On `CANCELED` call
    `cancel()` on the task. A multi-instance value is only read on `CREATED`, because it may be
    empty on `CANCELED`.
+   On Camunda 7, Operaton and CIB seven the list the model loops over travels as an object
+   variable. Set `serialization-format: application/json` and the SPIN engine plugin in the
+   profile file of that engine, and add the SPIN JSON dataformat to its Maven profile, as
+   `application-camunda7.yaml` and `application/pom.xml` show. Without them the engine stores
+   the list with Java serialization, and the adapter warns about it.
 5. Put `@Transactional` on `Service`, and `@Transactional(readOnly = true)` on the methods
    which only read. Write three methods per kind of user task. Read: find the task by id and
    kind, which loads its data before the transaction ends. Save: check that the task is open,

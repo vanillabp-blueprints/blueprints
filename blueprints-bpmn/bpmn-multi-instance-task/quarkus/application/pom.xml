@@ -136,6 +136,20 @@
           <artifactId>camunda7-adapter-quarkus</artifactId>
           <version>${camunda7-adapter.version}</version>
         </dependency>
+        <!--
+          The JSON dataformat for the list the model loops over, see 'serialization-format' in
+          application-camunda7.yaml. Its version is the engine version of the adapter.
+        -->
+        <dependency>
+          <groupId>org.camunda.bpm</groupId>
+          <artifactId>camunda-engine-plugin-spin</artifactId>
+          <version>${camunda7-engine.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.camunda.spin</groupId>
+          <artifactId>camunda-spin-dataformat-json-jackson</artifactId>
+          <version>${camunda7-engine.version}</version>
+        </dependency>
       </dependencies>
     </profile>
     <profile>
@@ -162,6 +176,20 @@
           <artifactId>operaton-adapter-quarkus</artifactId>
           <version>${operaton-adapter.version}</version>
         </dependency>
+        <!--
+          The JSON dataformat for the list the model loops over, see 'serialization-format' in
+          application-operaton.yaml. Its version is the engine version of the adapter.
+        -->
+        <dependency>
+          <groupId>org.operaton.bpm</groupId>
+          <artifactId>operaton-engine-plugin-spin</artifactId>
+          <version>${operaton-engine.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.operaton.spin</groupId>
+          <artifactId>operaton-spin-dataformat-json-jackson</artifactId>
+          <version>${operaton-engine.version}</version>
+        </dependency>
       </dependencies>
     </profile>
     <profile>
@@ -174,6 +202,20 @@
           <groupId>io.vanillabp</groupId>
           <artifactId>cibseven-adapter-quarkus</artifactId>
           <version>${cibseven-adapter.version}</version>
+        </dependency>
+        <!--
+          The JSON dataformat for the list the model loops over, see 'serialization-format' in
+          application-cibseven.yaml. Its version is the engine version of the adapter.
+        -->
+        <dependency>
+          <groupId>org.cibseven.bpm</groupId>
+          <artifactId>cibseven-engine-plugin-spin</artifactId>
+          <version>${cibseven-engine.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.cibseven.spin</groupId>
+          <artifactId>cibseven-spin-dataformat-json-jackson</artifactId>
+          <version>${cibseven-engine.version}</version>
         </dependency>
       </dependencies>
     </profile>

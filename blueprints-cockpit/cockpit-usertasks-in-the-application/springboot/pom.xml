@@ -39,6 +39,13 @@
     <cibseven-adapter.version>2.0.0-2.2-SNAPSHOT</cibseven-adapter.version>
     <operaton-adapter.version>2.0.0-SNAPSHOT</operaton-adapter.version>
     <!--
+      The engine versions of the BPMS adapters above. The JSON dataformat of the engine has to
+      have the same version as the engine, so these follow the adapters, not Renovate.
+    -->
+    <camunda7-engine.version>7.24.0</camunda7-engine.version>
+    <operaton-engine.version>2.2.1</operaton-engine.version>
+    <cibseven-engine.version>2.2.0</cibseven-engine.version>
+    <!--
       The Business Cockpit is released on its own, not with VanillaBP. The module takes only
       its Spring Boot support, for the exceptions about a task id.
     -->

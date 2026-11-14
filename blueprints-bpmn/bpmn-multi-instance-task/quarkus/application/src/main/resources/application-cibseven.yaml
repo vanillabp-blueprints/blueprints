@@ -8,3 +8,11 @@ vanillabp:
       # configuration keep the plain names, the adapter translates at every boundary. Switching
       # the mode of a running application is a migration rather than a setting.
       name-clash-avoidance: use-prefix
+      # The list the model loops over has no variable type in CIB seven, so the engine stores it
+      # as an object. Without a format that object is Java serialization, which the web
+      # applications cannot show. JSON can be read. The SPIN plugin, a dependency of this
+      # profile, provides the format, and the engine learns about the plugin here.
+      serialization-format: application/json
+      engine-plugins:
+        spin:
+          plugin-class: org.cibseven.spin.plugin.impl.SpinProcessEnginePlugin
