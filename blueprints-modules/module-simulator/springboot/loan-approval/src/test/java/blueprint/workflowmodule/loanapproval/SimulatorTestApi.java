@@ -9,8 +9,17 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import org.awaitility.core.ConditionTimeoutException;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+
+import blueprint.simulator.testapi.client.CreditRatingTestApi;
+import blueprint.simulator.testapi.client.ESignatureTestApi;
+import blueprint.simulator.testapi.client.StatusApi;
+import blueprint.simulator.testapi.client.model.Envelope;
 
 /**
  * The client of the simulator's test API, and of the cockpit API the simulator plays.
@@ -20,6 +29,13 @@ import org.springframework.web.client.RestClient;
  * makes a system act, for example sign a contract. Which of these steps a loan approval needs,
  * and in which order, is known to the test alone. Keep it that way: a test API which knows the
  * process breaks with every change of the model.
+ * </p>
+ *
+ * <p>
+ * The client of the test API is generated from
+ * {@code simulator-test-api/simulator-test-api.yaml}, the file the simulator implements. The
+ * official API of the cockpit is read with a plain {@link RestClient}, because the cockpit
+ * publishes no client of its own.
  * </p>
  *
  * <p>
@@ -39,7 +55,11 @@ public final class SimulatorTestApi {
 
   private final String baseUrl;
 
-  private final RestClient testApi;
+  private final StatusApi status;
+
+  private final CreditRatingTestApi creditRating;
+
+  private final ESignatureTestApi eSignature;
 
   private final RestClient cockpit;
 
@@ -47,8 +67,12 @@ public final class SimulatorTestApi {
       final String baseUrl) {
 
     this.baseUrl = baseUrl;
-    this.testApi = RestClient.create(baseUrl
-        + "/simulator/test-api");
+    final var testApi = HttpServiceProxyFactory
+        .builderFor(RestClientAdapter.create(RestClient.create(baseUrl)))
+        .build();
+    this.status = testApi.createClient(StatusApi.class);
+    this.creditRating = testApi.createClient(CreditRatingTestApi.class);
+    this.eSignature = testApi.createClient(ESignatureTestApi.class);
     this.cockpit = RestClient.create(baseUrl
         + "/official-api/v1");
 
@@ -84,11 +108,7 @@ public final class SimulatorTestApi {
   public boolean isRunning() {
 
     try {
-      return "running".equals(testApi
-          .get()
-          .uri("/status")
-          .retrieve()
-          .body(String.class));
+      return "running".equals(status.status());
     } catch (ResourceAccessException e) {
       return false;
     }
@@ -102,11 +122,7 @@ public final class SimulatorTestApi {
    */
   public String nextCustomerId() {
 
-    return testApi
-        .get()
-        .uri("/credit-rating/next-id")
-        .retrieve()
-        .body(String.class);
+    return creditRating.nextId();
 
   }
 
@@ -120,11 +136,7 @@ public final class SimulatorTestApi {
       final String customerId,
       final int score) {
 
-    testApi
-        .get()
-        .uri("/credit-rating/create-rating?customerId={customerId}&score={score}", customerId, score)
-        .retrieve()
-        .toBodilessEntity();
+    creditRating.createRating(customerId, score);
 
   }
 
@@ -134,18 +146,17 @@ public final class SimulatorTestApi {
    * @param contractId The id the application gave the contract.
    * @return The document, as the e-signature service received it, or empty if there is none.
    */
-  @SuppressWarnings("unchecked")
-  public Optional<Map<String, Object>> envelope(
+  public Optional<Envelope> envelope(
       final String contractId) {
 
-    return testApi
-        .get()
-        .uri("/e-signature/envelope?contractId={contractId}", contractId)
-        .exchange((
-            request,
-            response) -> response.getStatusCode().is2xxSuccessful()
-                ? Optional.ofNullable((Map<String, Object>) response.bodyTo(Map.class))
-                : Optional.empty());
+    try {
+      return Optional.of(eSignature.envelope(contractId));
+    } catch (RestClientResponseException e) {
+      if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+        return Optional.empty();
+      }
+      throw e;
+    }
 
   }
 
@@ -159,16 +170,18 @@ public final class SimulatorTestApi {
   public String sign(
       final String contractId) {
 
-    return testApi
-        .get()
-        .uri("/e-signature/sign?contractId={contractId}", contractId)
-        .exchange((
-            request,
-            response) -> response
-                .getStatusCode()
-                .value()
-                + " "
-                + response.bodyTo(String.class));
+    try {
+      return HttpStatus.OK.value()
+          + " "
+          + eSignature.sign(contractId);
+    } catch (RestClientResponseException e) {
+      // 404 and 502 are answers of the simulator as well. Their text says what went wrong.
+      return e
+          .getStatusCode()
+          .value()
+          + " "
+          + e.getResponseBodyAsString();
+    }
 
   }
 

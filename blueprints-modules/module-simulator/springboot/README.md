@@ -121,7 +121,9 @@ Every simulated system has two interfaces. The first is the API of the real syst
 adapters talk to. Its controllers implement the interfaces generated from the OpenAPI files in
 `external-systems/*/*-api/`. The second is the test API below
 `/simulator/test-api/{system}/{action}`. Tests and people use it to prepare data and to make a
-system act:
+system act. It is an OpenAPI file as well, in the Maven module `simulator-test-api`. The
+simulator implements the interfaces of its `server` module, and the tests call it through its
+`client` module:
 
 |                                    URL                                     |                   What it does                    |
 |----------------------------------------------------------------------------|---------------------------------------------------|
@@ -181,13 +183,15 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `external-systems/*/port/`                                   | new: one Maven module per system, the interface named after its role and its types        |
 | `external-systems/*/rest-adapter/`                           | new: one Maven module per system, the REST client and its auto-configuration              |
 | `external-systems/*/*-api/`                                  | new: the OpenAPI files of each system, and the client and server code generated from them |
+| `simulator-test-api/`                                        | new: the OpenAPI file of the test API, and the client and server code generated from it   |
 | `simulator/`                                                 | new: the simulator, a Spring Boot application which extends the dev shell simulator       |
 | `loan-approval/pom.xml`                                      | the ports instead of adapters, the profile `start-stop-simulator`, the cockpit adapters   |
 | `.../loanapproval/Service.java`                              | asks the credit rating before the workflow starts, and hands the contract over            |
 | `.../loanapproval/SignedContractsHandler.java`               | new: the way back from the e-signature service into the module                            |
 | `.../loanapproval/ApiController.java`                        | answers 503 with the role of the system when the credit rating does not answer            |
+| `.../openapi/loan-approval.yaml`                             | the API of the module, with the answer and the 503, as an OpenAPI file                    |
 | `.../loanapproval/config/LoanApprovalAutoConfiguration.java` | new: the module wires itself, because the application is not above it                     |
-| `loan-approval/src/test/.../SimulatorTestApi.java`           | new: the client of the test API and of the cockpit API the simulator plays                |
+| `loan-approval/src/test/.../SimulatorTestApi.java`           | new: the generated client of the test API, and a client of the cockpit API the simulator plays |
 | `loan-approval/src/test/.../SimulatorExtension.java`         | new: skips without a simulator, and prints its log when a test fails                      |
 | `application/src/main/resources/application-local.yaml`      | new: every adapter talks to the simulator                                                 |
 | `application/src/main/resources/application-real.yaml`       | new: every adapter talks to the real system, addresses from the environment               |

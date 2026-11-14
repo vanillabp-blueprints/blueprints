@@ -45,7 +45,9 @@ Names this blueprint adds:
 3. The simulator plays every system, the Business Cockpit included, through the dev shell
    simulator it extends. No WireMock, no mock beans, no switch which turns the cockpit off.
 4. The test API of the simulator lives below `/simulator/test-api/{system}/{action}` and knows
-   nothing about the workflow. The caller gives the ids, or reserves one with `next-id`.
+   nothing about the workflow. The caller gives the ids, or reserves one with `next-id`. It is
+   an OpenAPI file in the module `simulator-test-api`, with `client` for the tests and `server`
+   for the simulator, like the API of a system.
 5. A test waits for the state of the workflow aggregate, never for a fixed time.
 6. The service class says `@Transactional`, also where a workflow task already brings the
    transaction of VanillaBP.
@@ -76,10 +78,12 @@ Names this blueprint adds:
 | `loan-approval/src/main/java/.../Service.java`                                               | uses the ports by their role: `creditRating`, `contractSigning`                                                           |
 | `loan-approval/src/main/java/.../SignedContractsHandler.java`                                | implements `SignedContracts` and calls `Service`                                                                          |
 | `loan-approval/src/main/java/.../ApiController.java`                                         | the 503 with the role of the system, as a problem detail                                                                  |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                                | the API of the module as an OpenAPI file. The build generates `LoanApprovalApi` and its records, `ApiController` implements it |
 | `loan-approval/src/main/resources/.../loan_approval.bpmn`                                    | user task, service task, message catch event "Contract signed"                                                            |
 | `simulator/src/main/java/blueprint/simulator/SimulatorApplication.java`                      | extends `DevShellSimulator` and scans both packages                                                                       |
 | `simulator/src/main/java/blueprint/simulator/*/*ApiController.java`                          | the API of a system: implements the generated server interface, and adds what the system does                             |
-| `simulator/src/main/java/blueprint/simulator/*/*TestApiController.java`                      | the test API, one controller per simulated system                                                                         |
+| `simulator/src/main/java/blueprint/simulator/*/*TestApiController.java`                      | the test API, one controller per simulated system. Implements the interface generated from `simulator-test-api.yaml`     |
+| `simulator-test-api/simulator-test-api.yaml`                                                 | the test API as an OpenAPI file; `client` and `server` generate the Java code                                             |
 | `loan-approval/pom.xml`                                                                      | the profile `start-stop-simulator`: free port, runnable JAR, start, log file                                              |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                        | the whole case against the simulator, with all three systems                                                              |
 | `loan-approval/src/test/java/.../SimulatorExtension.java`                                    | skips without a simulator, fails when the build started one which does not answer, prints its log on a red test           |
