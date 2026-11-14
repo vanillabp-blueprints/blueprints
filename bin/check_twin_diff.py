@@ -77,7 +77,12 @@ def java_sources(platform_directory):
 
     sources = {}
     for java in sorted(platform_directory.glob("**/src/*/java/**/*.java")):
-        sources[java.relative_to(platform_directory).as_posix()] = java
+        path = java.relative_to(platform_directory)
+        # A build writes the code it generates from an OpenAPI file below 'target'. That code
+        # is not part of the blueprint, and each platform generates its own.
+        if "target" in path.parts:
+            continue
+        sources[path.as_posix()] = java
     return sources
 
 

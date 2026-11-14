@@ -40,6 +40,16 @@ on its methods. A method which throws a `TaskException` gets
 the task is marked for rollback, and VanillaBP fails the task. Never annotate the task handler.
 Rule 6 in `CONTRIBUTING.md` says why, and names the one exception, `persistence-custom`.
 
+## Every API is an OpenAPI file
+
+Write an HTTP interface as an OpenAPI file first, and let the build generate the Java code. A
+controller implements the generated interface and holds the code of each call, nothing else. No
+`@GetMapping`, no `@Path` and no record for a request or an answer is written by hand. An API
+which only a browser or the module's own user interface calls keeps its file in
+`src/main/resources/openapi/` of the module. An API with a Java client gets a Maven module
+`<name>-api` with the submodules `client` and `server`. Rule 7 in `CONTRIBUTING.md` has the
+generators and their settings for both platforms.
+
 ## How we write
 
 Most people who read this repository read English as a second language, and so does the
