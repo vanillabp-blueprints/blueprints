@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
+    <artifactId>module-simulator</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>e-signature-rest-adapter</artifactId>
+  <name>Adapter 'e-signature' over REST</name>
+  <description>Implements the port 'e-signature' with a REST client, and takes the callback of the e-signature service. The same adapter talks to the simulator and to the real system, only the addresses differ.</description>
+
+  <dependencies>
+    <!-- The port this adapter implements, and the one it calls back into. -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
+      <artifactId>e-signature-port</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!--
+      Generated from the two OpenAPI files of the e-signature service: the client of
+      'e-signature.yaml' and the interface of 'e-signature-callback.yaml', which the callback
+      resource implements. This adapter writes no HTTP calls and no JSON types of its own.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
+      <artifactId>e-signature-api-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!-- The REST client of Quarkus, and JSON. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-client-jackson</artifactId>
+    </dependency>
+    <!-- The endpoint the e-signature service calls back. The application runs it. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-jackson</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        The adapter is a Maven module of its own, so the application's build does not see its
+        classes. The index is what makes them visible: without it, neither the producer of the
+        'ContractSigning' bean nor the callback endpoint is found.
+      -->
+      <plugin>
+        <groupId>io.smallrye</groupId>
+        <artifactId>jandex-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>make-index</id>
+            <goals>
+              <goal>jandex</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

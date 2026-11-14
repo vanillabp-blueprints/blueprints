@@ -1,0 +1,37 @@
+# The simulator answers on the port the dev shell of a workflow module expects its cockpit on.
+# The profile 'local' of the application points every system there.
+server:
+  port: 8079
+spring:
+  application:
+    name: simulator
+  # The dev shell simulator keeps what the cockpit adapter reports in a database. In memory is
+  # enough, a restart starts from nothing.
+  datasource:
+    url: jdbc:h2:mem:simulator
+  jpa:
+    hibernate:
+      ddl-auto: update
+# The users the simulated cockpit knows. The dev shell simulator refuses to start without one. A
+# dev shell lets you switch between them. This blueprint shows no rights, so one is enough.
+dev-shell-simulator:
+  users:
+    - id: jane
+      email: jane@doe.com
+      first-name: Jane
+      last-name: Doe
+      groups: LOAN_OFFICER
+# The simulated cockpit signs the login token of the dev shell with this key. It belongs to this
+# simulator, which only runs on a developer's machine and in tests. A real cockpit has its own.
+application:
+  jwt:
+    hmacSHA256-base64: QDAERSAgOzAbeAMHHLy7ETvksR9FXf1h2OuBDqv+tNo=
+# What the simulated credit rating knows from the start, for a person who tries the blueprint in
+# a browser. A test creates its own customers through the test API instead.
+simulator:
+  credit-scores:
+    C-1001: 720
+    C-1002: 480
+logging:
+  level:
+    blueprint.simulator: INFO

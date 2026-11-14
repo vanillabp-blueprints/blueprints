@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
+    <artifactId>module-simulator</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>e-signature-api</artifactId>
+  <packaging>pom</packaging>
+  <name>API 'e-signature'</name>
+  <description>The API of the e-signature service and of its callback as OpenAPI files, and the Java code generated from them: the client and the callback interface for the application, the server interface and the callback client for the simulator.</description>
+
+  <!--
+    The e-signature service answers later, so there are two OpenAPI files next to this POM,
+    one per direction:
+
+      e-signature.yaml           the application calls the e-signature service
+      e-signature-callback.yaml  the e-signature service calls the application back
+
+    'client' is what the application needs: the client of the first file and the interface of
+    the second, which the application implements. 'server' is the opposite, for the simulator:
+    the interface of the first file and the client of the second.
+  -->
+  <modules>
+    <module>client</module>
+    <module>server</module>
+  </modules>
+</project>
