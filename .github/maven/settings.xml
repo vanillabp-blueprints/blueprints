@@ -91,6 +91,8 @@
         </profile>
         <profile>
             <id>snapshots-from-github-packages</id>
+            <!-- bin/mvn_with_retry.sh also names this profile on the command line, because
+                 the resolver of a Quarkus test does not see this activation, see there -->
             <activation>
                 <property>
                     <name>env.VBP_SNAPSHOTS_FROM</name>
