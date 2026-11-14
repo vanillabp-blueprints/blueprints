@@ -179,21 +179,29 @@ jobs:
             # adapter default 'by-adapter' would ask for. A VANILLABP_* entry here would
             # override what the blueprint documents, which is the thing being tested.
           } >> "$GITHUB_ENV"
+      # --update-snapshots because everything VanillaBP is a SNAPSHOT until 2.0.0 is
+      # released: the Maven cache of this runner holds yesterday's, and Maven would keep it
+      # for the rest of the day. A blueprint would then be built against a framework which
+      # no longer exists, which has cost a red build more than once.
+      # In a step of its own, so that every snapshot comes from the same minute and not from
+      # both sides of a publish which runs during the build. The script says more.
+      - name: Resolve the snapshots at once
+        working-directory: "${{ matrix.blueprint }}"
+        run: $GITHUB_WORKSPACE/bin/resolve_snapshots_at_once.sh
+          -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
+          --batch-mode --no-transfer-progress -P${{ matrix.bpms }}
       - name: Build and test the blueprint on its own
         working-directory: "${{ matrix.blueprint }}"
         # 'install' alone, not 'install verify': install runs every phase verify has, so
         # naming both walked two lifecycles per module. The tests skipped their second
         # run, the compiler did not, and every warning was reported twice.
-        # --update-snapshots because everything VanillaBP is a SNAPSHOT until 2.0.0 is
-        # released: the Maven cache of this runner holds yesterday's, and Maven would keep it
-        # for the rest of the day. A blueprint would then be built against a framework which
-        # no longer exists, which has cost a red build more than once.
+        # --no-snapshot-updates keeps the snapshots the step above resolved.
         # Through bin/mvn_with_retry.sh, like the nightly: with more than 250 jobs some of
         # them get "not found" from Maven Central for artifacts which are there. The script
         # repeats only what the log proves to be a transfer, never a failed test.
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
           -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
-          --batch-mode --no-transfer-progress --update-snapshots
+          --batch-mode --no-transfer-progress --no-snapshot-updates
           -P${{ matrix.bpms }} install
       # In the summary of this job, because this is where a red blueprint is read. The
       # aggregator writes the same report for the run as a whole, and that one is not enough

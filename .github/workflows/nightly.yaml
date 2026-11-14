@@ -69,7 +69,7 @@ jobs:
   # A red night can mean nothing: a runner which still holds yesterday's snapshot would
   # build against a framework which no longer exists, which is the one thing this workflow
   # is here to notice. So the matrix deletes every snapshot the Maven cache carries in,
-  # every Maven call carries --update-snapshots, and the step below writes down which
+  # every job resolves its snapshots with --update-snapshots, and the step below writes down which
   # platform build the night got.
   # 'Nightly issue' quotes that into its report, so a reader sees which side moved.
   platform:
@@ -243,11 +243,18 @@ jobs:
       # 429 even when most of what they need comes from the cache. The script repeats only
       # what the log proves to be a transfer: a failed test is reported the first time, as
       # it has to be.
+      # All snapshots at once first, then the build with exactly those, so that a publish
+      # during the build cannot give it parts of two platform builds. The script says more.
+      - name: Resolve the current snapshots at once
+        working-directory: "${{ matrix.blueprint }}"
+        run: $GITHUB_WORKSPACE/bin/resolve_snapshots_at_once.sh
+          -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
+          --batch-mode --no-transfer-progress -P${{ matrix.bpms }}
       - name: Build against the current snapshots
         working-directory: "${{ matrix.blueprint }}"
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
           -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
-          --batch-mode --no-transfer-progress --update-snapshots
+          --batch-mode --no-transfer-progress --no-snapshot-updates
           -P${{ matrix.bpms }} install
       # A red night used to leave nothing behind but the log of the job, so the issue it
       # opens could quote no more than the lines Maven marked as an error. An error line
