@@ -343,6 +343,12 @@ The two platforms have a set each. The sets differ where the platform does. A Qu
 module needs no application class to be booted. And every Quarkus test class carries
 `@QuarkusTest` itself, instead of inheriting it from the base class.
 
+`WorkflowModuleTest` knows two deadlines. `TIMEOUT`, thirty seconds, is for what VanillaBP and
+the blueprint do themselves. `SCHEDULER_TIMEOUT`, two minutes, is for a step which waits for a
+timer of the model. The scheduler of the engine fires the timer, and on a busy machine every
+build shares its threads. A test passes the longer deadline to `awaitAggregate` only for the
+steps which wait for a timer.
+
 They are copies and not a shared module. A blueprint has to build on its own after the split.
 And an agent has to be able to read the code which checks its work.
 

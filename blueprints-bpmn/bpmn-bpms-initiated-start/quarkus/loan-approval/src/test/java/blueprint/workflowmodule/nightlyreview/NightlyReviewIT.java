@@ -35,12 +35,13 @@ public class NightlyReviewIT extends WorkflowModuleTest {
   AggregateRepository reviews;
 
   private Aggregate awaitReviewStartedBy(
-      final String kind) {
+      final String kind,
+      final Duration timeout) {
 
     final var found = new java.util.concurrent.atomic.AtomicReference<Aggregate>();
 
     await()
-        .atMost(TIMEOUT)
+        .atMost(timeout)
         .pollInterval(Duration.ofMillis(500))
         .until(() -> {
           // Awaitility polls on a thread of its own, which has neither a transaction nor a
@@ -61,8 +62,9 @@ public class NightlyReviewIT extends WorkflowModuleTest {
   public void theTimerStartsAWorkflowNobodyAskedFor() {
 
     // no service call above: the cycle of the start event fired after the model was
-    // deployed, which is the only thing that happened
-    final var review = awaitReviewStartedBy("TIMER");
+    // deployed, which is the only thing that happened. The scheduler of the engine fires
+    // it, so the test waits as long as the harness allows for a scheduler.
+    final var review = awaitReviewStartedBy("TIMER", SCHEDULER_TIMEOUT);
 
     // the ID is the one the application picked while it built the aggregate
     assertThat(review.getReviewId()).isNotBlank();
@@ -98,7 +100,7 @@ public class NightlyReviewIT extends WorkflowModuleTest {
               .isEmpty();
         });
 
-    final var review = awaitReviewStartedBy("SIGNAL");
+    final var review = awaitReviewStartedBy("SIGNAL", TIMEOUT);
 
     assertThat(review.getReviewId()).isNotBlank();
     assertThat(review.getStartEventId()).isEqualTo("StartEvent_ReviewRequested");
