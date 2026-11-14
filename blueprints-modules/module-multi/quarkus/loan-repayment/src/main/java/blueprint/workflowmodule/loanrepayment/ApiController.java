@@ -2,13 +2,9 @@ package blueprint.workflowmodule.loanrepayment;
 
 import java.util.UUID;
 
+import blueprint.workflowmodule.loanrepayment.api.LoanRepaymentApi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -20,11 +16,16 @@ import lombok.extern.slf4j.Slf4j;
  * modules on one HTTP port is the same kind of collision as two modules on one classpath,
  * and it is avoided the same way: by giving each of them a namespace of its own.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanRepaymentApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-repayment.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @ApplicationScoped
-@Path("/api/loan-repayment")
-public class ApiController {
+public class ApiController implements LoanRepaymentApi {
 
   @Inject
   Service loanRepayment;
@@ -36,13 +37,10 @@ public class ApiController {
    * @param amount     The amount owed.
    * @return The id of the repayment started.
    */
-  @GET
-  @Path("/start")
+  @Override
   public String start(
-      @QueryParam("customerId")
-      @DefaultValue("C-1002") final String customerId,
-      @QueryParam("amount")
-      @DefaultValue("6000") final int amount) {
+      final String customerId,
+      final Integer amount) {
 
     final var repaymentId = UUID.randomUUID().toString();
 
@@ -62,10 +60,9 @@ public class ApiController {
    * @param repaymentId The id returned by starting the process.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GET
-  @Path("/{repaymentId}")
+  @Override
   public String show(
-      @PathParam("repaymentId") final String repaymentId) {
+      final String repaymentId) {
 
     return loanRepayment
         .get(repaymentId)

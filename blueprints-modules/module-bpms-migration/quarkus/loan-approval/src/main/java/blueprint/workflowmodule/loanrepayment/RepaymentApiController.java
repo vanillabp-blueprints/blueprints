@@ -2,22 +2,23 @@ package blueprint.workflowmodule.loanrepayment;
 
 import java.util.UUID;
 
+import blueprint.workflowmodule.loanrepayment.api.LoanRepaymentApi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * The API of the repayment use case, GET only like every other one in this repository.
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanRepaymentApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-repayment.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @ApplicationScoped
-@Path("/api/loan-repayment")
-public class RepaymentApiController {
+public class RepaymentApiController implements LoanRepaymentApi {
 
   @Inject
   RepaymentService loanRepayment;
@@ -28,11 +29,9 @@ public class RepaymentApiController {
    * @param amount The amount owed.
    * @return The id of the repayment started.
    */
-  @GET
-  @Path("/start")
+  @Override
   public String start(
-      @QueryParam("amount")
-      @DefaultValue("500") final int amount) {
+      final Integer amount) {
 
     final var repaymentId = UUID.randomUUID().toString();
 
@@ -50,10 +49,9 @@ public class RepaymentApiController {
    * @param repaymentId The id returned by starting the process.
    * @return The adapter id of the BPMS holding the workflow.
    */
-  @GET
-  @Path("/{repaymentId}/bpms")
+  @Override
   public String bpms(
-      @PathParam("repaymentId") final String repaymentId) {
+      final String repaymentId) {
 
     return loanRepayment
         .bpmsHolding(repaymentId)
@@ -67,10 +65,9 @@ public class RepaymentApiController {
    * @param repaymentId The id returned by starting the process.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GET
-  @Path("/{repaymentId}")
+  @Override
   public String show(
-      @PathParam("repaymentId") final String repaymentId) {
+      final String repaymentId) {
 
     return loanRepayment
         .get(repaymentId)

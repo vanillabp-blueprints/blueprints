@@ -3,21 +3,23 @@ package blueprint.workflowmodule.loanrepayment;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import blueprint.workflowmodule.loanrepayment.api.LoanRepaymentApi;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * The API of the repayment use case, GET only like every other one in this repository.
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanRepaymentApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-repayment.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/loan-repayment")
-public class RepaymentApiController {
+public class RepaymentApiController implements LoanRepaymentApi {
 
   @Autowired
   private RepaymentService loanRepayment;
@@ -28,9 +30,9 @@ public class RepaymentApiController {
    * @param amount The amount owed.
    * @return The id of the repayment started.
    */
-  @GetMapping("/start")
+  @Override
   public String start(
-      @RequestParam(defaultValue = "500") final int amount) {
+      final Integer amount) {
 
     final var repaymentId = UUID.randomUUID().toString();
 
@@ -48,9 +50,9 @@ public class RepaymentApiController {
    * @param repaymentId The id returned by starting the process.
    * @return The adapter id of the BPMS holding the workflow.
    */
-  @GetMapping("/{repaymentId}/bpms")
+  @Override
   public String bpms(
-      @PathVariable final String repaymentId) {
+      final String repaymentId) {
 
     return loanRepayment
         .bpmsHolding(repaymentId)
@@ -64,9 +66,9 @@ public class RepaymentApiController {
    * @param repaymentId The id returned by starting the process.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GetMapping("/{repaymentId}")
+  @Override
   public String show(
-      @PathVariable final String repaymentId) {
+      final String repaymentId) {
 
     return loanRepayment
         .get(repaymentId)

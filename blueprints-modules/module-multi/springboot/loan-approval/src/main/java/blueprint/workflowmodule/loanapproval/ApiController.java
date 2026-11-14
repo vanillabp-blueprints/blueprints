@@ -3,12 +3,9 @@ package blueprint.workflowmodule.loanapproval;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import blueprint.workflowmodule.loanapproval.api.LoanApprovalApi;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -19,11 +16,16 @@ import lombok.extern.slf4j.Slf4j;
  * It talks to {@link Service} and to nothing else. That the use case happens to be
  * implemented by a BPMN process is none of its business.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanApprovalApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-approval.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/loan-approval")
-public class ApiController {
+public class ApiController implements LoanApprovalApi {
 
   @Autowired
   private Service loanApproval;
@@ -36,10 +38,10 @@ public class ApiController {
    * @param amount     The amount requested.
    * @return The id of the loan request started.
    */
-  @GetMapping("/start")
+  @Override
   public String start(
-      @RequestParam(defaultValue = "C-1001") final String customerId,
-      @RequestParam(defaultValue = "5000") final int amount) {
+      final String customerId,
+      final Integer amount) {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
@@ -59,9 +61,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GetMapping("/{loanRequestId}")
+  @Override
   public String show(
-      @PathVariable final String loanRequestId) {
+      final String loanRequestId) {
 
     return loanApproval
         .get(loanRequestId)

@@ -1,11 +1,9 @@
 package blueprint.workflowmodule.riskassessment;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import blueprint.workflowmodule.riskassessment.api.RiskAssessmentApi;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -16,11 +14,16 @@ import lombok.extern.slf4j.Slf4j;
  * for by another module through {@link blueprint.api.RiskAssessments}, and adding a second
  * way in would invite exactly the shortcut this blueprint argues against.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link RiskAssessmentApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/risk-assessment.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/risk-assessment")
-public class ApiController {
+public class ApiController implements RiskAssessmentApi {
 
   @Autowired
   private Service riskAssessment;
@@ -31,9 +34,9 @@ public class ApiController {
    * @param caseId The id of the case, which is the id the caller chose.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GetMapping("/{caseId}")
+  @Override
   public String show(
-      @PathVariable final String caseId) {
+      final String caseId) {
 
     return riskAssessment
         .get(caseId)
