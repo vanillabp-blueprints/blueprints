@@ -21,7 +21,7 @@ cb521ad0be01d01e  differs  loan-approval/src/main/java/blueprint/workflowmodule/
 658d4ce7e74b76e3  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanrepayment/model/RepaymentRepository.java  # each platform's repository idiom
 cf7fafe96743cff1  differs  loan-approval/src/test/java/blueprint/workflowmodule/MigrationIT.java  # injection annotations, the platform's own way of reading the configuration, and @QuarkusTest on the class itself
 7478214e70e9a2b7  only-springboot  loan-approval/src/test/java/blueprint/workflowmodule/TestApplication.java  # only one platform needs an application class to boot a workflow module for its test
-907bfb10196dd9b7  differs  loan-approval/src/test/java/blueprint/workflowmodule/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
+e3d6f257c62b628e  differs  loan-approval/src/test/java/blueprint/workflowmodule/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
 38cb19420b75aa70  only-springboot  loan-approval/src/test/java/blueprint/workflowmodule/config/CibSevenDatabase.java  # one platform builds a second datasource in code, the other one declares it in configuration
 201ccde0ac63cae5  only-springboot  loan-approval/src/test/java/blueprint/workflowmodule/config/OperatonDatabase.java  # one platform builds a second datasource in code, the other one declares it in configuration
 b2992ff2518d34cf  differs  loan-approval/src/test/java/blueprint/workflowmodule/loanapproval/LoanApprovalIT.java  # injection annotations, and the test class carries @QuarkusTest itself because inheriting it leaves it without a bean
