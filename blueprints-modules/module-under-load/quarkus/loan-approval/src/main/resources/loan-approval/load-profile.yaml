@@ -1,0 +1,50 @@
+# The load profile of the workflow module 'loan-approval': what the BPMN model does not say
+# about the load it gets. The load driver of this blueprint reads it, and a skill which puts
+# your own module under load asks you for the same values and writes the same file.
+#
+# Every key below a section names a BPMN element by its id, so the profile stays next to the
+# model it describes. A key the driver does not know stops the application with a message, so
+# a typo never falls back to nothing.
+version: 1
+# The BPMN process id this profile is about.
+process: loan_approval
+# The elements most workflows pass, in their order. The report repeats it, so whoever reads the
+# numbers knows which path produced them.
+hot-path:
+  - ServiceTask_RequestCreditScore
+  - CatchEvent_CreditScoreReceived
+  - UserTask_AssessLoan
+  - CatchEvent_PayoutRun
+  - ServiceTask_PayOut
+# How customers arrive. 'random' gives gaps which vary like real arrivals do: many short, a few
+# long. 'even' gives the same gap every time. 'per-second' is the steady stage. The steps and
+# the peak of a run offer more.
+arrivals:
+  pattern: random
+  per-second: 4
+# What a customer hands in with the request, in bytes. Every task reads and writes the row of
+# the aggregate, so its size is part of the load.
+aggregate:
+  size-bytes: 2048
+# The share each outgoing flow of a gateway takes. They add up to 1.
+gateways:
+  Gateway_Approved:
+    Flow_ToPayoutRun: 0.8
+    Flow_ToInformRejection: 0.2
+# The persons who work on a user task: how many work at the same time, and how long one holds
+# a task while thinking. A real assessment takes minutes. A load run shortens it, and gives
+# enough persons that they do not become the limit themselves.
+people:
+  UserTask_AssessLoan:
+    persons: 24
+    think-time: PT2S
+    think-time-spread: PT1S
+# The neighbour systems, keyed by the element which waits for their answer: how long the
+# answer takes, and the share of questions which never get one. The model gives up after ten
+# seconds, so the latency stays well below that.
+neighbours:
+  CatchEvent_CreditScoreReceived:
+    name: credit bureau
+    latency: PT0.3S
+    latency-spread: PT0.2S
+    no-answer-share: 0.05

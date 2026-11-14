@@ -1,0 +1,21 @@
+# Configuration of the workflow module 'loan-approval'.
+#
+# The file is named after the workflow module ID and is loaded automatically, with a
+# lower priority than application.yaml. Everything only this module needs belongs here -
+# that is what keeps a workflow module a self-contained application inside the
+# application.
+loan-approval:
+  # The bank pays out approved loans in runs. Every loan approved before the next run waits
+  # for it in the same timer, so this is the timer which wakes many workflows at once. A real
+  # bank runs once a day. Twenty seconds lets a short load run see several runs.
+  payout-run-every: PT20S
+vanillabp:
+  workflow-modules:
+    loan-approval:
+      workflows:
+        loan_approval:
+          # The timer of the payout run reads the due date from the aggregate. A point in time
+          # means something different in every expression language, so VanillaBP wants it
+          # declared before it travels. Declaring it says: the timer reads it, as a date.
+          declared-aggregate-values:
+            - payoutRunAt

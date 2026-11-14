@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
+    <artifactId>module-under-load</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>load-driver</artifactId>
+  <name>The load driver</name>
+  <description>Plays customers, clerks and the credit bureau against the workflow module, watches the queues and writes the report.</description>
+
+  <dependencies>
+    <!--
+      The driver calls the workflow module the way a browser, a task list and the credit bureau
+      would: through its service. It knows no BPMS, like the module.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
+      <artifactId>loan-approval</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest</artifactId>
+    </dependency>
+    <!-- The queues are read from the meters the application publishes anyway. -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+    <!-- Reads the load profile. -->
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        The API of the driver is written as the OpenAPI file 'src/main/resources/openapi/load-run.yaml'.
+        This plugin generates the Java interface 'LoadRunApi' from it. 'LoadRunController'
+        implements the interface.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>${openapi-generator.version}</version>
+        <configuration>
+          <generatorName>jaxrs-spec</generatorName>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <configOptions>
+            <useJakartaEe>true</useJakartaEe>
+            <sourceFolder>src/main/java</sourceFolder>
+            <useTags>true</useTags>
+            <interfaceOnly>true</interfaceOnly>
+            <returnResponse>false</returnResponse>
+            <useSwaggerAnnotations>false</useSwaggerAnnotations>
+            <useMicroProfileOpenAPIAnnotations>false</useMicroProfileOpenAPIAnnotations>
+            <useBeanValidation>false</useBeanValidation>
+            <generatePom>false</generatePom>
+            <hideGenerationTimestamp>true</hideGenerationTimestamp>
+          </configOptions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>load-run-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/load-run.yaml</inputSpec>
+              <apiPackage>blueprint.loaddriver.api</apiPackage>
+              <modelPackage>blueprint.loaddriver.api.model</modelPackage>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        The driver is a Maven module of its own, so the application's build does not see its
+        classes. The index makes its beans and its REST resource visible.
+      -->
+      <plugin>
+        <groupId>io.smallrye</groupId>
+        <artifactId>jandex-maven-plugin</artifactId>
+        <version>${jandex-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>make-index</id>
+            <goals>
+              <goal>jandex</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

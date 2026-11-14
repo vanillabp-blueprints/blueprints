@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-under-load-springboot</groupId>
+    <artifactId>module-under-load</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>load-driver</artifactId>
+  <name>The load driver</name>
+  <description>Plays customers, clerks and the credit bureau against the workflow module, watches the queues and writes the report.</description>
+
+  <dependencies>
+    <!--
+      The driver calls the workflow module the way a browser, a task list and the credit bureau
+      would: through its service. It knows no BPMS, like the module.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-under-load-springboot</groupId>
+      <artifactId>loan-approval</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <!-- The queues are read from the meters the application publishes anyway. -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+    <!-- Reads the load profile. Spring Boot brings it for its own YAML files already. -->
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        The API of the driver is written as the OpenAPI file 'src/main/resources/openapi/load-run.yaml'.
+        This plugin generates the Java interface 'LoadRunApi' from it. 'LoadRunController'
+        implements the interface.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>${openapi-generator.version}</version>
+        <configuration>
+          <generatorName>spring</generatorName>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <configOptions>
+            <useSpringBoot4>true</useSpringBoot4>
+            <useTags>true</useTags>
+            <interfaceOnly>true</interfaceOnly>
+            <skipDefaultInterface>true</skipDefaultInterface>
+            <requestMappingMode>none</requestMappingMode>
+            <useResponseEntity>false</useResponseEntity>
+            <useRecords>true</useRecords>
+            <useJspecify>true</useJspecify>
+            <openApiNullable>false</openApiNullable>
+            <useBeanValidation>false</useBeanValidation>
+            <documentationProvider>none</documentationProvider>
+            <annotationLibrary>none</annotationLibrary>
+            <hideGenerationTimestamp>true</hideGenerationTimestamp>
+          </configOptions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>load-run-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/load-run.yaml</inputSpec>
+              <apiPackage>blueprint.loaddriver.api</apiPackage>
+              <modelPackage>blueprint.loaddriver.api.model</modelPackage>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

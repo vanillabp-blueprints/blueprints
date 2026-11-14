@@ -1,0 +1,66 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is
+# in its own configuration file (loan-approval/loan-approval.yaml inside the module JAR).
+#
+# Nothing about a BPMS is here either. That lives in a profile file per engine,
+# 'application-camunda7.yaml' and 'application-camunda8.yaml', so switching engines is a
+# profile and not an edit.
+spring:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, so
+  # 'application-camunda7.yaml' respectively 'application-camunda8.yaml' is loaded without
+  # anybody having to name the profile twice. Tests get the same value as a system property.
+  profiles:
+    active: "@bpms@"
+  datasource:
+    # A file database rather than one in memory. An in-memory database lives in the heap of
+    # the application, so every finished workflow would stay there and the report would read
+    # it as a live set which never comes back.
+    url: jdbc:h2:./target/loan-approval
+    username: sa
+    password: ""
+    hikari:
+      # The connection pool, at its default. Every handler of a task, every outbox dispatch
+      # thread, every loan request and every clerk who looks at the task list draws from it.
+      # When the report names the connections, this is the first setting to look at.
+      maximum-pool-size: 10
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+vanillabp:
+  outbox:
+    # The threads which hand the outbox entries to the BPMS, at their default. When the report
+    # names the age of the oldest outbox entry, this is the setting.
+    dispatch-threads: 4
+  metrics:
+    # How long VanillaBP keeps the number of waiting outbox entries before it counts again.
+    # The load driver reads the queues once a second, so it asks for a fresh number each time.
+    gauge-cache: PT1S
+# The load driver. 'profile' is the load profile next to the BPMN files of the module. A size
+# says how long each stage lasts and how many steps of more load come between the steady
+# stage and the peak. 'small' shows a result in a few minutes on a laptop.
+load-run:
+  profile: loan-approval/load-profile.yaml
+  # How many loan requests may be handed in at the same time, like the request threads of a
+  # web server. More customers than that wait in front of them.
+  customer-threads: 16
+  sizes:
+    small:
+      stage-length: PT30S
+      steps: 3
+      drain-at-most: PT2M
+    medium:
+      stage-length: PT2M
+      steps: 6
+      drain-at-most: PT5M
+    large:
+      stage-length: PT5M
+      steps: 10
+      drain-at-most: PT10M
+logging:
+  level:
+    blueprint.workflowmodule: INFO
+    # Under load, the module writes several lines per workflow. Writing them is load of its
+    # own and buries the report. To walk one loan approval through in the browser, set this
+    # to INFO: the log then names the URLs to go on with.
+    blueprint.workflowmodule.loanapproval: WARN
+    blueprint.loaddriver: INFO
