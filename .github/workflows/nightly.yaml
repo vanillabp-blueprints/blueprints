@@ -13,7 +13,16 @@ name: Nightly build
   workflow_dispatch:
 permissions:
   contents: read
+  # reads the VanillaBP snapshots from GitHub Packages, see VBP_SNAPSHOTS_FROM below
+  packages: read
 env:
+  # Where Maven reads the VanillaBP snapshots from, see .github/maven/settings.xml: from
+  # GitHub Packages once the vanillabp organization sets the Actions variable
+  # VANILLABP_SNAPSHOTS_FROM to 'github-packages', else from the snapshot repository of Maven
+  # Central. Reading GitHub Packages needs a token even for public packages. The GITHUB_TOKEN
+  # of the run is enough, with 'packages: read' above.
+  VBP_SNAPSHOTS_FROM: "${{ vars.VANILLABP_SNAPSHOTS_FROM == 'github-packages' && 'github-packages' || 'central' }}"
+  VBP_PACKAGES_READ_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
   # The branch of vanillabp-blueprints/.github the index is read from - it says which
   # BPMS a blueprint is built against, exactly as in build.yaml.
   INDEX_REF: main
@@ -82,7 +91,7 @@ jobs:
           # snapshot repository of Maven Central answers before sixty jobs rely on it. The
           # adapters are not asked for here: they have versions of their own, and the matrix
           # resolves them itself a minute later, fresh, as it does everything else.
-          mvn -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml" \
+          mvn -s "$GITHUB_WORKSPACE/.github/maven/settings.xml" \
             --batch-mode --no-transfer-progress --update-snapshots \
             -Dmaven.repo.local="${probe}" \
             org.apache.maven.plugins:maven-dependency-plugin:3.9.0:get \
@@ -237,7 +246,7 @@ jobs:
       - name: Build against the current snapshots
         working-directory: "${{ matrix.blueprint }}"
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
-          -s "$GITHUB_WORKSPACE/.github/workflows/maven-settings.xml"
+          -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
           --batch-mode --no-transfer-progress --update-snapshots
           -P${{ matrix.bpms }} install
       # A red night used to leave nothing behind but the log of the job, so the issue it

@@ -35,16 +35,22 @@ snapshots="${repository}/io/vanillabp"
 
 # Maven writes one maven-metadata-<repository id>.xml per remote repository a snapshot came
 # from, next to the jar it resolved. The platform and the BPMS adapters come from the
-# repository 'central-snapshots', see .github/workflows/maven-settings.xml, so this
+# repository 'central-snapshots', see .github/maven/settings.xml, so this
 # reads what came from there and skips the modules a build installed itself, which carry no
 # such file.
+# Once VBP_SNAPSHOTS_FROM is 'github-packages', they come from the repository
+# 'vanillabp-github-packages' of .github/maven/settings.xml instead.
+snapshot_repository=central-snapshots
+if [ "${VBP_SNAPSHOTS_FROM:-central}" = github-packages ]; then
+  snapshot_repository=vanillabp-github-packages
+fi
 mapfile -t metadata < <(find "$snapshots" \
-  -path '*-SNAPSHOT/maven-metadata-central-snapshots.xml' -newer "$marker" 2>/dev/null | sort)
+  -path "*-SNAPSHOT/maven-metadata-${snapshot_repository}.xml" -newer "$marker" 2>/dev/null | sort)
 
 stale=""
 if [ "${#metadata[@]}" -eq 0 ]; then
   mapfile -t metadata < <(find "$snapshots" \
-    -path '*-SNAPSHOT/maven-metadata-central-snapshots.xml' 2>/dev/null | sort)
+    -path "*-SNAPSHOT/maven-metadata-${snapshot_repository}.xml" 2>/dev/null | sort)
   stale="Maven refreshed none of these while this run was going, so they are what the cache
 of the runner held and not necessarily what was built against."
 fi

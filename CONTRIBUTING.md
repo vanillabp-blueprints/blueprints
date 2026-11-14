@@ -634,7 +634,7 @@ No CI-specific address is checked in anywhere.
 
 Until 2.0.0 is released, `spi-for-java`, the platform and the BPMS adapters publish their
 snapshots to the snapshot repository of Maven Central, which needs no login.
-`.github/workflows/maven-settings.xml` names it, and the same file works locally. The
+`.github/maven/settings.xml` names it, and the same file works locally. The
 blueprint POMs stay free of all this. A blueprint shows what an application needs, and after
 the release that is Maven Central.
 
@@ -700,7 +700,7 @@ the BPMS, and that is the profile to pass:
 
 ```bash
 cd <group>/<blueprint-id>/<platform>
-mvn -s ../../../.github/workflows/maven-settings.xml \
+mvn -s ../../../.github/maven/settings.xml \
   --update-snapshots -P<bpms> verify
 ```
 

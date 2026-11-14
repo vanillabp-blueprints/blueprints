@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Where CI reads the VanillaBP 2.0.0-SNAPSHOT artifacts from.
+
+  Until 2.0.0 is released, spi-for-java, the platform, the BPMS adapters and the Business
+  Cockpit publish their snapshots to two places: the snapshot repository of Maven Central,
+  which needs no login, and GitHub Packages of the vanillabp organization, which needs a token
+  even for public packages.
+
+  The environment variable VBP_SNAPSHOTS_FROM picks one. The workflows take it from the Actions
+  variable VANILLABP_SNAPSHOTS_FROM of the organization:
+  - 'central' (the variable is not set): from 'central-snapshots' below.
+  - 'github-packages': from 'vanillabp-github-packages' below, with the GITHUB_TOKEN of the run
+    in VBP_PACKAGES_READ_TOKEN. Maven Central is then not asked for any VanillaBP snapshot, so
+    its rate limit (HTTP 429) cannot stop the build. Should GitHub Packages fail, the
+    organization clears the variable, and every build reads from Maven Central again, without
+    a push.
+
+  The groups in the filter files are what this repository reads, not what VanillaBP publishes.
+  A group is added when a build in this repository starts to resolve an artifact from there.
+
+  This file is build infrastructure and deliberately not a <repositories> section of a
+  blueprint POM: a blueprint shows what an application needs, and after the release that
+  is Maven Central and nothing else. It works locally as well. There VBP_SNAPSHOTS_FROM is
+  empty, and everything comes from Maven Central.
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <servers>
+        <server>
+            <id>vanillabp-github-packages</id>
+            <username>${env.GITHUB_ACTOR}</username>
+            <password>${env.VBP_PACKAGES_READ_TOKEN}</password>
+        </server>
+    </servers>
+    <activeProfiles>
+        <activeProfile>github</activeProfile>
+    </activeProfiles>
+    <profiles>
+        <profile>
+            <id>github</id>
+            <!-- A repository is asked only for the groups listed in
+                 .github/maven/repository-filters/<VBP_SNAPSHOTS_FROM>/groupId-<repository id>.txt,
+                 one exact groupId per line. A repository without such a file is asked for
+                 everything. Without the filter, a build with update-snapshots asks
+                 central-snapshots for every SNAPSHOT of this repository too, which is never
+                 published there. Those requests are what makes Maven Central answer 429.
+                 Outside a runner, GITHUB_WORKSPACE and VBP_SNAPSHOTS_FROM are empty, the filter
+                 finds no file and lets everything through. A new group which a blueprint reads
+                 goes into the files of both directories. -->
+            <properties>
+                <aether.remoteRepositoryFilter.groupId>true</aether.remoteRepositoryFilter.groupId>
+                <aether.remoteRepositoryFilter.groupId.basedir>${env.GITHUB_WORKSPACE}/.github/maven/repository-filters/${env.VBP_SNAPSHOTS_FROM}</aether.remoteRepositoryFilter.groupId.basedir>
+                <!-- Maven Central answers a runner with 429 and a Retry-After of about half an
+                     hour, counted for the runner's address, which other users share. A request
+                     during that time makes the block longer. So the resolver waits out the whole
+                     pause once, repeats only that request, and the build goes on. At most two
+                     repeats, at most 35 minutes before one; without a Retry-After the pause before
+                     repeat n is n times 15 seconds. The jobs have no timeout of their own. -->
+                <aether.connector.http.retryHandler.count>2</aether.connector.http.retryHandler.count>
+                <aether.connector.http.retryHandler.interval>15000</aether.connector.http.retryHandler.interval>
+                <aether.connector.http.retryHandler.intervalMax>2100000</aether.connector.http.retryHandler.intervalMax>
+                <aether.connector.http.retryHandler.serviceUnavailable>429,503</aether.connector.http.retryHandler.serviceUnavailable>
+            </properties>
+            <repositories>
+                <repository>
+                    <id>central</id>
+                    <url>https://repo1.maven.org/maven2</url>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                </repository>
+                <!-- what a blueprint builds on: the BOM, the Spring Boot and Quarkus support,
+                     the schema and the BPMS adapters. They live in the snapshot repository of
+                     Maven Central, which needs no login -->
+                <repository>
+                    <id>central-snapshots</id>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                </repository>
+            </repositories>
+        </profile>
+        <profile>
+            <id>snapshots-from-github-packages</id>
+            <!-- bin/mvn_with_retry.sh also names this profile on the command line, because
+                 the resolver of a Quarkus test does not see this activation, see there -->
+            <activation>
+                <property>
+                    <name>env.VBP_SNAPSHOTS_FROM</name>
+                    <value>github-packages</value>
+                </property>
+            </activation>
+            <repositories>
+                <!-- the same snapshots from GitHub Packages, one URL for the packages of every
+                     repository of the vanillabp organization -->
+                <repository>
+                    <id>vanillabp-github-packages</id>
+                    <url>https://maven.pkg.github.com/vanillabp/*</url>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </repository>
+            </repositories>
+        </profile>
+    </profiles>
+</settings>
