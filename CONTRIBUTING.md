@@ -687,9 +687,18 @@ after the four platform repositories which measure the same published snapshot, 
 at 01:11.
 
 It starts with the job `platform`. That job writes down which platform build the night got. No
-job of that run restores the Maven cache, and every
-Maven call passes `--update-snapshots`. So nothing here can quietly build against yesterday's
-framework.
+job of that run restores the Maven cache, and every job resolves its snapshots with
+`--update-snapshots`. So nothing here can quietly build against yesterday's framework.
+
+Every job which builds a blueprint, an application or a bundle resolves its snapshots in a step
+of its own, with `bin/resolve_snapshots_at_once.sh`, and then builds with
+`--no-snapshot-updates`. A build with tests runs for up to twenty minutes, and a publish of the
+framework takes about ten. With
+`--update-snapshots` in the build itself, Maven asks for each snapshot only when a module first
+needs it. A build during a publish can then get one artifact from before the publish and another
+one from after it, and fail without any change here. Resolving everything first takes a minute
+or two, so that window is much smaller. `bin/platform_snapshot.sh` writes down in the summary of
+each job which snapshot builds it took.
 
 Every job which went red attaches its surefire and failsafe reports to the run. The artifact is
 called `test-reports-<blueprint>-<bpms>`, with the slashes of the blueprint path turned into
