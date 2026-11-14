@@ -28,6 +28,7 @@
     <module>external-systems/e-signature/e-signature-api</module>
     <module>external-systems/e-signature/port</module>
     <module>external-systems/e-signature/rest-adapter</module>
+    <module>simulator-test-api</module>
     <module>simulator</module>
     <module>loan-approval</module>
     <module>application</module>

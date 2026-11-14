@@ -55,6 +55,8 @@
       train for 4.1 yet. The Spring Boot parent wins for everything the two have in common.
     -->
     <spring-cloud.version>2025.1.4</spring-cloud.version>
+    <!-- Generates the Java interfaces of the APIs from their OpenAPI files. -->
+    <openapi-generator.version>7.27.0</openapi-generator.version>
   </properties>
 
   <dependencyManagement>

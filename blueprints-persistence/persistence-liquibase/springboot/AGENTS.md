@@ -68,18 +68,19 @@ Rules which hold beyond this blueprint:
 
 ## Boilerplate files
 
-|                                File                                 |                                     Purpose                                     |
-|---------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                          | the BPMS profiles and the VanillaBP BOM import                                  |
-| `loan-approval/pom.xml`                                             | `vanillabp-spring-boot-support`, `spring-boot-liquibase`, `liquibase-core`      |
-| `application/pom.xml`                                               | the BPMS adapter, `spring-boot-liquibase`, `liquibase-core`, `vanillabp-schema` |
-| `application/src/main/java/.../Application.java`                    | the Spring Boot application, in the parent package of the module                |
-| `application/src/test/resources/db/changelog-without-vanillabp.xml` | everything but VanillaBP's part, used by `MissingTableIT`                       |
-| `loan-approval/src/test/java/.../TestApplication.java`              | the minimal application the module's test boots                                 |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of the integration test: waits for workflow progress                 |
-| `application/src/test/java/.../ApplicationSmokeTest.java`           | boots the application, which validates the BPMN-to-code wiring                  |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java`   | GET endpoints operating the process                                             |
-| `docs/loan_approval.png`                                            | the picture of the process the README shows, rendered from the BPMN model       |
+|                                File                                 |                                                          Purpose                                                           |
+|---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                          | the BPMS profiles and the VanillaBP BOM import                                                                             |
+| `loan-approval/pom.xml`                                             | `vanillabp-spring-boot-support`, `spring-boot-liquibase`, `liquibase-core`                                                 |
+| `application/pom.xml`                                               | the BPMS adapter, `spring-boot-liquibase`, `liquibase-core`, `vanillabp-schema`                                            |
+| `application/src/main/java/.../Application.java`                    | the Spring Boot application, in the parent package of the module                                                           |
+| `application/src/test/resources/db/changelog-without-vanillabp.xml` | everything but VanillaBP's part, used by `MissingTableIT`                                                                  |
+| `loan-approval/src/test/java/.../TestApplication.java`              | the minimal application the module's test boots                                                                            |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of the integration test: waits for workflow progress                                                            |
+| `application/src/test/java/.../ApplicationSmokeTest.java`           | boots the application, which validates the BPMN-to-code wiring                                                             |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java`   | GET endpoints operating the process                                                                                        |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`       | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `docs/loan_approval.png`                                            | the picture of the process the README shows, rendered from the BPMN model                                                  |
 
 `spring-boot-liquibase` is required. Since Spring Boot 4 the Liquibase integration is a module
 of its own. It makes the entity manager factory wait for a `SpringLiquibase` bean. With

@@ -3,11 +3,9 @@ package blueprint.workflowmodule.ratewatch;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import blueprint.workflowmodule.ratewatch.api.RateWatchApi;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -17,11 +15,16 @@ import lombok.extern.slf4j.Slf4j;
  * There is nothing here that publishes a rate. This use case only listens, and the URL that
  * makes it continue belongs to the loan approval.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link RateWatchApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/rate-watch.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @RestController("rateWatchApiController")
-@RequestMapping("/api/rate-watch")
-public class ApiController {
+public class ApiController implements RateWatchApi {
 
   @Autowired
   private Service rateWatch;
@@ -31,7 +34,7 @@ public class ApiController {
    *
    * @return The id of the watch started.
    */
-  @GetMapping("/start")
+  @Override
   public String start() {
 
     final var watchId = UUID.randomUUID().toString();
@@ -52,9 +55,9 @@ public class ApiController {
    * @param watchId The id returned by starting the watch.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GetMapping("/{watchId}")
+  @Override
   public String show(
-      @PathVariable final String watchId) {
+      final String watchId) {
 
     return rateWatch
         .get(watchId)

@@ -40,6 +40,8 @@
     <camunda8-adapter.version>2.0.0-8.10-SNAPSHOT</camunda8-adapter.version>
     <cibseven-adapter.version>2.0.0-2.2-SNAPSHOT</cibseven-adapter.version>
     <operaton-adapter.version>2.0.0-SNAPSHOT</operaton-adapter.version>
+    <!-- Generates the Java interfaces of the APIs from their OpenAPI files. -->
+    <openapi-generator.version>7.27.0</openapi-generator.version>
   </properties>
 
   <dependencyManagement>

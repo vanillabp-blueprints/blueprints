@@ -46,6 +46,7 @@ does not touch the ids, so they are the same string everywhere.
 | `loan-approval/src/main/java/.../loanapproval/Service.java`                            | the checks as business methods, and the two halves of the user task picking them                                                       |
 | `loan-approval/src/main/java/.../loanapproval/Workflow.java`                           | `completeUserTask`, and nothing about the subprocess. The choice travels on the aggregate                                              |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java`                      | the GET endpoint carrying the task id and the names of the checks                                                                      |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it             |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                  | one test per decision maker                                                                                                            |
 
 ## Boilerplate files

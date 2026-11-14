@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+    <artifactId>simulator-test-api</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>simulator-test-api-server</artifactId>
+  <name>API 'test API of the simulator': server</name>
+  <description>The server interfaces of the test API, generated from simulator-test-api.yaml. The simulator implements them.</description>
+
+  <!--
+    Only what the generated sources import: the annotations of Spring Web, of Jackson and of
+    Jakarta. No Spring Boot starter, so the module stays a small library.
+  -->
+  <dependencies>
+    <!-- The record of an envelope, which the e-signature server generates. -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+      <artifactId>e-signature-api-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        Generates the interfaces of the test API from '../simulator-test-api.yaml'. The
+        controllers of the simulator implement them. The document of an envelope is the record
+        of the e-signature server, which the simulator holds already, so it is not generated a
+        second time.
+        The settings all generated code shares are in the POM of the blueprint.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>simulator-test-api-server</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/../simulator-test-api.yaml</inputSpec>
+              <apiPackage>blueprint.simulator.testapi.server</apiPackage>
+              <modelPackage>blueprint.simulator.testapi.server.model</modelPackage>
+              <schemaMappings>Envelope=blueprint.externalsystems.esignature.api.server.model.Envelope</schemaMappings>
+              <configOptions>
+                <!-- Only the interface. A controller implements it. -->
+                <interfaceOnly>true</interfaceOnly>
+                <skipDefaultInterface>true</skipDefaultInterface>
+                <!-- The paths in the file are complete, so the interfaces need no path of their own. -->
+                <requestMappingMode>none</requestMappingMode>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -276,21 +276,22 @@ says where they are served and how to log in.
 
 ## How it works
 
-|                                          File                                          |                                              Role                                              |
-|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: rating, decision, payout, and therefore three states of the case                  |
-| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, audited by one annotation and sharing nothing with the BPMS            |
-| `.../loanapproval/model/AggregateRepository.java`                                      | the repository, and the revisions of Spring Data Envers                                        |
-| `.../loanapproval/config/AuditedRepositories.java`                                     | the factory a revision repository needs, declared by the module itself                         |
-| `.../loanapproval/audit/AuditedChange.java`                                            | the revision entity: number, moment, and who made the change                                   |
-| `.../loanapproval/audit/ChangeBeingMade.java`                                          | the id of the change and the person making it, and the listener writing both into the revision |
-| `.../loanapproval/audit/AuditedAggregatePersistence.java`                              | what VanillaBP asks, plus naming the change being made and reading the state at one            |
-| `.../loanapproval/audit/ComplianceNotices.java`                                        | the report: written in the transaction of the decision, sent afterwards, about that state      |
-| `.../loanapproval/ComplianceArchive.java`                                              | the port to the archive; `LocalComplianceArchive` is the stand-in to replace                   |
-| `.../loanapproval/Service.java`                                                        | the business code, which knows nothing about revisions                                         |
-| `.../loanapproval/ApiController.java`                                                  | the GET endpoints, and the one place saying who is acting                                      |
-| `loan-approval/src/test/.../ComplianceArchiveSimulator.java`                           | the archive in the test, away at the first attempt                                             |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays the case through and asserts what the archive was told                                   |
+|                                          File                                          |                                                            Role                                                            |
+|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: rating, decision, payout, and therefore three states of the case                                              |
+| `.../loanapproval/model/Aggregate.java`                                                | the workflow aggregate, audited by one annotation and sharing nothing with the BPMS                                        |
+| `.../loanapproval/model/AggregateRepository.java`                                      | the repository, and the revisions of Spring Data Envers                                                                    |
+| `.../loanapproval/config/AuditedRepositories.java`                                     | the factory a revision repository needs, declared by the module itself                                                     |
+| `.../loanapproval/audit/AuditedChange.java`                                            | the revision entity: number, moment, and who made the change                                                               |
+| `.../loanapproval/audit/ChangeBeingMade.java`                                          | the id of the change and the person making it, and the listener writing both into the revision                             |
+| `.../loanapproval/audit/AuditedAggregatePersistence.java`                              | what VanillaBP asks, plus naming the change being made and reading the state at one                                        |
+| `.../loanapproval/audit/ComplianceNotices.java`                                        | the report: written in the transaction of the decision, sent afterwards, about that state                                  |
+| `.../loanapproval/ComplianceArchive.java`                                              | the port to the archive; `LocalComplianceArchive` is the stand-in to replace                                               |
+| `.../loanapproval/Service.java`                                                        | the business code, which knows nothing about revisions                                                                     |
+| `.../loanapproval/ApiController.java`                                                  | the GET endpoints, and the one place saying who is acting                                                                  |
+| `.../openapi/loan-approval.yaml`                                                       | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `loan-approval/src/test/.../ComplianceArchiveSimulator.java`                           | the archive in the test, away at the first attempt                                                                         |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays the case through and asserts what the archive was told                                                               |
 
 The test is the proof. It starts a loan approval, answers the risk assessment as `paula`, and
 waits until the payout was booked. Only then does it look at what the archive received. The

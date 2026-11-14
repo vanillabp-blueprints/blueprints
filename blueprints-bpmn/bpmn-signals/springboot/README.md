@@ -189,15 +189,16 @@ is in the
 
 ## How it works
 
-|                                          File                                          |                                            Role                                            |
-|----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: a signal catch event naming `InterestRatePublished`, a service task behind it |
-| `.../loanapproval/Service.java`                                                        | stores the rate, broadcasts, and reads the rate again for each workflow which goes on      |
-| `.../loanapproval/Workflow.java`                                                       | `sendSignal`, the only place `ProcessService` is used                                      |
-| `.../loanapproval/ApiController.java`                                                  | the endpoint publishing the rate, addressed to no business case                            |
-| `.../loanapproval/model/InterestRate.java`                                             | the published rate: application data, not a workflow aggregate                             |
-| `.../loanapproval/model/Aggregate.java`                                                | `interestRate`: what the workflow read after the signal reached it                         |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | waiting, one broadcast for two workflows, and a signal nobody caught                       |
+|                                          File                                          |                                                            Role                                                            |
+|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: a signal catch event naming `InterestRatePublished`, a service task behind it                                 |
+| `.../loanapproval/Service.java`                                                        | stores the rate, broadcasts, and reads the rate again for each workflow which goes on                                      |
+| `.../loanapproval/Workflow.java`                                                       | `sendSignal`, the only place `ProcessService` is used                                                                      |
+| `.../loanapproval/ApiController.java`                                                  | the endpoint publishing the rate, addressed to no business case                                                            |
+| `.../openapi/loan-approval.yaml`                                                       | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `.../loanapproval/model/InterestRate.java`                                             | the published rate: application data, not a workflow aggregate                                                             |
+| `.../loanapproval/model/Aggregate.java`                                                | `interestRate`: what the workflow read after the signal reached it                                                         |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | waiting, one broadcast for two workflows, and a signal nobody caught                                                       |
 
 The order of events: the service task fills in the rating. The BPMS reaches the catch event, and the workflow stops there, together with every
 other loan approval which got this far. Whenever the rate is published, `ApiController` calls

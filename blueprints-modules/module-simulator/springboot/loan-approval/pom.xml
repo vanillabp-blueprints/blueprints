@@ -79,6 +79,13 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    <!-- The client of the simulator's test API, generated from its OpenAPI file. -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+      <artifactId>simulator-test-api-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
     <!--
       Only for the order of the build: the simulator has to be built before these tests run.
       Putting it first in the parent's <modules> is not enough. Maven sorts the modules by their
@@ -125,6 +132,44 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        The API of this module is written as the OpenAPI file
+        'src/main/resources/openapi/loan-approval.yaml'. This plugin generates the Java interface
+        'LoanApprovalApi' and the records of its answers from it. 'ApiController' implements the
+        interface and holds nothing but the code of each call. The settings all generated code
+        shares are in the POM of the blueprint.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>loan-approval-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
+              <configOptions>
+                <!-- Only the interface. The controller implements it. -->
+                <interfaceOnly>true</interfaceOnly>
+                <skipDefaultInterface>true</skipDefaultInterface>
+                <!-- The paths in the file are complete, so the interface needs no path of its own. -->
+                <requestMappingMode>none</requestMappingMode>
+                <!-- A method returns the answer itself. Spring Boot turns it into the response. -->
+                <useResponseEntity>false</useResponseEntity>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
   <profiles>
     <!--

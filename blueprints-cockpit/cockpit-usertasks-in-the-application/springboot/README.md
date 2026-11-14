@@ -181,21 +181,22 @@ are then marked as canceled, and their drafts stay where they were.
 
 ## How it works
 
-|                                          File                                          |                                                       Role                                                        |
-|----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: two branches, a multi-instance user task, a gateway on the result, a terminate end event             |
-| `.../loanapproval/model/Aggregate.java`                                                | the tasks by their id, and the results of completed tasks                                                         |
-| `.../loanapproval/model/usertask/Task.java`                                            | one user task: open, saved, completed or canceled                                                                 |
-| `.../loanapproval/model/usertask/TaskData.java`                                        | the content of a form, with `AssessRiskTaskData` and `CheckDocumentTaskData` as the two kinds                     |
-| `.../loanapproval/model/usertask/TaskDataConverter.java`                               | the JSON column                                                                                                   |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | `CREATED` adds a task, `CANCELED` marks it                                                                        |
-| `.../loanapproval/Service.java`                                                        | drafts into the task, results into the aggregate, and the check that a task is open and of the expected kind      |
-| `.../loanapproval/UserTaskFormController.java`                                         | GET, PUT and POST per form, each with `@Secured`; imports `BcUserTaskExceptionHandler`, which answers 404 and 409 |
-| `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                                   |
-| `.../loanapproval/config/Permission.java`                                              | the authorities of the module                                                                                     |
-| `application/src/main/java/.../SecurityConfiguration.java`                             | how users log in: HTTP Basic, two demo users                                                                      |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays the tasks through and waits for the aggregate                                                               |
-| `loan-approval/src/test/.../UserTaskFormSecurityIT.java`                               | calls the form endpoints as users with and without the authority                                                  |
+|                                          File                                          |                                                                 Role                                                                 |
+|----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: two branches, a multi-instance user task, a gateway on the result, a terminate end event                                |
+| `.../loanapproval/model/Aggregate.java`                                                | the tasks by their id, and the results of completed tasks                                                                            |
+| `.../loanapproval/model/usertask/Task.java`                                            | one user task: open, saved, completed or canceled                                                                                    |
+| `.../loanapproval/model/usertask/TaskData.java`                                        | the content of a form, with `AssessRiskTaskData` and `CheckDocumentTaskData` as the two kinds                                        |
+| `.../loanapproval/model/usertask/TaskDataConverter.java`                               | the JSON column                                                                                                                      |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | `CREATED` adds a task, `CANCELED` marks it                                                                                           |
+| `.../loanapproval/Service.java`                                                        | drafts into the task, results into the aggregate, and the check that a task is open and of the expected kind                         |
+| `.../loanapproval/UserTaskFormController.java`                                         | GET, PUT and POST per form, each with `@Secured`; imports `BcUserTaskExceptionHandler`, which answers 404 and 409                    |
+| `.../openapi/user-task-forms.yaml`                                                     | the API as an OpenAPI file. The build generates the interface `UserTaskFormsApi` from it, and `UserTaskFormController` implements it |
+| `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                                                      |
+| `.../loanapproval/config/Permission.java`                                              | the authorities of the module                                                                                                        |
+| `application/src/main/java/.../SecurityConfiguration.java`                             | how users log in: HTTP Basic, two demo users                                                                                         |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays the tasks through and waits for the aggregate                                                                                  |
+| `loan-approval/src/test/.../UserTaskFormSecurityIT.java`                               | calls the form endpoints as users with and without the authority                                                                     |
 
 The order of events: the service task rates the loan request. Then the BPMS opens the risk
 assessment and one document check per entry of `documentIds`. For each of them it calls

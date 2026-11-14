@@ -3,13 +3,9 @@ package blueprint.workflowmodule.loanapproval;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import blueprint.workflowmodule.loanapproval.api.LoanApprovalApi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -26,11 +22,16 @@ import lombok.extern.slf4j.Slf4j;
  * endpoint does. That is the signal showing through the API - the news is not about one
  * business case, and there is nothing to address it to.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanApprovalApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-approval.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @ApplicationScoped
-@Path("/api/loan-approval")
-public class ApiController {
+public class ApiController implements LoanApprovalApi {
 
   @Inject
   Service loanApproval;
@@ -41,11 +42,9 @@ public class ApiController {
    * @param amount The amount requested.
    * @return The id of the loan request started.
    */
-  @GET
-  @Path("/start")
+  @Override
   public String start(
-      @QueryParam("amount")
-      @DefaultValue("5000") final int amount) {
+      final Integer amount) {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
@@ -66,11 +65,9 @@ public class ApiController {
    * @param rate The interest rate, in percent.
    * @return What was done, for the browser to show.
    */
-  @GET
-  @Path("/publish-interest-rate")
+  @Override
   public String publishInterestRate(
-      @QueryParam("rate")
-      @DefaultValue("3.5") final BigDecimal rate) {
+      final BigDecimal rate) {
 
     loanApproval.publishInterestRate(rate);
 
@@ -87,10 +84,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GET
-  @Path("/{loanRequestId}")
+  @Override
   public String show(
-      @PathParam("loanRequestId") final String loanRequestId) {
+      final String loanRequestId) {
 
     return loanApproval
         .get(loanRequestId)

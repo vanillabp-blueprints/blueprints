@@ -3,12 +3,9 @@ package blueprint.workflowmodule.loanapproval;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import blueprint.workflowmodule.loanapproval.api.LoanApprovalApi;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -20,11 +17,16 @@ import lombok.extern.slf4j.Slf4j;
  * the workflow behind them is never a parameter, and that is what a migration looks like
  * from the outside: nothing.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanApprovalApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-approval.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/loan-approval")
-public class ApiController {
+public class ApiController implements LoanApprovalApi {
 
   @Autowired
   private Service loanApproval;
@@ -35,9 +37,9 @@ public class ApiController {
    * @param amount The amount requested.
    * @return The id of the loan request started.
    */
-  @GetMapping("/start")
+  @Override
   public String start(
-      @RequestParam(defaultValue = "5000") final int amount) {
+      final Integer amount) {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
@@ -58,10 +60,10 @@ public class ApiController {
    * @param taskId        The id of the user task, logged when it was created.
    * @return What happened.
    */
-  @GetMapping("/{loanRequestId}/assess-risk/{taskId}")
+  @Override
   public String assessRisk(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId) {
+      final String loanRequestId,
+      final String taskId) {
 
     loanApproval.assessRisk(loanRequestId, taskId);
 
@@ -78,10 +80,10 @@ public class ApiController {
    * @param signedBy      Who signed.
    * @return What happened.
    */
-  @GetMapping("/{loanRequestId}/contract-signed")
+  @Override
   public String contractSigned(
-      @PathVariable final String loanRequestId,
-      @RequestParam(defaultValue = "Jane Doe") final String signedBy) {
+      final String loanRequestId,
+      final String signedBy) {
 
     loanApproval.contractSigned(loanRequestId, signedBy);
 
@@ -98,9 +100,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return The adapter id of the BPMS holding the workflow.
    */
-  @GetMapping("/{loanRequestId}/bpms")
+  @Override
   public String bpms(
-      @PathVariable final String loanRequestId) {
+      final String loanRequestId) {
 
     return loanApproval
         .bpmsHolding(loanRequestId)
@@ -116,9 +118,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GetMapping("/{loanRequestId}")
+  @Override
   public String show(
-      @PathVariable final String loanRequestId) {
+      final String loanRequestId) {
 
     return loanApproval
         .get(loanRequestId)

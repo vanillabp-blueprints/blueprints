@@ -67,6 +67,7 @@ controllers in line, or the page reaches nothing.
 | `pom.xml` (blueprint root)                                       | the VanillaBP BOM import, the versions of the BPMS adapters and of the cockpit adapters, the rule which keeps every adapter in the test scope |
 | `loan-approval/pom.xml`                                          | `vanillabp-spring-boot-support` and the cockpit `support`; per BPMS profile both adapters for the test                                        |
 | `loan-approval/src/main/java/.../ApiController.java`             | GET endpoints for a human: start, approve, show                                                                                               |
+| `loan-approval/src/main/resources/openapi/loan-requests.yaml`    | those GET endpoints as an OpenAPI file. The build generates `LoanRequestsApi` from it, and `ApiController` implements it                      |
 | `loan-approval/src/main/java/.../model/AggregateRepository.java` | the repository of the aggregate                                                                                                               |
 | `loan-approval/src/test/resources/application.yaml`              | the database, a short outbox poll interval, the address of the simulator                                                                      |
 | `loan-approval/src/test/resources/application-camunda7.yaml`     | the Camunda 7 settings of the test, and the same file per other BPMS                                                                          |
@@ -101,8 +102,10 @@ controllers in line, or the page reaches nothing.
 6. Add a `@WorkflowDetailsProvider` method to `WorkflowTaskHandler`. Put the values the columns of
    the case list show into `details`, the status included. Do not put `null` values into the
    map. Take the business outcome from the status, not from `endReason` of the case.
-7. Add the endpoints of the OpenAPI to a controller below `/<workflow-module-id>`. Answer 404 for
-   an unknown id and 409 for a case which cannot be withdrawn any more.
+7. Let `openapi-generator-maven-plugin` generate the interface and the record of the case from
+   the OpenAPI, with the settings of `loan-approval/pom.xml`. Implement the interface in a
+   controller with `@RequestMapping("/<workflow-module-id>")`. Answer 404 for an unknown id and
+   409 for a case which cannot be withdrawn any more.
 8. Copy `CockpitSimulator`, `dev-shell-simulator.yaml` and the dependency plugin execution of
    `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the test
    which checks every OpenAPI operation against the endpoints.

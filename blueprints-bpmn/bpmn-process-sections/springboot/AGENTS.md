@@ -48,20 +48,21 @@ The files carrying the aspect. Read these, adapt them, keep their structure.
 Present so the blueprint runs on its own. Copy them unchanged or use what the target
 project already has.
 
-|                                File                                 |                                      Purpose                                      |
-|---------------------------------------------------------------------|-----------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                          | the BPMS profiles and the VanillaBP BOM import                                    |
-| `loan-approval/pom.xml`                                             | `vanillabp-spring-boot-support`, never an adapter                                 |
-| `application/pom.xml`                                               | the BPMS adapter, the only place a BPMS is named                                  |
-| `application/src/main/java/.../Application.java`                    | the Spring Boot application, in the parent package of the module                  |
-| `application/src/main/resources/application.yaml`                   | the datasource, and the profile file of the engine in use                         |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java`   | GET endpoints operating the process                                               |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`        | starts the process; a called process is never started from code                   |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | the limit which makes the second section run, and the numbers the sections use    |
-| `loan-approval/src/test/java/.../TestApplication.java`              | the minimal application the module's test boots                                   |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of the integration test: waits for workflow progress                   |
-| `application/src/test/java/.../ApplicationSmokeTest.java`           | boots the application, which validates the BPMN-to-code wiring                    |
-| `docs/loan_approval.png`, `docs/document_check.png`                 | the pictures of the two processes the README shows, rendered from the BPMN models |
+|                                File                                 |                                                          Purpose                                                           |
+|---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                          | the BPMS profiles and the VanillaBP BOM import                                                                             |
+| `loan-approval/pom.xml`                                             | `vanillabp-spring-boot-support`, never an adapter                                                                          |
+| `application/pom.xml`                                               | the BPMS adapter, the only place a BPMS is named                                                                           |
+| `application/src/main/java/.../Application.java`                    | the Spring Boot application, in the parent package of the module                                                           |
+| `application/src/main/resources/application.yaml`                   | the datasource, and the profile file of the engine in use                                                                  |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java`   | GET endpoints operating the process                                                                                        |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`       | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`        | starts the process; a called process is never started from code                                                            |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | the limit which makes the second section run, and the numbers the sections use                                             |
+| `loan-approval/src/test/java/.../TestApplication.java`              | the minimal application the module's test boots                                                                            |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of the integration test: waits for workflow progress                                                            |
+| `application/src/test/java/.../ApplicationSmokeTest.java`           | boots the application, which validates the BPMN-to-code wiring                                                             |
+| `docs/loan_approval.png`, `docs/document_check.png`                 | the pictures of the two processes the README shows, rendered from the BPMN models                                          |
 
 `TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
 blueprint. Copy them unchanged.

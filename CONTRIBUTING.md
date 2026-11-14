@@ -79,7 +79,8 @@ understanding all of them:
 
 ```
 <base-package>.<usecase>
-├── ApiController.java               <- driving adapter: HTTP calls in
+├── ApiController.java               <- driving adapter: HTTP calls in, implements the
+│                                       interface generated from the OpenAPI file (Rule 7)
 ├── Service.java                     <- business code, never touches VanillaBP
 ├── Workflow.java                    <- outgoing: the application tells the process
 ├── WorkflowTaskHandler.java         <- incoming: the process tells the application
@@ -123,10 +124,15 @@ workflow module ID. Only the marker file is outside it.
 ```
 src/main/resources/
 ├── META-INF/workflow-module              <- contains 'loan-approval'
+├── openapi/loan-approval.yaml            <- the API of the use case (Rule 7)
 └── loan-approval/
     ├── loan-approval.yaml                <- the module's own configuration
     └── processes/<adapter-id>/*.bpmn     <- one directory per adapter id
 ```
+
+The OpenAPI file is the second file outside that directory. Its name is the use case, so it does
+not clash with the file of another module. The frontends of the cockpit blueprints read it from
+this path to generate their client.
 
 Placeholders are the same in every blueprint, so a tool can replace them:
 
@@ -324,6 +330,50 @@ The task handler never carries `@Transactional`. VanillaBP fails the boot if it 
 
 `persistence-custom` is the one exception. Its store is not part of a platform transaction. So
 its service opens the unit of work itself and carries no annotation.
+
+## Rule 7: every API is written as an OpenAPI file
+
+Every HTTP interface of a blueprint is an OpenAPI file first. The build generates the Java code
+from it with the `openapi-generator-maven-plugin`. Nobody writes a path, a parameter annotation
+or a class for a request or an answer by hand. The file is the contract, and a reader, a
+frontend and an agent read it without reading Java.
+
+Where the file lives depends on who calls the API:
+
+- An API which only people in a browser call, or only the TypeScript of the module's own user
+  interface: `src/main/resources/openapi/<use-case>.yaml` in the module whose controller
+  implements it. Its tag is the use case, so the interface is called `LoanApprovalApi` and is
+  generated into the package `<use case package>.api`. Every `ApiController` is such an API.
+- An API with a Java client, such as a system around the application, its simulator or another
+  module: a Maven module `<name>-api` with the file and two submodules. `client` generates what
+  the caller uses, `server` generates the interface the other side implements.
+  `module-simulator` shows it for the credit rating and for the e-signature service, which
+  calls back.
+
+Each platform has its own generator:
+
+|  Platform   |                                 Generator and settings                                  |                     The controller                     |
+|-------------|-----------------------------------------------------------------------------------------|--------------------------------------------------------|
+| Spring Boot | `spring`, `interfaceOnly`, `requestMappingMode` `none`, `useResponseEntity` `false`     | a `@RestController` which implements the interface     |
+| Quarkus     | `jaxrs-spec`, `interfaceOnly`, `returnResponse` `false`, `sourceFolder` `src/main/java` | a bean which implements the interface, without `@Path` |
+
+A client is generated with the library `spring-http-interface`, and a `RestClient` turns it into
+a client. On Quarkus, Quarkus REST takes the paths and the parameters from the interface, so the
+resource class only carries its bean annotation. The paths in the file are complete and the
+server is `http://localhost:8080`. So the file names the URL a person types into the browser
+(Rule 3), and the interface needs no path of its own.
+
+The settings are in the POM of the module which generates. Where several modules generate, the
+blueprint POM shares them in `pluginManagement`. The version is the property
+`openapi-generator.version` of the blueprint POM. There is no shared parent (Rule 1).
+
+An answer of a type the framework already has, such as `WorkflowHistory` of VanillaBP, is
+described in the file and mapped to that type with `schemaMappings`. Then the controller hands
+on what the framework returns, and the file still says what the JSON looks like.
+`bpmn-history-and-diagram` does this.
+
+The generated code is written below `target/`. It is not part of the blueprint, and
+`bin/check_twin_diff.py` does not compare it.
 
 ## The test harness
 

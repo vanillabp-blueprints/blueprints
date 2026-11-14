@@ -58,12 +58,13 @@ The files carrying the aspect. Read these, adapt them, keep their structure.
 They are here so that the blueprint runs on its own. Copy them unchanged, or use what the
 target project already has.
 
-|                  File                  |                       Purpose                       |
-|----------------------------------------|-----------------------------------------------------|
-| `pom.xml`                              | dependencies, the BPMS profiles, the platform build |
-| `src/main/resources/application.yaml`  | datasource and VanillaBP configuration              |
-| `src/main/java/.../ApiController.java` | the GET endpoints operating the process             |
-| `docs/<process-id>.png`                | the picture of the process the README shows         |
+|                     File                     |                                         Purpose                                          |
+|----------------------------------------------|------------------------------------------------------------------------------------------|
+| `pom.xml`                                    | dependencies, the BPMS profiles, the platform build                                      |
+| `src/main/resources/application.yaml`        | datasource and VanillaBP configuration                                                   |
+| `src/main/java/.../ApiController.java`       | the GET endpoints operating the process                                                  |
+| `src/main/resources/openapi/<use-case>.yaml` | the API as an OpenAPI file. The build generates the interface `ApiController` implements |
+| `docs/<process-id>.png`                      | the picture of the process the README shows                                              |
 
 ## Adding this blueprint to an existing project
 
@@ -74,7 +75,8 @@ every step. Say what to do if the project already has that file.>
 2. Add the `@WorkflowTask` methods to `WorkflowTaskHandler`, the business methods they call
    to `Service`, and whatever the process has to be told to `Workflow`.
 3. Extend the workflow aggregate by the attributes the process needs.
-4. Add the API endpoints continuing the process.
+4. Add the API endpoints continuing the process to the OpenAPI file, and implement the
+   generated methods in `ApiController`.
 5. Copy the integration test and adapt it to the use case.
 
 ## Verifying

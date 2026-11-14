@@ -89,7 +89,8 @@ hurts:
   hold two entities of that name. `@Entity(name = "LoanRepayment")` gives the second one a name
   of its own. The tables differ anyway.
 - **HTTP paths.** `/api/loan-approval/...` and `/api/loan-repayment/...`, each named after
-  its module.
+  its module. Each module writes its paths in an OpenAPI file of its own,
+  `src/main/resources/openapi/<module-id>.yaml`, and generates its own interface from it.
 - **Identifiers inside the BPMS.** Two modules may use the same BPMN process ID or message
   name, and that is allowed. `name-clash-avoidance` keeps them apart. In this blueprint it
   stops being a footnote.

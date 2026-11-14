@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info:
+  title: Risk assessment
+  description: >
+    The API of the use case 'risk-assessment'. It has GET requests only, so a person can walk
+    through the process in a browser, without any tool and without a request body.
+
+    The build generates the Java interface 'RiskAssessmentApi' from this file, and 'ApiController'
+    implements it. So the paths, the parameters and the answers below are the contract, and nobody
+    writes them by hand.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: risk-assessment
+    description: Operating the use case 'risk-assessment'
+paths:
+  /api/risk-assessment/{caseId}:
+    get:
+      tags:
+        - risk-assessment
+      operationId: show
+      summary: Shows what the assessment worked out
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          description: The id of the case, which is the id the caller chose
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The workflow aggregate as it is stored right now
+          content:
+            text/plain:
+              schema:
+                type: string

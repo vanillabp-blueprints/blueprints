@@ -241,15 +241,16 @@ says where they are served and how to log in.
 
 ## How it works
 
-|                                          File                                          |                                    Role                                     |
-|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| `application/src/main/resources/application.yaml`                                      | the limit on how long an outbox poller may wait while nothing is due        |
-| `application/src/main/resources/application-camunda7.yaml`                             | the key which lets the embedded engine wait for the next due job            |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the timer the workflow waits in                                             |
-| `.../loanapproval/DatabaseTraffic.java`                                                | counts the lines H2 wrote into its trace file, which is measuring equipment |
-| `.../loanapproval/ApiController.java`                                                  | the endpoint returning the count                                            |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | the method behind the timer, called when the due date has come              |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | the proof: nothing while it waits, and the payment afterwards               |
+|                                          File                                          |                                                            Role                                                            |
+|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `application/src/main/resources/application.yaml`                                      | the limit on how long an outbox poller may wait while nothing is due                                                       |
+| `application/src/main/resources/application-camunda7.yaml`                             | the key which lets the embedded engine wait for the next due job                                                           |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the timer the workflow waits in                                                                                            |
+| `.../loanapproval/DatabaseTraffic.java`                                                | counts the lines H2 wrote into its trace file, which is measuring equipment                                                |
+| `.../loanapproval/ApiController.java`                                                  | the endpoint returning the count                                                                                           |
+| `.../openapi/loan-approval.yaml`                                                       | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | the method behind the timer, called when the due date has come                                                             |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | the proof: nothing while it waits, and the payment afterwards                                                              |
 
 The saving comes from a property and the shape of the deployment, not from a line of code. So
 there is almost nothing to read in the Java. What is worth reading is what the two keys do not

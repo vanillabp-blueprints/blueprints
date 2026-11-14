@@ -1,10 +1,8 @@
 package blueprint.workflowmodule.riskassessment;
 
+import blueprint.workflowmodule.riskassessment.api.RiskAssessmentApi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -15,11 +13,16 @@ import lombok.extern.slf4j.Slf4j;
  * for by another module through {@link blueprint.api.RiskAssessments}, and adding a second
  * way in would invite exactly the shortcut this blueprint argues against.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link RiskAssessmentApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/risk-assessment.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @ApplicationScoped
-@Path("/api/risk-assessment")
-public class ApiController {
+public class ApiController implements RiskAssessmentApi {
 
   @Inject
   Service riskAssessment;
@@ -30,10 +33,9 @@ public class ApiController {
    * @param caseId The id of the case, which is the id the caller chose.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GET
-  @Path("/{caseId}")
+  @Override
   public String show(
-      @PathParam("caseId") final String caseId) {
+      final String caseId) {
 
     return riskAssessment
         .get(caseId)

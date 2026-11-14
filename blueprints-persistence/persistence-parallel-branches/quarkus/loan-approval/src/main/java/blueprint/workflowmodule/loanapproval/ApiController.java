@@ -2,13 +2,9 @@ package blueprint.workflowmodule.loanapproval;
 
 import java.util.UUID;
 
+import blueprint.workflowmodule.loanapproval.api.LoanApprovalApi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -20,11 +16,16 @@ import lombok.extern.slf4j.Slf4j;
  * of the application, and it may run while the BPMS is inside the transaction of the other
  * branch.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanApprovalApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-approval.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @ApplicationScoped
-@Path("/api/loan-approval")
-public class ApiController {
+public class ApiController implements LoanApprovalApi {
 
   @Inject
   Service loanApproval;
@@ -35,11 +36,9 @@ public class ApiController {
    * @param amount The amount requested.
    * @return The id of the loan request started.
    */
-  @GET
-  @Path("/start")
+  @Override
   public String start(
-      @QueryParam("amount")
-      @DefaultValue("5000") final int amount) {
+      final Integer amount) {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
@@ -60,12 +59,10 @@ public class ApiController {
    * @param approvedBy    Who approved.
    * @return What was done, for the browser to show.
    */
-  @GET
-  @Path("/{loanRequestId}/approve")
+  @Override
   public String approve(
-      @PathParam("loanRequestId") final String loanRequestId,
-      @QueryParam("approvedBy")
-      @DefaultValue("partner") final String approvedBy) {
+      final String loanRequestId,
+      final String approvedBy) {
 
     loanApproval.approvePartnerRequest(loanRequestId, approvedBy);
 
@@ -81,10 +78,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return What was done, for the browser to show.
    */
-  @GET
-  @Path("/{loanRequestId}/documents-ready")
+  @Override
   public String documentsReady(
-      @PathParam("loanRequestId") final String loanRequestId) {
+      final String loanRequestId) {
 
     loanApproval.documentsReady(loanRequestId);
 
@@ -100,10 +96,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GET
-  @Path("/{loanRequestId}")
+  @Override
   public String show(
-      @PathParam("loanRequestId") final String loanRequestId) {
+      final String loanRequestId) {
 
     return loanApproval
         .get(loanRequestId)

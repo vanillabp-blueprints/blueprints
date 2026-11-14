@@ -79,18 +79,19 @@ Rules which hold beyond this blueprint:
 
 ## Boilerplate files
 
-|                               File                                |                                         Purpose                                          |
-|-------------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                        | the BPMS profiles and the VanillaBP BOM import                                           |
-| `loan-approval/pom.xml`                                           | `vanillabp-spring-boot-support`; `spring-boot-flyway` and `flyway-core` for its own test |
-| `application/pom.xml`                                             | the BPMS adapter, `spring-boot-flyway`, `flyway-core`, `vanillabp-schema`                |
-| `application/src/main/java/.../Application.java`                  | the Spring Boot application, in the parent package of the module                         |
-| `application/src/test/resources/db/no-migrations/README.txt`      | a location without migrations, used by `MissingTableIT`                                  |
-| `loan-approval/src/test/java/.../TestApplication.java`            | the minimal application the module's test boots                                          |
-| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                           |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                          |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                      |
-| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the model                     |
+|                               File                                |                                                          Purpose                                                           |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                        | the BPMS profiles and the VanillaBP BOM import                                                                             |
+| `loan-approval/pom.xml`                                           | `vanillabp-spring-boot-support`; `spring-boot-flyway` and `flyway-core` for its own test                                   |
+| `application/pom.xml`                                             | the BPMS adapter, `spring-boot-flyway`, `flyway-core`, `vanillabp-schema`                                                  |
+| `application/src/main/java/.../Application.java`                  | the Spring Boot application, in the parent package of the module                                                           |
+| `application/src/test/resources/db/no-migrations/README.txt`      | a location without migrations, used by `MissingTableIT`                                                                    |
+| `loan-approval/src/test/java/.../TestApplication.java`            | the minimal application the module's test boots                                                                            |
+| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                                                             |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                                            |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                                                        |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`     | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the model                                                       |
 
 `spring-boot-flyway` is required. Since Spring Boot 4 the Flyway integration is a module of its
 own. Its `FlywayMigrationInitializer` makes the entity manager factory wait for a migration. A

@@ -40,6 +40,12 @@
       <artifactId>e-signature-api-server</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!-- The interfaces of the test API, which the test controllers implement. -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+      <artifactId>simulator-test-api-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>

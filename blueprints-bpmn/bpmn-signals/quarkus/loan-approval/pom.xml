@@ -76,6 +76,66 @@
   <build>
     <plugins>
       <!--
+        The API of this module is written as the OpenAPI files
+        'src/main/resources/openapi/loan-approval.yaml' and
+        'src/main/resources/openapi/rate-watch.yaml', one per use case. This plugin generates the
+        Java interfaces 'LoanApprovalApi' and 'RateWatchApi' from them, with the paths, the parameters
+        and the answers. Each controller implements its interface and holds nothing but the code of
+        each call.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>${openapi-generator.version}</version>
+        <!-- The settings every API of this module shares. -->
+        <configuration>
+          <!-- Jakarta REST, which Quarkus REST implements. -->
+          <generatorName>jaxrs-spec</generatorName>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <configOptions>
+            <useJakartaEe>true</useJakartaEe>
+            <!-- Where the build looks for sources. The default of this generator is a folder it does not. -->
+            <sourceFolder>src/main/java</sourceFolder>
+            <!-- One interface per tag, named after it. -->
+            <useTags>true</useTags>
+            <!-- Only the interface. The resource class implements it. -->
+            <interfaceOnly>true</interfaceOnly>
+            <!-- A method returns the answer itself. Quarkus turns it into the response. -->
+            <returnResponse>false</returnResponse>
+            <!-- No library beyond Jakarta REST and Jackson: no Swagger annotations, no bean validation. -->
+            <useSwaggerAnnotations>false</useSwaggerAnnotations>
+            <useMicroProfileOpenAPIAnnotations>false</useMicroProfileOpenAPIAnnotations>
+            <useBeanValidation>false</useBeanValidation>
+            <generatePom>false</generatePom>
+            <hideGenerationTimestamp>true</hideGenerationTimestamp>
+          </configOptions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>loan-approval-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
+            </configuration>
+          </execution>
+          <execution>
+            <id>rate-watch-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/rate-watch.yaml</inputSpec>
+              <apiPackage>blueprint.workflowmodule.ratewatch.api</apiPackage>
+              <modelPackage>blueprint.workflowmodule.ratewatch.api.model</modelPackage>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
         A workflow module is a Maven module of its own, so the application's build does not
         see its classes. The index is what makes them visible: without it, the
         '@WorkflowService' class of this module is never found.

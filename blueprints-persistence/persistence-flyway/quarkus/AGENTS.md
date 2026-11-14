@@ -79,15 +79,16 @@ Rules which hold beyond this blueprint:
 
 ## Boilerplate files
 
-|                               File                                |                               Purpose                                |
-|-------------------------------------------------------------------|----------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                        | the BPMS profiles, the Quarkus BOM and the VanillaBP BOM             |
-| `loan-approval/pom.xml`                                           | `vanillabp-quarkus-support`; `quarkus-flyway` for its own test       |
-| `application/pom.xml`                                             | the BPMS adapter, `quarkus-flyway`, `vanillabp-schema`               |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress      |
-| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring       |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                  |
-| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the model |
+|                               File                                |                                                          Purpose                                                           |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                        | the BPMS profiles, the Quarkus BOM and the VanillaBP BOM                                                                   |
+| `loan-approval/pom.xml`                                           | `vanillabp-quarkus-support`; `quarkus-flyway` for its own test                                                             |
+| `application/pom.xml`                                             | the BPMS adapter, `quarkus-flyway`, `vanillabp-schema`                                                                     |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                                            |
+| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                                                             |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                                                        |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`     | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the model                                                       |
 
 ## Adding this blueprint to an existing project
 

@@ -174,17 +174,18 @@ without asking the BPMS.
 
 ## How it works
 
-|                                          File                                          |                                            Role                                            |
-|----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the ad-hoc subprocess, its `activeElementsCollection`, and the two ways the list is filled |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.dmn`  | the decision table, whose output column holds BPMN element ids                             |
-| `.../loanapproval/model/Check.java`                                                    | the checks and their element ids, the contract between code and model                      |
-| `.../loanapproval/model/Aggregate.java`                                                | `checksToRun`, the version attribute, what each check wrote, and which of it is shared     |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | one `@WorkflowTask` method per check, and no method for the element itself                 |
-| `.../loanapproval/Service.java`                                                        | the checks as business methods, and keeping the task id while somebody picks               |
-| `.../loanapproval/Workflow.java`                                                       | `completeUserTask`, the only place `ProcessService` is used                                |
-| `.../loanapproval/ApiController.java`                                                  | the GET endpoint carrying the task id and the names of the checks                          |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | one test per decision maker. They wait for the aggregate instead of asking the engine      |
+|                                          File                                          |                                                            Role                                                            |
+|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the ad-hoc subprocess, its `activeElementsCollection`, and the two ways the list is filled                                 |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.dmn`  | the decision table, whose output column holds BPMN element ids                                                             |
+| `.../loanapproval/model/Check.java`                                                    | the checks and their element ids, the contract between code and model                                                      |
+| `.../loanapproval/model/Aggregate.java`                                                | `checksToRun`, the version attribute, what each check wrote, and which of it is shared                                     |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | one `@WorkflowTask` method per check, and no method for the element itself                                                 |
+| `.../loanapproval/Service.java`                                                        | the checks as business methods, and keeping the task id while somebody picks                                               |
+| `.../loanapproval/Workflow.java`                                                       | `completeUserTask`, the only place `ProcessService` is used                                                                |
+| `.../loanapproval/ApiController.java`                                                  | the GET endpoint carrying the task id and the names of the checks                                                          |
+| `.../openapi/loan-approval.yaml`                                                       | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | one test per decision maker. They wait for the aggregate instead of asking the engine                                      |
 
 The order of events on the path where a person decides: the service task fills in the credit
 rating. The gateway sends a big loan to the user task. VanillaBP calls

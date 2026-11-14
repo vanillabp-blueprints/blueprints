@@ -3,12 +3,9 @@ package blueprint.workflowmodule.loanapproval;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import blueprint.workflowmodule.loanapproval.api.LoanApprovalApi;
 import blueprint.workflowmodule.loanapproval.audit.ChangeBeingMade;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,11 +19,16 @@ import lombok.extern.slf4j.Slf4j;
  * learning it. An application with a security framework reads the authenticated user
  * instead, in a filter, and then this class has nothing to do with the auditing either.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanApprovalApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-approval.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/loan-approval")
-public class ApiController {
+public class ApiController implements LoanApprovalApi {
 
   @Autowired
   private Service loanApproval;
@@ -39,10 +41,10 @@ public class ApiController {
    * @param requestedBy Who asks for the loan, which is what the trail will name.
    * @return The id of the loan request started.
    */
-  @GetMapping("/start")
+  @Override
   public String start(
-      @RequestParam(defaultValue = "5000") final int amount,
-      @RequestParam(defaultValue = "the customer") final String requestedBy) {
+      final Integer amount,
+      final String requestedBy) {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
@@ -68,12 +70,12 @@ public class ApiController {
    * @param decidedBy        Who assessed it, which is what the trail will name.
    * @return What was done, for the browser to show.
    */
-  @GetMapping("/{loanRequestId}/assess-risk/{taskId}")
+  @Override
   public String assessRisk(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId,
-      @RequestParam(defaultValue = "true") final boolean riskIsAcceptable,
-      @RequestParam(defaultValue = "paula") final String decidedBy) {
+      final String loanRequestId,
+      final String taskId,
+      final Boolean riskIsAcceptable,
+      final String decidedBy) {
 
     ChangeBeingMade.attributeTo(
         decidedBy,
@@ -91,9 +93,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GetMapping("/{loanRequestId}")
+  @Override
   public String show(
-      @PathVariable final String loanRequestId) {
+      final String loanRequestId) {
 
     return loanApproval
         .get(loanRequestId)
@@ -111,9 +113,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return The trail, oldest change first.
    */
-  @GetMapping("/{loanRequestId}/trail")
+  @Override
   public String trail(
-      @PathVariable final String loanRequestId) {
+      final String loanRequestId) {
 
     final var trail = loanApproval.getTrail(loanRequestId);
 

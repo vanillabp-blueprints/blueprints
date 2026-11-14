@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+    <artifactId>module-simulator</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>simulator-test-api</artifactId>
+  <packaging>pom</packaging>
+  <name>API 'test API of the simulator'</name>
+  <description>The test API of the simulator as an OpenAPI file, and the Java code generated from it: the server interfaces for the simulator, the client for the tests of the workflow module.</description>
+
+  <!--
+    The OpenAPI file 'simulator-test-api.yaml' next to this POM is the contract between the
+    simulator and the tests which prepare it. 'server' generates the interfaces the controllers
+    of the simulator implement, 'client' generates the client the tests call.
+  -->
+  <modules>
+    <module>client</module>
+    <module>server</module>
+  </modules>
+</project>

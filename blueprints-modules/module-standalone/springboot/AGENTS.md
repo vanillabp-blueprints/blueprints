@@ -50,16 +50,17 @@ places or in none.
 
 ## Boilerplate files
 
-|                        File                         |                                      Purpose                                       |
-|-----------------------------------------------------|------------------------------------------------------------------------------------|
-| `pom.xml`                                           | the only POM: the BPMS profiles, the VanillaBP BOM import and every dependency     |
-| `src/main/java/.../Application.java`                | the Spring Boot application, which is also the workflow module                     |
-| `src/main/resources/application.yaml`               | the datasource and the profile choosing the BPMS                                   |
-| `src/main/resources/application-camunda7.yaml`      | the demo user of Camunda's web applications; loaded in the Camunda 7 profile only  |
-| `src/test/java/.../ApplicationSmokeTest.java`       | boots the application and holds the declared workflow module against the wired one |
-| `src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                    |
-| `src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                |
-| `docs/loan_approval.png`                            | the picture of the process the README shows, rendered from the BPMN model          |
+|                        File                         |                                                          Purpose                                                           |
+|-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml`                                           | the only POM: the BPMS profiles, the VanillaBP BOM import and every dependency                                             |
+| `src/main/java/.../Application.java`                | the Spring Boot application, which is also the workflow module                                                             |
+| `src/main/resources/application.yaml`               | the datasource and the profile choosing the BPMS                                                                           |
+| `src/main/resources/application-camunda7.yaml`      | the demo user of Camunda's web applications; loaded in the Camunda 7 profile only                                          |
+| `src/test/java/.../ApplicationSmokeTest.java`       | boots the application and holds the declared workflow module against the wired one                                         |
+| `src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                                            |
+| `src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                                                        |
+| `src/main/resources/openapi/loan-approval.yaml`     | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `docs/loan_approval.png`                            | the picture of the process the README shows, rendered from the BPMN model                                                  |
 
 `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint. Copy them
 unchanged. There is no `TestApplication` here. A test boots the application itself, because it
@@ -95,7 +96,10 @@ is in the same artifact. Everything specific to the use case belongs in the test
    for this use case, add the methods there instead of creating a second one. Never inject
    `ProcessService` into it, and never merge the two workflow classes. `Service` uses `Workflow`
    and is used by `WorkflowTaskHandler`, so merging them creates a circular bean reference.
-6. Add GET endpoints starting the process and showing the aggregate.
+6. Describe the GET endpoints which start the process and show the aggregate in an OpenAPI file,
+   `src/main/resources/openapi/loan-approval.yaml`. Let `openapi-generator-maven-plugin` generate
+   the interface `LoanApprovalApi` from it, and implement the interface in `ApiController`. Write no
+   path and no parameter annotation by hand.
 7. Copy `LoanApprovalIT` and adapt it to the use case.
 
 **Before you choose this shape:** it holds for exactly one use case. A second one in the same
