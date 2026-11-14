@@ -68,7 +68,7 @@ after tasks were stored, or they can no longer be read.
 | `application/src/main/java/.../SecurityConfiguration.java`          | how users log in: HTTP Basic for `/api/**`, two demo users; replace it with the login of your application                                                                                                            |
 | `application/src/main/resources/application.yaml`                   | the datasource, `open-in-view: false`, and the profile the Maven build filters in                                                                                                                                    |
 | `application/src/main/resources/application-camunda7.yaml`          | the Camunda 7 settings: the name-clash-avoidance mode and the demo user of its web applications                                                                                                                      |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | the documents to check, and `declared-aggregate-values` for the list the model loops over                                                                                                                            |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | the documents to check, `declared-aggregate-values` for the list the model loops over, and `concurrent-branches-reviewed`, because the branches were checked                                                         |
 | `loan-approval/src/test/java/.../TestApplication.java`              | the minimal application the module's test boots                                                                                                                                                                      |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of the integration tests: waits for workflow progress                                                                                                                                                     |
 | `application/src/test/java/.../ApplicationSmokeTest.java`           | boots the application, which validates the BPMN-to-code wiring                                                                                                                                                       |
@@ -86,7 +86,10 @@ blueprint. Copy them unchanged.
 2. Add `tasks` to the workflow aggregate, a `@OneToMany` map keyed by `taskId` with
    `CascadeType.ALL`, and `getTask(taskId)` returning an `Optional`. Load it lazily, leave it
    out of `equals` and `hashCode`, and read it only inside a transaction of `Service`. If two
-   branches of the process write to the aggregate, add `@DynamicUpdate`.
+   branches of the process write to the aggregate, add `@DynamicUpdate`. When no two branches
+   write the same column, say so with
+   `vanillabp.workflow-modules.<workflow-module-id>.workflows.<bpmn-process-id>.concurrent-branches-reviewed: true`.
+   Otherwise VanillaBP warns at every start that the aggregate has no version attribute.
 3. Write one record implementing `TaskData` per kind of user task, with the fields of its form.
    List it in `@JsonSubTypes` with a name which never changes.
 4. In the `@WorkflowTask` method of each user task, take `@TaskId` and `@TaskEvent`. On

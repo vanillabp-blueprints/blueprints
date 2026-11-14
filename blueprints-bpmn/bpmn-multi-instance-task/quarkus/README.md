@@ -49,6 +49,13 @@ the model, not a JPA (Jakarta Persistence) trick. An offer of one partner is a t
 own, and several of them do not compete. The wiki has the other ways out under
 [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates).
 
+VanillaBP cannot see this in the code. The aggregate has no version attribute, so at startup it
+warns that the process can hold more than one token. This blueprint has checked its iterations,
+so `loan-approval.yaml` says it for the workflow with
+`workflows.loan_approval.concurrent-branches-reviewed: true`, and the warning is silent. The key
+is read at the workflow and nowhere else, because a review is about one model. Check it again
+whenever the model changes.
+
 Anything computed over all iterations belongs after the multi-instance task. `chooseBestOffer`
 is a plain service task which runs once, when the last instance has finished. It reads the rows
 the iterations left.
@@ -57,15 +64,15 @@ the iterations left.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                                     What is different                                                     |
-|----------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a multi-instance service task iterating over an attribute of the aggregate, and a task after it                           |
-| `Aggregate.java`           | `partnerIds`, which the model loops over and which is therefore shared with the BPMS, and `offers`, one row per iteration |
-| `PartnerOffer.java`        | new: what one iteration found                                                                                             |
-| `WorkflowTaskHandler.java` | `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`                                                  |
-| `Service.java`             | a method taking ONE partner, and a second one choosing between the results                                                |
-| `loan-approval.yaml`       | the partners, which is what decides how many iterations there are                                                         |
-| `LoanApprovalIT.java`      | asserts the rows of all iterations, without relying on the order they arrived in                                          |
+|            File            |                                                           What is different                                                           |
+|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`       | a multi-instance service task iterating over an attribute of the aggregate, and a task after it                                       |
+| `Aggregate.java`           | `partnerIds`, which the model loops over and which is therefore shared with the BPMS, and `offers`, one row per iteration             |
+| `PartnerOffer.java`        | new: what one iteration found                                                                                                         |
+| `WorkflowTaskHandler.java` | `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`                                                              |
+| `Service.java`             | a method taking ONE partner, and a second one choosing between the results                                                            |
+| `loan-approval.yaml`       | the partners, which is what decides how many iterations there are, and that the iterations were reviewed for writing at the same time |
+| `LoanApprovalIT.java`      | asserts the rows of all iterations, without relying on the order they arrived in                                                      |
 
 ## Running it
 
@@ -174,15 +181,15 @@ That is why the list lives in configuration.
 
 ## How it works
 
-|                                            File                                            |                                   Role                                    |
-|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance task, what it loops over and what each instance gets   |
-| `.../loanapproval/WorkflowTaskHandler.java`                                                | turns the element, the index and the total into a call naming one partner |
-| `.../loanapproval/Service.java`                                                            | asks one partner, and picks the best offer once all of them answered      |
-| `.../loanapproval/model/Aggregate.java`                                                    | the collection the model iterates over, and the offers written into it    |
-| `.../loanapproval/model/PartnerOffer.java`                                                 | one row per iteration, which is what makes concurrent instances harmless  |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the partners. So the number of iterations is configuration, not model     |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                           | asserts the rows of all iterations and the choice made from them          |
+|                                            File                                            |                                                                           Role                                                                            |
+|--------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance task, what it loops over and what each instance gets                                                                                   |
+| `.../loanapproval/WorkflowTaskHandler.java`                                                | turns the element, the index and the total into a call naming one partner                                                                                 |
+| `.../loanapproval/Service.java`                                                            | asks one partner, and picks the best offer once all of them answered                                                                                      |
+| `.../loanapproval/model/Aggregate.java`                                                    | the collection the model iterates over, and the offers written into it                                                                                    |
+| `.../loanapproval/model/PartnerOffer.java`                                                 | one row per iteration, which is what makes concurrent instances harmless                                                                                  |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the partners, so the number of iterations is configuration, not model; and `concurrent-branches-reviewed`, because each iteration writes a row of its own |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                           | asserts the rows of all iterations and the choice made from them                                                                                          |
 
 The order of events: `retrieveCreditRating` writes the rating and the partners. The engine
 evaluates the collection and creates one instance per element. Each instance runs the handler
