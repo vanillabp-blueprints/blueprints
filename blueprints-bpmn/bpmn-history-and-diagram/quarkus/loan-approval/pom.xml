@@ -125,6 +125,7 @@
               <schemaMappings>ProcessDefinition=io.vanillabp.spi.process.ProcessDefinition,WorkflowHistory=io.vanillabp.spi.process.WorkflowHistory,WorkflowElementHistory=io.vanillabp.spi.process.WorkflowElementHistory</schemaMappings>
               <!-- The BPMN XML is handed on as the stream VanillaBP returns. -->
               <typeMappings>string+binary=InputStream</typeMappings>
+              <importMappings>InputStream=java.io.InputStream</importMappings>
             </configuration>
           </execution>
         </executions>
