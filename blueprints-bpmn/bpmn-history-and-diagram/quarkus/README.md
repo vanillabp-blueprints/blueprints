@@ -52,16 +52,16 @@ tells you what to do, instead of an empty answer.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                       What is different                                        |
-|----------------------------|------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a task the workflow waits at, so a running workflow has something to show, and a task after it |
-| `Workflow.java`            | the three viewer methods next to `startWorkflow` and `completeTask`                            |
-| `Service.java`             | passes them through, and its log says where to look                                            |
-| `ApiController.java`       | `/definitions`, `/diagram` and `/history`                                                      |
-| `openapi/loan-approval.yaml` | the three endpoints, and the JSON of the VanillaBP types they return |
-| `Aggregate.java`           | the id of the task the workflow waits at, so the wait can be answered                          |
-| `WorkflowTaskHandler.java` | the `@TaskId` handler of that task                                                             |
-| `LoanApprovalIT.java`      | asks what a viewer asks, while the workflow runs and after it ended                            |
+|             File             |                                       What is different                                        |
+|------------------------------|------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`         | a task the workflow waits at, so a running workflow has something to show, and a task after it |
+| `Workflow.java`              | the three viewer methods next to `startWorkflow` and `completeTask`                            |
+| `Service.java`               | passes them through, and its log says where to look                                            |
+| `ApiController.java`         | `/definitions`, `/diagram` and `/history`                                                      |
+| `openapi/loan-approval.yaml` | the three endpoints, and the JSON of the VanillaBP types they return                           |
+| `Aggregate.java`             | the id of the task the workflow waits at, so the wait can be answered                          |
+| `WorkflowTaskHandler.java`   | the `@TaskId` handler of that task                                                             |
+| `LoanApprovalIT.java`        | asks what a viewer asks, while the workflow runs and after it ended                            |
 
 The wait state is not the subject here. It exists because the history of a workflow which
 finished in twenty milliseconds shows nothing worth looking at.

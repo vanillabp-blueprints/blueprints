@@ -27,13 +27,13 @@ Blueprint-specific names, each occurring in more than one place:
 
 ## Core files
 
-|                               File                                |                                                       Why it matters                                                       |
-|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`      | `getProcessDefinitions`, `getBpmnXml` and `getWorkflowHistory`, where `ProcessService` is injected                         |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | the three GET endpoints a UI calls; hands on the types of VanillaBP and the stream of the XML                             |
+|                               File                                |                                                                                                                                   Why it matters                                                                                                                                   |
+|-------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`      | `getProcessDefinitions`, `getBpmnXml` and `getWorkflowHistory`, where `ProcessService` is injected                                                                                                                                                                                 |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | the three GET endpoints a UI calls; hands on the types of VanillaBP and the stream of the XML                                                                                                                                                                                      |
 | `loan-approval/src/main/resources/openapi/loan-approval.yaml`     | the API as an OpenAPI file, the XML content type of the diagram included. It describes the JSON of the VanillaBP types, which `schemaMappings` in `loan-approval/pom.xml` map instead of generating them. The build generates `LoanApprovalApi`, and `ApiController` implements it |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`       | passes the calls through WITHOUT a transaction, because reading a diagram changes nothing                                  |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`             | asks what a viewer asks, of a running and of an ended workflow, and waits instead of asserting at once                     |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`       | passes the calls through WITHOUT a transaction, because reading a diagram changes nothing                                                                                                                                                                                          |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`             | asks what a viewer asks, of a running and of an ended workflow, and waits instead of asserting at once                                                                                                                                                                             |
 
 ## Boilerplate files
 
