@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+    <artifactId>module-simulator</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>application</artifactId>
+  <name>The application</name>
+  <description>The Spring Boot application: the workflow module, the adapters of its ports and the adapters of the BPMS and the cockpit. A profile decides whether the adapters talk to the simulator or to the real systems.</description>
+
+  <dependencies>
+    <!-- The workflow module. It wires itself. -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+      <artifactId>loan-approval</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!--
+      The adapters of the module's ports. The application chooses them, as it chooses the
+      BPMS adapter. Another adapter for the same port, for another product, is a change of
+      this list and not of the workflow module.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+      <artifactId>credit-rating-rest-adapter</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+      <artifactId>e-signature-rest-adapter</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>loan-approval-application</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+            </exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <!--
+        The application brings the adapters, so the rule of the parent POM which keeps them
+        out of a workflow module is switched off here.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>no-adapter-in-a-workflow-module</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        Two profiles are active in a test: the BPMS profile, as everywhere, and the profile of
+        the systems around the application. The smoke test runs with 'local', like a developer.
+        The integration test runs with 'real' and with addresses where nothing answers, so it
+        sees what a user sees when a system is missing.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <spring.profiles.active>${bpms},local</spring.profiles.active>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <spring.profiles.active>${bpms},real</spring.profiles.active>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!--
+    This is the only place a BPMS is named: the application decides which adapters are
+    loaded. Per BPMS there are two: the BPMS adapter, which runs the workflows, and the cockpit
+    adapter of the same BPMS, which reports their user tasks to the Business Cockpit. The
+    workflow module does not know and does not care.
+  -->
+  <profiles>
+    <profile>
+      <id>camunda7</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <bpms>camunda7</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda7-adapter-spring-boot</artifactId>
+          <version>${camunda7-adapter.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-camunda7-adapter-spring-boot</artifactId>
+          <version>${businesscockpit.version}</version>
+        </dependency>
+        <!--
+          Camunda's Cockpit, Tasklist and Admin at /camunda. Optional in every sense: the
+          adapter works without it, and an application which does not want the web
+          applications leaves the dependency out.
+        -->
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda7-adapter-spring-boot-webapps</artifactId>
+          <version>${camunda7-adapter.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>camunda8</id>
+      <properties>
+        <bpms>camunda8</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda8-adapter-spring-boot</artifactId>
+          <version>${camunda8-adapter.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-camunda8-adapter-spring-boot</artifactId>
+          <version>${businesscockpit-camunda8.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>operaton</id>
+      <properties>
+        <bpms>operaton</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>operaton-adapter-spring-boot</artifactId>
+          <version>${operaton-adapter.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-operaton-adapter-spring-boot</artifactId>
+          <version>${businesscockpit.version}</version>
+        </dependency>
+        <!--
+          Operaton's Cockpit, Tasklist and Admin at /operaton. Optional, like the web
+          applications of the camunda7 profile.
+        -->
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>operaton-adapter-spring-boot-webapps</artifactId>
+          <version>${operaton-adapter.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>cibseven</id>
+      <properties>
+        <bpms>cibseven</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>cibseven-adapter-spring-boot</artifactId>
+          <version>${cibseven-adapter.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-cibseven-adapter-spring-boot</artifactId>
+          <version>${businesscockpit.version}</version>
+        </dependency>
+        <!--
+          CIB seven's Cockpit, Tasklist and Admin at /camunda. Optional, like the web
+          applications of the camunda7 profile.
+        -->
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>cibseven-adapter-spring-boot-webapps</artifactId>
+          <version>${cibseven-adapter.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>

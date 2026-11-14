@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
+    <artifactId>module-simulator</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>credit-rating-port</artifactId>
+  <name>Port 'credit rating'</name>
+  <description>What the application expects from a credit rating, in its own words and types. No vendor, no HTTP, no framework.</description>
+
+  <!--
+    No dependencies. A port is plain Java: an interface named after the role the system plays,
+    and the types the application wants to see. Whoever implements it brings the technology.
+  -->
+</project>
