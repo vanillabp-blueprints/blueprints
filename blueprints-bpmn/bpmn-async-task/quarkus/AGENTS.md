@@ -41,6 +41,7 @@ event does not catch the canceled task, and the workflow ends as an incident.
 | `loan-approval/src/main/java/.../loanapproval/Service.java`                                | sends the request once, keeps the task id, answers the task when the surrounding system replies                                        |
 | `loan-approval/src/main/java/.../loanapproval/PartnerApprovalClient.java`                  | the port to the surrounding system, so a test can put a simulator in its place                                                         |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java`                          | the callback the answer arrives at, carrying the task id                                                                               |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                              | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it             |
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `partnerApprovalTaskId`, plus the attributes the service tasks behind the waiting task write                                           |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | one test per way the task ends: still open, completed, canceled                                                                        |
 

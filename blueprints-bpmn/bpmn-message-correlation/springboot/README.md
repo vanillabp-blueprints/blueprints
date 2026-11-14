@@ -161,14 +161,15 @@ quickest way to see what waiting means. Where they are served and how to log in 
 
 ## How it works
 
-|                                          File                                          |                                            Role                                             |
-|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: a message catch event naming `ContractSigned`, and a service task behind it    |
-| `.../loanapproval/Service.java`                                                        | writes the message's content onto the aggregate, correlates, and refuses a repeated message |
-| `.../loanapproval/Workflow.java`                                                       | `correlateMessage`, the only place `ProcessService` is used                                 |
-| `.../loanapproval/ApiController.java`                                                  | the endpoint the message arrives at                                                         |
-| `.../loanapproval/model/Aggregate.java`                                                | `contractSignedBy`: the one place which says what the message brought                       |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | the workflow waits, the message lets it continue, a repeat is refused                       |
+|                                          File                                          |                                                            Role                                                            |
+|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: a message catch event naming `ContractSigned`, and a service task behind it                                   |
+| `.../loanapproval/Service.java`                                                        | writes the message's content onto the aggregate, correlates, and refuses a repeated message                                |
+| `.../loanapproval/Workflow.java`                                                       | `correlateMessage`, the only place `ProcessService` is used                                                                |
+| `.../loanapproval/ApiController.java`                                                  | the endpoint the message arrives at                                                                                        |
+| `.../openapi/loan-approval.yaml`                                                       | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `.../loanapproval/model/Aggregate.java`                                                | `contractSignedBy`: the one place which says what the message brought                                                      |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | the workflow waits, the message lets it continue, a repeat is refused                                                      |
 
 The order of events: the service task fills in the rating. The BPMS reaches the catch event,
 and the workflow stops there. Whenever the answer arrives, `ApiController` calls

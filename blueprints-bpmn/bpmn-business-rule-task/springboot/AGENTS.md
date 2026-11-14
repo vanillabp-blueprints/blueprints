@@ -57,19 +57,20 @@ gateway condition, the input mapping of the next task and the `@TaskParam`.
 
 ## Boilerplate files
 
-|                               File                                |                                             Purpose                                             |
-|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                        | the BPMS profiles and the VanillaBP BOM import                                                  |
-| `loan-approval/pom.xml`                                           | `vanillabp-spring-boot-support`, never an adapter                                               |
-| `application/pom.xml`                                             | the BPMS adapter, the only place a BPMS is named                                                |
-| `application/src/main/java/.../Application.java`                  | the Spring Boot application, in the parent package of the module                                |
-| `application/src/main/resources/application.yaml`                 | the datasource, and the profile the Maven build filters in                                      |
-| `application/src/main/resources/application-camunda7.yaml`        | the Camunda 7 settings: the name-clash-avoidance mode and the demo user of its web applications |
-| `loan-approval/src/test/java/.../TestApplication.java`            | the minimal application the module's test boots                                                 |
-| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                                  |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                 |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                             |
-| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model                       |
+|                               File                                |                                                          Purpose                                                           |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                        | the BPMS profiles and the VanillaBP BOM import                                                                             |
+| `loan-approval/pom.xml`                                           | `vanillabp-spring-boot-support`, never an adapter                                                                          |
+| `application/pom.xml`                                             | the BPMS adapter, the only place a BPMS is named                                                                           |
+| `application/src/main/java/.../Application.java`                  | the Spring Boot application, in the parent package of the module                                                           |
+| `application/src/main/resources/application.yaml`                 | the datasource, and the profile the Maven build filters in                                                                 |
+| `application/src/main/resources/application-camunda7.yaml`        | the Camunda 7 settings: the name-clash-avoidance mode and the demo user of its web applications                            |
+| `loan-approval/src/test/java/.../TestApplication.java`            | the minimal application the module's test boots                                                                            |
+| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                                                             |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                                            |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                                                        |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`     | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model                                                  |
 
 `TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
 blueprint. Copy them unchanged. Everything specific to the use case belongs in the test which
@@ -102,7 +103,10 @@ extends `WorkflowModuleTest`, never in the base class.
    for this use case, add the methods there instead of creating a second one. Never inject
    `ProcessService` into it, and never merge the two workflow classes. `Service` uses `Workflow`
    and is used by `WorkflowTaskHandler`, so merging them creates a circular bean reference.
-6. Add GET endpoints starting the process and showing the aggregate.
+6. Describe the GET endpoints which start the process and show the aggregate in an OpenAPI file,
+   `src/main/resources/openapi/loan-approval.yaml`. Let `openapi-generator-maven-plugin` generate
+   the interface `LoanApprovalApi` from it, and implement the interface in `ApiController`. Write no
+   path and no parameter annotation by hand.
 7. Copy `LoanApprovalIT` and adapt it to the use case.
 
 ## Verifying

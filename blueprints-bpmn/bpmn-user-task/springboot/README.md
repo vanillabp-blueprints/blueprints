@@ -178,15 +178,16 @@ says where they are served and how to log in.
 
 ## How it works
 
-|                                          File                                          |                                                         Role                                                         |
-|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: a user task carrying the task definition, an error boundary event on it, and a service task per way out |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | the `@WorkflowTask` method of the user task: `@TaskId`, `@TaskEvent`, and no work of its own                         |
-| `.../loanapproval/Service.java`                                                        | both halves of the task: keeping the id when it opens, answering it when the API is called                           |
-| `.../loanapproval/Workflow.java`                                                       | `completeUserTask` and `cancelUserTask`, the only place `ProcessService` is used                                     |
-| `.../loanapproval/ApiController.java`                                                  | the GET endpoints answering and withdrawing                                                                          |
-| `.../loanapproval/model/Aggregate.java`                                                | `riskAssessmentTaskId`, the handle to the open task, plus what the process wrote                                     |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | one test per way the task ends. They wait for the aggregate instead of asking the engine                             |
+|                                          File                                          |                                                            Role                                                            |
+|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: a user task carrying the task definition, an error boundary event on it, and a service task per way out       |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | the `@WorkflowTask` method of the user task: `@TaskId`, `@TaskEvent`, and no work of its own                               |
+| `.../loanapproval/Service.java`                                                        | both halves of the task: keeping the id when it opens, answering it when the API is called                                 |
+| `.../loanapproval/Workflow.java`                                                       | `completeUserTask` and `cancelUserTask`, the only place `ProcessService` is used                                           |
+| `.../loanapproval/ApiController.java`                                                  | the GET endpoints answering and withdrawing                                                                                |
+| `.../openapi/loan-approval.yaml`                                                       | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `.../loanapproval/model/Aggregate.java`                                                | `riskAssessmentTaskId`, the handle to the open task, plus what the process wrote                                           |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | one test per way the task ends. They wait for the aggregate instead of asking the engine                                   |
 
 The order of events: the service task fills in the credit rating. Then the BPMS creates the
 user task and calls `WorkflowTaskHandler#assessRisk` with `TaskEvent.CREATED`. The handler

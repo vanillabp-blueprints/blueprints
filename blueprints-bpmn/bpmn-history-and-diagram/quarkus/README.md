@@ -58,6 +58,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `Workflow.java`            | the three viewer methods next to `startWorkflow` and `completeTask`                            |
 | `Service.java`             | passes them through, and its log says where to look                                            |
 | `ApiController.java`       | `/definitions`, `/diagram` and `/history`                                                      |
+| `openapi/loan-approval.yaml` | the three endpoints, and the JSON of the VanillaBP types they return |
 | `Aggregate.java`           | the id of the task the workflow waits at, so the wait can be answered                          |
 | `WorkflowTaskHandler.java` | the `@TaskId` handler of that task                                                             |
 | `LoanApprovalIT.java`      | asks what a viewer asks, while the workflow runs and after it ended                            |
@@ -179,13 +180,14 @@ task after it appears, and the workflow itself has an end time too.
 
 ## How it works
 
-|                                            File                                            |                                    Role                                     |
-|--------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| `.../loanapproval/Workflow.java`                                                           | the three viewer methods, where `ProcessService` is injected                |
-| `.../loanapproval/ApiController.java`                                                      | the GET endpoints a UI would call                                           |
-| `.../loanapproval/Service.java`                                                            | passes the calls through, without a transaction, because nothing is changed |
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the process, with one wait state so a running workflow shows something      |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                           | asks the BPMS what a viewer asks, while running and after the end           |
+|                                            File                                            |                                                            Role                                                            |
+|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `.../loanapproval/Workflow.java`                                                           | the three viewer methods, where `ProcessService` is injected                                                               |
+| `.../loanapproval/ApiController.java`                                                      | the GET endpoints a UI would call                                                                                          |
+| `.../openapi/loan-approval.yaml`                                                           | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `.../loanapproval/Service.java`                                                            | passes the calls through, without a transaction, because nothing is changed                                                |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the process, with one wait state so a running workflow shows something                                                     |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                           | asks the BPMS what a viewer asks, while running and after the end                                                          |
 
 The order of events: `getProcessDefinitions` finds the workflow in whichever BPMS holds it, and
 reports the definition it runs on. `getBpmnXml` resolves an id to its model.

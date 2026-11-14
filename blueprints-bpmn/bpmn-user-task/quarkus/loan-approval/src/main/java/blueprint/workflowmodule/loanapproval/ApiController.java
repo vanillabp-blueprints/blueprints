@@ -2,13 +2,9 @@ package blueprint.workflowmodule.loanapproval;
 
 import java.util.UUID;
 
+import blueprint.workflowmodule.loanapproval.api.LoanApprovalApi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -20,11 +16,16 @@ import lombok.extern.slf4j.Slf4j;
  * implemented by a BPMN process is none of its business, and the task id it passes on is
  * an id of the business case as far as this class is concerned.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanApprovalApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-approval.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @ApplicationScoped
-@Path("/api/loan-approval")
-public class ApiController {
+public class ApiController implements LoanApprovalApi {
 
   @Inject
   Service loanApproval;
@@ -36,11 +37,9 @@ public class ApiController {
    * @param amount The amount requested.
    * @return The id of the loan request started.
    */
-  @GET
-  @Path("/start")
+  @Override
   public String start(
-      @QueryParam("amount")
-      @DefaultValue("5000") final int amount) {
+      final Integer amount) {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
@@ -63,13 +62,11 @@ public class ApiController {
    * @param riskIsAcceptable What the assessment concluded.
    * @return What was done, for the browser to show.
    */
-  @GET
-  @Path("/{loanRequestId}/assess-risk/{taskId}")
+  @Override
   public String assessRisk(
-      @PathParam("loanRequestId") final String loanRequestId,
-      @PathParam("taskId") final String taskId,
-      @QueryParam("riskIsAcceptable")
-      @DefaultValue("true") final boolean riskIsAcceptable) {
+      final String loanRequestId,
+      final String taskId,
+      final Boolean riskIsAcceptable) {
 
     loanApproval.assessRisk(loanRequestId, taskId, riskIsAcceptable);
 
@@ -87,11 +84,10 @@ public class ApiController {
    * @param taskId        The id of the user task, taken from the logged URL.
    * @return What was done, for the browser to show.
    */
-  @GET
-  @Path("/{loanRequestId}/withdraw/{taskId}")
+  @Override
   public String withdraw(
-      @PathParam("loanRequestId") final String loanRequestId,
-      @PathParam("taskId") final String taskId) {
+      final String loanRequestId,
+      final String taskId) {
 
     loanApproval.withdrawLoanRequest(loanRequestId, taskId);
 
@@ -107,10 +103,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GET
-  @Path("/{loanRequestId}")
+  @Override
   public String show(
-      @PathParam("loanRequestId") final String loanRequestId) {
+      final String loanRequestId) {
 
     return loanApproval
         .get(loanRequestId)
