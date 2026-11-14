@@ -38,6 +38,17 @@ JITTER_SECONDS="${JITTER_SECONDS:-30}"
 # them as "could not be resolved".
 TRANSFER_FAILURES='Could not transfer artifact|Could not resolve dependencies|could not be resolved|Non-resolvable parent POM|status code: 40[39]|status code: 429|Too Many Requests|status code: 5[0-9][0-9]|Connection reset|Connection timed out|Read timed out|Failed to read artifact descriptor|Remote host terminated the handshake'
 
+# The settings file turns on the profile for GitHub Packages when VBP_SNAPSHOTS_FROM says so.
+# Maven itself sees that, but a Quarkus test does not: it resolves the deployment artifacts
+# of the extensions with a resolver of its own, inside the test JVM. That resolver reads the
+# profiles from the Maven command line only, and without this one it asked Maven Central
+# for io.vanillabp, which the filter forbids, and every Quarkus test of Operaton and CIB seven
+# failed with "Failed to collect dependencies of ...-deployment". So the profile is named
+# here as well.
+if [ "${VBP_SNAPSHOTS_FROM:-}" = "github-packages" ]; then
+  set -- -Psnapshots-from-github-packages "$@"
+fi
+
 log="$(mktemp)"
 trap 'rm -f "${log}"' EXIT
 

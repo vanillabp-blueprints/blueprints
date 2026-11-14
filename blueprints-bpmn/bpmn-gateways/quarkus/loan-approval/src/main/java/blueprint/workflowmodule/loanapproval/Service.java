@@ -28,17 +28,21 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  *
  * <p>
- * Note where {@code @Transactional} sits. It is on the method the API calls, because
- * starting a workflow has to run in a transaction. It is deliberately absent from the
- * methods a task handler calls: VanillaBP already runs a task in a transaction it owns,
- * and it commits that transaction for a {@code TaskException} on purpose. A transaction
- * declared here would roll back instead and throw away what the handler wrote for the
- * process to react to. VanillaBP sees the transaction it can no longer commit and fails the
- * task naming it, so the mistake shows up rather than costing data.
+ * Every method runs in a transaction, so the class says {@code @Transactional}. A method
+ * called by a workflow task already runs in the transaction VanillaBP opened for it and joins
+ * it, but the annotation still shows that the method needs one.
+ * </p>
+ *
+ * <p>
+ * No method here throws a {@code TaskException}. One which does, so the process can react,
+ * needs {@code @Transactional(dontRollbackOn = TaskException.class)}: VanillaBP commits its
+ * transaction for that exception, and a plain {@code @Transactional} would mark it for
+ * rollback.
  * </p>
  */
 @Slf4j
 @ApplicationScoped
+@Transactional
 public class Service {
 
   @Inject
@@ -56,7 +60,6 @@ public class Service {
    * @param loanRequestId The natural id of the loan request.
    * @param amount        The amount requested.
    */
-  @Transactional
   public void request(
       final String loanRequestId,
       final int amount) {
