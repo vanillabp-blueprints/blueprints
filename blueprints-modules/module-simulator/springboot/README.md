@@ -56,6 +56,14 @@ adapter. The callback goes the other way, but the dependency does not. The modul
 `SignedContracts`, an interface of the port. The adapter calls it and the module still knows
 nothing about the adapter.
 
+**Name the adapter after the system, not after the technology.** In this blueprint the
+adapters are called `rest-adapter` (Maven: `credit-rating-rest-adapter`), because the systems
+here are made up. In a real project an adapter is written for one particular system, so it is
+named after that system: `sap-credit-rating-adapter`, `sign-now-e-signature-adapter`. Whether
+it talks to the system over REST, SOAP or a message queue does not matter for the name. The port
+keeps the name of the role (`CreditRating`), the adapter gets the name of the product which plays
+it. A second product for the same role is then simply a second adapter next to the first.
+
 Internal systems deserve ports as well, for two reasons. The code of the module speaks the language of the process. It says
 `creditRating.scoreOf(customerId)`, not the path and the JSON of somebody's API. And a system
 which looks fixed today may be gone in five years. Then one adapter is replaced, and the module

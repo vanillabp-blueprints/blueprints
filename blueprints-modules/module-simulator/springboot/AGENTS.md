@@ -30,6 +30,7 @@ Names this blueprint adds:
 | `CreditRatingApi`, `EnvelopesApi`, `SignatureCallbackApi` | generated from the tags of the OpenAPI files, never written by hand              |
 | `SignedContracts`                                         | the port the module implements, so an adapter can call back into it              |
 | `blueprint.externalsystems`                               | base package of the ports and adapters                                           |
+| `rest-adapter`, `credit-rating-rest-adapter`              | stand-in names; in a real project name the adapter after the system it talks to  |
 | `blueprint.simulator`                                     | the package of the simulator                                                     |
 | `blueprint.application`                                   | the application's package, deliberately NOT above the module                     |
 
@@ -53,6 +54,10 @@ Names this blueprint adds:
    The application uses `client`, the simulator uses `server`. A callback is a second OpenAPI
    file. `client` then holds the client of the API and the interface of the callback, `server`
    the opposite. No DTO, path or status code of the API is written by hand.
+8. An adapter is named after the system it talks to, never after the technology:
+   `sap-credit-rating-adapter`, `sign-now-e-signature-adapter`. The `rest-adapter` of this
+   blueprint stands for such a name only because its systems are made up. The port keeps the
+   name of the role.
 
 ## Core files
 
