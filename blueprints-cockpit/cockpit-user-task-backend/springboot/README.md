@@ -46,10 +46,10 @@ and this is the reason.
 The workflow module holds the OpenAPI of the four endpoints the forms call, at
 `loan-approval/src/main/resources/openapi/loan-approval.yaml`. A frontend reads this file through
 a git submodule of this repository, at a commit it pins, and generates its client from it. It
-needs no Maven repository and no Java for that. React and Angular frontends read the same file.
-The workflow module implements it in `UserTaskFormController`, and its test reads the file from
-the classpath and checks every operation against the endpoints. The file sits next to the code
-which implements it, so one pull request changes both.
+needs no Maven repository and no Java for that. The React, the Angular and the Vue frontend read
+the same file. The workflow module implements it in `UserTaskFormController`, and its test reads
+the file from the classpath and checks every operation against the endpoints. The file sits next
+to the code which implements it, so one pull request changes both.
 
 ### The way a form reaches the workflow module
 
