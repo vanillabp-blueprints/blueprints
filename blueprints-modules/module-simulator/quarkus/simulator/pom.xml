@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    The simulator extends the dev shell simulator of the Business Cockpit, which is a Spring Boot
+    application. So the simulator is one as well, and it takes the parent of Spring Boot instead
+    of the POM of the blueprint. Maven still builds it with the blueprint, because the POM of
+    the blueprint names it as a module. Nothing of the application depends on it: the
+    application and the tests talk to the simulator over HTTP.
+  -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.2</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
+  <artifactId>simulator</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <name>The simulator</name>
+  <description>A Spring Boot application of its own which plays every system the workflow module talks to: the credit rating, the e-signature service and the Business Cockpit.</description>
+
+  <properties>
+    <java.version>21</java.version>
+    <!-- The simulator builds on the dev shell simulator of the cockpit release the application reports to. -->
+    <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
+  </properties>
+
+  <dependencies>
+    <!--
+      The Business Cockpit is one of the systems around the workflow module, so the simulator
+      plays it as well. It does not write that part itself: it extends the dev shell simulator
+      of the cockpit, which takes the reports of a cockpit adapter and serves them back on the
+      official API of the cockpit. The cockpit adapter of the application cannot tell the
+      difference.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>dev-shell-simulator</artifactId>
+      <version>${businesscockpit.version}</version>
+    </dependency>
+    <!--
+      The APIs the simulator plays, generated from their OpenAPI files: the interfaces its
+      controllers implement, and the client of the e-signature callback. These are the 'server'
+      modules. The application uses the 'client' modules of the same files.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
+      <artifactId>credit-rating-api-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
+      <artifactId>e-signature-api-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <!-- For the callback of the simulated e-signature service. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-restclient</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        The simulator is an application, so it is packaged as a runnable JAR. It carries the
+        classifier 'runnable', so the plain JAR stays what Maven expects of an artifact. The
+        integration tests of the workflow module start the runnable one.
+      -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <classifier>runnable</classifier>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
+    <artifactId>module-simulator</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>credit-rating-api</artifactId>
+  <packaging>pom</packaging>
+  <name>API 'credit rating'</name>
+  <description>The API of the credit rating as an OpenAPI file, and the Java code generated from it: the client for the application, the server interface for the simulator.</description>
+
+  <!--
+    The OpenAPI file 'credit-rating.yaml' next to this POM is the contract between the
+    application and the credit rating. Nobody writes the Java code for it by hand. 'client'
+    generates the client the application calls, 'server' generates the interface the
+    simulator implements. Both read the same file, so both sides always agree.
+  -->
+  <modules>
+    <module>client</module>
+    <module>server</module>
+  </modules>
+</project>

@@ -1,0 +1,22 @@
+# The configuration of the module's own test: its database, and how fast the cockpit hears
+# about a user task. Where the BPMN files are is a convention VanillaBP knows.
+quarkus:
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  log:
+    category:
+      "blueprint":
+        level: INFO
+# The addresses of the systems around the module are not here. The integration test asks where
+# the simulator runs and sets them before the application starts.
+vanillabp:
+  # Every report to the cockpit goes through the outbox first. A short poll interval lets the
+  # test see the reports a moment after they were written. An application keeps the default.
+  outbox:
+    poll-interval: PT0.2S
