@@ -23,6 +23,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
+import io.vanillabp.cockpit.gui.api.v1.UserTask;
 
 /**
  * The integration test of this workflow module. It starts a real workflow in a real BPMS,
@@ -91,9 +92,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         aggregate -> aggregate.getAssessRiskTaskId() != null)
         .getAssessRiskTaskId();
     final var assessRisk = cockpit.awaitUserTask(assessRiskTaskId, task -> true);
-    assertThat(assessRisk.get("workflowModuleId")).isEqualTo("loan-approval");
-    assertThat(assessRisk.get("taskDefinition")).isEqualTo("assessRisk");
-    assertThat(assessRisk.get("uiUriType")).isEqualTo("ES_MODULES");
+    assertThat(assessRisk.getWorkflowModuleId()).isEqualTo("loan-approval");
+    assertThat(assessRisk.getTaskDefinition()).isEqualTo("assessRisk");
+    assertThat(assessRisk.getUiUriType()).isEqualTo("ES_MODULES");
     assertThat(details(assessRisk)).doesNotContainKey(WorkflowTaskHandler.RISK_ASSESSMENT);
 
     // The form reads the loan request and completes the task.
@@ -114,7 +115,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var checkDocuments = cockpit.awaitUserTask(
         checkDocumentsTaskId,
         task -> details(task).containsKey(WorkflowTaskHandler.RISK_ASSESSMENT));
-    assertThat(checkDocuments.get("taskDefinition")).isEqualTo("checkDocuments");
+    assertThat(checkDocuments.getTaskDefinition()).isEqualTo("checkDocuments");
     assertThat(details(checkDocuments))
         .containsEntry(WorkflowTaskHandler.RISK_ASSESSMENT, "acceptable");
 
@@ -133,8 +134,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(loanRequest.getRiskAssessment()).isEqualTo("acceptable");
     assertThat(loanRequest.getAssessRiskTaskId()).isNull();
     assertThat(loanRequest.getCheckDocumentsTaskId()).isNull();
-    cockpit.awaitUserTask(assessRiskTaskId, task -> task.get("endedAt") != null);
-    cockpit.awaitUserTask(checkDocumentsTaskId, task -> task.get("endedAt") != null);
+    cockpit.awaitUserTask(assessRiskTaskId, task -> task.getEndedAt() != null);
+    cockpit.awaitUserTask(checkDocumentsTaskId, task -> task.getEndedAt() != null);
 
   }
 
@@ -235,11 +236,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   }
 
-  @SuppressWarnings("unchecked")
   private static Map<String, Object> details(
-      final Map<String, Object> userTask) {
+      final UserTask userTask) {
 
-    final var details = (Map<String, Object>) userTask.get("details");
+    final var details = userTask.getDetails();
     return details == null ? Map.of() : details;
 
   }

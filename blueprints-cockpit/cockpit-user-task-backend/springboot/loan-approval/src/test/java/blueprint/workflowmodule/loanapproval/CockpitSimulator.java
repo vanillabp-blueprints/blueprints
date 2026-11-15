@@ -10,13 +10,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import org.awaitility.core.ConditionTimeoutException;
 import org.springframework.web.client.RestClient;
+
+import io.vanillabp.cockpit.gui.api.v1.OfficialTasklistApi;
+import io.vanillabp.cockpit.gui.api.v1.UserTask;
 
 /**
  * The Business Cockpit of the integration test: the dev shell simulator of the cockpit, run as
@@ -91,11 +93,11 @@ public final class CockpitSimulator {
    * @param condition  What the cockpit is expected to know about the task.
    * @return The user task, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitUserTask(
+  public UserTask awaitUserTask(
       final String userTaskId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<UserTask> condition) {
 
-    final var lastSeen = new AtomicReference<Optional<Map<String, Object>>>(Optional.empty());
+    final var lastSeen = new AtomicReference<Optional<UserTask>>(Optional.empty());
 
     try {
 
@@ -138,19 +140,18 @@ public final class CockpitSimulator {
    * @param userTaskId The id of the user task.
    * @return The user task, if the cockpit knows it.
    */
-  @SuppressWarnings("unchecked")
-  private Optional<Map<String, Object>> userTask(
+  private Optional<UserTask> userTask(
       final String userTaskId) {
 
     return officialApi
         .get()
-        .uri("/usertask/{userTaskId}", userTaskId)
+        .uri(OfficialTasklistApi.PATH_GET_USER_TASK, userTaskId)
         // The simulator answers a task it does not know with an error. That only means the
         // report has not arrived yet.
         .exchange((
             request,
             response) -> response.getStatusCode().is2xxSuccessful()
-                ? Optional.ofNullable((Map<String, Object>) response.bodyTo(Map.class))
+                ? Optional.ofNullable(response.bodyTo(UserTask.class))
                 : Optional.empty());
 
   }
