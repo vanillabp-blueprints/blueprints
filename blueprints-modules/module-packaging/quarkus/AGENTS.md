@@ -92,6 +92,10 @@ module's own package, the application's smoke test next to the application.
    They take minutes, and a test which starts a container tests the container runtime.
 7. Choose the BPMS (business process management system) with a Maven profile, as everywhere
    else. It decides what is packaged, what the tests run against and what the image contains.
+8. Add metrics and health to the assembling application, never to a module. VanillaBP needs
+   only `quarkus-micrometer` with a registry and `quarkus-smallrye-health`, and a module which
+   brings them decides for every runtime it lands in. Put the MDC keys of VanillaBP into the log
+   format. The README names the ones to search by.
 
 ## Verifying
 

@@ -87,7 +87,8 @@ which the base class takes anyway.
 5. Write `PhaseTwoOutbox` and `TaskDeliveryLog`. A remote BPMS needs both. Without the outbox
    the boot fails and names it. Without the delivery log a repeated delivery runs the handler
    twice. To dispatch an entry, ask `PhaseOperationRegistry` for the operation of its name.
-   Never interpret an entry.
+   Never interpret an entry. A delivery log which deletes records also implements `stillOpen`
+   and `releaseRecordsOf`. The README says what goes wrong without them.
 6. Enlist every store in the unit of work. Collect what a unit of work writes, apply it in
    `afterCommit`, and throw it away in `afterRollback`. In a real store, use whatever its
    technology offers instead. A delivery record for work which was rolled back is the worst of
