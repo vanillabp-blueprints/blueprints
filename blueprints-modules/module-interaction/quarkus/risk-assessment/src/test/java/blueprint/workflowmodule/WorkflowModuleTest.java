@@ -125,7 +125,8 @@ public abstract class WorkflowModuleTest {
    *
    * <p>
    * The blueprint POM hands the BPMS profile of the build to every test, as
-   * {@value #BPMS_OF_THE_BUILD}. It is {@code none} if no BPMS profile was active. A test
+   * {@value #BPMS_OF_THE_BUILD}, first in its list of profiles. It is {@code none} if no BPMS
+   * profile was active. A test
    * started by the IDE has no such property, and then there is nothing to compare.
    * </p>
    *
@@ -134,10 +135,13 @@ public abstract class WorkflowModuleTest {
   @Test
   public void theTestRunsOnTheBpmsOfTheMavenBuild() throws Exception {
 
-    final var bpms = System.getProperty(BPMS_OF_THE_BUILD);
+    final var profiles = System.getProperty(BPMS_OF_THE_BUILD);
     assumeTrue(
-        bpms != null,
+        profiles != null,
         "Not started by Maven, so there is no BPMS profile to compare the adapters with.");
+    // The property is a list of Quarkus profiles, e.g. "camunda7,local" where an application
+    // adds a profile of its own. The BPMS profile always comes first.
+    final var bpms = profiles.split(",")[0].trim();
 
     final var loaded = loadedBpmsAdapters();
     assertTrue(
