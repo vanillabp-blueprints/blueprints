@@ -183,6 +183,17 @@ priority, and caches the answer. That is why the migration feature works for mes
 no BPMS knows the workflow, a `WorkflowNotFoundException` names the likely causes and tells you
 what to do. The message is not lost without a word.
 
+A message may also come when the workflow does not wait for it: before it reached the catch
+event, or after it went past it. What happens then depends on the BPMS. The Camunda 7 family
+refuses such a correlation at your call, and your transaction fails. Camunda 8 keeps the
+message for its time-to-live. With `message-time-to-live` configured, the Camunda 7 family
+lets the message wait as well.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Message-correlation#a-message-which-comes-before-the-workflow-waits-for-it)
+explains both. So an API which accepts a message at any time should decide on its own what a
+message means in each state of the aggregate, before it correlates. The early return in
+`Service` does that for a message which came already. A message which may come before the
+workflow waits needs a time-to-live, or an answer to its sender that it came too early.
+
 The test which correlates the message retries while the BPMS does not know the workflow yet. A
 remote engine answers "which workflow belongs to this aggregate?" from an index it fills in the
 background. So a message which arrives seconds after the start may find nothing, although the
