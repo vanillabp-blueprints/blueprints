@@ -103,7 +103,8 @@ public class LoadRunIT {
         .describedAs("The run ended with a report. The log of the simulator:%n%s", simulatorLog())
         .startsWith("Load run 'tiny'");
     assertThat(report)
-        .describedAs("Every workflow of the run ended, and nothing failed")
+        .describedAs("Every workflow of the run ended, and nothing failed. The log of the simulator:%n%s",
+            simulatorLog())
         .doesNotContain("NOT FINISHED")
         .doesNotContain("requests or decisions failed");
     // warm-up, steady, one step, the peak and the drain

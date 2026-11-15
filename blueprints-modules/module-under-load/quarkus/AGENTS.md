@@ -71,6 +71,7 @@ Blueprint-specific names, each occurring in more than one place:
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java` | the shared `isApproved()` and `payoutRunAt`, and the documents which give the aggregate its size           |
 | `loan-approval/src/test/java/.../ScriptedCreditBureau.java`         | the credit bureau of the module test, which can stay silent                                                |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`               | each path of the process, one loan at a time                                                               |
+| `simulator/src/test/java/.../loadrun/StoppingTheRunTest.java`       | a call the end of a run cuts off is no failure of the application, a refused call is                       |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of the integration test: waits for workflow progress                                            |
 | `application/src/test/java/.../ApplicationSmokeTest.java`           | boots the application, which validates the BPMN-to-code wiring                                             |
 | `docs/loan_approval.png`                                            | the picture of the process the README shows                                                                |

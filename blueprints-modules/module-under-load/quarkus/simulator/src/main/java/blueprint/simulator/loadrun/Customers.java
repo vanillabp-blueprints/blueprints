@@ -1,5 +1,6 @@
 package blueprint.simulator.loadrun;
 
+import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
@@ -28,6 +29,9 @@ final class Customers {
 
   private static final Logger log = LoggerFactory.getLogger(Customers.class);
 
+  /** How long stopping waits for the requests which are cut off in the middle of a call. */
+  private static final Duration STOP_AT_MOST = Duration.ofSeconds(10);
+
   private final LoanApprovalApi loanApproval;
 
   private final LoadProfile profile;
@@ -44,6 +48,8 @@ final class Customers {
   private final AtomicLong failed = new AtomicLong();
 
   private volatile double perSecond;
+
+  private volatile boolean stopped;
 
   Customers(
       final LoanApprovalApi loanApproval,
@@ -102,10 +108,28 @@ final class Customers {
 
   }
 
+  /**
+   * Stops the arrivals and waits until the requests going on have ended, so {@link #failed()}
+   * does not change any more.
+   *
+   * <p>
+   * Stopping interrupts a request which still waits for its answer, and the HTTP client
+   * reports it as an error. That error is the stop, not the application, so it does not count
+   * as failed.
+   * </p>
+   */
   void stop() {
 
+    stopped = true;
     arrivals.shutdownNow();
     requests.shutdownNow();
+    try {
+      requests.awaitTermination(STOP_AT_MOST.toMillis(), TimeUnit.MILLISECONDS);
+    } catch (final InterruptedException e) {
+      Thread
+          .currentThread()
+          .interrupt();
+    }
 
   }
 
@@ -146,6 +170,10 @@ final class Customers {
 
     } catch (final RuntimeException e) {
 
+      if (stopped) {
+        // The run stopped this request, see stop().
+        return;
+      }
       failed.incrementAndGet();
       log.warn("A loan request failed: {}", e.toString());
 
