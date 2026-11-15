@@ -21,6 +21,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import org.yaml.snakeyaml.Yaml;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.loanapproval.api.model.Case;
 import blueprint.workflowmodule.loanapproval.model.Aggregate.Status;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import io.vanillabp.cockpit.gui.api.v1.EndReason;
@@ -109,10 +110,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // ... and the data of the loan request, from the module.
     assertThat(read(loanRequestId))
-        .containsEntry("loanRequestId", loanRequestId)
-        .containsEntry("applicant", "Jane Doe")
-        .containsEntry("amount", 5000)
-        .containsEntry("status", "REQUESTED");
+        .isEqualTo(new Case(loanRequestId, "Jane Doe", 5000, Case.StatusEnum.REQUESTED));
 
     // The button "Withdraw loan request".
     assertThat(withdraw(loanRequestId)).isEqualTo(204);
@@ -138,7 +136,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .containsEntry(WorkflowTaskHandler.STATUS, "WITHDRAWN");
     assertThat(withdrawn.getEndReason()).isEqualTo(EndReason.COMPLETED);
 
-    assertThat(read(loanRequestId)).containsEntry("status", "WITHDRAWN");
+    assertThat(read(loanRequestId).status()).isEqualTo(Case.StatusEnum.WITHDRAWN);
 
   }
 
@@ -165,7 +163,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // An approved loan request cannot be withdrawn any more.
     assertThat(withdraw(loanRequestId)).isEqualTo(409);
-    assertThat(read(loanRequestId)).containsEntry("status", "APPROVED");
+    assertThat(read(loanRequestId).status()).isEqualTo(Case.StatusEnum.APPROVED);
 
   }
 
@@ -261,15 +259,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   }
 
-  @SuppressWarnings("unchecked")
-  private Map<String, Object> read(
+  private Case read(
       final String loanRequestId) {
 
     return casePage
         .get()
         .uri("/{loanRequestId}", loanRequestId)
         .retrieve()
-        .body(Map.class);
+        .body(Case.class);
 
   }
 
