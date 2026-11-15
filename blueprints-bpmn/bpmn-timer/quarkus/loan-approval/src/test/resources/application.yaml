@@ -13,3 +13,8 @@ quarkus:
     category:
       "blueprint.workflowmodule":
         level: INFO
+# The partner deadline of the module is three days. The test shortens it here, because a
+# test which waits three days is no test. The model is the same one the application runs,
+# only the value the aggregate copies is shorter.
+loan-approval:
+  partner-deadline: PT3S
