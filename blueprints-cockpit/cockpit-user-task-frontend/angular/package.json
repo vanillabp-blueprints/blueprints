@@ -29,17 +29,17 @@
     "start": "node scripts/start.mjs"
   },
   "dependencies": {
-    "@angular/common": "22.2.5",
-    "@angular/core": "22.2.5",
-    "@angular/platform-browser": "22.2.5",
+    "@angular/common": "22.2.6",
+    "@angular/core": "22.2.6",
+    "@angular/platform-browser": "22.2.6",
     "openapi-fetch": "0.17.0",
     "rxjs": "7.8.2",
     "tslib": "2.9.1"
   },
   "devDependencies": {
-    "@angular/compiler": "22.2.5",
-    "@angular/compiler-cli": "22.2.5",
-    "@babel/core": "8.1.0",
+    "@angular/compiler": "22.2.6",
+    "@angular/compiler-cli": "22.2.6",
+    "@babel/core": "8.1.2",
     "@vanillabp/bc-module-host": "0.1.0-snapshot.2",
     "@vanillabp/bc-module-kit": "0.1.0-snapshot.2",
     "esbuild": "0.28.2",
