@@ -102,20 +102,52 @@ Jib assembles the image and needs no Docker daemon for it. The image carries the
 part of `verify` or of CI. It takes minutes and downloads a base image, and a test which starts
 a container tests Docker, not this blueprint.
 
-**The native build is where this blueprint stops for now.** Saying so is more useful than
-leaving it out. The command is
+**A native executable works with Camunda 8.** The command is
 
 ```bash
-mvn install -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
+mvn install -Pcamunda8 -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
 ```
 
-and today it ends in the image builder with
-`Discovered unresolved method ... QuarkusMongoDeployment.isReplicaSet()`, caused by
-`NoClassDefFoundError: org/bson/conversions/Bson`. VanillaBP reaches a MongoDB class from a
-code path this application never takes. The JVM never notices, but a native image refuses it at
-build time. It is a platform issue, it is reported, and nothing in this project works around
-it. An application which needs a native image today either brings the MongoDB driver along or
-waits for the fix.
+It compiles the application ahead of time in a builder container, so you need Docker or Podman
+but no GraalVM on your machine. The result is one file,
+`application/target/application-1.0.0-SNAPSHOT-runner`. Measured on 2026-11-15 on a machine
+with 12 cores, with `-DskipTests -DskipITs`:
+
+|            What            |                                   Measured                                   |
+|----------------------------|------------------------------------------------------------------------------|
+| whole build                | 1 min 41 s, of which the native image takes 1 min 21 s                       |
+| memory of the image build  | 7 GB at its peak, limited with `-Dquarkus.native.native-image-xmx=8g`        |
+| builder image, pulled once | `quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-25`, 1.9 GB          |
+| the executable             | 126 MB, starts in half a second, uses about 130 MB of memory after two cases |
+
+Give the build at least 8 GB. Without the limit the image builder sizes its heap from the
+memory of the machine. The tests of `-Pcamunda8` need a running cluster, as always.
+
+Start the executable like the application. The cluster already uses port 8080, so the
+application gets another one:
+
+```bash
+LOAN_APPROVAL_RATING_PROVIDER=schufa \
+  application/target/application-1.0.0-SNAPSHOT-runner -Dquarkus.http.port=8081
+```
+
+Both start URLs from [Running it](#running-it), on port 8081, ran their workflow to the end:
+the service tasks filled both aggregates, and the cluster reported both instances as
+completed. The credit rating said `provided by 'schufa'`, so the environment still wins.
+
+What it does not cover:
+
+- **Camunda 7, Operaton and CIB seven.** With Camunda 7 the build succeeds, but the
+  executable stops at startup when it builds the embedded engine. The engine creates objects by
+  reflection, which a native image does not have unless somebody registers it. The adapters say
+  it in their README: their Quarkus extension runs on the JVM only, because Camunda 7 never
+  supported native images, and neither do the two forks. Use these engines on the JVM.
+- **Choosing the engine at startup.** A native image takes its configuration files while it is
+  built, so the executable is fixed to the profile it was built with. The build warns about
+  every `application-*.yaml` of another profile which it leaves out. Build one executable per
+  engine.
+- **Tests against the executable.** No test of this blueprint starts it, and CI does not build
+  it. The run above was done by hand.
 
 Through all of it the engine stays a Maven profile. `-Pcamunda8` changes what is packaged, what
 the tests run against and what the image contains. Not one line of Java changes.
