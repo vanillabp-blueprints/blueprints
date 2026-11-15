@@ -32,6 +32,8 @@ file below such a directory, '.../loanapproval/*.java' every file the pattern ma
 one row keeps doing so. The one exception is a file below 'openapi/': the OpenAPI file of a
 module and the configuration of the module are both called 'loan-approval.yaml', and they
 are different things. A row names the first one as 'openapi/loan-approval.yaml'.
+The other exception is 'pom.xml': every module has one, so a bare 'pom.xml' names only the
+POM of the blueprint root, and a row names the POM of a module as 'loan-approval/pom.xml'.
 
 Some files differ in every blueprint and are not part of a delta (ALLOWED below): the
 documents which describe the blueprint, and the pictures, which are rendered from its BPMN
@@ -183,6 +185,10 @@ def named(path, names):
                 return True
             continue
         if "/" not in pattern:
+            # Every module of a blueprint has a 'pom.xml'. A bare 'pom.xml' is the POM of
+            # the blueprint root, and a row names the POM of a module with its directory.
+            if name == "pom.xml" and path != "pom.xml":
+                continue
             if "openapi" in file.parts:
                 continue
             if fnmatch.fnmatch(file.name, pattern) or fnmatch.fnmatch(file.stem, pattern):

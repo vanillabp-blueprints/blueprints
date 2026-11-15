@@ -84,7 +84,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `ApiController.java`                                                                  | the URL picking the checks, carrying the task id and the names of the checks                                                            |
 | `openapi/loan-approval.yaml`                                                          | the URL picking the checks, `select-checks/{taskId}`                                                                                    |
 | `LoanApprovalIT.java`                                                                 | one test per decision maker: the case worker picks two of three, the decision table picks two of three                                  |
-| `pom.xml`                                                                             | one BPMS profile instead of two                                                                                                         |
+| `pom.xml`, `application/pom.xml`, `loan-approval/pom.xml`                             | one BPMS profile instead of two                                                                                                         |
 | `application-camunda8.yaml`                                                           | `retry-backoff: PT2S`, also in the test resources: two checks write the aggregate at once, and the retry should not look like a hang    |
 | `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | deleted, in the application and in the test resources, together with their BPMS profiles                                                |
 

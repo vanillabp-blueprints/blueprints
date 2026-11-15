@@ -66,7 +66,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `application.yaml`                                  | `partner-deadline: PT3S` in the test and in the demo application, so nobody waits three days              |
 | `LoanApprovalIT.java`                               | one test per outcome: answered in time, and not answered at all                                           |
 | `PartnerApprovalSimulator.java`, `Simulator.java`   | new in the tests: the simulator which stands in for the partner, and its base class from the test harness |
-| `pom.xml`                                           | hands the BPMS of the build to the tests, for the assertion about cancellations                           |
+| `pom.xml`, `loan-approval/pom.xml`                  | hands the BPMS of the build to the tests, for the assertion about cancellations                           |
 
 ## Running it
 
