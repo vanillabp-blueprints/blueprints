@@ -45,9 +45,7 @@ import blueprint.simulator.loadrun.api.client.LoadRunApi;
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
     properties = {
-        "server.port=${application.port:8080}",
-        "credit-bureau.base-url=${simulator.base-url:http://localhost:8079}/credit-bureau",
-        "credit-bureau.callback-url=http://localhost:${application.port:8080}/credit-bureau/callback",
+        "server.port=${application.port:8080}", "credit-bureau.base-url=${simulator.base-url:http://localhost:8079}/credit-bureau", "credit-bureau.callback-url=http://localhost:${application.port:8080}/credit-bureau/callback",
         // The drain waits for the payout run, so it comes more often here.
         "loan-approval.payout-run-every=PT5S"
     })

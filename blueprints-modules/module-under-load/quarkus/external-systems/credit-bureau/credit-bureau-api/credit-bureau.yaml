@@ -38,7 +38,8 @@ components:
       properties:
         loanRequestId:
           type: string
-          description: The id the caller gives the question. The callback carries it.
+          description: The id the caller gives the question. The callback carries
+            it.
         amount:
           type: integer
           description: The amount the customer asks for

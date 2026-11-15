@@ -141,8 +141,7 @@ final class Customers {
       loanApproval.request(new LoanRequest(
           ThreadLocalRandom
               .current()
-              .nextInt(1000, 50000),
-          documents));
+              .nextInt(1000, 50000), documents));
       started.incrementAndGet();
 
     } catch (final RuntimeException e) {

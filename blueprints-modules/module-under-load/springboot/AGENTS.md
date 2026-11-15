@@ -2,7 +2,7 @@
 
 Puts a workflow module under load and names the pool which runs out first, with the setting to
 change. A load driver plays customers, clerks and a neighbour system, as a load profile next to
-the BPMN files says. The driver runs in a simulator, a Spring Boot application of its own, and
+the BPMN files says. The driver runs in a simulator, an application of its own, and
 reaches the application only over HTTP and JMX. A delta on top of `module-single`.
 
 Read
@@ -22,43 +22,43 @@ Replace all of these consistently; they are the same in every blueprint.
 
 Blueprint-specific names, each occurring in more than one place:
 
-|               Name               |                                         Where it occurs                                          |
-|----------------------------------|--------------------------------------------------------------------------------------------------|
-| `UserTask_AssessLoan`            | the user task in the BPMN, the load profile and the constant `Clerks.USER_TASK`                  |
-| `Gateway_Approved`               | the gateway in the BPMN, the load profile and `Clerks.GATEWAY`                                   |
-| `Flow_ToPayoutRun`               | the approved flow in the BPMN, the load profile and `Clerks.APPROVED_FLOW`                       |
+|               Name               |                                           Where it occurs                                            |
+|----------------------------------|------------------------------------------------------------------------------------------------------|
+| `UserTask_AssessLoan`            | the user task in the BPMN, the load profile and the constant `Clerks.USER_TASK`                      |
+| `Gateway_Approved`               | the gateway in the BPMN, the load profile and `Clerks.GATEWAY`                                       |
+| `Flow_ToPayoutRun`               | the approved flow in the BPMN, the load profile and `Clerks.APPROVED_FLOW`                           |
 | `CatchEvent_CreditScoreReceived` | the message catch event in the BPMN, the load profile and `CreditBureauApiController.ANSWER_ELEMENT` |
-| `CreditScoreReceived`            | the BPMN message name and `Workflow.CREDIT_SCORE_RECEIVED`                                       |
-| `payoutRunAt`                    | the timer expression, the aggregate and `declared-aggregate-values` in `loan-approval.yaml`      |
+| `CreditScoreReceived`            | the BPMN message name and `Workflow.CREDIT_SCORE_RECEIVED`                                           |
+| `payoutRunAt`                    | the timer expression, the aggregate and `declared-aggregate-values` in `loan-approval.yaml`          |
 
 ## Core files
 
-|                                                File                                                |                                                Why it matters                                                 |
-|----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/load-profile.yaml`                                 | the load profile: arrivals, aggregate size, gateway shares, people, neighbour systems, hot path               |
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn`         | the shapes which cost something: a neighbour system, a message or its timeout, a user task, a shared timer    |
-| `loan-approval/src/main/java/.../loanapproval/CreditBureau.java`                                   | the neighbour system as a port of the module; the answer comes later through `Service.creditScoreReceived`    |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java`                                  | the API the driver calls: a request with documents, the task list, the decision, the number of open approvals |
-| `loan-approval-api/loan-approval.yaml`                                                             | the API of the module; `server` generates what `ApiController` implements, `client` what the simulator calls  |
-| `external-systems/credit-bureau/credit-bureau-api/credit-bureau.yaml`                              | the API of the credit bureau: a question which is answered later                                              |
-| `external-systems/credit-bureau/credit-bureau-api/credit-bureau-callback.yaml`                     | the callback the application offers for the answer                                                            |
-| `external-systems/credit-bureau/rest-adapter/src/main/java/.../rest/CreditBureauRestAdapter.java`  | implements the port with the generated client                                                                 |
-| `external-systems/credit-bureau/rest-adapter/src/main/java/.../rest/CallbackController.java`       | takes the score and hands it to `Service.creditScoreReceived`                                                 |
-| `simulator/src/main/java/.../loadrun/LoadRun.java`                                                 | the stages, the sampling once a second, the drain                                                             |
-| `simulator/src/main/java/.../loadrun/Report.java`                                                  | the knee, the queue which turned first, and the setting it names                                              |
-| `simulator/src/main/java/.../loadrun/Queues.java`                                                  | the meters read in the Prometheus format: `vanillabp_task_deliveries`, the outbox, the pool, the slots, GC    |
-| `simulator/src/main/java/.../loadrun/FullCollection.java`                                          | the full garbage collection of the application, asked for over JMX                                            |
-| `simulator/src/main/java/.../creditbureau/CreditBureauApiController.java`                          | plays the credit bureau as the load profile says                                                              |
-| `simulator/src/main/resources/application.yaml`                                                    | the run sizes, the address, meters URL and JMX address of the application, the meter name of its pool         |
-| `application/src/main/resources/application.yaml`                                                  | the pool, `vanillabp.outbox.dispatch-threads`, `vanillabp.metrics.gauge-cache`, the meters, the bureau         |
-| `application/src/test/java/.../LoadRunIT.java`                                                     | the proof that a tiny run against the application starts and finishes                                         |
+|                                               File                                                |                                                Why it matters                                                 |
+|---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/load-profile.yaml`                                | the load profile: arrivals, aggregate size, gateway shares, people, neighbour systems, hot path               |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn`        | the shapes which cost something: a neighbour system, a message or its timeout, a user task, a shared timer    |
+| `loan-approval/src/main/java/.../loanapproval/CreditBureau.java`                                  | the neighbour system as a port of the module; the answer comes later through `Service.creditScoreReceived`    |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java`                                 | the API the driver calls: a request with documents, the task list, the decision, the number of open approvals |
+| `loan-approval-api/loan-approval.yaml`                                                            | the API of the module; `server` generates what `ApiController` implements, `client` what the simulator calls  |
+| `external-systems/credit-bureau/credit-bureau-api/credit-bureau.yaml`                             | the API of the credit bureau: a question which is answered later                                              |
+| `external-systems/credit-bureau/credit-bureau-api/credit-bureau-callback.yaml`                    | the callback the application offers for the answer                                                            |
+| `external-systems/credit-bureau/rest-adapter/src/main/java/.../rest/CreditBureauRestAdapter.java` | implements the port with the generated client                                                                 |
+| `external-systems/credit-bureau/rest-adapter/src/main/java/.../rest/CallbackController.java`      | takes the score and hands it to `Service.creditScoreReceived`                                                 |
+| `simulator/src/main/java/.../loadrun/LoadRun.java`                                                | the stages, the sampling once a second, the drain                                                             |
+| `simulator/src/main/java/.../loadrun/Report.java`                                                 | the knee, the queue which turned first, and the setting it names                                              |
+| `simulator/src/main/java/.../loadrun/Queues.java`                                                 | the meters read in the Prometheus format: `vanillabp_task_deliveries`, the outbox, the pool, the slots, GC    |
+| `simulator/src/main/java/.../loadrun/FullCollection.java`                                         | the full garbage collection of the application, asked for over JMX                                            |
+| `simulator/src/main/java/.../creditbureau/CreditBureauApiController.java`                         | plays the credit bureau as the load profile says                                                              |
+| `simulator/src/main/resources/application.yaml`                                                   | the run sizes, the address, meters URL and JMX address of the application, the meter name of its pool         |
+| `application/src/main/resources/application.yaml`                                                 | the pool, `vanillabp.outbox.dispatch-threads`, `vanillabp.metrics.gauge-cache`, the meters, the bureau        |
+| `application/src/test/java/.../LoadRunIT.java`                                                    | the proof that a tiny run against the application starts and finishes                                         |
 
 ## Boilerplate files
 
 |                                File                                 |                                                       Purpose                                                       |
 |---------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
 | `pom.xml` (blueprint root)                                          | the modules, the shared settings of the OpenAPI generator, the VanillaBP BOM import                                 |
-| `loan-approval/pom.xml`                                             | `vanillabp-spring-boot-support` and the generated server interface, never an adapter                               |
+| `loan-approval/pom.xml`                                             | `vanillabp-spring-boot-support` and the generated server interface, never an adapter                                |
 | `loan-approval-api/pom.xml`                                         | the API module with its `client` and `server`                                                                       |
 | `load-run-api/pom.xml`                                              | the API module of the load run with its `client` and `server`                                                       |
 | `external-systems/credit-bureau/credit-bureau-api/pom.xml`          | the API module of the credit bureau with its `client` and `server`                                                  |
@@ -66,7 +66,7 @@ Blueprint-specific names, each occurring in more than one place:
 | `simulator/pom.xml`                                                 | the generated clients and interfaces, SnakeYAML, and the load profile copied in; no load testing tool               |
 | `application/pom.xml`                                               | the BPMS adapter, the REST adapter, the actuator with Prometheus, JMX for `spring-boot:run`, `start-stop-simulator` |
 | `application/src/main/java/.../Application.java`                    | the application class, in the parent package of the module                                                          |
-| `simulator/src/main/java/.../SimulatorApplication.java`             | the simulator, a Spring Boot application of its own                                                                 |
+| `simulator/src/main/java/.../SimulatorApplication.java`             | the simulator, an application of its own                                                                            |
 | `simulator/src/main/java/.../loadrun/LoadRunController.java`        | the two URLs of a run; `load-run-api/load-run.yaml` describes them                                                  |
 | `simulator/src/main/java/.../config/LoadRunConfiguration.java`      | wires the driver and checks its settings at startup                                                                 |
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java` | the shared `isApproved()` and `payoutRunAt`, and the documents which give the aggregate its size                    |

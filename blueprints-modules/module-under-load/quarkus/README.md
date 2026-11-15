@@ -8,7 +8,9 @@ Your workflow module works for one loan. What happens when hundreds run at once?
 application has more places which can run out than an ordinary one, and which of them runs out
 first is written down nowhere. This blueprint finds out by measuring. A load driver plays
 customers, clerks and a neighbour system, raises the load step by step, and names the pool which
-ran out first, together with the setting to change.
+ran out first, together with the setting to change. The driver runs in a simulator, a process
+of its own, so it does not take CPU, heap or garbage collection time from the application it
+measures.
 
 ## What this blueprint shows
 
@@ -57,8 +59,9 @@ neighbours:
 
 Every key names a BPMN element by its id, so the profile stays next to the model it describes.
 The file also holds the size of the aggregate and the hot path, the elements most workflows
-pass. A key the driver does not know stops the application with a message which names it. So a
-typo never falls back to nothing.
+pass. A key the driver does not know stops the simulator with a message which names it. So a
+typo never falls back to nothing. The build copies the file into the simulator, so there is only
+one file to change.
 
 ### The driver plays behaviour, not a loop
 
@@ -66,11 +69,34 @@ A loop which starts workflows as fast as it can measures the loop. The driver pl
 and the systems around the module instead:
 
 - **Customers** arrive at the rate of the profile, with random gaps like real arrivals. They do
-  not wait for each other. When the application gets slow, they queue up in front of it.
-- **Clerks** take an open assessment from the task list, hold it while they think, and decide.
-  The share of approvals comes from the gateway in the profile.
-- **The credit bureau** answers after its latency, and sometimes not at all. Then the process
-  stops waiting after ten seconds, and the clerk decides without the score.
+  not wait for each other. Each one sends a loan request with its documents to the API of the
+  application. When the application gets slow, they queue up in front of it.
+- **Clerks** read the task list of the application, take an open assessment, hold it while they
+  think, and decide through the same API. The share of approvals comes from the gateway in the
+  profile.
+- **The credit bureau** is asked by the application over HTTP. It answers through a callback
+  after its latency, and sometimes not at all. Then the process stops waiting after ten
+  seconds, and the clerk decides without the score.
+
+### The driver is a process of its own
+
+The driver measures the application, so it must not run inside it. In the same JVM, its
+customers, clerks and the credit bureau would take CPU from the application, fill its heap and
+make its garbage collector work. The report would count all of that as the application's.
+
+So the driver runs in the simulator, a small application of its own next to the application.
+It reaches the application only from outside, the way the real world does:
+
+|           What           |                                         How                                         |
+|--------------------------|-------------------------------------------------------------------------------------|
+| customers and clerks     | the API of the workflow module, with the client generated from `loan-approval.yaml` |
+| the credit bureau        | the application calls it with its REST adapter, the bureau calls back               |
+| the queues               | the meters of the application in the Prometheus format, at `/q/metrics`             |
+| the two full collections | JMX, the management interface every JVM has                                         |
+
+The application holds nothing for load testing. What the driver uses, an operator has as well:
+the API, the metrics endpoint, and a JMX port. The REST adapter of the credit bureau is the one the
+application would use in production. Only its address points at the simulator.
 
 The run walks through stages: a warm up, a steady stage at the rate of the profile, steps of a
 quarter more load each, a peak, and a drain. In the drain nobody arrives any more, and the run
@@ -91,10 +117,9 @@ kept rising until the peak. Each queue names a setting:
 | time spent collecting garbage       | with a flat live set: the heap is too small for the work in flight  | the heap, `-Xmx`                                              |
 | the live set after the drain        | with no work left, the heap still holds more than after the warm up | none: a defect                                                |
 
-The numbers come from where the application publishes them anyway: the meters of VanillaBP and
-of the connection pool, and the garbage collector of the JVM. So what the driver reads is what
-your monitoring reads in production. Only Camunda 8 has execution slots. On an engine without
-them the column shows a dash.
+The numbers come from where the application publishes them anyway: the meters of VanillaBP, of
+the connection pool and of the garbage collector, which Quarkus shows in the Prometheus format. So what the driver reads is what your monitoring reads in production. Only Camunda 8 has
+execution slots. On an engine without them the column shows a dash.
 
 The [wiki page about the pools](https://github.com/vanillabp/adapter-platform-integration/wiki/The-pools-of-an-application)
 says what depends on what, and what each adapter adds.
@@ -108,23 +133,26 @@ measures nothing.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                            What is different                                            |
-|----------------------------|---------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | the credit bureau, its answer or its timeout, the user task, the gateway and the payout run             |
-| `load-profile.yaml`        | new: what the model does not say about the load                                                         |
-| `loan-approval.yaml`       | how often the payout run comes, and the due date of the payout run declared for the timer               |
-| `CreditBureau.java`        | new: the neighbour system, known to the module only by its role                                         |
-| `WorkflowTaskHandler.java` | the four `@WorkflowTask` methods, one of them with `@TaskId` for the user task                          |
-| `Service.java`             | asks the bureau, takes its answer, opens and decides the assessment, pays out, rejects                  |
-| `Workflow.java`            | correlates the answer of the bureau and completes the user task                                         |
-| `Aggregate.java`           | the documents, the score, the open task, the decision and the due date of the payout run                |
-| `AggregateRepository.java` | the open assessments, as a task list shows them, and the number of unfinished workflows                 |
-| `ApiController.java`       | an endpoint for the decision of a clerk, so one loan can be walked through in a browser                 |
-| `load-driver/`             | new Maven module: the driver, the credit bureau it plays and the report                                 |
-| `application/pom.xml`      | the load driver, and Micrometer with a registry                                                         |
-| `application.yaml`         | a file database, the pool, the dispatch threads, a fresh gauge each second, the run sizes, quieter logs |
-| `LoanApprovalIT.java`      | each path of the process, one loan at a time                                                            |
-| `LoadRunIT.java`           | new: a tiny run which has to start and finish                                                           |
+|            File            |                                         What is different                                          |
+|----------------------------|----------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`       | the credit bureau, its answer or its timeout, the user task, the gateway and the payout run        |
+| `load-profile.yaml`        | new: what the model does not say about the load                                                    |
+| `loan-approval.yaml`       | how often the payout run comes, and the due date of the payout run declared for the timer          |
+| `CreditBureau.java`        | new: the neighbour system, known to the module only by its role                                    |
+| `WorkflowTaskHandler.java` | the four `@WorkflowTask` methods, one of them with `@TaskId` for the user task                     |
+| `Service.java`             | asks the bureau, takes its answer, opens and decides the assessment, pays out, rejects             |
+| `Workflow.java`            | correlates the answer of the bureau and completes the user task                                    |
+| `Aggregate.java`           | the documents, the score, the open task, the decision and the due date of the payout run           |
+| `AggregateRepository.java` | the open assessments, as a task list shows them, and the number of unfinished workflows            |
+| `ApiController.java`       | the decision of a clerk, a request with documents, the task list and the number of open approvals  |
+| `loan-approval-api/`       | new Maven module: the API of the module moved here, because the simulator calls it from Java       |
+| `external-systems/`        | new: the API of the credit bureau and its callback, and the REST adapter of the application        |
+| `load-run-api/`            | new Maven module: the two URLs of a run, which the simulator offers and the test calls             |
+| `simulator/`               | new Maven module: an application of its own with the driver, the credit bureau and the report      |
+| `application/pom.xml`      | the REST adapter, Micrometer with Prometheus, JMX for `quarkus:dev`, starting the simulator        |
+| `application.yaml`         | a file database, the pool, the dispatch threads, a fresh gauge each second, the meters, the bureau |
+| `LoanApprovalIT.java`      | each path of the process, one loan at a time                                                       |
+| `LoadRunIT.java`           | new: a tiny run against the application, which has to start and finish                             |
 
 ## Running it
 
@@ -181,51 +209,47 @@ reads their `camunda:` attributes:
 mvn install verify -Pcibseven
 ```
 
-Start the application:
+A run needs two processes. Start the application. `quarkus:dev` opens a JMX port on localhost
+as well, `9010`:
 
 ```bash
 mvn -pl application quarkus:dev
 ```
 
+Start the simulator in a second terminal. It answers on port `8079`, and it starts from its
+runnable JAR:
+
+```bash
+java -jar simulator/target/simulator-1.0.0-SNAPSHOT-runnable.jar
+```
+
 Start a run. This is the only URL you need:
 
 ```
-http://localhost:8080/api/load-run/start?size=small
+http://localhost:8079/api/load-run/start?size=small
 ```
 
-The run takes three to four minutes. Its report is here, and the log prints it at the end as well:
+The run takes three to four minutes. Its report is here, and the log of the simulator prints it
+at the end as well:
 
 ```
-http://localhost:8080/api/load-run/report
+http://localhost:8079/api/load-run/report
 ```
 
-While the run goes on, the same URL says which stage it is in. This report was measured on this
-blueprint with Camunda 7, on a development machine:
+While the run goes on, the same URL says which stage it is in.
 
-```
-Load run 'small' of process 'loan_approval', took 209s
-Hot path: ServiceTask_RequestCreditScore -> CatchEvent_CreditScoreReceived -> UserTask_AssessLoan -> CatchEvent_PayoutRun -> ServiceTask_PayOut
-
-stage     offered/s started/s delivered/s customers conn-wait    outbox  oldest-s     slots   gc-%  live-MB
-warm-up         4.0       4.2        11.2       0.0       0.0       0.1       0.0         -    0.3       88
-steady          4.0       4.6        12.6       0.0       0.0       0.2       0.0         -    0.4       86
-step-1          5.0       4.5        14.6       0.0       0.0       0.0       0.0         -    0.3       88
-step-2          6.0       5.1        14.1       0.0       0.0       0.2       0.0         -    0.3       89
-step-3          7.0       6.5        19.9       0.0       0.0       0.1       0.0         -    0.4       93
-peak            9.0       8.0        21.8       0.0       0.0       0.3       0.0         -    0.4       94
-drain           0.0       0.0         5.0       0.0       0.0       0.0       0.0         -    0.1       93
-
-Nothing ran out at this size. Run the next size to find the limit.
-Compare runs of the same machine only. The numbers of another machine, and of a shared CI runner above all, move more than a real change would.
-```
+The sample report of this README was measured while the driver still ran inside the
+application, so it is gone. Its numbers counted the driver's own threads. A report of the
+simulator on a development machine follows here once it has been measured.
 
 `small` is sized so that a laptop shows a result in a few minutes. The next step is
-`?size=medium`, two minutes per stage and six steps, and then `?size=large`. Both are in
-`application.yaml`, and you can add your own. Raise `per-second` in the load profile to start
-higher.
+`?size=medium`, two minutes per stage and six steps, and then `?size=large`. All three are in
+`simulator/src/main/resources/application.yaml`, and you can add your own. Raise `per-second`
+in the load profile to start higher.
 
 To walk one loan approval through by hand, set the log level of
-`blueprint.workflowmodule.loanapproval` in `application.yaml` to `INFO`. Then start a loan:
+`blueprint.workflowmodule.loanapproval` in `application.yaml` to `INFO`. Start the simulator as
+well, because the application asks it for the credit score. Then start a loan:
 
 ```
 http://localhost:8080/api/loan-approval/start?amount=5000
@@ -241,39 +265,67 @@ Loan approval '0f7c…' waits for a clerk. Continue with one of:
 
 ## How it works
 
-|                                 File                                  |                                        Role                                         |
-|-----------------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/load-profile.yaml`    | the load profile: arrivals, people, the neighbour system, shares, aggregate size    |
-| `load-driver/src/main/java/.../loaddriver/LoadRun.java`               | walks through the stages, reads the queues once a second, writes the report         |
-| `load-driver/src/main/java/.../loaddriver/Customers.java`             | start loan approvals at a rate, on threads like the request threads of a web server |
-| `load-driver/src/main/java/.../loaddriver/Clerks.java`                | take an assessment from the task list, think, decide                                |
-| `load-driver/src/main/java/.../loaddriver/CreditBureauSimulator.java` | answers after a latency, or not at all                                              |
-| `load-driver/src/main/java/.../loaddriver/Queues.java`                | reads the meters of VanillaBP, of the pool and of the JVM                           |
-| `load-driver/src/main/java/.../loaddriver/Report.java`                | finds the knee and the queue which turned first, and names its setting              |
-| `load-driver/src/main/java/.../loaddriver/LoadProfile.java`           | reads the profile and says exactly which key is wrong                               |
-| `load-driver/src/main/resources/openapi/load-run.yaml`                | the two URLs of a run, as an OpenAPI file                                           |
-| `loan-approval/src/main/java/.../loanapproval/CreditBureau.java`      | the neighbour system, as the module knows it                                        |
+|                                               File                                                |                                       Role                                       |
+|---------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/load-profile.yaml`                                | the load profile: arrivals, people, the neighbour system, shares, aggregate size |
+| `simulator/src/main/java/.../loadrun/LoadRun.java`                                                | walks through the stages, reads the queues once a second, writes the report      |
+| `simulator/src/main/java/.../loadrun/Customers.java`                                              | send loan requests at a rate, on threads like the front ends of many customers   |
+| `simulator/src/main/java/.../loadrun/Clerks.java`                                                 | read the task list, think, decide, all through the API of the application        |
+| `simulator/src/main/java/.../creditbureau/CreditBureauApiController.java`                         | plays the credit bureau: calls back after a latency, or not at all               |
+| `simulator/src/main/java/.../loadrun/Queues.java`                                                 | reads the meters of the application in the Prometheus format                     |
+| `simulator/src/main/java/.../loadrun/FullCollection.java`                                         | asks the JVM of the application for a full garbage collection, over JMX          |
+| `simulator/src/main/java/.../loadrun/Report.java`                                                 | finds the knee and the queue which turned first, and names its setting           |
+| `simulator/src/main/java/.../loadrun/LoadProfile.java`                                            | reads the profile and says exactly which key is wrong                            |
+| `simulator/src/main/resources/application.yaml`                                                   | the run sizes, and where the application, its meters and its JMX port are        |
+| `load-run-api/load-run.yaml`                                                                      | the two URLs of a run, as an OpenAPI file                                        |
+| `loan-approval-api/loan-approval.yaml`                                                            | the API of the module, which people, the simulator and a task list call          |
+| `external-systems/credit-bureau/credit-bureau-api/credit-bureau.yaml`                             | the API of the credit bureau, as its vendor would publish it                     |
+| `external-systems/credit-bureau/credit-bureau-api/credit-bureau-callback.yaml`                    | the callback the application offers, where the bureau sends the score            |
+| `external-systems/credit-bureau/rest-adapter/src/main/java/.../rest/CreditBureauRestAdapter.java` | implements `CreditBureau` with the generated client                              |
+| `external-systems/credit-bureau/rest-adapter/src/main/java/.../rest/CallbackController.java`      | takes the score and hands it to `Service.creditScoreReceived`                    |
+| `loan-approval/src/main/java/.../loanapproval/CreditBureau.java`                                  | the neighbour system, as the module knows it                                     |
 
-The module knows nothing about load. The driver calls the same methods of `Service` which a
-browser, a task list or a credit bureau would call. So what is measured is the module as it is,
-not a version of it made for measuring.
+The module knows nothing about load, and nothing in it was made for the driver. The driver calls
+the API of the module, which a browser and a task list would call as well. So what is measured
+is the module as it is, not a version of it made for measuring.
 
-The driver is a Maven module of its own and wires itself. Taking the `load-driver` dependency
-out of the application takes all of it out: the driver, its two URLs and the credit bureau it
-plays. Then the application brings a client of the real credit bureau, which implements
-`CreditBureau`, and the workflow module does not change.
+The API of the module is in a Maven module of its own, `loan-approval-api`, because the
+simulator calls it from Java. Its `server` generates the interface `ApiController` implements,
+its `client` generates what the simulator calls. The same holds for the credit bureau below
+`external-systems`, and for the load run in `load-run-api`.
+
+The REST adapter of the credit bureau needs two types of the workflow module: the port
+`CreditBureau`, which it implements, and `Service`, which takes the score. So it depends on the
+module, and the module does not know it. To use a real credit bureau, point
+`credit-bureau.base-url` and `credit-bureau.callback-url` at it. Nothing else changes.
 
 The driver brings no load testing tool. A blueprint is a template you copy, and the next
 dependency update has to be able to move every library in it. A large tool would hold that
 back, and a few hundred lines of Java are enough to play this behaviour.
 
-The run asks the JVM for a full garbage collection twice, after the warm up and after the drain.
-Only then are the two live sets comparable. An application never does that, the driver does it
-as measuring equipment.
+The run asks the JVM of the application for a full garbage collection twice, after the warm up
+and after the drain. Only then are the two live sets comparable. The application has no
+endpoint for this. The simulator uses JMX, as an operator does with the button "Perform GC" of
+JConsole. That is why the application needs a JMX port for a run. `quarkus:dev` opens one, and
+for the built application you add the same options to the command line:
+
+```bash
+java -Dcom.sun.management.jmxremote.port=9010 -Dcom.sun.management.jmxremote.rmi.port=9010 \
+  -Dcom.sun.management.jmxremote.host=localhost -Djava.rmi.server.hostname=localhost \
+  -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
+  -jar application/target/quarkus-app/quarkus-run.jar
+```
+
+The port listens on localhost only, and without a password. Never open it like this on a machine
+other people can reach.
 
 The database is a file, not one in memory. An in-memory database lives in the heap of the
 application. Every finished workflow would stay there, and the report would read it as a live
 set which never comes back.
+
+`LoadRunIT` starts both processes, as a run does. The build starts the simulator with the
+runnable JAR on a free port, with a tiny run size. The test starts the application on another
+free port, with a JMX port, and starts the run through the API of the simulator.
 
 The load profile is not only for this driver. Its keys are fixed here so that a tool which reads
 your BPMN model can ask you for exactly these values and write the same file for your own

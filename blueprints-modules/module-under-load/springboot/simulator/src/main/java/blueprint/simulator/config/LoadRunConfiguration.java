@@ -79,7 +79,8 @@ public class LoadRunConfiguration {
     final var jmxAddress = required(application, LoadRunProperties.Application::jmxAddress, "jmx-address",
         "where the JVM of the application answers on JMX, for example localhost:9010");
     final var connectionsWaitingMeter = required(application, LoadRunProperties.Application::connectionsWaitingMeter,
-        "connections-waiting-meter", "the gauge of its connection pool which counts the threads waiting for a connection");
+        "connections-waiting-meter",
+        "the gauge of its connection pool which counts the threads waiting for a connection");
     final var poolSetting = required(application, LoadRunProperties.Application::poolSetting, "pool-setting",
         "the setting which sizes the connection pool of the application");
 

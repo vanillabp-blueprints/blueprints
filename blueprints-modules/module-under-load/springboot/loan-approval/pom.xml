@@ -68,7 +68,6 @@
     </dependency>
   </dependencies>
 
-
   <profiles>
     <profile>
       <id>camunda7</id>

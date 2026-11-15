@@ -84,15 +84,15 @@ The driver measures the application, so it must not run inside it. In the same J
 customers, clerks and the credit bureau would take CPU from the application, fill its heap and
 make its garbage collector work. The report would count all of that as the application's.
 
-So the driver runs in the simulator, a small Spring Boot application next to the application.
+So the driver runs in the simulator, a small application of its own next to the application.
 It reaches the application only from outside, the way the real world does:
 
-|            What            |                                        How                                         |
-|----------------------------|------------------------------------------------------------------------------------|
-| customers and clerks       | the API of the workflow module, with the client generated from `loan-approval.yaml` |
-| the credit bureau          | the application calls it with its REST adapter, the bureau calls back              |
-| the queues                 | the meters of the application in the Prometheus format, at `/actuator/prometheus`  |
-| the two full collections   | JMX, the management interface every JVM has                                       |
+|           What           |                                         How                                         |
+|--------------------------|-------------------------------------------------------------------------------------|
+| customers and clerks     | the API of the workflow module, with the client generated from `loan-approval.yaml` |
+| the credit bureau        | the application calls it with its REST adapter, the bureau calls back               |
+| the queues               | the meters of the application in the Prometheus format, at `/actuator/prometheus`   |
+| the two full collections | JMX, the management interface every JVM has                                         |
 
 The application holds nothing for load testing. What the driver uses, an operator has as well:
 the API, the actuator, and a JMX port. The REST adapter of the credit bureau is the one the
@@ -134,26 +134,26 @@ measures nothing.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|              File              |                                          What is different                                          |
-|--------------------------------|-----------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`           | the credit bureau, its answer or its timeout, the user task, the gateway and the payout run         |
-| `load-profile.yaml`            | new: what the model does not say about the load                                                     |
-| `loan-approval.yaml`           | how often the payout run comes, and the due date of the payout run declared for the timer           |
-| `CreditBureau.java`            | new: the neighbour system, known to the module only by its role                                     |
-| `WorkflowTaskHandler.java`     | the four `@WorkflowTask` methods, one of them with `@TaskId` for the user task                      |
-| `Service.java`                 | asks the bureau, takes its answer, opens and decides the assessment, pays out, rejects              |
-| `Workflow.java`                | correlates the answer of the bureau and completes the user task                                     |
-| `Aggregate.java`               | the documents, the score, the open task, the decision and the due date of the payout run            |
-| `AggregateRepository.java`     | the open assessments, as a task list shows them, and the number of unfinished workflows             |
-| `ApiController.java`           | the decision of a clerk, a request with documents, the task list and the number of open approvals   |
-| `loan-approval-api/`           | new Maven module: the API of the module moved here, because the simulator calls it from Java        |
-| `external-systems/`            | new: the API of the credit bureau and its callback, and the REST adapter of the application         |
-| `load-run-api/`                | new Maven module: the two URLs of a run, which the simulator offers and the test calls              |
-| `simulator/`                   | new Maven module: a Spring Boot application with the driver, the credit bureau and the report       |
-| `application/pom.xml`          | the REST adapter, the actuator with Prometheus, JMX for `spring-boot:run`, starting the simulator   |
-| `application.yaml`             | a file database, the pool, the dispatch threads, a fresh gauge each second, the meters, the bureau  |
-| `LoanApprovalIT.java`          | each path of the process, one loan at a time                                                        |
-| `LoadRunIT.java`               | new: a tiny run against the application, which has to start and finish                              |
+|            File            |                                         What is different                                          |
+|----------------------------|----------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`       | the credit bureau, its answer or its timeout, the user task, the gateway and the payout run        |
+| `load-profile.yaml`        | new: what the model does not say about the load                                                    |
+| `loan-approval.yaml`       | how often the payout run comes, and the due date of the payout run declared for the timer          |
+| `CreditBureau.java`        | new: the neighbour system, known to the module only by its role                                    |
+| `WorkflowTaskHandler.java` | the four `@WorkflowTask` methods, one of them with `@TaskId` for the user task                     |
+| `Service.java`             | asks the bureau, takes its answer, opens and decides the assessment, pays out, rejects             |
+| `Workflow.java`            | correlates the answer of the bureau and completes the user task                                    |
+| `Aggregate.java`           | the documents, the score, the open task, the decision and the due date of the payout run           |
+| `AggregateRepository.java` | the open assessments, as a task list shows them, and the number of unfinished workflows            |
+| `ApiController.java`       | the decision of a clerk, a request with documents, the task list and the number of open approvals  |
+| `loan-approval-api/`       | new Maven module: the API of the module moved here, because the simulator calls it from Java       |
+| `external-systems/`        | new: the API of the credit bureau and its callback, and the REST adapter of the application        |
+| `load-run-api/`            | new Maven module: the two URLs of a run, which the simulator offers and the test calls             |
+| `simulator/`               | new Maven module: an application of its own with the driver, the credit bureau and the report      |
+| `application/pom.xml`      | the REST adapter, the actuator with Prometheus, JMX for `spring-boot:run`, starting the simulator  |
+| `application.yaml`         | a file database, the pool, the dispatch threads, a fresh gauge each second, the meters, the bureau |
+| `LoanApprovalIT.java`      | each path of the process, one loan at a time                                                       |
+| `LoadRunIT.java`           | new: a tiny run against the application, which has to start and finish                             |
 
 ## Running it
 
@@ -265,25 +265,25 @@ Loan approval '0f7c…' waits for a clerk. Continue with one of:
 
 ## How it works
 
-|                                     File                                      |                                         Role                                         |
-|-------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/load-profile.yaml`            | the load profile: arrivals, people, the neighbour system, shares, aggregate size     |
-| `simulator/src/main/java/.../loadrun/LoadRun.java`                            | walks through the stages, reads the queues once a second, writes the report          |
-| `simulator/src/main/java/.../loadrun/Customers.java`                          | send loan requests at a rate, on threads like the front ends of many customers       |
-| `simulator/src/main/java/.../loadrun/Clerks.java`                             | read the task list, think, decide, all through the API of the application            |
-| `simulator/src/main/java/.../creditbureau/CreditBureauApiController.java`     | plays the credit bureau: calls back after a latency, or not at all                   |
-| `simulator/src/main/java/.../loadrun/Queues.java`                             | reads the meters of the application in the Prometheus format                         |
-| `simulator/src/main/java/.../loadrun/FullCollection.java`                     | asks the JVM of the application for a full garbage collection, over JMX              |
-| `simulator/src/main/java/.../loadrun/Report.java`                             | finds the knee and the queue which turned first, and names its setting               |
-| `simulator/src/main/java/.../loadrun/LoadProfile.java`                        | reads the profile and says exactly which key is wrong                                |
-| `simulator/src/main/resources/application.yaml`                               | the run sizes, and where the application, its meters and its JMX port are            |
-| `load-run-api/load-run.yaml`                                                  | the two URLs of a run, as an OpenAPI file                                            |
-| `loan-approval-api/loan-approval.yaml`                                        | the API of the module, which people, the simulator and a task list call              |
-| `external-systems/credit-bureau/credit-bureau-api/credit-bureau.yaml`         | the API of the credit bureau, as its vendor would publish it                         |
-| `external-systems/credit-bureau/credit-bureau-api/credit-bureau-callback.yaml` | the callback the application offers, where the bureau sends the score               |
-| `external-systems/credit-bureau/rest-adapter/src/main/java/.../rest/CreditBureauRestAdapter.java` | implements `CreditBureau` with the generated client                  |
-| `external-systems/credit-bureau/rest-adapter/src/main/java/.../rest/CallbackController.java`      | takes the score and hands it to `Service.creditScoreReceived`        |
-| `loan-approval/src/main/java/.../loanapproval/CreditBureau.java`              | the neighbour system, as the module knows it                                         |
+|                                               File                                                |                                       Role                                       |
+|---------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/load-profile.yaml`                                | the load profile: arrivals, people, the neighbour system, shares, aggregate size |
+| `simulator/src/main/java/.../loadrun/LoadRun.java`                                                | walks through the stages, reads the queues once a second, writes the report      |
+| `simulator/src/main/java/.../loadrun/Customers.java`                                              | send loan requests at a rate, on threads like the front ends of many customers   |
+| `simulator/src/main/java/.../loadrun/Clerks.java`                                                 | read the task list, think, decide, all through the API of the application        |
+| `simulator/src/main/java/.../creditbureau/CreditBureauApiController.java`                         | plays the credit bureau: calls back after a latency, or not at all               |
+| `simulator/src/main/java/.../loadrun/Queues.java`                                                 | reads the meters of the application in the Prometheus format                     |
+| `simulator/src/main/java/.../loadrun/FullCollection.java`                                         | asks the JVM of the application for a full garbage collection, over JMX          |
+| `simulator/src/main/java/.../loadrun/Report.java`                                                 | finds the knee and the queue which turned first, and names its setting           |
+| `simulator/src/main/java/.../loadrun/LoadProfile.java`                                            | reads the profile and says exactly which key is wrong                            |
+| `simulator/src/main/resources/application.yaml`                                                   | the run sizes, and where the application, its meters and its JMX port are        |
+| `load-run-api/load-run.yaml`                                                                      | the two URLs of a run, as an OpenAPI file                                        |
+| `loan-approval-api/loan-approval.yaml`                                                            | the API of the module, which people, the simulator and a task list call          |
+| `external-systems/credit-bureau/credit-bureau-api/credit-bureau.yaml`                             | the API of the credit bureau, as its vendor would publish it                     |
+| `external-systems/credit-bureau/credit-bureau-api/credit-bureau-callback.yaml`                    | the callback the application offers, where the bureau sends the score            |
+| `external-systems/credit-bureau/rest-adapter/src/main/java/.../rest/CreditBureauRestAdapter.java` | implements `CreditBureau` with the generated client                              |
+| `external-systems/credit-bureau/rest-adapter/src/main/java/.../rest/CallbackController.java`      | takes the score and hands it to `Service.creditScoreReceived`                    |
+| `loan-approval/src/main/java/.../loanapproval/CreditBureau.java`                                  | the neighbour system, as the module knows it                                     |
 
 The module knows nothing about load, and nothing in it was made for the driver. The driver calls
 the API of the module, which a browser and a task list would call as well. So what is measured
