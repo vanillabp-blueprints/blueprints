@@ -64,15 +64,17 @@ the iterations left.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                                           What is different                                                           |
-|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a multi-instance service task iterating over an attribute of the aggregate, and a task after it                                       |
-| `Aggregate.java`           | `partnerIds`, which the model loops over and which is therefore shared with the BPMS, and `offers`, one row per iteration             |
-| `PartnerOffer.java`        | new: what one iteration found                                                                                                         |
-| `WorkflowTaskHandler.java` | `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`                                                              |
-| `Service.java`             | a method taking ONE partner, and a second one choosing between the results                                                            |
-| `loan-approval.yaml`       | the partners, which is what decides how many iterations there are, and that the iterations were reviewed for writing at the same time |
-| `LoanApprovalIT.java`      | asserts the rows of all iterations, without relying on the order they arrived in                                                      |
+|                                          File                                         |                                                                                What is different                                                                                |
+|---------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                                                  | a multi-instance service task iterating over an attribute of the aggregate, and a task after it                                                                                 |
+| `Aggregate.java`                                                                      | `partnerIds`, which the model loops over and which is therefore shared with the BPMS, and `offers`, one row per iteration                                                       |
+| `PartnerOffer.java`                                                                   | new: what one iteration found                                                                                                                                                   |
+| `WorkflowTaskHandler.java`                                                            | `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`                                                                                                        |
+| `Service.java`                                                                        | a method taking ONE partner, and a second one choosing between the results                                                                                                      |
+| `loan-approval.yaml`, `LoanApprovalProperties.java`                                   | the partners, which is what decides how many iterations there are, and that the iterations were reviewed for writing at the same time                                           |
+| `LoanApprovalIT.java`                                                                 | asserts the rows of all iterations, without relying on the order they arrived in                                                                                                |
+| `pom.xml`, `application/pom.xml`, `loan-approval/pom.xml`                             | the engine versions, and the SPIN plugin with its JSON format in each BPMS profile of the Camunda 7 family                                                                      |
+| `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | JSON as the serialization format and the SPIN plugin, in the application and in the test resources. Without them the web applications cannot show the list the model loops over |
 
 ## Running it
 

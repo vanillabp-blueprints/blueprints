@@ -45,16 +45,18 @@ Two more things this blueprint carries:
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|                  File                   |                                                What is different                                                 |
-|-----------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`                    | an error boundary event on the service task, plus the input mapping `ratingProvider`                             |
-| `CreditRatingClient.java`               | new: the port to the surrounding system the task talks to                                                        |
-| `LocalCreditRatingClient.java`          | new: a stand-in provider, so the blueprint runs without one                                                      |
-| `CreditRatingUnavailableException.java` | new: the technical failure the BPMS retries                                                                      |
-| `Service.java`                          | asks the provider, rejects a rating below the minimum with `TaskException`, and returns early if a rating exists |
-| `WorkflowTaskHandler.java`              | takes the provider as `@TaskParam`. No `@Transactional`                                                          |
-| `Aggregate.java`                        | `ratedBy` and `rejectionReason` in addition to the rating                                                        |
-| `LoanApprovalIT.java`                   | one test per outcome, with a simulator standing in for the provider                                              |
+|                         File                        |                                                    What is different                                                    |
+|-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | an error boundary event on the service task, plus the input mapping `ratingProvider`                                    |
+| `CreditRatingClient.java`                           | new: the port to the surrounding system the task talks to                                                               |
+| `LocalCreditRatingClient.java`                      | new: a stand-in provider, so the blueprint runs without one                                                             |
+| `CreditRatingUnavailableException.java`             | new: the technical failure the BPMS retries                                                                             |
+| `Service.java`                                      | asks the provider, rejects a rating below the minimum with `TaskException`, and returns early if a rating exists        |
+| `WorkflowTaskHandler.java`                          | takes the provider as `@TaskParam`. No `@Transactional`                                                                 |
+| `Aggregate.java`                                    | `ratedBy` and `rejectionReason` in addition to the rating                                                               |
+| `loan-approval.yaml`, `LoanApprovalProperties.java` | `minimum-rating`, and `fail-first-rating-attempt`, which makes the stand-in provider fail once so the retry can be seen |
+| `LoanApprovalIT.java`                               | one test per outcome, with a simulator standing in for the provider                                                     |
+| `CreditRatingSimulator.java`, `Simulator.java`      | new in the tests: the simulator which stands in for the provider, and its base class from the test harness              |
 
 The one difference worth understanding is where `@Transactional` is, and where it is not.
 VanillaBP runs a task handler in a transaction it owns, and commits it for a `TaskException` on

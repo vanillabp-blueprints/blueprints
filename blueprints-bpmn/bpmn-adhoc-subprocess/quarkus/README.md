@@ -71,18 +71,22 @@ subprocess.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                                            What is different                                                            |
-|----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | an ad-hoc subprocess holding three service tasks, a user task and a business rule task ahead of it, and a gateway choosing between them |
-| `loan_approval.dmn`        | the decision table picking the checks for a request nobody has to look at                                                               |
-| `model/Check.java`         | the three checks and the BPMN element id of each of them                                                                                |
-| `model/Aggregate.java`     | `checksToRun`, the list the model reads, a version attribute, one flag per check, and the annotations which say what is shared          |
-| `WorkflowTaskHandler.java` | one `@WorkflowTask` method per check, and none for the subprocess itself                                                                |
-| `Service.java`             | the checks as business methods, and the two halves of the user task picking them                                                        |
-| `Workflow.java`            | `completeUserTask` in addition to `startWorkflow`, and nothing about the subprocess                                                     |
-| `ApiController.java`       | the URL picking the checks, carrying the task id and the names of the checks                                                            |
-| `LoanApprovalIT.java`      | one test per decision maker: the case worker picks two of three, the decision table picks two of three                                  |
-| `pom.xml`                  | one BPMS profile instead of two                                                                                                         |
+|                                          File                                         |                                                            What is different                                                            |
+|---------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                                                  | an ad-hoc subprocess holding three service tasks, a user task and a business rule task ahead of it, and a gateway choosing between them |
+| `loan_approval.dmn`                                                                   | the decision table picking the checks for a request nobody has to look at                                                               |
+| `model/Check.java`                                                                    | the three checks and the BPMN element id of each of them                                                                                |
+| `model/Aggregate.java`                                                                | `checksToRun`, the list the model reads, a version attribute, one flag per check, and the annotations which say what is shared          |
+| `loan-approval.yaml`                                                                  | declares `amount` and `checksToRun` as the aggregate values the model reads                                                             |
+| `WorkflowTaskHandler.java`                                                            | one `@WorkflowTask` method per check, and none for the subprocess itself                                                                |
+| `Service.java`                                                                        | the checks as business methods, and the two halves of the user task picking them                                                        |
+| `Workflow.java`                                                                       | `completeUserTask` in addition to `startWorkflow`, and nothing about the subprocess                                                     |
+| `ApiController.java`                                                                  | the URL picking the checks, carrying the task id and the names of the checks                                                            |
+| `openapi/loan-approval.yaml`                                                          | the URL picking the checks, `select-checks/{taskId}`                                                                                    |
+| `LoanApprovalIT.java`                                                                 | one test per decision maker: the case worker picks two of three, the decision table picks two of three                                  |
+| `pom.xml`                                                                             | one BPMS profile instead of two                                                                                                         |
+| `application-camunda8.yaml`                                                           | `retry-backoff: PT2S`, also in the test resources: two checks write the aggregate at once, and the retry should not look like a hang    |
+| `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | deleted, in the application and in the test resources, together with their BPMS profiles                                                |
 
 ## Running it
 

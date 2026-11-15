@@ -47,14 +47,16 @@ Two things this blueprint leaves out on purpose, and where to find them:
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|         File          |                                         What is different                                          |
-|-----------------------|----------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`  | a message catch event the workflow waits at, and a service task behind it                          |
-| `Workflow.java`       | `correlateMessage`, plus the message name as a constant                                            |
-| `Service.java`        | writes what the message carried onto the aggregate, then correlates. Refuses a repeat              |
-| `ApiController.java`  | the callback the message arrives at                                                                |
-| `Aggregate.java`      | `contractSignedBy`, which is where the message's content ends up, `paidOut`, and `@NoSyncWithBPMS` |
-| `LoanApprovalIT.java` | waiting, continuing, and a message arriving twice                                                  |
+|             File             |                                         What is different                                          |
+|------------------------------|----------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`         | a message catch event the workflow waits at, and a service task behind it                          |
+| `Workflow.java`              | `correlateMessage`, plus the message name as a constant                                            |
+| `WorkflowTaskHandler.java`   | the `@WorkflowTask` method of the service task behind the message                                  |
+| `Service.java`               | writes what the message carried onto the aggregate, then correlates. Refuses a repeat              |
+| `ApiController.java`         | the callback the message arrives at                                                                |
+| `openapi/loan-approval.yaml` | the URL of that callback, `contract-signed`                                                        |
+| `Aggregate.java`             | `contractSignedBy`, which is where the message's content ends up, `paidOut`, and `@NoSyncWithBPMS` |
+| `LoanApprovalIT.java`        | waiting, continuing, and a message arriving twice                                                  |
 
 ## Running it
 

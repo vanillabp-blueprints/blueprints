@@ -55,17 +55,19 @@ same. `bpmn-user-task` shows them for a person instead of a system.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|               File                |                                        What is different                                         |
-|-----------------------------------|--------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`              | a send task the workflow waits at, an error boundary event on it, and a service task per way out |
-| `WorkflowTaskHandler.java`        | the `@WorkflowTask` method of that task, taking `@TaskId` and `@TaskEvent`                       |
-| `Workflow.java`                   | `completeTask` and `cancelTask` in addition to `startWorkflow`                                   |
-| `Service.java`                    | both halves of the task: sending the request, and answering it when the partner replies          |
-| `PartnerApprovalClient.java`      | new: the port to the surrounding system, so a test can replace it                                |
-| `LocalPartnerApprovalClient.java` | new: a stand-in partner, so the blueprint runs without one                                       |
-| `ApiController.java`              | the callback carrying the partner's answer                                                       |
-| `Aggregate.java`                  | `partnerApprovalTaskId` and what the process wrote on the way out                                |
-| `LoanApprovalIT.java`             | one test per way the task ends: still open, completed, canceled                                  |
+|                        File                       |                                             What is different                                             |
+|---------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                              | a send task the workflow waits at, an error boundary event on it, and a service task per way out          |
+| `WorkflowTaskHandler.java`                        | the `@WorkflowTask` method of that task, taking `@TaskId` and `@TaskEvent`                                |
+| `Workflow.java`                                   | `completeTask` and `cancelTask` in addition to `startWorkflow`                                            |
+| `Service.java`                                    | both halves of the task: sending the request, and answering it when the partner replies                   |
+| `PartnerApprovalClient.java`                      | new: the port to the surrounding system, so a test can replace it                                         |
+| `LocalPartnerApprovalClient.java`                 | new: a stand-in partner, so the blueprint runs without one                                                |
+| `ApiController.java`                              | the callback carrying the partner's answer                                                                |
+| `openapi/loan-approval.yaml`                      | the URL of that callback, `partner-decision/{taskId}`                                                     |
+| `Aggregate.java`                                  | `partnerApprovalTaskId` and what the process wrote on the way out                                         |
+| `LoanApprovalIT.java`                             | one test per way the task ends: still open, completed, canceled                                           |
+| `PartnerApprovalSimulator.java`, `Simulator.java` | new in the tests: the simulator which stands in for the partner, and its base class from the test harness |
 
 The one line worth looking at is `camunda:delegateExpression` in the Camunda 7 model. A task
 which stays open needs it there. Camunda 8 needs nothing like it. The wiki of each adapter says

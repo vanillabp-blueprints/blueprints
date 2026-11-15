@@ -73,15 +73,16 @@ It is taken when the answer to both questions is no.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                          What is different                                          |
-|----------------------------|-----------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | an exclusive gateway with a default flow, its conditions naming two getters and no attribute        |
-| `Aggregate.java`           | `@NoSyncWithBPMS` on the class, `@SyncWithBPMS` on the two getters, and the data behind the answers |
-| `RiskClass.java`           | the enum the model knows nothing about                                                              |
-| `Service.java`             | derives the risk class from the rating and the configured thresholds, and one method per branch     |
-| `WorkflowTaskHandler.java` | a `@WorkflowTask` method per branch                                                                 |
-| `loan-approval.yaml`       | the two thresholds the risk class is derived from                                                   |
-| `LoanApprovalIT.java`      | one test per risk class, plus one showing that the process runs without the customer's name         |
+|                         File                        |                                          What is different                                          |
+|-----------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | an exclusive gateway with a default flow, its conditions naming two getters and no attribute        |
+| `Aggregate.java`                                    | `@NoSyncWithBPMS` on the class, `@SyncWithBPMS` on the two getters, and the data behind the answers |
+| `RiskClass.java`                                    | the enum the model knows nothing about                                                              |
+| `Service.java`                                      | derives the risk class from the rating and the configured thresholds, and one method per branch     |
+| `WorkflowTaskHandler.java`                          | a `@WorkflowTask` method per branch                                                                 |
+| `ApiController.java`, `openapi/loan-approval.yaml`  | the start URL takes the name of the customer as well                                                |
+| `loan-approval.yaml`, `LoanApprovalProperties.java` | the two thresholds the risk class is derived from                                                   |
+| `LoanApprovalIT.java`                               | one test per risk class, plus one showing that the process runs without the customer's name         |
 
 [`bpmn-gateways`](https://github.com/vanillabp-blueprints/bpmn-gateways-quarkus) shows how a
 gateway is modelled and what a condition may read. This blueprint takes that as given. It is

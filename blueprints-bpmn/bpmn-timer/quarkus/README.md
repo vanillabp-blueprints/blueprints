@@ -51,17 +51,22 @@ explains the expression and which Java types fit.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                          What is different                                          |
-|----------------------------|-----------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a timer catch event, a task waiting for a partner, and a timer boundary event on it                 |
-| `WorkflowTaskHandler.java` | the `@WorkflowTask` method of the waiting task, taking `@TaskId` and `@TaskEvent`                   |
-| `Workflow.java`            | `completeTask` in addition to `startWorkflow`                                                       |
-| `Service.java`             | copies the deadline, sends the request, keeps the task id, answers it, and notes a missed deadline  |
-| `Aggregate.java`           | `partnerApprovalTaskId`, `partnerApproved`, `timedOut`, and `partnerDeadline`, which the BPMS reads |
-| `loan-approval.yaml`       | `partner-deadline: P3D`, the business value of the deadline                                         |
-| `application.yaml`         | `partner-deadline: PT3S` in the test and in the demo application, so nobody waits three days        |
-| `LoanApprovalIT.java`      | one test per outcome: answered in time, and not answered at all                                     |
-| `pom.xml`                  | hands the BPMS of the build to the tests, for the assertion about cancellations                     |
+|                         File                        |                                             What is different                                             |
+|-----------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | a timer catch event, a task waiting for a partner, and a timer boundary event on it                       |
+| `WorkflowTaskHandler.java`                          | the `@WorkflowTask` method of the waiting task, taking `@TaskId` and `@TaskEvent`                         |
+| `Workflow.java`                                     | `completeTask` in addition to `startWorkflow`                                                             |
+| `Service.java`                                      | copies the deadline, sends the request, keeps the task id, answers it, and notes a missed deadline        |
+| `PartnerApprovalClient.java`                        | new: the port to the partner, so a test can replace it                                                    |
+| `LocalPartnerApprovalClient.java`                   | new: a stand-in partner, so the blueprint runs without one                                                |
+| `ApiController.java`                                | the callback carrying the partner's answer and the task id                                                |
+| `openapi/loan-approval.yaml`                        | the URL of that callback, `partner-approved/{taskId}`                                                     |
+| `Aggregate.java`                                    | `partnerApprovalTaskId`, `partnerApproved`, `timedOut`, and `partnerDeadline`, which the BPMS reads       |
+| `loan-approval.yaml`, `LoanApprovalProperties.java` | `partner-deadline: P3D`, the business value of the deadline                                               |
+| `application.yaml`                                  | `partner-deadline: PT3S` in the test and in the demo application, so nobody waits three days              |
+| `LoanApprovalIT.java`                               | one test per outcome: answered in time, and not answered at all                                           |
+| `PartnerApprovalSimulator.java`, `Simulator.java`   | new in the tests: the simulator which stands in for the partner, and its base class from the test harness |
+| `pom.xml`                                           | hands the BPMS of the build to the tests, for the assertion about cancellations                           |
 
 ## Running it
 

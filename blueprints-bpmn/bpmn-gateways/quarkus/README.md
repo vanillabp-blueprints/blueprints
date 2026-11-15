@@ -64,14 +64,14 @@ its data at home.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                            What is different                                            |
-|----------------------------|---------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | two exclusive gateways, each with a default flow: one asking the aggregate, one reading a raw attribute |
-| `Aggregate.java`           | `ratingBand`, the two getters the first gateway asks, and the annotations which name what is shared     |
-| `Service.java`             | turns the rating into a band, and one method per branch                                                 |
-| `WorkflowTaskHandler.java` | a `@WorkflowTask` method per branch                                                                     |
-| `loan-approval.yaml`       | the two thresholds the bands are derived from                                                           |
-| `LoanApprovalIT.java`      | one test per branch, steered by the amount                                                              |
+|                         File                        |                                            What is different                                            |
+|-----------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | two exclusive gateways, each with a default flow: one asking the aggregate, one reading a raw attribute |
+| `Aggregate.java`                                    | `ratingBand`, the two getters the first gateway asks, and the annotations which name what is shared     |
+| `Service.java`                                      | turns the rating into a band, and one method per branch                                                 |
+| `WorkflowTaskHandler.java`                          | a `@WorkflowTask` method per branch                                                                     |
+| `loan-approval.yaml`, `LoanApprovalProperties.java` | the two thresholds the bands are derived from                                                           |
+| `LoanApprovalIT.java`                               | one test per branch, steered by the amount                                                              |
 
 The conditions differ between the two BPMS, and this is the one place where they have to.
 Camunda 7 evaluates `${ratedAcceptable}`, Camunda 8 the FEEL expression `=ratedAcceptable`.

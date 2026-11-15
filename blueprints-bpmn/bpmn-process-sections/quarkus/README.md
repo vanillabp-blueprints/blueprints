@@ -109,17 +109,17 @@ forgot its null check.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                         What is different                                          |
-|----------------------------|----------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a call activity, an embedded subprocess, and the gateway which asks whether the second section ran |
-| `document_check.bpmn`      | new: the called process of the first section                                                       |
-| `Aggregate.java`           | one sub-object per section, and the four boolean getters the models read                           |
-| `DocumentCheck.java`       | new: the findings of the first section                                                             |
-| `RiskAssessment.java`      | new: the findings of the second section, absent for a small loan                                   |
-| `WorkflowTaskHandler.java` | the tasks of both sections, and `secondaryBpmnProcesses` for the called process                    |
-| `Service.java`             | the business code of both sections: the first task creates the object, the later ones fill it in   |
-| `loan-approval.yaml`       | the limit which makes the second section run, and the numbers the two sections use                 |
-| `LoanApprovalIT.java`      | runs a loan through each path and checks that the getters answer without the skipped section       |
+|                         File                        |                                         What is different                                          |
+|-----------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | a call activity, an embedded subprocess, and the gateway which asks whether the second section ran |
+| `document_check.bpmn`                               | new: the called process of the first section                                                       |
+| `Aggregate.java`                                    | one sub-object per section, and the four boolean getters the models read                           |
+| `DocumentCheck.java`                                | new: the findings of the first section                                                             |
+| `RiskAssessment.java`                               | new: the findings of the second section, absent for a small loan                                   |
+| `WorkflowTaskHandler.java`                          | the tasks of both sections, and `secondaryBpmnProcesses` for the called process                    |
+| `Service.java`                                      | the business code of both sections: the first task creates the object, the later ones fill it in   |
+| `loan-approval.yaml`, `LoanApprovalProperties.java` | the limit which makes the second section run, and the numbers the two sections use                 |
+| `LoanApprovalIT.java`                               | runs a loan through each path and checks that the getters answer without the skipped section       |
 
 Both BPMN files are in the same directory of the workflow module and are deployed together. A
 called process belongs to the module which owns it. It is not a module of its own.

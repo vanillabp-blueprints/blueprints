@@ -50,16 +50,17 @@ says which operations a BPMS supports. The Camunda 8 adapter names this one unde
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|            File            |                                                             What is different                                                             |
-|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a user task between the service task and the end, an error boundary event on it, and two service tasks which show where the workflow went |
-| `WorkflowTaskHandler.java` | the `@WorkflowTask` method of the user task, taking `@TaskId` and `@TaskEvent`                                                            |
-| `Workflow.java`            | `completeUserTask` and `cancelUserTask` in addition to `startWorkflow`                                                                    |
-| `Service.java`             | the two halves of a user task: what happens when it opens, and what happens when the answer arrives through the API                       |
-| `ApiController.java`       | the URLs answering and withdrawing, both carrying the task id                                                                             |
-| `Aggregate.java`           | `riskAssessmentTaskId` and what the process wrote on the way out                                                                          |
-| `LoanApprovalIT.java`      | one test per way a user task ends: answered, canceled, and still open                                                                     |
-| `pom.xml`                  | hands the BPMS of the build to the tests, so the test of the cancellation knows where it can run                                          |
+|             File             |                                                             What is different                                                             |
+|------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`         | a user task between the service task and the end, an error boundary event on it, and two service tasks which show where the workflow went |
+| `WorkflowTaskHandler.java`   | the `@WorkflowTask` method of the user task, taking `@TaskId` and `@TaskEvent`                                                            |
+| `Workflow.java`              | `completeUserTask` and `cancelUserTask` in addition to `startWorkflow`                                                                    |
+| `Service.java`               | the two halves of a user task: what happens when it opens, and what happens when the answer arrives through the API                       |
+| `ApiController.java`         | the URLs answering and withdrawing, both carrying the task id                                                                             |
+| `openapi/loan-approval.yaml` | the two URLs, `assess-risk/{taskId}` and `withdraw/{taskId}`                                                                              |
+| `Aggregate.java`             | `riskAssessmentTaskId` and what the process wrote on the way out                                                                          |
+| `LoanApprovalIT.java`        | one test per way a user task ends: answered, canceled, and still open                                                                     |
+| `pom.xml`                    | hands the BPMS of the build to the tests, so the test of the cancellation knows where it can run                                          |
 
 ## Running it
 

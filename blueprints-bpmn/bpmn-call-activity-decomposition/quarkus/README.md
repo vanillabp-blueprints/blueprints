@@ -85,15 +85,15 @@ situations side by side.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                                   What is different                                                    |
-|----------------------------|------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a call activity pointing at `risk_assessment`, and a task after it using the result                                    |
-| `risk_assessment.bpmn`     | new: the called process, two service tasks between a plain start and end event                                         |
-| `WorkflowTaskHandler.java` | `secondaryBpmnProcesses` names the called process; its tasks are methods like any other                                |
-| `Aggregate.java`           | what the called process writes, the decision made from it, and `@NoSyncWithBPMS` on the class                          |
-| `Service.java`             | the two checks of the risk assessment and the decision after it                                                        |
-| `loan-approval.yaml`       | the two numbers the checks and the decision use                                                                        |
-| `LoanApprovalIT.java`      | asserts across the call activity: the calling process is started, and the result of the called one is on the aggregate |
+|                         File                        |                                                   What is different                                                    |
+|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | a call activity pointing at `risk_assessment`, and a task after it using the result                                    |
+| `risk_assessment.bpmn`                              | new: the called process, two service tasks between a plain start and end event                                         |
+| `WorkflowTaskHandler.java`                          | `secondaryBpmnProcesses` names the called process; its tasks are methods like any other                                |
+| `Aggregate.java`                                    | what the called process writes, the decision made from it, and `@NoSyncWithBPMS` on the class                          |
+| `Service.java`                                      | the two checks of the risk assessment and the decision after it                                                        |
+| `loan-approval.yaml`, `LoanApprovalProperties.java` | the two numbers the checks and the decision use                                                                        |
+| `LoanApprovalIT.java`                               | asserts across the call activity: the calling process is started, and the result of the called one is on the aggregate |
 
 Both BPMN files are in the same directory of the workflow module and are deployed together. A
 called process belongs to the module which owns it. It is not a module of its own.

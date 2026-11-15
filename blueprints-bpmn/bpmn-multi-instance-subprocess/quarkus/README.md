@@ -69,18 +69,20 @@ whenever the model changes.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                                             What is different                                                             |
-|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a multi-instance subprocess, a multi-instance task inside it, and a plain task inside it as well                                          |
-| `Aggregate.java`           | a collection per level, and the rows the two loops write                                                                                  |
-| `PartnerOffer.java`        | new: one row per inner iteration, carrying the region it belongs to                                                                       |
-| `RegionResult.java`        | new: one row per outer iteration                                                                                                          |
-| `IterationResolver.java`   | new: builds one object out of both active iterations                                                                                      |
-| `Iteration.java`           | new: what that object is                                                                                                                  |
-| `WorkflowTaskHandler.java` | a task in both loops, a task in the outer one, a task after them                                                                          |
-| `Service.java`             | one method per step, none of them knowing about a loop                                                                                    |
-| `loan-approval.yaml`       | regions and partners, which is what decides how often each level runs, and that the iterations were reviewed for writing at the same time |
-| `LoanApprovalIT.java`      | asserts the rows of both levels, in no particular order                                                                                   |
+|                                          File                                         |                                                                                What is different                                                                                |
+|---------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                                                  | a multi-instance subprocess, a multi-instance task inside it, and a plain task inside it as well                                                                                |
+| `Aggregate.java`                                                                      | a collection per level, and the rows the two loops write                                                                                                                        |
+| `PartnerOffer.java`                                                                   | new: one row per inner iteration, carrying the region it belongs to                                                                                                             |
+| `RegionResult.java`                                                                   | new: one row per outer iteration                                                                                                                                                |
+| `IterationResolver.java`                                                              | new: builds one object out of both active iterations                                                                                                                            |
+| `Iteration.java`                                                                      | new: what that object is                                                                                                                                                        |
+| `WorkflowTaskHandler.java`                                                            | a task in both loops, a task in the outer one, a task after them                                                                                                                |
+| `Service.java`                                                                        | one method per step, none of them knowing about a loop                                                                                                                          |
+| `loan-approval.yaml`, `LoanApprovalProperties.java`                                   | regions and partners, which is what decides how often each level runs, and that the iterations were reviewed for writing at the same time                                       |
+| `LoanApprovalIT.java`                                                                 | asserts the rows of both levels, in no particular order                                                                                                                         |
+| `pom.xml`, `application/pom.xml`, `loan-approval/pom.xml`                             | the engine versions, and the SPIN plugin with its JSON format in each BPMS profile of the Camunda 7 family                                                                      |
+| `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | JSON as the serialization format and the SPIN plugin, in the application and in the test resources. Without them the web applications cannot show the list the model loops over |
 
 Compared to
 [`bpmn-multi-instance-task`](https://github.com/vanillabp-blueprints/bpmn-multi-instance-task-quarkus),

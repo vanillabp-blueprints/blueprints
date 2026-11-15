@@ -48,14 +48,18 @@ shows them.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                   File                   |                                 What is different                                 |
-|------------------------------------------|-----------------------------------------------------------------------------------|
-| `nightly_review.bpmn`                    | a second process with a timer start event and a signal start event                |
-| `nightlyreview/WorkflowTaskHandler.java` | `@WorkflowStartedByBpms` next to the ordinary `@WorkflowTask`                     |
-| `nightlyreview/Service.java`             | builds the aggregate of a start nobody asked for, and names it                    |
-| `nightlyreview/Workflow.java`            | `sendSignal` and, deliberately, no `startWorkflow`                                |
-| `nightlyreview/model/Aggregate.java`     | the aggregate of a workflow nobody started, built by the application all the same |
-| `NightlyReviewIT.java`                   | a test which cannot start anything and waits for an aggregate to appear           |
+|                      File                      |                                 What is different                                 |
+|------------------------------------------------|-----------------------------------------------------------------------------------|
+| `nightly_review.bpmn`                          | a second process with a timer start event and a signal start event                |
+| `nightlyreview/WorkflowTaskHandler.java`       | `@WorkflowStartedByBpms` next to the ordinary `@WorkflowTask`                     |
+| `nightlyreview/Service.java`                   | builds the aggregate of a start nobody asked for, and names it                    |
+| `nightlyreview/Workflow.java`                  | `sendSignal` and, deliberately, no `startWorkflow`                                |
+| `nightlyreview/model/Aggregate.java`           | the aggregate of a workflow nobody started, built by the application all the same |
+| `nightlyreview/model/AggregateRepository.java` | new: the repository of the reviews, with a query for the kind of start            |
+| `nightlyreview/ApiController.java`             | new: asks for a review by broadcasting the signal, and lists the reviews          |
+| `openapi/nightly-review.yaml`                  | new: the OpenAPI file of that controller                                          |
+| `NightlyReviewIT.java`                         | a test which cannot start anything and waits for an aggregate to appear           |
+| `loan-approval/pom.xml`                        | generates the Java interface of `nightly-review.yaml` as well                     |
 
 ## Running it
 
