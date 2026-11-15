@@ -11,7 +11,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +36,7 @@ import blueprint.workflowmodule.loanapproval.model.usertask.ApproveLoanTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.CallCustomerTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.TaskData;
+import io.vanillabp.cockpit.gui.api.v1.EndReason;
 import io.vanillabp.cockpit.support.usertask.BcTaskNotOpenException;
 import io.vanillabp.cockpit.support.usertask.BcUserTaskExceptionHandler;
 import jakarta.persistence.EntityManagerFactory;
@@ -110,13 +110,10 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     assertThat(cockpit().awaitUserTaskReport(call, report -> true))
         .containsEntry("initiator", "alice");
     final var workflow = cockpit().awaitWorkflow(loanRequestId, found -> true);
-    assertThat(workflow.get("initiator"))
-        .asInstanceOf(InstanceOfAssertFactories.MAP)
-        .containsEntry("id", "alice");
-    assertThat(workflow)
-        .containsEntry("title", Map.of(
-            "en", "Loan request of Jane Roe over 5000 EUR",
-            "de", "Kreditantrag von Jane Roe über 5000 EUR"));
+    assertThat(workflow.getInitiator().getId()).isEqualTo("alice");
+    assertThat(workflow.getTitle()).isEqualTo(Map.of(
+        "en", "Loan request of Jane Roe over 5000 EUR",
+        "de", "Kreditantrag von Jane Roe über 5000 EUR"));
 
     callTheCustomer(loanRequestId, call, "alice");
     final var riskAssessment = openTask(loanRequestId, AssessRiskTaskData.class);
@@ -207,7 +204,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var secondCall = openTaskId(loanRequest, CallCustomerTaskData.class);
 
     assertThat(secondCall).isNotEqualTo(firstCall);
-    cockpit().awaitUserTask(firstCall, userTask -> "CANCELLED".equals(userTask.get("endReason")));
+    cockpit().awaitUserTask(firstCall, userTask -> userTask.getEndReason() == EndReason.CANCELLED);
     assertThat(cockpit().awaitUserTaskReport(secondCall, report -> true))
         .containsEntry("assignee", "erin")
         .containsEntry("initiator", "lea");

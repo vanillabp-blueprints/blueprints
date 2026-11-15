@@ -17,9 +17,18 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.awaitility.core.ConditionTimeoutException;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
+
+import io.vanillabp.cockpit.gui.api.v1.OfficialTasklistApi;
+import io.vanillabp.cockpit.gui.api.v1.OfficialWorkflowlistApi;
+import io.vanillabp.cockpit.gui.api.v1.UserTask;
+import io.vanillabp.cockpit.gui.api.v1.Workflow;
+import io.vanillabp.cockpit.gui.api.v1.WorkflowRetrieveMode;
+import io.vanillabp.cockpit.gui.api.v1.Workflows;
+import io.vanillabp.cockpit.gui.api.v1.WorkflowsRequest;
 
 /**
  * The Business Cockpit of the integration test: the dev shell simulator of the cockpit, run as
@@ -123,9 +132,9 @@ public final class CockpitSimulator {
    * @param condition  What the cockpit is expected to know about the user task.
    * @return The user task, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitUserTask(
+  public UserTask awaitUserTask(
       final String userTaskId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<UserTask> condition) {
 
     return awaitReport(
         "user task '"
@@ -143,9 +152,9 @@ public final class CockpitSimulator {
    * @param condition  What the cockpit is expected to know about the workflow.
    * @return The workflow, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitWorkflow(
+  public Workflow awaitWorkflow(
       final String businessId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<Workflow> condition) {
 
     return awaitReport(
         "workflow '"
@@ -207,7 +216,12 @@ public final class CockpitSimulator {
   private Optional<Map<String, Object>> lastReportOf(
       final String userTaskId) {
 
-    return getIfKnown(simulatorApi, "/usertask/{userTaskId}/report", userTaskId);
+    return getIfKnown(
+        simulatorApi,
+        "/usertask/{userTaskId}/report",
+        userTaskId,
+        new ParameterizedTypeReference<Map<String, Object>>() {
+        });
 
   }
 
@@ -217,10 +231,14 @@ public final class CockpitSimulator {
    * @param userTaskId The id of the user task.
    * @return The user task, if the cockpit knows it.
    */
-  private Optional<Map<String, Object>> userTaskOf(
+  private Optional<UserTask> userTaskOf(
       final String userTaskId) {
 
-    return getIfKnown(officialApi, "/usertask/{userTaskId}", userTaskId);
+    return getIfKnown(
+        officialApi,
+        OfficialTasklistApi.PATH_GET_USER_TASK,
+        userTaskId,
+        ParameterizedTypeReference.forType(UserTask.class));
 
   }
 
@@ -230,13 +248,15 @@ public final class CockpitSimulator {
    * @param api        The API to ask.
    * @param path       The path below the API.
    * @param userTaskId The id of the user task in the path.
+   * @param answer     What the answer is read into.
+   * @param <T>        The type of the answer.
    * @return The answer, or nothing if the simulator does not know the user task yet.
    */
-  @SuppressWarnings("unchecked")
-  private static Optional<Map<String, Object>> getIfKnown(
+  private static <T> Optional<T> getIfKnown(
       final RestClient api,
       final String path,
-      final String userTaskId) {
+      final String userTaskId,
+      final ParameterizedTypeReference<T> answer) {
 
     return api
         .get()
@@ -245,7 +265,7 @@ public final class CockpitSimulator {
             request,
             response) -> response.getStatusCode() == HttpStatus.NOT_FOUND
                 ? Optional.empty()
-                : Optional.of((Map<String, Object>) response.bodyTo(Map.class)));
+                : Optional.ofNullable(response.bodyTo(answer)));
 
   }
 
@@ -256,25 +276,24 @@ public final class CockpitSimulator {
    * @param businessId The id of the workflow aggregate.
    * @return The workflow, if the cockpit knows it.
    */
-  @SuppressWarnings("unchecked")
-  private Optional<Map<String, Object>> workflowOf(
+  private Optional<Workflow> workflowOf(
       final String businessId) {
 
-    final Map<String, Object> page = officialApi
+    final var page = officialApi
         .post()
-        .uri("/workflow")
+        .uri(OfficialWorkflowlistApi.PATH_GET_WORKFLOWS)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Map.of(
-            "mode", "All",
-            "businessIds", List.of(businessId),
-            "pageNumber", 0,
-            "pageSize", 10))
+        .body(new WorkflowsRequest()
+            .mode(WorkflowRetrieveMode.ALL)
+            .businessIds(List.of(businessId))
+            .pageNumber(0)
+            .pageSize(10))
         .retrieve()
-        .body(Map.class);
-    final var workflows = (List<Map<String, Object>>) page.get("workflows");
-    return workflows == null
+        .body(Workflows.class);
+    return page.getWorkflows() == null
         ? Optional.empty()
-        : workflows
+        : page
+            .getWorkflows()
             .stream()
             .findFirst();
 

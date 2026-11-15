@@ -246,7 +246,7 @@ Compared to [`cockpit-usertasks-in-the-application`](https://github.com/vanillab
 | `application.yaml`                                  | where the reports go: the dev shell simulator                                                                                                                                           |
 | `OrganizingUserTasksIT.java`                        | replaces `LoanApprovalIT` and `UserTaskFormSecurityIT`: one test per pattern, which checks what the cockpit was told, and the proof that tasks and their data are loaded only when read |
 | `CockpitSimulator.java`                             | new: starts the dev shell simulator of the cockpit for the test, and reads the reports back from it                                                                                     |
-| `loan-approval/pom.xml`                             | `business-cockpit-spring-boot-support` and Freemarker; the cockpit adapter next to the BPMS adapter; the simulator for the test                                                         |
+| `loan-approval/pom.xml`                             | `business-cockpit-spring-boot-support` and Freemarker; the cockpit adapter next to the BPMS adapter; the simulator and the models of the cockpit's official API for the test            |
 | `application/pom.xml`                               | the cockpit adapter next to the BPMS adapter in every profile                                                                                                                           |
 
 Drafts work as in the base blueprint and are left out here, so the forms have no PUT.
