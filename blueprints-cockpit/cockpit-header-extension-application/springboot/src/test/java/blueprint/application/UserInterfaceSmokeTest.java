@@ -12,10 +12,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 
+import blueprint.workflowmodule.loanapproval.api.model.LoanRequest;
+import blueprint.workflowmodule.loanapproval.api.model.StartedLoanRequest;
 import blueprint.workflowmodule.loanapproval.model.Aggregate;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
@@ -89,15 +90,14 @@ public class UserInterfaceSmokeTest {
         .post()
         .uri("/api/loan-requests")
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Map.of("applicant", "Jane Doe", "amount", 5000))
+        .body(new LoanRequest("Jane Doe", 5000))
         .retrieve()
-        .toEntity(new ParameterizedTypeReference<Map<String, Object>>() {
-        });
+        .toEntity(StartedLoanRequest.class);
 
     assertThat(started.getStatusCode().value()).isEqualTo(201);
-    final var loanRequestId = (String) started
+    final var loanRequestId = started
         .getBody()
-        .get("loanRequestId");
+        .loanRequestId();
 
     await()
         .atMost(Duration.ofSeconds(30))
