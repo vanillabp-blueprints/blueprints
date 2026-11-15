@@ -429,6 +429,17 @@ timer of the model. The scheduler of the engine fires the timer, and on a busy m
 build shares its threads. A test passes the longer deadline to `awaitAggregate` only for the
 steps which wait for a timer.
 
+On Quarkus, both test classes also check that a test runs on the BPMS of the Maven build. A
+Quarkus test does not take its classpath from Maven. It reads the POM again and builds the
+application on its own, and the test JVM has other system properties than Maven. So a profile
+which switches itself on can be active in Maven and inactive in the test. Then the test runs on
+the default BPMS, which the build does not have. The blueprint POM hands the BPMS profile of
+the build to the tests as `quarkus.config.profile.parent`. The check compares it with the
+BPMS adapters the test loads. It finds them by their Quarkus capability
+`io.vanillabp.adapter.<bpms>`. A test started by the IDE has no BPMS profile, so the check
+skips there. `bin/check_default_profiles.py` forbids the kind of profile which caused this.
+The check also catches every other cause.
+
 They are copies and not a shared module. A blueprint has to build on its own after the split.
 And an agent has to be able to read the code which checks its work.
 
