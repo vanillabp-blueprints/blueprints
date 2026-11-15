@@ -4,14 +4,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.RestClient;
+
+import blueprint.workflowmodule.loanapproval.api.model.Unavailable;
 
 /**
  * What a user sees when a system around the application does not answer.
@@ -49,7 +51,6 @@ public class ExternalSystemUnavailableIT {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void aMissingCreditRatingIsA503WhichNamesItsRole() {
 
     final var answer = RestClient
@@ -59,14 +60,13 @@ public class ExternalSystemUnavailableIT {
         .uri("/api/loan-approval/request?customerId=C-1001&amount=5000")
         .exchange((
             request,
-            response) -> Map.of(
-                "status", response.getStatusCode().value(),
-                "body", response.bodyTo(Map.class)));
+            response) -> ResponseEntity
+                .status(response.getStatusCode())
+                .body(response.bodyTo(Unavailable.class)));
 
-    assertThat(answer.get("status")).isEqualTo(503);
-    assertThat((Map<String, Object>) answer.get("body"))
-        .containsEntry("externalSystem", "credit-rating")
-        .containsEntry("status", 503);
+    assertThat(answer.getStatusCode().value()).isEqualTo(503);
+    assertThat(answer.getBody().externalSystem()).isEqualTo("credit-rating");
+    assertThat(answer.getBody().status()).isEqualTo(503);
 
   }
 

@@ -18,6 +18,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.RestClient;
 
+import blueprint.externalsystems.esignature.callback.server.model.Callback;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.api.model.Answer;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
@@ -213,7 +214,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .post()
         .uri("/e-signature/callback")
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Map.of("contractId", UUID.randomUUID().toString(), "status", "SIGNED"))
+        .body(new Callback(UUID.randomUUID().toString(), Callback.StatusEnum.SIGNED))
         .exchange((
             request,
             response) -> response

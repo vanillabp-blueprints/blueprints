@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import blueprint.workflowmodule.loanapproval.api.model.Unavailable;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -56,15 +57,14 @@ public class ExternalSystemUnavailableIT {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void aMissingCreditRatingIsA503WhichNamesItsRole() {
 
     final var response = given().get("/api/loan-approval/request?customerId=C-1001&amount=5000");
 
     assertThat(response.statusCode()).isEqualTo(503);
-    assertThat((Map<String, Object>) response.as(Map.class))
-        .containsEntry("externalSystem", "credit-rating")
-        .containsEntry("status", 503);
+    final var unavailable = response.as(Unavailable.class);
+    assertThat(unavailable.getExternalSystem()).isEqualTo("credit-rating");
+    assertThat(unavailable.getStatus()).isEqualTo(503);
 
   }
 

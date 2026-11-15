@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import blueprint.externalsystems.esignature.callback.server.model.Callback;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.api.model.Answer;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
@@ -167,7 +168,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var status = given()
         .contentType(ContentType.JSON)
-        .body(Map.of("contractId", UUID.randomUUID().toString(), "status", "SIGNED"))
+        .body(new Callback(UUID.randomUUID().toString(), Callback.StatusEnum.SIGNED))
         .post("/e-signature/callback")
         .statusCode();
 
