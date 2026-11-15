@@ -104,17 +104,21 @@ cluster has to run for every build.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                        File                        |                                     What is different                                      |
-|----------------------------------------------------|--------------------------------------------------------------------------------------------|
-| `.../loanapproval/model/Aggregate.java`            | a plain class: no entity, no column, nothing naming a database                             |
-| `.../loanapproval/model/AggregateRepository.java`  | deleted, together with the persistence dependency of the workflow module                   |
-| `.../loanapproval/persistence/UnitOfWork.java`     | new: the transaction VanillaBP runs its work in, and the hooks the stores enlist with      |
-| `.../loanapproval/persistence/AggregateStore.java` | new: how the aggregate is saved and loaded                                                 |
-| `.../loanapproval/persistence/PhaseTwoStore.java`  | new: the outbox for the second phase of a workflow start                                   |
-| `.../loanapproval/persistence/DeliveryLog.java`    | new: what was already delivered                                                            |
-| `.../loanapproval/Service.java`                    | opens the unit of work itself instead of carrying `@Transactional`                         |
-| `loan-approval/src/test/.../LoanApprovalIT.java`   | counts what VanillaBP did with the unit of work, and checks that a rollback leaves nothing |
-| `pom.xml`, `*/pom.xml`                             | no persistence dependency at all, and only the `camunda8` profile                          |
+|                                         File                                          |                                     What is different                                      |
+|---------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| `.../loanapproval/model/Aggregate.java`                                               | a plain class: no entity, no column, nothing naming a database                             |
+| `.../loanapproval/model/AggregateRepository.java`                                     | deleted, together with the persistence dependency of the workflow module                   |
+| `.../loanapproval/persistence/UnitOfWork.java`                                        | new: the transaction VanillaBP runs its work in, and the hooks the stores enlist with      |
+| `.../loanapproval/persistence/AggregateStore.java`                                    | new: how the aggregate is saved and loaded                                                 |
+| `.../loanapproval/persistence/PhaseTwoStore.java`                                     | new: the outbox for the second phase of a workflow start                                   |
+| `.../loanapproval/persistence/DeliveryLog.java`                                       | new: what was already delivered                                                            |
+| `.../loanapproval/Service.java`                                                       | opens the unit of work itself instead of carrying `@Transactional`                         |
+| `.../loanapproval/Workflow.java`                                                      | no `@Transactional`: the unit of work which counts is the one `Service` opens              |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                      | counts what VanillaBP did with the unit of work, and checks that a rollback leaves nothing |
+| `pom.xml`, `*/pom.xml`                                                                | no persistence dependency at all, and only the `camunda8` profile                          |
+| `application.yaml`                                                                    | no data source and no database settings, in the application and in the test                |
+| `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | deleted, in the application and in the test: the blueprint runs on Camunda 8 only          |
+| `processes/camunda7/`, `processes/operaton/`, `processes/cibseven/`                   | deleted, with the BPMN files of those engines                                              |
 
 Everything else is the base blueprint, file for file: the process, the wiring classes, the API,
 the module's own configuration, the test harness.

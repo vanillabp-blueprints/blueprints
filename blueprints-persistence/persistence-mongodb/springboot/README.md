@@ -79,16 +79,19 @@ assertion failed.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|                            File                            |                                     What is different                                     |
-|------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| `.../loanapproval/model/Aggregate.java`                    | a document in a collection instead of an entity in a table, and no column declarations    |
-| `.../loanapproval/model/AggregateRepository.java`          | a MongoDB repository. It also moves the other two stores to MongoDB                       |
-| `.../loanapproval/config/MongoTransactions.java`           | new: the transaction manager MongoDB needs and the platform does not define               |
-| `application/src/main/resources/application.yaml`          | a MongoDB URI instead of a data source                                                    |
-| `application/src/main/resources/application-camunda8.yaml` | new: the address of the cluster, loaded by the profile of that engine                     |
-| `loan-approval/src/test/.../MongoDbForTests.java`          | new: the MongoDB the tests talk to, started as a replica set in a container               |
-| `loan-approval/src/test/.../LoanApprovalIT.java`           | the counter-check that a rolled-back start leaves nothing behind                          |
-| `pom.xml`, `*/pom.xml`                                     | `spring-boot-starter-data-mongodb` instead of JPA, no H2, and only the `camunda8` profile |
+|                                         File                                          |                                                       What is different                                                        |
+|---------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| `.../loanapproval/model/Aggregate.java`                                               | a document in a collection instead of an entity in a table, and no column declarations                                         |
+| `.../loanapproval/model/AggregateRepository.java`                                     | a MongoDB repository. It also moves the other two stores to MongoDB                                                            |
+| `.../loanapproval/config/MongoTransactions.java`                                      | new: the transaction manager MongoDB needs and the platform does not define                                                    |
+| `application/src/main/resources/application.yaml`                                     | a MongoDB URI instead of a data source                                                                                         |
+| `application/src/main/resources/application-camunda8.yaml`                            | new: the address of the cluster, loaded by the profile of that engine                                                          |
+| `MongoDbForTests.java`                                                                | new, in the tests of the module and of the application: the MongoDB the tests talk to, started as a replica set in a container |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                      | the counter-check that a rolled-back start leaves nothing behind                                                               |
+| `pom.xml`, `*/pom.xml`                                                                | `spring-boot-starter-data-mongodb` instead of JPA, no H2, and only the `camunda8` profile                                      |
+| `loan-approval/src/test/resources/application.yaml`                                   | no data source: `MongoDbForTests` points the client at its container                                                           |
+| `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | deleted, in the application and in the test: the blueprint runs on Camunda 8 only                                              |
+| `processes/camunda7/`, `processes/operaton/`, `processes/cibseven/`                   | deleted, with the BPMN files of those engines                                                                                  |
 
 Everything else is the base blueprint, file for file: the process, the wiring classes, the API,
 the module's own configuration, the test harness.
