@@ -15,14 +15,17 @@ them, and then raise their versions here. The application which takes bundles is
 
 ## Placeholders
 
-Replace all of these consistently. They are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint, except the Maven
+coordinates, which carry the name of the blueprint.
 
-|        Placeholder         |                                     Meaning                                      |
-|----------------------------|----------------------------------------------------------------------------------|
-| `blueprint.workflowmodule` | base package of the workflow module                                              |
-| `loanapproval`             | use case identifier, Java package                                                |
-| `loan-approval`            | use case identifier, kebab case: workflow module ID, REST path, folder of the UI |
-| `loan_approval`            | BPMN process ID                                                                  |
+|                         Placeholder                          |                                     Meaning                                      |
+|--------------------------------------------------------------|----------------------------------------------------------------------------------|
+| `blueprint.workflowmodule`                                   | base package of the workflow module                                              |
+| `loanapproval`                                               | use case identifier, Java package                                                |
+| `loan-approval`                                              | use case identifier, kebab case: workflow module ID, REST path, folder of the UI |
+| `loan_approval`                                              | BPMN process ID                                                                  |
+| `io.vanillabp.blueprint.cockpit-user-task-bundle-springboot` | Maven groupId of every POM of this blueprint                                     |
+| `loan-approval-bundle`                                       | Maven artifactId of the root POM                                                 |
 
 Names this blueprint adds:
 
