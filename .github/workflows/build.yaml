@@ -159,6 +159,17 @@ jobs:
       # than this marker, so it names the refreshed one.
       - name: Mark the moment the build starts
         run: touch "${RUNNER_TEMP}/platform-snapshot-marker"
+      # Written before the build, so the upload at the end has the name whatever the build
+      # does. A blueprint is a path, and a slash is not allowed in an artifact name. The
+      # attempt is part of it because a re-run of a failed job uploads again into the same
+      # run, and a second artifact of the same name is refused.
+      - name: The name this job uploads the simulator logs under
+        env:
+          BLUEPRINT: "${{ matrix.blueprint }}"
+          BPMS: "${{ matrix.bpms }}"
+          ATTEMPT: "${{ github.run_attempt }}"
+        run: echo "SIMULATOR_LOGS_NAME=simulator-logs-${BLUEPRINT//\//-}-${BPMS}-attempt-${ATTEMPT}"
+          >> "$GITHUB_ENV"
       - name: Start a Camunda 8 cluster
         if: matrix.bpms == 'camunda8'
         # The address is published here rather than in the build step: a Camunda 7 build
@@ -212,6 +223,24 @@ jobs:
         if: always()
         run: $GITHUB_WORKSPACE/bin/platform_snapshot.sh
           "${RUNNER_TEMP}/platform-snapshot-marker" "${RUNNER_TEMP}/platform-snapshot.md"
+      # The simulators write their logs to a file and not to the console, so the build output
+      # stays readable. Without this upload a red job takes those logs with it, and nobody can
+      # tell any more which reports reached a simulator and in which order. The dev-shell
+      # simulator of the cockpit blueprints writes target/dev-shell-simulator.log, the
+      # simulator applications of module-simulator and module-under-load write
+      # target/simulator.log (and roll it over into simulator.log.* when it grows).
+      - name: Upload the simulator logs of a blueprint which failed
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: "${{ env.SIMULATOR_LOGS_NAME }}"
+          path: |
+            ${{ matrix.blueprint }}/**/target/dev-shell-simulator.log
+            ${{ matrix.blueprint }}/**/target/simulator.log*
+          # Read while the failure is looked into, and by nobody afterwards.
+          retention-days: 7
+          # Most blueprints start no simulator, and that is not an error.
+          if-no-files-found: ignore
       - name: The Camunda 8 cluster's log, if something went wrong
         if: failure() && matrix.bpms == 'camunda8'
         run: bin/camunda8_cluster.sh logs
