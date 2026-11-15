@@ -32,6 +32,8 @@
     <camunda8-adapter.version>2.0.0-8.10-SNAPSHOT</camunda8-adapter.version>
     <cibseven-adapter.version>2.0.0-2.2-SNAPSHOT</cibseven-adapter.version>
     <operaton-adapter.version>2.0.0-SNAPSHOT</operaton-adapter.version>
+    <!-- Generates the Java interfaces of the APIs from their OpenAPI files. -->
+    <openapi-generator.version>7.27.0</openapi-generator.version>
   </properties>
 
   <dependencyManagement>
@@ -89,6 +91,55 @@
   <build>
     <finalName>loan-approval</finalName>
     <plugins>
+      <!--
+        The API of this module is written as the OpenAPI file
+        'src/main/resources/openapi/loan-approval.yaml'. This plugin generates the Java interface
+        'LoanApprovalApi' from it, with the paths, the parameters and the answers. 'ApiController'
+        implements the interface and holds nothing but the code of each call.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>${openapi-generator.version}</version>
+        <!-- The settings every API of this module shares. -->
+        <configuration>
+          <generatorName>spring</generatorName>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <configOptions>
+            <useSpringBoot4>true</useSpringBoot4>
+            <!-- One interface per tag, named after it. -->
+            <useTags>true</useTags>
+            <!-- Only the interface. The controller implements it. -->
+            <interfaceOnly>true</interfaceOnly>
+            <skipDefaultInterface>true</skipDefaultInterface>
+            <!-- The paths in the file are complete, so the interface needs no path of its own. -->
+            <requestMappingMode>none</requestMappingMode>
+            <!-- A method returns the answer itself. Spring Boot turns it into the response. -->
+            <useResponseEntity>false</useResponseEntity>
+            <!-- No library beyond Spring Web and Jackson: no Swagger annotations, no bean validation. -->
+            <useRecords>true</useRecords>
+            <useJspecify>true</useJspecify>
+            <openApiNullable>false</openApiNullable>
+            <useBeanValidation>false</useBeanValidation>
+            <documentationProvider>none</documentationProvider>
+            <annotationLibrary>none</annotationLibrary>
+            <hideGenerationTimestamp>true</hideGenerationTimestamp>
+          </configOptions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>loan-approval-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>

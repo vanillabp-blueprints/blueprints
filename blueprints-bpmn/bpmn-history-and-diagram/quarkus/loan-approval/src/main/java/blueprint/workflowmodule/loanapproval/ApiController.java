@@ -4,17 +4,11 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
 
+import blueprint.workflowmodule.loanapproval.api.LoanApprovalApi;
 import io.vanillabp.spi.process.ProcessDefinition;
 import io.vanillabp.spi.process.WorkflowHistory;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.MediaType;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -26,11 +20,16 @@ import lombok.extern.slf4j.Slf4j;
  * draw, the BPMN XML to draw it, and the history to colour it. A browser shows all three
  * as they are, which is the whole demonstration this blueprint can give without a UI.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanApprovalApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-approval.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @ApplicationScoped
-@Path("/api/loan-approval")
-public class ApiController {
+public class ApiController implements LoanApprovalApi {
 
   @Inject
   Service loanApproval;
@@ -41,11 +40,9 @@ public class ApiController {
    * @param amount The amount requested.
    * @return The id of the loan request started.
    */
-  @GET
-  @Path("/start")
+  @Override
   public String start(
-      @QueryParam("amount")
-      @DefaultValue("5000") final int amount) {
+      final Integer amount) {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
@@ -61,10 +58,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return What happened.
    */
-  @GET
-  @Path("/{loanRequestId}/approve")
+  @Override
   public String approve(
-      @PathParam("loanRequestId") final String loanRequestId) {
+      final String loanRequestId) {
 
     loanApproval.partnerApproved(loanRequestId);
 
@@ -80,10 +76,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GET
-  @Path("/{loanRequestId}")
+  @Override
   public String show(
-      @PathParam("loanRequestId") final String loanRequestId) {
+      final String loanRequestId) {
 
     return loanApproval
         .get(loanRequestId)
@@ -103,11 +98,10 @@ public class ApiController {
    *                       itself.
    * @return The definitions.
    */
-  @GET
-  @Path("/{loanRequestId}/definitions")
+  @Override
   public List<ProcessDefinition> definitions(
-      @PathParam("loanRequestId") final String loanRequestId,
-      @QueryParam("historyContext") final String historyContext) {
+      final String loanRequestId,
+      final String historyContext) {
 
     return loanApproval.getProcessDefinitions(loanRequestId, historyContext);
 
@@ -122,12 +116,10 @@ public class ApiController {
    *                            runs on.
    * @return The BPMN XML.
    */
-  @GET
-  @Path("/{loanRequestId}/diagram")
-  @Produces(MediaType.APPLICATION_XML)
+  @Override
   public InputStream diagram(
-      @PathParam("loanRequestId") final String loanRequestId,
-      @QueryParam("processDefinitionId") final String processDefinitionId) {
+      final String loanRequestId,
+      final String processDefinitionId) {
 
     final var definitionId = processDefinitionId != null
         ? processDefinitionId
@@ -149,11 +141,10 @@ public class ApiController {
    *                       itself.
    * @return The history.
    */
-  @GET
-  @Path("/{loanRequestId}/history")
+  @Override
   public WorkflowHistory history(
-      @PathParam("loanRequestId") final String loanRequestId,
-      @QueryParam("historyContext") final String historyContext) {
+      final String loanRequestId,
+      final String historyContext) {
 
     return loanApproval.getWorkflowHistory(loanRequestId, historyContext);
 

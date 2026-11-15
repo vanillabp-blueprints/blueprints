@@ -39,10 +39,19 @@
     <cibseven-adapter.version>2.0.0-2.2-SNAPSHOT</cibseven-adapter.version>
     <operaton-adapter.version>2.0.0-SNAPSHOT</operaton-adapter.version>
     <!--
+      The engine versions of the BPMS adapters above. The JSON dataformat of the engine has to
+      have the same version as the engine, so these follow the adapters, not Renovate.
+    -->
+    <camunda7-engine.version>7.24.0</camunda7-engine.version>
+    <operaton-engine.version>2.2.1</operaton-engine.version>
+    <cibseven-engine.version>2.2.0</cibseven-engine.version>
+    <!--
       The Business Cockpit is released on its own, not with VanillaBP. The module takes only
       its Spring Boot support, for the exceptions about a task id.
     -->
     <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
+    <!-- Generates the Java interfaces of the APIs from their OpenAPI files. -->
+    <openapi-generator.version>7.27.0</openapi-generator.version>
   </properties>
 
   <dependencyManagement>
@@ -134,12 +143,15 @@
                   <excludes>
                     <exclude>io.vanillabp*:*-adapter-spring-boot*</exclude>
                     <exclude>io.vanillabp*:*-adapter-quarkus*</exclude>
+                    <!-- The Quarkus extension of VanillaBP belongs to the application, like an adapter. -->
+                    <exclude>io.vanillabp:vanillabp-quarkus-integration</exclude>
                   </excludes>
                   <includes>
                     <include>io.vanillabp*:*-adapter-spring-boot*:*:*:test</include>
                     <include>io.vanillabp*:*-adapter-quarkus*:*:*:test</include>
+                    <include>io.vanillabp:vanillabp-quarkus-integration:*:*:test</include>
                   </includes>
-                  <message>A workflow module depends on an adapter only in the test scope. The application brings the adapters.</message>
+                  <message>A workflow module depends on an adapter or on vanillabp-quarkus-integration only in the test scope. The application brings them.</message>
                 </bannedDependencies>
               </rules>
             </configuration>

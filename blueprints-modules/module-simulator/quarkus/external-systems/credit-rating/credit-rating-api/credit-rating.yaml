@@ -1,0 +1,46 @@
+openapi: 3.0.3
+info:
+  title: Credit rating
+  version: 1
+  description: |
+    The API of the credit rating, as its vendor would publish it. The Maven module 'client' generates the Java client from this file, and the adapter in 'rest-adapter' uses it. The Maven module 'server' generates the Java interface the simulator implements. In a real project this file comes from the vendor.
+servers:
+  - url: /credit-rating
+tags:
+  - name: CreditRating
+    description: The credit score of a customer
+paths:
+  /api/v1/customers/{customerId}/score:
+    get:
+      tags:
+        - CreditRating
+      operationId: getScore
+      summary: The credit score of a customer
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Score"
+        "404":
+          description: The credit rating does not know the customer
+components:
+  schemas:
+    Score:
+      type: object
+      required:
+        - customerId
+        - score
+      properties:
+        customerId:
+          type: string
+        score:
+          type: integer
+          description: "The higher, the more likely the customer pays back"

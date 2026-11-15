@@ -27,9 +27,13 @@
       <groupId>io.vanillabp</groupId>
       <artifactId>vanillabp-quarkus-integration</artifactId>
     </dependency>
+    <!--
+      Quarkus REST with Jackson, so the definitions and the history are written as JSON, as
+      the OpenAPI file of the module says. Plain Quarkus REST would write them with toString.
+    -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-rest</artifactId>
+      <artifactId>quarkus-rest-jackson</artifactId>
     </dependency>
     <!-- The database is the application's decision, the entity is the module's. -->
     <dependency>

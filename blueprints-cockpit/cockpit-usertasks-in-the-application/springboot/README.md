@@ -89,7 +89,7 @@ Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user
 | `Permission.java`                  | new: the authorities of the module, one per kind of user task                                                                                                                   |
 | `MethodSecurityConfiguration.java` | new: switches on `@Secured` for the module                                                                                                                                      |
 | `SecurityConfiguration.java`       | new, in the application: HTTP Basic and two demo users                                                                                                                          |
-| `loan-approval.yaml`               | the documents to check, and the declaration of the list the model loops over                                                                                                    |
+| `loan-approval.yaml`               | the documents to check, the declaration of the list the model loops over, and `concurrent-branches-reviewed`, because the branches were checked                                 |
 | `LoanApprovalIT.java`              | the tasks as rows, a draft which stays in its task, completion, cancellation, a task sent twice, tasks and data loaded only when read                                           |
 | `StoredLoanApprovals.java`         | new, in the tests: reads a loan approval with all tasks and their data inside a transaction                                                                                     |
 | `UserTaskFormSecurityIT.java`      | new: who may read, save and complete which form                                                                                                                                 |
@@ -150,7 +150,9 @@ check, and you get 403, because `risk-officer` may not check documents. The othe
 `clerk`, with the same password, and may only check documents.
 
 Saving and completing are the job of a form. It sends what the user entered as JSON, with PUT
-to save and POST to complete. This blueprint has no forms, so `curl` stands in for one:
+to save and POST to complete, as the
+[rules for blueprints](https://github.com/vanillabp-blueprints/blueprints/blob/main/CONTRIBUTING.md#endpoints-which-a-form-calls)
+say for every endpoint of a form. This blueprint has no forms, so `curl` stands in for one:
 
 ```bash
 curl -u risk-officer:demo -X PUT -H 'Content-Type: application/json' \
@@ -181,21 +183,22 @@ are then marked as canceled, and their drafts stay where they were.
 
 ## How it works
 
-|                                          File                                          |                                                       Role                                                        |
-|----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: two branches, a multi-instance user task, a gateway on the result, a terminate end event             |
-| `.../loanapproval/model/Aggregate.java`                                                | the tasks by their id, and the results of completed tasks                                                         |
-| `.../loanapproval/model/usertask/Task.java`                                            | one user task: open, saved, completed or canceled                                                                 |
-| `.../loanapproval/model/usertask/TaskData.java`                                        | the content of a form, with `AssessRiskTaskData` and `CheckDocumentTaskData` as the two kinds                     |
-| `.../loanapproval/model/usertask/TaskDataConverter.java`                               | the JSON column                                                                                                   |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | `CREATED` adds a task, `CANCELED` marks it                                                                        |
-| `.../loanapproval/Service.java`                                                        | drafts into the task, results into the aggregate, and the check that a task is open and of the expected kind      |
-| `.../loanapproval/UserTaskFormController.java`                                         | GET, PUT and POST per form, each with `@Secured`; imports `BcUserTaskExceptionHandler`, which answers 404 and 409 |
-| `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                                   |
-| `.../loanapproval/config/Permission.java`                                              | the authorities of the module                                                                                     |
-| `application/src/main/java/.../SecurityConfiguration.java`                             | how users log in: HTTP Basic, two demo users                                                                      |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays the tasks through and waits for the aggregate                                                               |
-| `loan-approval/src/test/.../UserTaskFormSecurityIT.java`                               | calls the form endpoints as users with and without the authority                                                  |
+|                                          File                                          |                                                                 Role                                                                 |
+|----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: two branches, a multi-instance user task, a gateway on the result, a terminate end event                                |
+| `.../loanapproval/model/Aggregate.java`                                                | the tasks by their id, and the results of completed tasks                                                                            |
+| `.../loanapproval/model/usertask/Task.java`                                            | one user task: open, saved, completed or canceled                                                                                    |
+| `.../loanapproval/model/usertask/TaskData.java`                                        | the content of a form, with `AssessRiskTaskData` and `CheckDocumentTaskData` as the two kinds                                        |
+| `.../loanapproval/model/usertask/TaskDataConverter.java`                               | the JSON column                                                                                                                      |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | `CREATED` adds a task, `CANCELED` marks it                                                                                           |
+| `.../loanapproval/Service.java`                                                        | drafts into the task, results into the aggregate, and the check that a task is open and of the expected kind                         |
+| `.../loanapproval/UserTaskFormController.java`                                         | GET, PUT and POST per form, each with `@Secured`; imports `BcUserTaskExceptionHandler`, which answers 404 and 409                    |
+| `.../openapi/user-task-forms.yaml`                                                     | the API as an OpenAPI file. The build generates the interface `UserTaskFormsApi` from it, and `UserTaskFormController` implements it |
+| `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                                                      |
+| `.../loanapproval/config/Permission.java`                                              | the authorities of the module                                                                                                        |
+| `application/src/main/java/.../SecurityConfiguration.java`                             | how users log in: HTTP Basic, two demo users                                                                                         |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays the tasks through and waits for the aggregate                                                                                  |
+| `loan-approval/src/test/.../UserTaskFormSecurityIT.java`                               | calls the form endpoints as users with and without the authority                                                                     |
 
 The order of events: the service task rates the loan request. Then the BPMS opens the risk
 assessment and one document check per entry of `documentIds`. For each of them it calls
@@ -254,6 +257,13 @@ Both branches write to the aggregate when a task is completed. The aggregate car
 `@DynamicUpdate`, so the persistence layer writes only the columns which changed. The risk
 assessment writes its own columns, and a document check writes a row of another table. So
 neither of them puts back an old value of the other.
+
+VanillaBP cannot see that in the code. The aggregate has no version attribute, so at startup it
+warns that the process can hold more than one token. This blueprint has checked its branches, so
+`loan-approval.yaml` says it for the workflow with
+`workflows.loan_approval.concurrent-branches-reviewed: true`, and the warning is silent. The key
+is read at the workflow and nowhere else, because a review is about one model. Check it again
+whenever the model changes.
 
 The tests wait instead of asserting at once. A user task created by a remote engine arrives a
 moment after the workflow was started.

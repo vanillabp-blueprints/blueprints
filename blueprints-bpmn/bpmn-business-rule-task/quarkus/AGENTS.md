@@ -58,17 +58,18 @@ gateway condition, the input mapping of the next task and the `@TaskParam`.
 
 ## Boilerplate files
 
-|                               File                                |                                       Purpose                                        |
-|-------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                        | the BPMS profiles, the Quarkus BOM and the VanillaBP BOM import                      |
-| `loan-approval/pom.xml`                                           | `vanillabp-quarkus-support` and the index of the module's classes, never an adapter  |
-| `application/pom.xml`                                             | `vanillabp-quarkus-integration` and the BPMS adapter, the only place a BPMS is named |
-| `application/src/main/resources/application.yaml`                 | the database, and nothing about the workflow                                         |
-| `loan-approval/src/test/resources/application.yaml`               | the database of the module's own test                                                |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                      |
-| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                       |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                  |
-| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model            |
+|                               File                                |                                                          Purpose                                                           |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                        | the BPMS profiles, the Quarkus BOM and the VanillaBP BOM import                                                            |
+| `loan-approval/pom.xml`                                           | `vanillabp-quarkus-support` and the index of the module's classes, never an adapter                                        |
+| `application/pom.xml`                                             | `vanillabp-quarkus-integration` and the BPMS adapter, the only place a BPMS is named                                       |
+| `application/src/main/resources/application.yaml`                 | the database, and nothing about the workflow                                                                               |
+| `loan-approval/src/test/resources/application.yaml`               | the database of the module's own test                                                                                      |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                                            |
+| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                                                             |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                                                        |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`     | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model                                                  |
 
 `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint. Copy them
 unchanged. Everything specific to the use case belongs in the test which extends
@@ -106,7 +107,10 @@ Inheriting it from the base class does not make the test a bean.
    for this use case, add the methods there instead of creating a second one. Never inject
    `ProcessService` into it, and never merge the two workflow classes. `Service` uses `Workflow`
    and is used by `WorkflowTaskHandler`, so merging them creates a circular bean reference.
-6. Add GET endpoints starting the process and showing the aggregate.
+6. Describe the GET endpoints which start the process and show the aggregate in an OpenAPI file,
+   `src/main/resources/openapi/loan-approval.yaml`. Let `openapi-generator-maven-plugin` generate
+   the interface `LoanApprovalApi` from it, and implement the interface in `ApiController`. Write no
+   path and no parameter annotation by hand.
 7. Copy `LoanApprovalIT` and adapt it to the use case. A test in the workflow module needs no
    configuration of its own except a database. VanillaBP looks for the BPMN below the module's
    ID, both when the module is a dependency and when it is the artifact being run.

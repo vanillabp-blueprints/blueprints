@@ -1,0 +1,16 @@
+# Every system around the application is the real one. Run the application in this profile with
+# QUARKUS_PROFILE=prod,real. The addresses differ per environment, so they come from the
+# environment. The application does not start while one of them is missing. The message names
+# the key below which has no value then.
+#
+# The adapters are the same as in the profile 'local'. A credential a real system asks for would
+# come from the environment as well, never from this file.
+credit-rating:
+  base-url: ${CREDIT_RATING_URL}
+e-signature:
+  base-url: ${E_SIGNATURE_URL}
+  callback-url: ${E_SIGNATURE_CALLBACK_URL}
+vanillabp:
+  cockpit:
+    rest:
+      base-url: ${BUSINESS_COCKPIT_URL}

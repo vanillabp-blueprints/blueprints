@@ -58,22 +58,29 @@ iteration writes ROWS, not attributes: `PartnerOffer` per region and partner, `R
 per region. Instances run next to each other, and each of them saves the whole aggregate. If
 two of them write one attribute, the one which commits last wins.
 
+VanillaBP cannot see this in the code. The aggregate has no version attribute, so at startup it
+warns that the process can hold more than one token. This blueprint has checked its iterations,
+so `loan-approval.yaml` says it for the workflow with
+`workflows.loan_approval.concurrent-branches-reviewed: true`, and the warning is silent. The key
+is read at the workflow and nowhere else, because a review is about one model. Check it again
+whenever the model changes.
+
 ## Delta to the base blueprint
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                        What is different                                         |
-|----------------------------|--------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a multi-instance subprocess, a multi-instance task inside it, and a plain task inside it as well |
-| `Aggregate.java`           | a collection per level, and the rows the two loops write                                         |
-| `PartnerOffer.java`        | new: one row per inner iteration, carrying the region it belongs to                              |
-| `RegionResult.java`        | new: one row per outer iteration                                                                 |
-| `IterationResolver.java`   | new: builds one object out of both active iterations                                             |
-| `Iteration.java`           | new: what that object is                                                                         |
-| `WorkflowTaskHandler.java` | a task in both loops, a task in the outer one, a task after them                                 |
-| `Service.java`             | one method per step, none of them knowing about a loop                                           |
-| `loan-approval.yaml`       | regions and partners, which is what decides how often each level runs                            |
-| `LoanApprovalIT.java`      | asserts the rows of both levels, in no particular order                                          |
+|            File            |                                                             What is different                                                             |
+|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`       | a multi-instance subprocess, a multi-instance task inside it, and a plain task inside it as well                                          |
+| `Aggregate.java`           | a collection per level, and the rows the two loops write                                                                                  |
+| `PartnerOffer.java`        | new: one row per inner iteration, carrying the region it belongs to                                                                       |
+| `RegionResult.java`        | new: one row per outer iteration                                                                                                          |
+| `IterationResolver.java`   | new: builds one object out of both active iterations                                                                                      |
+| `Iteration.java`           | new: what that object is                                                                                                                  |
+| `WorkflowTaskHandler.java` | a task in both loops, a task in the outer one, a task after them                                                                          |
+| `Service.java`             | one method per step, none of them knowing about a loop                                                                                    |
+| `loan-approval.yaml`       | regions and partners, which is what decides how often each level runs, and that the iterations were reviewed for writing at the same time |
+| `LoanApprovalIT.java`      | asserts the rows of both levels, in no particular order                                                                                   |
 
 Compared to
 [`bpmn-multi-instance-task`](https://github.com/vanillabp-blueprints/bpmn-multi-instance-task-quarkus),

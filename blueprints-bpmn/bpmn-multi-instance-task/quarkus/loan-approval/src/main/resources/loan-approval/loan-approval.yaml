@@ -26,3 +26,10 @@ vanillabp:
         loan_approval:
           declared-aggregate-values:
             - partnerIds
+          # Every instance of the multi-instance task is a token of its own, and the aggregate has
+          # no version attribute. So VanillaBP warns at startup that two instances may overwrite
+          # each other. Here they do not: an instance only adds a PartnerOffer, which is a row of
+          # its own table, and the row of the aggregate is not written. VanillaBP cannot see that
+          # in the code, so the review is stated here, and the warning stays silent. Whoever
+          # changes the model checks again whether this line still holds.
+          concurrent-branches-reviewed: true

@@ -51,6 +51,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     return awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
+        SCHEDULER_TIMEOUT,
         aggregate -> aggregate.getPartnerApprovalTaskId() != null)
         .getPartnerApprovalTaskId();
 
@@ -71,6 +72,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var reminded = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
+        SCHEDULER_TIMEOUT,
         aggregate -> aggregate.getRemindersSent() != null);
 
     // ... and the task it is attached to is still there, so the answer is still accepted
@@ -120,6 +122,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
+        SCHEDULER_TIMEOUT,
         aggregate -> Boolean.TRUE.equals(aggregate.getTimedOut()));
 
     assertThat(loanRequest.getCustomerInformed()).isNull();

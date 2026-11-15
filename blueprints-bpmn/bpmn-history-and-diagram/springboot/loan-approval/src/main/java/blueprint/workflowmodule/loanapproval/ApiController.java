@@ -5,14 +5,10 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.core.io.Resource;
 import org.springframework.web.bind.annotation.RestController;
 
+import blueprint.workflowmodule.loanapproval.api.LoanApprovalApi;
 import io.vanillabp.spi.process.ProcessDefinition;
 import io.vanillabp.spi.process.WorkflowHistory;
 import lombok.extern.slf4j.Slf4j;
@@ -26,11 +22,16 @@ import lombok.extern.slf4j.Slf4j;
  * draw, the BPMN XML to draw it, and the history to colour it. A browser shows all three
  * as they are, which is the whole demonstration this blueprint can give without a UI.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanApprovalApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-approval.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/loan-approval")
-public class ApiController {
+public class ApiController implements LoanApprovalApi {
 
   @Autowired
   private Service loanApproval;
@@ -41,9 +42,9 @@ public class ApiController {
    * @param amount The amount requested.
    * @return The id of the loan request started.
    */
-  @GetMapping("/start")
+  @Override
   public String start(
-      @RequestParam(defaultValue = "5000") final int amount) {
+      final Integer amount) {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
@@ -59,9 +60,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return What happened.
    */
-  @GetMapping("/{loanRequestId}/approve")
+  @Override
   public String approve(
-      @PathVariable final String loanRequestId) {
+      final String loanRequestId) {
 
     loanApproval.partnerApproved(loanRequestId);
 
@@ -77,9 +78,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GetMapping("/{loanRequestId}")
+  @Override
   public String show(
-      @PathVariable final String loanRequestId) {
+      final String loanRequestId) {
 
     return loanApproval
         .get(loanRequestId)
@@ -99,10 +100,10 @@ public class ApiController {
    *                       itself.
    * @return The definitions.
    */
-  @GetMapping("/{loanRequestId}/definitions")
+  @Override
   public List<ProcessDefinition> definitions(
-      @PathVariable final String loanRequestId,
-      @RequestParam(required = false) final String historyContext) {
+      final String loanRequestId,
+      final String historyContext) {
 
     return loanApproval.getProcessDefinitions(loanRequestId, historyContext);
 
@@ -117,10 +118,10 @@ public class ApiController {
    *                            runs on.
    * @return The BPMN XML.
    */
-  @GetMapping(value = "/{loanRequestId}/diagram", produces = MediaType.APPLICATION_XML_VALUE)
-  public ResponseEntity<InputStreamResource> diagram(
-      @PathVariable final String loanRequestId,
-      @RequestParam(required = false) final String processDefinitionId) {
+  @Override
+  public Resource diagram(
+      final String loanRequestId,
+      final String processDefinitionId) {
 
     final var definitionId = processDefinitionId != null
         ? processDefinitionId
@@ -129,8 +130,7 @@ public class ApiController {
             .getFirst()
             .id();
 
-    return ResponseEntity
-        .ok(new InputStreamResource(loanApproval.getBpmnXml(definitionId)));
+    return new InputStreamResource(loanApproval.getBpmnXml(definitionId));
 
   }
 
@@ -143,10 +143,10 @@ public class ApiController {
    *                       itself.
    * @return The history.
    */
-  @GetMapping("/{loanRequestId}/history")
+  @Override
   public WorkflowHistory history(
-      @PathVariable final String loanRequestId,
-      @RequestParam(required = false) final String historyContext) {
+      final String loanRequestId,
+      final String historyContext) {
 
     return loanApproval.getWorkflowHistory(loanRequestId, historyContext);
 

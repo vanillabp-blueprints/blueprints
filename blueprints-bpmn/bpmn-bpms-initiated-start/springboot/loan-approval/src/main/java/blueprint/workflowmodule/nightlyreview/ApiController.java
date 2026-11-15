@@ -3,21 +3,24 @@ package blueprint.workflowmodule.nightlyreview;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import blueprint.workflowmodule.nightlyreview.api.NightlyReviewApi;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * The API of the review. There is no endpoint starting one, because no endpoint could: the
  * timer starts reviews on its own, and the signal only asks.
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link NightlyReviewApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/nightly-review.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @RestController("nightlyReviewApiController")
-@RequestMapping("/api/nightly-review")
-public class ApiController {
+public class ApiController implements NightlyReviewApi {
 
   @Autowired
   private Service nightlyReview;
@@ -27,7 +30,7 @@ public class ApiController {
    *
    * @return What was done, for the browser to show.
    */
-  @GetMapping("/request")
+  @Override
   public String request() {
 
     nightlyReview.request();
@@ -45,8 +48,8 @@ public class ApiController {
    *
    * @return Every review this application has seen.
    */
-  @GetMapping
-  public String list() {
+  @Override
+  public String listReviews() {
 
     final var reviews = nightlyReview.getAll();
 
@@ -67,9 +70,9 @@ public class ApiController {
    * @param reviewId The ID VanillaBP assigned.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GetMapping("/{reviewId}")
+  @Override
   public String show(
-      @PathVariable final String reviewId) {
+      final String reviewId) {
 
     return nightlyReview
         .get(reviewId)

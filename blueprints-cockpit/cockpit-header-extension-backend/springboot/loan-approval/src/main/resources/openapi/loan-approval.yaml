@@ -1,0 +1,66 @@
+openapi: 3.0.3
+info:
+  title: Loan approval, start form
+  description: >
+    The endpoint the start form of the workflow module 'loan-approval' calls. The form opens from a
+    button in the header of the Business Cockpit, so it runs in the browser, inside the cockpit. It
+    reaches the workflow module through the proxy of the cockpit, which serves every workflow module
+    below /wm/<workflow-module-id>. So the server below is a path of the cockpit, not of the
+    workflow module.
+
+    A loan request which does not exist yet has no user task and no case page. So the form knows no
+    id. It sends what the user typed, and the module starts the process and answers with the id of
+    the new loan request. The cockpit does not start a case. It learns about the new case from the
+    cockpit adapter of the module, like about every other case.
+  version: 1.0.0
+servers:
+  - url: /wm/loan-approval
+tags:
+  - name: start-form
+    description: The start form behind the button in the header of the cockpit
+paths:
+  /api/loan-requests:
+    post:
+      tags:
+        - start-form
+      operationId: requestLoan
+      summary: Starts a loan approval with what the user typed into the start form
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanRequest'
+      responses:
+        '201':
+          description: The loan approval is started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartedLoanRequest'
+        '400':
+          description: The applicant is empty, or the amount is not a positive number
+components:
+  schemas:
+    LoanRequest:
+      type: object
+      required:
+        - applicant
+        - amount
+      properties:
+        applicant:
+          type: string
+          minLength: 1
+          description: Who asks for the loan
+        amount:
+          type: integer
+          minimum: 1
+          description: The amount requested
+    StartedLoanRequest:
+      type: object
+      required:
+        - loanRequestId
+      properties:
+        loanRequestId:
+          type: string
+          description: The id of the new loan request. The cockpit shows it as the business id of the case.

@@ -185,16 +185,17 @@ partner, a view the logged URLs cannot give. Where they are served and how to lo
 
 ## How it works
 
-|                                          File                                          |                                                  Role                                                   |
-|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: a send task that stays open, an error boundary event on it, and a service task per way out |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | the `@WorkflowTask` method of that task: `@TaskId`, `@TaskEvent`, and no work of its own                |
-| `.../loanapproval/Service.java`                                                        | both halves of the task: sending the request once, answering it when the partner replies                |
-| `.../loanapproval/Workflow.java`                                                       | `completeTask` and `cancelTask`, the only place `ProcessService` is used                                |
-| `.../loanapproval/PartnerApprovalClient.java`                                          | the port to the surrounding system, so a test can put a simulator in its place                          |
-| `.../loanapproval/ApiController.java`                                                  | the callback the partner's answer arrives at                                                            |
-| `.../loanapproval/model/Aggregate.java`                                                | `partnerApprovalTaskId`, the handle to the open task, plus what the process wrote                       |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | one test per way the task ends. They wait for the aggregate instead of asking the engine                |
+|                                          File                                          |                                                            Role                                                            |
+|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: a send task that stays open, an error boundary event on it, and a service task per way out                    |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | the `@WorkflowTask` method of that task: `@TaskId`, `@TaskEvent`, and no work of its own                                   |
+| `.../loanapproval/Service.java`                                                        | both halves of the task: sending the request once, answering it when the partner replies                                   |
+| `.../loanapproval/Workflow.java`                                                       | `completeTask` and `cancelTask`, the only place `ProcessService` is used                                                   |
+| `.../loanapproval/PartnerApprovalClient.java`                                          | the port to the surrounding system, so a test can put a simulator in its place                                             |
+| `.../loanapproval/ApiController.java`                                                  | the callback the partner's answer arrives at                                                                               |
+| `.../openapi/loan-approval.yaml`                                                       | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `.../loanapproval/model/Aggregate.java`                                                | `partnerApprovalTaskId`, the handle to the open task, plus what the process wrote                                          |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | one test per way the task ends. They wait for the aggregate instead of asking the engine                                   |
 
 The order of events: the first service task fills in the credit rating. Then the BPMS delivers
 the waiting task and calls `WorkflowTaskHandler#requestPartnerApproval` with

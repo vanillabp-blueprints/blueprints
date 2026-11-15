@@ -187,8 +187,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   /**
-   * The endpoints are written by hand. This keeps them in line with the OpenAPI the frontends
-   * generate their client from: every operation in the file has its endpoint here.
+   * The interface of the endpoints is generated from the OpenAPI the frontends generate their
+   * client from. Its paths are relative to the server of the file, and the controller puts the
+   * path of the module in front. This checks the result: every operation in the file has its
+   * endpoint at the path the cockpit forwards to.
    */
   @Test
   @SuppressWarnings("unchecked")

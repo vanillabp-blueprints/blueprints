@@ -2,11 +2,9 @@ package blueprint.workflowmodule.ratewatch;
 
 import java.util.UUID;
 
+import blueprint.workflowmodule.ratewatch.api.RateWatchApi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -16,11 +14,16 @@ import lombok.extern.slf4j.Slf4j;
  * There is nothing here that publishes a rate. This use case only listens, and the URL that
  * makes it continue belongs to the loan approval.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link RateWatchApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/rate-watch.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @ApplicationScoped
-@Path("/api/rate-watch")
-public class ApiController {
+public class ApiController implements RateWatchApi {
 
   @Inject
   Service rateWatch;
@@ -30,8 +33,7 @@ public class ApiController {
    *
    * @return The id of the watch started.
    */
-  @GET
-  @Path("/start")
+  @Override
   public String start() {
 
     final var watchId = UUID.randomUUID().toString();
@@ -52,10 +54,9 @@ public class ApiController {
    * @param watchId The id returned by starting the watch.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GET
-  @Path("/{watchId}")
+  @Override
   public String show(
-      @PathParam("watchId") final String watchId) {
+      final String watchId) {
 
     return rateWatch
         .get(watchId)

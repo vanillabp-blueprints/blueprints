@@ -40,35 +40,36 @@ after tasks were stored, or they can no longer be read.
 
 ## Core files
 
-|                                            File                                            |                                                                                            Why it matters                                                                                             |
-|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `tasks`, a lazily loaded map from the task id to a `Task`; `getTask(taskId)` returns an `Optional`; only results of completed tasks; `@DynamicUpdate` because two branches write to it                |
-| `loan-approval/src/main/java/.../loanapproval/model/usertask/Task.java`                    | one user task: `createdAt`, `updatedAt`, `completedAt`, `completedBy`, `data`; `data` is loaded lazily; canceled means completed without a user                                                       |
-| `loan-approval/src/main/java/.../loanapproval/model/usertask/TaskData.java`                | the interface of the form contents, with `@JsonTypeInfo` and one `@JsonSubTypes` entry per record                                                                                                     |
-| `loan-approval/src/main/java/.../loanapproval/model/usertask/AssessRiskTaskData.java`      | the record of one kind of user task; `CheckDocumentTaskData.java` is the other one                                                                                                                    |
-| `loan-approval/src/main/java/.../loanapproval/model/usertask/TaskDataConverter.java`       | the JPA converter which stores `TaskData` as JSON                                                                                                                                                     |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | `CREATED` adds a task, `CANCELED` marks it; the multi-instance task reads its element only on `CREATED`                                                                                               |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `@Transactional` on the class; drafts change the task only; completion checks the task is open and of the expected kind, writes the result into the aggregate, completes the task, calls `Workflow`   |
-| `loan-approval/src/main/java/.../loanapproval/UserTaskFormController.java`                 | per form GET, PUT and POST, each with `@Secured`; the user comes from the `Principal`; `@Import(BcUserTaskExceptionHandler.class)` answers an unknown task with 404 and a task which is done with 409 |
-| `loan-approval/src/main/java/.../loanapproval/config/Permission.java`                      | one authority per kind of user task                                                                                                                                                                   |
-| `loan-approval/src/main/java/.../loanapproval/config/MethodSecurityConfiguration.java`     | `@EnableMethodSecurity(securedEnabled = true)`, in the module                                                                                                                                         |
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | a parallel split, the user task "Assess risk", the multi-instance user task "Check document", a gateway on `riskAccepted`, a terminate end event                                                      |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | the tasks as rows, a draft which stays in its task, completion, cancellation, a task sent twice, tasks and data loaded only when read                                                                 |
-| `loan-approval/src/test/java/.../StoredLoanApprovals.java`                                 | reads a loan approval for a test inside a transaction, with all tasks and their data                                                                                                                  |
-| `loan-approval/src/test/java/.../UserTaskFormSecurityIT.java`                              | the authorities: right one, wrong one, nobody, and a task id of the wrong kind                                                                                                                        |
+|                                            File                                            |                                                                                                                     Why it matters                                                                                                                      |
+|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `tasks`, a lazily loaded map from the task id to a `Task`; `getTask(taskId)` returns an `Optional`; only results of completed tasks; `@DynamicUpdate` because two branches write to it                                                                  |
+| `loan-approval/src/main/java/.../loanapproval/model/usertask/Task.java`                    | one user task: `createdAt`, `updatedAt`, `completedAt`, `completedBy`, `data`; `data` is loaded lazily; canceled means completed without a user                                                                                                         |
+| `loan-approval/src/main/java/.../loanapproval/model/usertask/TaskData.java`                | the interface of the form contents, with `@JsonTypeInfo` and one `@JsonSubTypes` entry per record                                                                                                                                                       |
+| `loan-approval/src/main/java/.../loanapproval/model/usertask/AssessRiskTaskData.java`      | the record of one kind of user task; `CheckDocumentTaskData.java` is the other one                                                                                                                                                                      |
+| `loan-approval/src/main/java/.../loanapproval/model/usertask/TaskDataConverter.java`       | the JPA converter which stores `TaskData` as JSON                                                                                                                                                                                                       |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | `CREATED` adds a task, `CANCELED` marks it; the multi-instance task reads its element only on `CREATED`                                                                                                                                                 |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `@Transactional` on the class; drafts change the task only; completion checks the task is open and of the expected kind, writes the result into the aggregate, completes the task, calls `Workflow`                                                     |
+| `loan-approval/src/main/java/.../loanapproval/UserTaskFormController.java`                 | per form GET, PUT and POST, each with `@Secured`; implements the generated `UserTaskFormsApi`; the user comes from the security context; `@Import(BcUserTaskExceptionHandler.class)` answers an unknown task with 404 and a task which is done with 409 |
+| `loan-approval/src/main/resources/openapi/user-task-forms.yaml`                            | the API as an OpenAPI file. The build generates the interface `UserTaskFormsApi` from it, and `UserTaskFormController` implements it                                                                                                                    |
+| `loan-approval/src/main/java/.../loanapproval/config/Permission.java`                      | one authority per kind of user task                                                                                                                                                                                                                     |
+| `loan-approval/src/main/java/.../loanapproval/config/MethodSecurityConfiguration.java`     | `@EnableMethodSecurity(securedEnabled = true)`, in the module                                                                                                                                                                                           |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | a parallel split, the user task "Assess risk", the multi-instance user task "Check document", a gateway on `riskAccepted`, a terminate end event                                                                                                        |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | the tasks as rows, a draft which stays in its task, completion, cancellation, a task sent twice, tasks and data loaded only when read                                                                                                                   |
+| `loan-approval/src/test/java/.../StoredLoanApprovals.java`                                 | reads a loan approval for a test inside a transaction, with all tasks and their data                                                                                                                                                                    |
+| `loan-approval/src/test/java/.../UserTaskFormSecurityIT.java`                              | the authorities: right one, wrong one, nobody, and a task id of the wrong kind                                                                                                                                                                          |
 
 ## Boilerplate files
 
 |                                File                                 |                                                                                                       Purpose                                                                                                        |
 |---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                          | the VanillaBP BOM import and the rule which keeps adapters out of the workflow module                                                                                                                                |
+| `pom.xml` (blueprint root)                                          | the VanillaBP BOM import and the rule which keeps adapters out of the workflow module, and the engine versions the JSON dataformat needs                                                                             |
 | `loan-approval/pom.xml`                                             | `vanillabp-spring-boot-support`, `business-cockpit-spring-boot-support` and `spring-boot-starter-security`, never an adapter; `hibernate-maven-plugin`, which makes `Task#data` lazy; the BPMS profiles for the test |
-| `application/pom.xml`                                               | the BPMS adapter, the only place a BPMS is named                                                                                                                                                                     |
+| `application/pom.xml`                                               | the BPMS adapter and the JSON dataformat of its engine, the only place a BPMS is named                                                                                                                               |
 | `application/src/main/java/.../Application.java`                    | the Spring Boot application, in the parent package of the module                                                                                                                                                     |
 | `application/src/main/java/.../SecurityConfiguration.java`          | how users log in: HTTP Basic for `/api/**`, two demo users; replace it with the login of your application                                                                                                            |
 | `application/src/main/resources/application.yaml`                   | the datasource, `open-in-view: false`, and the profile the Maven build filters in                                                                                                                                    |
-| `application/src/main/resources/application-camunda7.yaml`          | the Camunda 7 settings: the name-clash-avoidance mode and the demo user of its web applications                                                                                                                      |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | the documents to check, and `declared-aggregate-values` for the list the model loops over                                                                                                                            |
+| `application/src/main/resources/application-camunda7.yaml`          | the Camunda 7 settings: the name-clash-avoidance mode, the JSON format of the shared list and the demo user of its web applications                                                                                  |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | the documents to check, `declared-aggregate-values` for the list the model loops over, and `concurrent-branches-reviewed`, because the branches were checked                                                         |
 | `loan-approval/src/test/java/.../TestApplication.java`              | the minimal application the module's test boots                                                                                                                                                                      |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of the integration tests: waits for workflow progress                                                                                                                                                     |
 | `application/src/test/java/.../ApplicationSmokeTest.java`           | boots the application, which validates the BPMN-to-code wiring                                                                                                                                                       |
@@ -86,13 +87,21 @@ blueprint. Copy them unchanged.
 2. Add `tasks` to the workflow aggregate, a `@OneToMany` map keyed by `taskId` with
    `CascadeType.ALL`, and `getTask(taskId)` returning an `Optional`. Load it lazily, leave it
    out of `equals` and `hashCode`, and read it only inside a transaction of `Service`. If two
-   branches of the process write to the aggregate, add `@DynamicUpdate`.
+   branches of the process write to the aggregate, add `@DynamicUpdate`. When no two branches
+   write the same column, say so with
+   `vanillabp.workflow-modules.<workflow-module-id>.workflows.<bpmn-process-id>.concurrent-branches-reviewed: true`.
+   Otherwise VanillaBP warns at every start that the aggregate has no version attribute.
 3. Write one record implementing `TaskData` per kind of user task, with the fields of its form.
    List it in `@JsonSubTypes` with a name which never changes.
 4. In the `@WorkflowTask` method of each user task, take `@TaskId` and `@TaskEvent`. On
    `CREATED` add `Task.opened(taskId, <empty record>)` to the aggregate. On `CANCELED` call
    `cancel()` on the task. A multi-instance value is only read on `CREATED`, because it may be
    empty on `CANCELED`.
+   On Camunda 7, Operaton and CIB seven the list the model loops over travels as an object
+   variable. Set `serialization-format: application/json` and the SPIN engine plugin in the
+   profile file of that engine, and add the SPIN JSON dataformat to its Maven profile, as
+   `application-camunda7.yaml` and `application/pom.xml` show. Without them the engine stores
+   the list with Java serialization, and the adapter warns about it.
 5. Put `@Transactional` on `Service`, and `@Transactional(readOnly = true)` on the methods
    which only read. Write three methods per kind of user task. Read: find the task by id and
    kind, which loads its data before the transaction ends. Save: check that the task is open,
@@ -102,8 +111,11 @@ blueprint. Copy them unchanged.
    is done with `BcTaskNotOpenException`.
 6. Add the authorities to `Permission`, and `@EnableMethodSecurity(securedEnabled = true)` to a
    configuration class of the module.
-7. Add GET, PUT and POST for each form to the controller, each with `@Secured(<authority>)`.
-   Take the user from the `Principal`, never from the request body. Put
+7. Write GET, PUT and POST for each form into an OpenAPI file, with the records of the forms.
+   Let `openapi-generator-maven-plugin` generate the interface and the records, with the
+   settings of `loan-approval/pom.xml`, and implement the interface in the controller. Put
+   `@Secured(<authority>)` on each method. Take the user from the security context of Spring
+   Security, never from the request body. Put
    `@Import(BcUserTaskExceptionHandler.class)` on the controller, so the exceptions about a task
    id are answered with 404 and 409.
 8. Let the application decide how users log in, and give its users the authorities of the

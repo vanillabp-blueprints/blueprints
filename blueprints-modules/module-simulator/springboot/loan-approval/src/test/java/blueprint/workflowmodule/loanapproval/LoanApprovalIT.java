@@ -19,6 +19,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.RestClient;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.loanapproval.api.model.Answer;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
 /**
@@ -119,8 +120,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(sent.getInterestRate()).isEqualByComparingTo(new BigDecimal("3.5"));
     assertThat(simulator().envelope(loanRequestId))
         .hasValueSatisfying(envelope -> {
-          assertThat(envelope.get("signer")).isEqualTo(customerId);
-          assertThat((String) envelope.get("document")).contains("5000", "3.5");
+          assertThat(envelope.signer()).isEqualTo(customerId);
+          assertThat(envelope.document()).contains("5000", "3.5");
         });
 
     // The customer signs. The simulator calls the application back, and the workflow ends.
@@ -146,7 +147,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .get()
         .uri("/request?customerId={customerId}&amount=5000", customerId)
         .retrieve()
-        .body(ApiController.Answer.class);
+        .body(Answer.class);
 
     assertThat(answer.outcome()).isEqualTo("declined");
     assertThat(loanApprovals.findById(answer.loanRequestId())).isEmpty();
@@ -163,7 +164,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .get()
         .uri("/request?customerId={customerId}&amount=5000", customerId)
         .retrieve()
-        .body(ApiController.Answer.class);
+        .body(Answer.class);
 
     assertThat(answer.outcome()).isEqualTo("declined");
     assertThat(loanApprovals.findById(answer.loanRequestId())).isEmpty();
@@ -230,7 +231,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .get()
         .uri("/request?customerId={customerId}&amount={amount}", customerId, amount)
         .retrieve()
-        .body(ApiController.Answer.class);
+        .body(Answer.class);
 
     assertThat(answer.outcome()).isEqualTo("started");
     return answer.loanRequestId();

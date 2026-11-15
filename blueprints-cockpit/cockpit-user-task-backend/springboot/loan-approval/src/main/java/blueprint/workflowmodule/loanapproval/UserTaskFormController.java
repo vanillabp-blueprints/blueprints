@@ -2,16 +2,16 @@ package blueprint.workflowmodule.loanapproval;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import blueprint.workflowmodule.loanapproval.api.UserTasksApi;
+import blueprint.workflowmodule.loanapproval.api.model.AssessRiskForm;
+import blueprint.workflowmodule.loanapproval.api.model.AssessRiskInput;
+import blueprint.workflowmodule.loanapproval.api.model.CheckDocumentsForm;
+import blueprint.workflowmodule.loanapproval.api.model.CheckDocumentsInput;
+
 
 /**
  * The endpoints the forms of the two user tasks call. They implement
@@ -28,10 +28,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * </p>
  *
  * <p>
- * The endpoints are written by hand, with the types as records below, rather than generated
- * from the OpenAPI. Four endpoints read better as code than as generator settings. The
- * integration test reads the OpenAPI and checks that every operation in it has its endpoint
- * here, so the two cannot drift apart unnoticed.
+ * The paths, the parameters and the records of the requests and answers come from
+ * {@link UserTasksApi}, the interface the build generates from the same OpenAPI file. This class
+ * only implements it. The OpenAPI names its paths below the server {@code /wm/loan-approval}, so
+ * the interface maps {@code /api/user-tasks/...}. The {@code @RequestMapping} of this class puts
+ * {@code /loan-approval} in front, which is where the request arrives.
  * </p>
  *
  * <p>
@@ -41,8 +42,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * </p>
  */
 @RestController
-@RequestMapping("/loan-approval/api/user-tasks/{userTaskId}")
-public class UserTaskFormController {
+@RequestMapping("/loan-approval")
+public class UserTaskFormController implements UserTasksApi {
 
   @Autowired
   private Service loanApproval;
@@ -53,9 +54,9 @@ public class UserTaskFormController {
    * @param userTaskId The id of the user task.
    * @return The loan request.
    */
-  @GetMapping("/assess-risk")
+  @Override
   public AssessRiskForm getAssessRiskForm(
-      @PathVariable final String userTaskId) {
+      final String userTaskId) {
 
     return loanApproval
         .riskAssessment(userTaskId)
@@ -71,11 +72,10 @@ public class UserTaskFormController {
    * @param userTaskId The id of the user task.
    * @param input      What the user entered.
    */
-  @PostMapping("/assess-risk")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Override
   public void completeAssessRisk(
-      @PathVariable final String userTaskId,
-      @RequestBody final AssessRiskInput input) {
+      final String userTaskId,
+      final AssessRiskInput input) {
 
     final var riskAssessment = required(input.riskAssessment(), "riskAssessment");
 
@@ -91,9 +91,9 @@ public class UserTaskFormController {
    * @param userTaskId The id of the user task.
    * @return The loan request, with the risk assessment of the first user task.
    */
-  @GetMapping("/check-documents")
+  @Override
   public CheckDocumentsForm getCheckDocumentsForm(
-      @PathVariable final String userTaskId) {
+      final String userTaskId) {
 
     return loanApproval
         .documentsCheck(userTaskId)
@@ -109,11 +109,10 @@ public class UserTaskFormController {
    * @param userTaskId The id of the user task.
    * @param input      What the user entered.
    */
-  @PostMapping("/check-documents")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Override
   public void completeCheckDocuments(
-      @PathVariable final String userTaskId,
-      @RequestBody final CheckDocumentsInput input) {
+      final String userTaskId,
+      final CheckDocumentsInput input) {
 
     final var documentsNote = required(input.documentsNote(), "documentsNote");
 
@@ -144,53 +143,6 @@ public class UserTaskFormController {
             + userTaskId
             + "'");
 
-  }
-
-  /**
-   * What the form "Assess risk" shows. A value which is not there is left out of the JSON, as
-   * the OpenAPI describes it, rather than sent as null.
-   *
-   * @param loanRequestId  The id of the loan request.
-   * @param amount         The amount requested.
-   * @param riskAssessment Empty while the task is open, because nothing is stored before.
-   */
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  public record AssessRiskForm(
-                               String loanRequestId,
-                               Integer amount,
-                               String riskAssessment) {
-  }
-
-  /**
-   * What the user entered in the form "Assess risk".
-   *
-   * @param riskAssessment What the user concluded about the risk.
-   */
-  public record AssessRiskInput(
-                                String riskAssessment) {
-  }
-
-  /**
-   * What the form "Check documents" shows.
-   *
-   * @param loanRequestId  The id of the loan request.
-   * @param riskAssessment What the user task "Assess risk" concluded.
-   * @param documentsNote  Empty while the task is open, because nothing is stored before.
-   */
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  public record CheckDocumentsForm(
-                                   String loanRequestId,
-                                   String riskAssessment,
-                                   String documentsNote) {
-  }
-
-  /**
-   * What the user entered in the form "Check documents".
-   *
-   * @param documentsNote What the user noted about the documents.
-   */
-  public record CheckDocumentsInput(
-                                    String documentsNote) {
   }
 
 }

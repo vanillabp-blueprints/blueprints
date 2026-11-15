@@ -50,6 +50,7 @@
     <module>blueprints-modules/module-idle-application/springboot</module>
     <module>blueprints-modules/module-idle-application/quarkus</module>
     <module>blueprints-modules/module-simulator/springboot</module>
+    <module>blueprints-modules/module-simulator/quarkus</module>
     <module>blueprints-modules/module-under-load/springboot</module>
     <module>blueprints-modules/module-under-load/quarkus</module>
     <module>blueprints-persistence/persistence-parallel-branches/springboot</module>
@@ -116,6 +117,8 @@
     <module>blueprints-cockpit/cockpit-organizing-usertasks/springboot</module>
     <module>blueprints-cockpit/cockpit-workflow-details-backend/springboot</module>
     <module>blueprints-cockpit/cockpit-workflow-details-application/springboot</module>
+    <module>blueprints-cockpit/cockpit-header-extension-backend/springboot</module>
+    <module>blueprints-cockpit/cockpit-header-extension-application/springboot</module>
   </modules>
 
   <scm>

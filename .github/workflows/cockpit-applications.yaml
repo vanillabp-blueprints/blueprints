@@ -98,11 +98,16 @@ jobs:
             maven-
       - name: Install every cockpit backend
         # Without tests: build.yaml runs them on every BPMS. Here only the artifacts count.
+        # The snapshots of each backend are resolved at once before it is built, see
+        # bin/resolve_snapshots_at_once.sh.
         run: |
           for pom in blueprints-cockpit/*-backend/*/pom.xml; do
+            $GITHUB_WORKSPACE/bin/resolve_snapshots_at_once.sh \
+              -s "$GITHUB_WORKSPACE/.github/maven/settings.xml" \
+              --batch-mode --no-transfer-progress -f "${pom}"
             $GITHUB_WORKSPACE/bin/mvn_with_retry.sh \
               -s "$GITHUB_WORKSPACE/.github/maven/settings.xml" \
-              --batch-mode --no-transfer-progress --update-snapshots \
+              --batch-mode --no-transfer-progress --no-snapshot-updates \
               -f "${pom}" -DskipTests -DskipITs install
           done
       # The groupIds of the blueprints all start with io.vanillabp.blueprint. So this directory
@@ -195,11 +200,20 @@ jobs:
             echo "VANILLABP_ADAPTERS_CAMUNDA8_RESTADDRESS=http://localhost:8080"
             echo "VANILLABP_ADAPTERS_CAMUNDA8_REST_ADDRESS=http://localhost:8080"
           } >> "$GITHUB_ENV"
+      # A part runs for up to twenty minutes. With --update-snapshots in the build itself, a
+      # publish of the Business Cockpit during that time once gave a part a new
+      # extensions-commons-spring-boot and an old spi-for-java, and its test failed. So the
+      # snapshots come first, at once, and the build keeps them.
+      - name: Resolve the snapshots at once
+        working-directory: "${{ matrix.part }}"
+        run: $GITHUB_WORKSPACE/bin/resolve_snapshots_at_once.sh
+          -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
+          --batch-mode --no-transfer-progress -P${{ matrix.bpms }}
       - name: Build and test the part on its own
         working-directory: "${{ matrix.part }}"
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
           -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
-          --batch-mode --no-transfer-progress --update-snapshots
+          --batch-mode --no-transfer-progress --no-snapshot-updates
           -P${{ matrix.bpms }} install
       - name: The Camunda 8 cluster's log, if something went wrong
         if: failure() && matrix.bpms == 'camunda8'

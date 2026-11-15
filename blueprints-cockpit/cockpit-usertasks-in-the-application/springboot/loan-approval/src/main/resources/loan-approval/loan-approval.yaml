@@ -22,3 +22,11 @@ vanillabp:
         loan_approval:
           declared-aggregate-values:
             - documentIds
+          # The parallel gateway and the multi-instance task put more than one token into the
+          # process, and the aggregate has no version attribute. So VanillaBP warns at startup
+          # that two branches may overwrite each other. Here they do not: a task and a document
+          # check are rows of their own tables, and @DynamicUpdate makes the result of the risk
+          # assessment write only its own columns. VanillaBP cannot see that in the code, so the
+          # review is stated here, and the warning stays silent. Whoever changes the model checks
+          # again whether this line still holds.
+          concurrent-branches-reviewed: true

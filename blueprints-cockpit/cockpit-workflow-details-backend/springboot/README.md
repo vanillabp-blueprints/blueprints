@@ -179,7 +179,7 @@ sends.
 |----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract between the page and the module: two operations, below the server `/wm/loan-approval`                  |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: one user task, and the event subprocess "Withdraw loan request" with the message `WithdrawLoanRequest` |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the same for Camunda 8, with the correlation key of the message in the model                                        |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the same for Camunda 8                                                                                              |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest                            |
 | `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of the user task, records a withdrawal, and says what the cockpit shows about a case                   |
 | `.../loanapproval/CasePageController.java`                                             | the endpoints of the case page: GET reads the case, POST withdraws the loan request                                 |
@@ -208,13 +208,8 @@ The workflow ends at "Loan request withdrawn". The cockpit adapter reports the e
 and the end of the case. The report of the case reads the aggregate, so its details carry the
 status `WITHDRAWN`.
 
-On Camunda 8 the message start event of an event subprocess needs a correlation key. The adapter
-writes one into the model for intermediate catch events and receive tasks, but not for start
-events. So the Camunda 8 model names it itself: `=loanRequestId`, the process variable which
-holds the id of the aggregate. Camunda 7 correlates by the business key, and its models need
-nothing.
-
-The endpoints are written by hand, as in `cockpit-user-task-backend`. The integration test reads
+The build generates the interface `CasesApi` and the record `Case` from the OpenAPI, as in
+`cockpit-user-task-backend`, and `CasePageController` implements it. The integration test reads
 the OpenAPI from the classpath and checks that every operation in it has its endpoint.
 
 The integration test talks to the module the way the page does, only without the proxy of the
