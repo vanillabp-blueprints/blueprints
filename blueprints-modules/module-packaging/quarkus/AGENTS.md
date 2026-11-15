@@ -120,9 +120,11 @@ packaging:
 mvn install -Dquarkus.container-image.build=true
 ```
 
-The native build (`-Dquarkus.native.enabled=true -Dquarkus.native.container-build=true`) fails
-today for an application without MongoDB. The cause is in the platform, not here. Do not work
-around it in this project, and do not report it as a defect of generated code. The README says
-what it is.
+The native build (`-Pcamunda8 -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true`)
+needs Docker or Podman and about 8 GB of memory. It works with Camunda 8 only. With Camunda 7
+the build succeeds, but the executable stops at startup. Its adapter, and those of Operaton and
+CIB seven, run on the JVM only. Do not work around that in this project, and do not report it
+as a defect of generated code. When you change anything about the native build, start the
+executable against a cluster and run both start URLs. The README says how.
 
 Do not report success without having run this.
