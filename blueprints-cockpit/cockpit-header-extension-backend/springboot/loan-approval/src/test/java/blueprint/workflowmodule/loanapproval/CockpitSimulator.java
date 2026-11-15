@@ -10,15 +10,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.awaitility.core.ConditionTimeoutException;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
+
+import io.vanillabp.cockpit.gui.api.v1.OfficialWorkflowlistApi;
+import io.vanillabp.cockpit.gui.api.v1.UserTask;
+import io.vanillabp.cockpit.gui.api.v1.UserTaskRetrieveMode;
+import io.vanillabp.cockpit.gui.api.v1.UserTasksRequest;
+import io.vanillabp.cockpit.gui.api.v1.Workflow;
+import io.vanillabp.cockpit.gui.api.v1.WorkflowRetrieveMode;
+import io.vanillabp.cockpit.gui.api.v1.Workflows;
+import io.vanillabp.cockpit.gui.api.v1.WorkflowsRequest;
 
 /**
  * The Business Cockpit of the integration test: the dev shell simulator of the cockpit, run as
@@ -94,9 +103,9 @@ public final class CockpitSimulator {
    * @param condition  What the cockpit is expected to know about the case.
    * @return The case, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitWorkflow(
+  public Workflow awaitWorkflow(
       final String businessId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<Workflow> condition) {
 
     return awaitReport(
         "case '"
@@ -116,9 +125,9 @@ public final class CockpitSimulator {
    * @param condition  What the cockpit is expected to know about the user tasks.
    * @return The user tasks of the case, open and ended ones.
    */
-  public List<Map<String, Object>> awaitUserTasksOfWorkflow(
+  public List<UserTask> awaitUserTasksOfWorkflow(
       final String workflowId,
-      final Predicate<List<Map<String, Object>>> condition) {
+      final Predicate<List<UserTask>> condition) {
 
     return awaitReport(
         "user tasks of case '"
@@ -178,25 +187,24 @@ public final class CockpitSimulator {
    * @param businessId The business id of the case.
    * @return The case, if the cockpit knows it.
    */
-  @SuppressWarnings("unchecked")
-  private Optional<Map<String, Object>> workflowOf(
+  private Optional<Workflow> workflowOf(
       final String businessId) {
 
-    final Map<String, Object> page = officialApi
+    final var page = officialApi
         .post()
-        .uri("/workflow")
+        .uri(OfficialWorkflowlistApi.PATH_GET_WORKFLOWS)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Map.of(
-            "mode", "All",
-            "businessIds", List.of(businessId),
-            "pageNumber", 0,
-            "pageSize", 10))
+        .body(new WorkflowsRequest()
+            .mode(WorkflowRetrieveMode.ALL)
+            .businessIds(List.of(businessId))
+            .pageNumber(0)
+            .pageSize(10))
         .retrieve()
-        .body(Map.class);
-    final var workflows = (List<Map<String, Object>>) page.get("workflows");
-    return workflows == null
+        .body(Workflows.class);
+    return page.getWorkflows() == null
         ? Optional.empty()
-        : workflows
+        : page
+            .getWorkflows()
             .stream()
             .findFirst();
 
@@ -208,20 +216,23 @@ public final class CockpitSimulator {
    * @param workflowId The id of the case in the cockpit.
    * @return The user tasks, open and ended ones.
    */
-  @SuppressWarnings("unchecked")
-  private List<Map<String, Object>> userTasksOf(
+  private List<UserTask> userTasksOf(
       final String workflowId) {
 
     return officialApi
         .post()
-        .uri("/workflow/{workflowId}/usertasks?llatcup=false", workflowId)
+        .uri(uri -> uri
+            .path(OfficialWorkflowlistApi.PATH_GET_USER_TASKS_OF_WORKFLOW)
+            .queryParam("llatcup", false)
+            .build(workflowId))
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Map.of(
-            "mode", "All",
-            "pageNumber", 0,
-            "pageSize", 100))
+        .body(new UserTasksRequest()
+            .mode(UserTaskRetrieveMode.ALL)
+            .pageNumber(0)
+            .pageSize(100))
         .retrieve()
-        .body(List.class);
+        .body(new ParameterizedTypeReference<List<UserTask>>() {
+        });
 
   }
 

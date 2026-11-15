@@ -53,7 +53,7 @@ controllers in line, or the start form reaches nothing.
 | `loan-approval/src/main/java/.../WorkflowTaskHandler.java`                      | the `@WorkflowTask` method which keeps `@TaskId`                                                                                     |
 | `loan-approval/src/main/java/.../Workflow.java`                                 | `startWorkflow` and `completeUserTask`                                                                                               |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                           | the start form starts a case which reaches the cockpit, refused values, the groups of the module, every OpenAPI operation mapped     |
-| `loan-approval/src/test/java/.../CockpitSimulator.java`                         | starts the dev shell simulator as the cockpit of the test, and reads cases and user tasks from it                                    |
+| `loan-approval/src/test/java/.../CockpitSimulator.java`                         | starts the dev shell simulator as the cockpit of the test, and reads cases and user tasks from it into the cockpit's models          |
 | `loan-approval/src/main/java/.../config/LoanApprovalAutoConfiguration.java`     | the module wires itself: component scan, `@EntityScan` and `@EnableJpaRepositories` of its own package, with fully qualified names   |
 | `loan-approval/src/main/resources/META-INF/spring/...AutoConfiguration.imports` | names the auto-configuration                                                                                                         |
 
@@ -97,9 +97,10 @@ controllers in line, or the start form reaches nothing.
    One bean per module. It decides which modules the cockpit lists for a user, and so who sees
    the button. It does not decide about tasks and cases, and it does not protect the endpoint.
 5. Keep the bean inside the package the auto-configuration scans, so the module brings it along.
-6. Copy `CockpitSimulator`, `dev-shell-simulator.yaml` and the dependency plugin execution of
-   `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the test
-   which checks every OpenAPI operation against the endpoints.
+6. Copy `CockpitSimulator`, `dev-shell-simulator.yaml`, the test dependency
+   `official-gui-api-server` with the models of the cockpit's official API, and the dependency
+   plugin execution of `loan-approval/pom.xml` which copies the simulator. Adapt
+   `LoanApprovalIT`, keeping the test which checks every OpenAPI operation against the endpoints.
 
 ## Verifying
 
