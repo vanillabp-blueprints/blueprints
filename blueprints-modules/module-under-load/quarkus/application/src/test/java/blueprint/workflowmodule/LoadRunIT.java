@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -15,10 +14,10 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import blueprint.simulator.loadrun.api.client.LoadRunApi;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import jakarta.inject.Inject;
 
 /**
  * Proves that the load driver still starts and finishes: a tiny run, with every stage and the
@@ -58,6 +57,8 @@ public class LoadRunIT {
           "quarkus.http.test-port", "${application.port:8080}",
           "credit-bureau.base-url", "${simulator.base-url:http://localhost:8079}/credit-bureau",
           "credit-bureau.callback-url", "http://localhost:${application.port:8080}/credit-bureau/callback",
+          // The client module of the load run builds the client of this test out of this key.
+          "load-run-api.base-url", "${simulator.base-url:http://localhost:8079}",
           // The drain waits for the payout run, so it comes more often here.
           "loan-approval.payout-run-every", "PT5S",
           // A database of its own, which ends with the test. The file of the application
@@ -78,10 +79,9 @@ public class LoadRunIT {
 
   private final String simulator = System.getProperty("simulator.base-url", "http://localhost:8079");
 
-  private final LoadRunApi loadRun = QuarkusRestClientBuilder
-      .newBuilder()
-      .baseUri(URI.create(simulator))
-      .build(LoadRunApi.class);
+  /** Built by the client module, with the address from the profile of this test. */
+  @Inject
+  LoadRunApi loadRun;
 
   @Test
   public void aTinyRunStartsAndFinishes() {

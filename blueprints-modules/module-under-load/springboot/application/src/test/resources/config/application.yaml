@@ -1,0 +1,6 @@
+# Only for the tests of the application. LoadRunIT takes the client of the load run from its
+# client module, and the AutoConfiguration of that module checks this key while any test of
+# this module starts the application. Spring Boot reads this file next to the
+# 'application.yaml' of the application, so that one stays as it is.
+load-run-api:
+  base-url: ${simulator.base-url:http://localhost:8079}

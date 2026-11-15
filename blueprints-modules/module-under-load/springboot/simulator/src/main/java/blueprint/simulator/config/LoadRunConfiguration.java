@@ -10,8 +10,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.support.RestClientAdapter;
-import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import blueprint.simulator.loadrun.LoadProfile;
 import blueprint.simulator.loadrun.LoadRun;
@@ -28,9 +26,9 @@ import blueprint.workflowmodule.loanapproval.api.client.LoanApprovalApi;
 public class LoadRunConfiguration {
 
   /**
-   * How long one call to the application may take. Under load the application gets slow, and
-   * a slow answer is part of the result. Only a call which takes longer than this counts as
-   * failed.
+   * How long a call for the meters of the application may take. Under load the application gets
+   * slow, and a slow answer is part of the result. The calls of the customers and the clerks go
+   * through the client of 'loan-approval-api', which waits as long.
    */
   private static final Duration CALL_TIMEOUT = Duration.ofSeconds(30);
 
@@ -55,25 +53,26 @@ public class LoadRunConfiguration {
   /**
    * The load run.
    *
-   * @param profile     The load profile.
-   * @param properties  The run sizes and where the application is.
-   * @param restClients The REST client builder of Spring Boot.
+   * @param profile      The load profile.
+   * @param properties   The run sizes and where the meters of the application are.
+   * @param loanApproval The client of the application's API, built by its client module out of
+   *                     the properties {@code loan-approval-api.*}.
+   * @param restClients  The REST client builder of Spring Boot, for the meters.
    * @return The load run.
    */
   @Bean(destroyMethod = "stop")
   public LoadRun loadRun(
       final LoadProfile profile,
       final LoadRunProperties properties,
+      final LoanApprovalApi loanApproval,
       final RestClient.Builder restClients) {
 
     final var application = properties.application();
     if (application == null) {
       throw new IllegalStateException("'load-run.application' is not set. It says where the"
-          + " application under load is: 'base-url', 'metrics-url', 'jmx-address',"
+          + " application under load is: 'metrics-url', 'jmx-address',"
           + " 'connections-waiting-meter' and 'pool-setting'.");
     }
-    final var baseUrl = required(application, LoadRunProperties.Application::baseUrl, "base-url",
-        "where the API of the application answers, for example http://localhost:8080");
     final var metricsUrl = required(application, LoadRunProperties.Application::metricsUrl, "metrics-url",
         "where the application shows its meters in the Prometheus format");
     final var jmxAddress = required(application, LoadRunProperties.Application::jmxAddress, "jmx-address",
@@ -84,21 +83,13 @@ public class LoadRunConfiguration {
     final var poolSetting = required(application, LoadRunProperties.Application::poolSetting, "pool-setting",
         "the setting which sizes the connection pool of the application");
 
-    // One client for every call to the application. The client of the JDK keeps its
-    // connections open, as the front ends of many customers would.
+    // One client for the meters of the application.
     final var timeouts = new JdkClientHttpRequestFactory();
     timeouts.setReadTimeout(CALL_TIMEOUT);
     final var calls = restClients
         .clone()
         .requestFactory(timeouts)
         .build();
-    final var loanApproval = HttpServiceProxyFactory
-        .builderFor(RestClientAdapter.create(calls
-            .mutate()
-            .baseUrl(baseUrl)
-            .build()))
-        .build()
-        .createClient(LoanApprovalApi.class);
 
     final var sizes = properties.sizes() == null
         ? Map.<String, RunSize>of()

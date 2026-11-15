@@ -27,15 +27,18 @@ load-run:
       stage-length: PT5M
       steps: 10
       drain-at-most: PT10M
-  # The application under load, as the simulator reaches it from outside: its API, the meters
-  # Quarkus shows in the Prometheus format, and its JMX port for the two full collections. The
-  # pool is Agroal, which Quarkus brings, and the report names its setting.
+  # The application under load, as the simulator reaches it from outside: the meters Quarkus
+  # shows in the Prometheus format, and its JMX port for the two full collections. The pool is
+  # Agroal, which Quarkus brings, and the report names its setting.
   application:
-    base-url: http://localhost:8080
     metrics-url: http://localhost:8080/q/metrics
     jmx-address: localhost:9010
     connections-waiting-meter: agroal_awaiting_count
     pool-setting: quarkus.datasource.jdbc.max-size
+# The API of the application under load, which the customers and the clerks call. The client
+# module 'loan-approval-api' reads these keys.
+loan-approval-api:
+  base-url: http://localhost:8080
 logging:
   level:
     blueprint.simulator: INFO

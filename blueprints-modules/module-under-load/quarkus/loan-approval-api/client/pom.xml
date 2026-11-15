@@ -24,20 +24,56 @@
   <properties>
     <java.version>21</java.version>
     <openapi-generator.version>7.27.0</openapi-generator.version>
+    <!-- The REST client of this module comes from the support of the Business Cockpit. -->
+    <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
+    <!--
+      The support is built on OpenFeign. All OpenFeign libraries have to be of one version, the
+      one the support is built with.
+    -->
+    <feign.version>13.18</feign.version>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.github.openfeign</groupId>
+        <artifactId>feign-bom</artifactId>
+        <version>${feign.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <!--
-    Only what the generated sources import: the annotations of Spring Web, of Jackson and of
-    Jakarta. No Spring Boot starter, so the module stays a small library.
+    The generated client and its AutoConfiguration. The REST client classes come from the
+    support of the Business Cockpit: 'ClientsConfigurationBase' builds an OpenFeign client out of
+    the standard client keys. The Jackson 2 libraries are there only because the generated
+    supporting files import them. The JSON bodies are read and written with the Jackson 3 mapper
+    of the application.
   -->
   <dependencies>
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-web</artifactId>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>business-cockpit-spring-boot-support</artifactId>
+      <version>${businesscockpit.version}</version>
+    </dependency>
+    <!-- The AutoConfiguration, and the Jackson 3 mapper the client reads and writes JSON with. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-jackson</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.github.openfeign</groupId>
+      <artifactId>feign-jackson</artifactId>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>
@@ -58,25 +94,20 @@
         <artifactId>openapi-generator-maven-plugin</artifactId>
         <version>${openapi-generator.version}</version>
         <!--
-          The generated code needs no library beyond Spring Web, Jackson and Jakarta
-          annotations: no Swagger annotations, no jackson-databind-nullable, no bean
-          validation. The models are Java records.
+          An OpenFeign interface ('java' generator, library 'feign'). Its models are classes
+          with getters. The AutoConfiguration of this module builds the client.
         -->
         <configuration>
-          <generatorName>spring</generatorName>
-          <generateSupportingFiles>false</generateSupportingFiles>
+          <generateApiTests>false</generateApiTests>
+          <generateModelTests>false</generateModelTests>
           <configOptions>
-            <useSpringBoot4>true</useSpringBoot4>
+            <useJakartaEe>true</useJakartaEe>
             <useTags>true</useTags>
-            <useRecords>true</useRecords>
-            <useJspecify>true</useJspecify>
             <openApiNullable>false</openApiNullable>
             <useBeanValidation>false</useBeanValidation>
             <documentationProvider>none</documentationProvider>
             <annotationLibrary>none</annotationLibrary>
             <hideGenerationTimestamp>true</hideGenerationTimestamp>
-            <generateJsonIncludeAnnotations>false</generateJsonIncludeAnnotations>
-            <generateJsonSetterNullsAnnotations>false</generateJsonSetterNullsAnnotations>
           </configOptions>
         </configuration>
         <executions>
@@ -89,12 +120,12 @@
               <inputSpec>${project.basedir}/../loan-approval.yaml</inputSpec>
               <apiPackage>blueprint.workflowmodule.loanapproval.api.client</apiPackage>
               <modelPackage>blueprint.workflowmodule.loanapproval.api.client.model</modelPackage>
-              <!-- A Spring HTTP interface. Whoever calls the API turns it into a client with a RestClient. -->
-              <library>spring-http-interface</library>
-              <configOptions>
-                <!-- The method returns the body. An error status comes as an exception of the RestClient. -->
-                <useResponseEntity>false</useResponseEntity>
-              </configOptions>
+              <invokerPackage>blueprint.workflowmodule.loanapproval.api.client.invoker</invokerPackage>
+              <generatorName>java</generatorName>
+              <library>feign</library>
+              <generateSupportingFiles>true</generateSupportingFiles>
+              <!-- The interface extends a marker interface of the generated 'ApiClient', so these files are generated too. -->
+              <supportingFilesToGenerate>ApiClient.java,ApiResponse.java,ApiResponseDecoder.java,EncodingUtils.java,StringUtil.java,RFC3339DateFormat.java,RFC3339JavaTimeModule.java,RFC3339InstantDeserializer.java,HttpBasicAuth.java,HttpBearerAuth.java,ApiKeyAuth.java</supportingFilesToGenerate>
             </configuration>
           </execution>
         </executions>

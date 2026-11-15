@@ -61,7 +61,10 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- The client of the load run, generated from its OpenAPI file. LoadRunIT starts a run with it. -->
+    <!--
+      The client of the load run, generated from its OpenAPI file. Its module builds the client
+      out of the properties 'load-run-api.*'. LoadRunIT starts a run with it.
+    -->
     <dependency>
       <groupId>io.vanillabp.blueprint.module-under-load-springboot</groupId>
       <artifactId>load-run-api-client</artifactId>
@@ -228,7 +231,7 @@
                 <argument>-jar</argument>
                 <argument>${project.build.directory}/simulator.jar</argument>
                 <argument>--server.port=${simulator.port}</argument>
-                <argument>--load-run.application.base-url=http://localhost:${application.port}</argument>
+                <argument>--loan-approval-api.base-url=http://localhost:${application.port}</argument>
                 <argument>--load-run.application.metrics-url=http://localhost:${application.port}/actuator/prometheus</argument>
                 <argument>--load-run.application.jmx-address=localhost:${jmx.port}</argument>
                 <argument>--load-run.sizes.tiny.stage-length=PT2S</argument>

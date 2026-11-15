@@ -62,7 +62,7 @@ Blueprint-specific names, each occurring in more than one place:
 | `loan-approval-api/pom.xml`                                         | the API module with its `client` and `server`                                                                       |
 | `load-run-api/pom.xml`                                              | the API module of the load run with its `client` and `server`                                                       |
 | `external-systems/credit-bureau/credit-bureau-api/pom.xml`          | the API module of the credit bureau with its `client` and `server`                                                  |
-| `external-systems/credit-bureau/rest-adapter/pom.xml`               | the module, the generated client and the REST client of Spring                                                      |
+| `external-systems/credit-bureau/rest-adapter/pom.xml`               | the module and the generated client, which its module builds                                                        |
 | `simulator/pom.xml`                                                 | the generated clients and interfaces, SnakeYAML, and the load profile copied in; no load testing tool               |
 | `application/pom.xml`                                               | the BPMS adapter, the REST adapter, the actuator with Prometheus, JMX for `spring-boot:run`, starting the simulator |
 | `application/src/main/java/.../Application.java`                    | the application class, in the parent package of the module                                                          |
@@ -90,7 +90,9 @@ blueprint. Copy them unchanged.
    dependency of the application or of a workflow module: it must run in another process, or
    it measures itself.
 3. Give the API your clerks and customers use a Maven module `<name>-api` with `client` and
-   `server`, like `loan-approval-api`, if it has none. The simulator calls the `client`.
+   `server`, like `loan-approval-api`, if it has none. The simulator calls the `client`, which
+   builds itself out of the properties below its prefix, for example
+   `loan-approval-api.base-url`.
 4. Adapt `Customers`, `Clerks` and `CreditBureauApiController` to that API and to the ids of
    your user tasks, gateways and catch events. Keep the rule that the driver only calls what a
    browser, a task list or a neighbour system would call.

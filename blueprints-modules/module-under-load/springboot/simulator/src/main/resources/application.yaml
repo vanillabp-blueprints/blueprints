@@ -27,15 +27,18 @@ load-run:
       stage-length: PT5M
       steps: 10
       drain-at-most: PT10M
-  # The application under load, as the simulator reaches it from outside: its API, the meters
-  # its actuator shows in the Prometheus format, and its JMX port for the two full collections.
+  # The application under load, as the simulator reaches it from outside: the meters its
+  # actuator shows in the Prometheus format, and its JMX port for the two full collections.
   # The pool is HikariCP, which Spring Boot brings, and the report names its setting.
   application:
-    base-url: http://localhost:8080
     metrics-url: http://localhost:8080/actuator/prometheus
     jmx-address: localhost:9010
     connections-waiting-meter: hikaricp_connections_pending
     pool-setting: spring.datasource.hikari.maximum-pool-size
+# The API of the application under load, which the customers and the clerks call. The client
+# module 'loan-approval-api' reads these keys.
+loan-approval-api:
+  base-url: http://localhost:8080
 logging:
   level:
     blueprint.simulator: INFO

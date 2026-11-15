@@ -1,13 +1,10 @@
 package blueprint.externalsystems.creditbureau.rest.config;
 
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
-
 import blueprint.externalsystems.creditbureau.api.client.ScoreRequestsApi;
+import blueprint.externalsystems.creditbureau.api.client.config.CreditBureauClientProperties;
 import blueprint.externalsystems.creditbureau.callback.server.ScoreCallbackApi;
 import blueprint.externalsystems.creditbureau.rest.CreditBureauRestAdapter;
 import blueprint.workflowmodule.loanapproval.CreditBureau;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.runtime.Startup;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
@@ -17,7 +14,8 @@ import jakarta.ws.rs.Path;
 /**
  * The adapter wires itself, like a workflow module does. An application which has this JAR on
  * its classpath gets a {@link CreditBureau} bean and the callback endpoint, and does nothing
- * else.
+ * else. The client comes from the client module of the API, which builds it out of the
+ * properties {@code credit-bureau.*}.
  *
  * <p>
  * Quarkus finds this class, and the endpoint, through the index the build of this module writes.
@@ -32,25 +30,22 @@ public class CreditBureauRestAdapterProducer {
       .value();
 
   /**
-   * The credit bureau, over REST. Created while the application starts, so a missing address
-   * stops the start with a message instead of failing the first loan approval.
+   * The credit bureau, over REST. Created while the application starts, so a missing callback
+   * address stops the start with a message instead of failing the first loan approval.
    *
-   * @param properties Where the credit bureau is, and where it calls back.
+   * @param client           The generated client, built by the client module.
+   * @param clientProperties Where the credit bureau is, for the messages of the adapter.
+   * @param properties       Where the credit bureau calls back.
    * @return The adapter.
    */
   @Produces
   @Singleton
   @Startup
   public CreditBureau creditBureau(
+      final ScoreRequestsApi client,
+      final CreditBureauClientProperties clientProperties,
       final CreditBureauProperties properties) {
 
-    final var baseUrl = properties
-        .baseUrl()
-        .filter(address -> !address.isBlank())
-        .orElseThrow(() -> new IllegalStateException("""
-            The credit bureau has no address. Set 'credit-bureau.base-url' to where it answers. \
-            For the simulator of this blueprint that is http://localhost:8079/credit-bureau, and \
-            'application.yaml' sets it."""));
     final var callbackUrl = properties
         .callbackUrl()
         .filter(address -> !address.isBlank())
@@ -62,15 +57,7 @@ public class CreditBureauRestAdapterProducer {
                 CALLBACK_PATH,
                 CALLBACK_PATH)));
 
-    // The generated client is an interface. The REST client of Quarkus implements it.
-    final var client = QuarkusRestClientBuilder
-        .newBuilder()
-        .baseUri(URI.create(baseUrl))
-        .connectTimeout(properties.timeout().toMillis(), TimeUnit.MILLISECONDS)
-        .readTimeout(properties.timeout().toMillis(), TimeUnit.MILLISECONDS)
-        .build(ScoreRequestsApi.class);
-
-    return new CreditBureauRestAdapter(client, baseUrl, callbackUrl);
+    return new CreditBureauRestAdapter(client, clientProperties.baseUrl().orElseThrow(), callbackUrl);
 
   }
 

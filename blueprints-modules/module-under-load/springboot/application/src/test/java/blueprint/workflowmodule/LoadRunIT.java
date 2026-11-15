@@ -11,10 +11,8 @@ import java.time.Instant;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.support.RestClientAdapter;
-import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import blueprint.simulator.loadrun.api.client.LoadRunApi;
 
@@ -64,10 +62,9 @@ public class LoadRunIT {
 
   private final String simulator = System.getProperty("simulator.base-url", "http://localhost:8079");
 
-  private final LoadRunApi loadRun = HttpServiceProxyFactory
-      .builderFor(RestClientAdapter.create(RestClient.create(simulator)))
-      .build()
-      .createClient(LoadRunApi.class);
+  /** Built by the client module, with the address from {@code config/application.yaml}. */
+  @Autowired
+  private LoadRunApi loadRun;
 
   @Test
   public void aTinyRunStartsAndFinishes() {

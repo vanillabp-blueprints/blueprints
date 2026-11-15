@@ -1,11 +1,9 @@
 package blueprint.externalsystems.creditbureau.rest;
 
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClientResponseException;
-
 import blueprint.externalsystems.creditbureau.api.client.ScoreRequestsApi;
 import blueprint.externalsystems.creditbureau.api.client.model.ScoreRequest;
 import blueprint.workflowmodule.loanapproval.CreditBureau;
+import feign.FeignException;
 
 /**
  * The credit bureau, reached over REST. The API is described in
@@ -52,9 +50,14 @@ public class CreditBureauRestAdapter implements CreditBureau {
 
     try {
 
-      creditBureau.requestScore(new ScoreRequest(loanRequestId, amount, callbackUrl));
+      creditBureau.requestScore(new ScoreRequest()
+          .loanRequestId(loanRequestId)
+          .amount(amount)
+          .callbackUrl(callbackUrl));
 
-    } catch (ResourceAccessException | RestClientResponseException e) {
+    } catch (FeignException e) {
+
+      // An error status, no answer at all, or an answer later than the timeout.
 
       throw new IllegalStateException("The credit bureau at '"
           + baseUrl

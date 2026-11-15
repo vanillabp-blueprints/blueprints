@@ -309,6 +309,17 @@ simulator calls it from Java. Its `server` generates the interface `ApiControlle
 its `client` generates what the simulator calls. The same holds for the credit bureau below
 `external-systems`, and for the load run in `load-run-api`.
 
+Each `client` module also builds its client. It has an AutoConfiguration on
+`ClientsConfigurationBase` of the Business Cockpit support, and a properties class which
+extends `Client` of the same library. So the simulator only sets `loan-approval-api.base-url`
+and injects `LoanApprovalApi`, the application only sets `credit-bureau.base-url`, and
+`LoadRunIT` takes its client the same way, with `load-run-api.base-url` from
+`src/test/resources/config/application.yaml`. The client of the loan approval waits thirty
+seconds for an answer, because under load a slow answer is part of the result, and keeps up to
+64 connections open, as the front ends of many customers would. The
+[README of the support](https://github.com/vanillabp/business-cockpit/blob/main/support/README.md#rest-clients)
+lists all keys of a client.
+
 The REST adapter of the credit bureau needs two types of the workflow module: the port
 `CreditBureau`, which it implements, and `Service`, which takes the score. So it depends on the
 module, and the module does not know it. To use a real credit bureau, point

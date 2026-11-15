@@ -138,10 +138,11 @@ final class Customers {
 
     try {
 
-      loanApproval.request(new LoanRequest(
-          ThreadLocalRandom
+      loanApproval.request(new LoanRequest()
+          .amount(ThreadLocalRandom
               .current()
-              .nextInt(1000, 50000), documents));
+              .nextInt(1000, 50000))
+          .documents(documents));
       started.incrementAndGet();
 
     } catch (final RuntimeException e) {

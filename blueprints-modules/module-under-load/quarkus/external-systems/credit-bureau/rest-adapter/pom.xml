@@ -26,18 +26,14 @@
     <!--
       Generated from the two OpenAPI files of the credit bureau: the client of
       'credit-bureau.yaml' and the interface of 'credit-bureau-callback.yaml', which the
-      callback resource implements. This adapter writes no HTTP calls and no JSON types of its
-      own.
+      callback resource implements. The client module also builds the client out of the
+      properties 'credit-bureau.*'. This adapter writes no HTTP calls, no JSON types and no
+      client configuration of its own.
     -->
     <dependency>
       <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
       <artifactId>credit-bureau-api-client</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <!-- The REST client of Quarkus, and JSON. -->
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-rest-client-jackson</artifactId>
     </dependency>
     <!-- The endpoint the credit bureau calls back. The application runs it. -->
     <dependency>

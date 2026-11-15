@@ -309,6 +309,17 @@ simulator calls it from Java. Its `server` generates the interface `ApiControlle
 its `client` generates what the simulator calls. The same holds for the credit bureau below
 `external-systems`, and for the load run in `load-run-api`.
 
+Each `client` module also builds its client. The modules of the credit bureau and of the load
+run have a bean producer which calls `QuarkusRestClientBuilder` with the keys `base-url`,
+`connect-timeout` and `read-timeout` below the prefix of the API, the names the REST client of
+the Business Cockpit support uses. So the application only sets `credit-bureau.base-url`, and
+`LoadRunIT` sets `load-run-api.base-url` in its test profile and injects the client. The
+simulator does not run on Quarkus, so the client of the loan approval is built the way the
+simulator's platform builds it: an AutoConfiguration on `ClientsConfigurationBase` of the
+support, read from `loan-approval-api.*`. It waits thirty seconds for an answer, because under load a slow
+answer is part of the result, and keeps up to 64 connections open, as the front ends of many
+customers would.
+
 The REST adapter of the credit bureau needs two types of the workflow module: the port
 `CreditBureau`, which it implements, and `Service`, which takes the score. So it depends on the
 module, and the module does not know it. To use a real credit bureau, point

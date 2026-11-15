@@ -128,7 +128,7 @@ final class Clerks {
     return loanApproval
         .openAssessments()
         .stream()
-        .filter(assessment -> claimed.add(assessment.loanRequestId()))
+        .filter(assessment -> claimed.add(assessment.getLoanRequestId()))
         .findFirst()
         .orElse(null);
 
@@ -139,8 +139,8 @@ final class Clerks {
 
     loanApproval
         .assess(
-            assessment.loanRequestId(),
-            assessment.taskId(),
+            assessment.getLoanRequestId(),
+            assessment.getTaskId(),
             ThreadLocalRandom
                 .current()
                 .nextDouble() < approvedShare);

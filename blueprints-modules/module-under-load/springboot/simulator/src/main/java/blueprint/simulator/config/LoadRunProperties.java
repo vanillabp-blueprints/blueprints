@@ -25,7 +25,6 @@ public record LoadRunProperties(
   /**
    * The application under load, as the simulator reaches it from outside.
    *
-   * @param baseUrl                 Where its API answers.
    * @param metricsUrl              Where it shows its meters in the Prometheus format.
    * @param jmxAddress              Where its JVM answers on JMX, as {@code host:port}.
    * @param connectionsWaitingMeter The gauge of its connection pool which counts the threads
@@ -33,7 +32,6 @@ public record LoadRunProperties(
    * @param poolSetting             The setting which sizes that pool, for the report.
    */
   public record Application(
-                            String baseUrl,
                             String metricsUrl,
                             String jmxAddress,
                             String connectionsWaitingMeter,
