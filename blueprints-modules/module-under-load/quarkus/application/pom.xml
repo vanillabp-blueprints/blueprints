@@ -12,6 +12,11 @@
   <name>The application</name>
   <description>The Quarkus application pulling in the workflow module and the adapter of the credit bureau, and deciding which BPMS is used. It holds nothing for load testing. The load driver runs in the simulator.</description>
 
+  <properties>
+    <!-- '-DskipTests' starts no simulator either. -->
+    <skipTests>false</skipTests>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
@@ -178,6 +183,124 @@
           </execution>
         </executions>
       </plugin>
+      <!--
+        The next four plugins start the simulator before LoadRunIT, on a free port, and tell the
+        test where it is. The application runs in the JVM of the test, on a free port of its own
+        and with a JMX port, and the simulator is told both. Its log goes to
+        target/simulator.log. The simulator ends with the build.
+
+        The simulator gets a run size 'tiny' on its command line. LoadRunIT starts it, and it only
+        proves that a run starts and finishes.
+
+        This is the plain build and not a profile which switches itself on. Such a profile
+        would switch off 'camunda7', the BPMS profile which is active by default, and a build
+        without '-P<bpms>' would have no BPMS adapter. A test run from the IDE has none of
+        this, so LoadRunIT skips there, with a message, when no simulator answers.
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>free-ports</id>
+            <goals>
+              <goal>reserve-network-port</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <portNames>
+                <portName>simulator.port</portName>
+                <portName>application.port</portName>
+                <portName>jmx.port</portName>
+              </portNames>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        The runnable JAR of the simulator, from this build, copied to target/. It is not a
+        dependency of the test, because it is a whole application.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>simulator-jar</id>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
+                  <artifactId>simulator</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>runnable</classifier>
+                  <destFileName>simulator.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        Starts the simulator and goes on at once. The test waits until it answers. Maven
+        stops it when the build ends, also when the build fails. Its log goes to a file and
+        not to the console, so the build output stays readable.
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>start-simulator</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <async>true</async>
+              <asyncDestroyOnShutdown>true</asyncDestroyOnShutdown>
+              <executable>${java.home}/bin/java</executable>
+              <arguments>
+                <argument>-jar</argument>
+                <argument>${project.build.directory}/simulator.jar</argument>
+                <argument>--server.port=${simulator.port}</argument>
+                <argument>--load-run.application.base-url=http://localhost:${application.port}</argument>
+                <argument>--load-run.application.metrics-url=http://localhost:${application.port}/q/metrics</argument>
+                <argument>--load-run.application.jmx-address=localhost:${jmx.port}</argument>
+                <argument>--load-run.sizes.tiny.stage-length=PT2S</argument>
+                <argument>--load-run.sizes.tiny.steps=1</argument>
+                <argument>--load-run.sizes.tiny.drain-at-most=PT1M</argument>
+                <argument>--logging.file.name=${project.build.directory}/simulator.log</argument>
+                <argument>--logging.threshold.console=OFF</argument>
+                <argument>--spring.main.banner-mode=off</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>${maven-failsafe-plugin.version}</version>
+        <configuration>
+          <!-- The JMX port of the application under test, where the simulator asks for a full collection. -->
+          <argLine>-Dcom.sun.management.jmxremote.port=${jmx.port} -Dcom.sun.management.jmxremote.rmi.port=${jmx.port} -Dcom.sun.management.jmxremote.host=localhost -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false</argLine>
+          <systemPropertyVariables>
+            <simulator.base-url>http://localhost:${simulator.port}</simulator.base-url>
+            <simulator.log>${project.build.directory}/simulator.log</simulator.log>
+            <application.port>${application.port}</application.port>
+            <!-- The build started the simulator, so a test which finds none fails instead of skipping. -->
+            <simulator.required>true</simulator.required>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
@@ -186,138 +309,6 @@
     loaded. The workflow module does not know and does not care.
   -->
   <profiles>
-    <!--
-      Starts the simulator before LoadRunIT, on a free port, and tells the test where it is. The
-      application runs in the JVM of the test, on a free port of its own and with a JMX port,
-      and the simulator is told both. Its log goes to target/simulator.log. The simulator ends
-      with the build.
-
-      The simulator gets a run size 'tiny' on its command line. LoadRunIT starts it, and it only
-      proves that a run starts and finishes.
-
-      The profile is on unless 'simulator.base-url' is given. A test run from the IDE has no
-      profile at all, so LoadRunIT skips there, with a message, when no simulator answers.
-    -->
-    <profile>
-      <id>start-stop-simulator</id>
-      <activation>
-        <property>
-          <name>!simulator.base-url</name>
-        </property>
-      </activation>
-      <properties>
-        <!-- '-DskipTests' starts no simulator either. -->
-        <skipTests>false</skipTests>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>build-helper-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>free-ports</id>
-                <goals>
-                  <goal>reserve-network-port</goal>
-                </goals>
-                <phase>initialize</phase>
-                <configuration>
-                  <portNames>
-                    <portName>simulator.port</portName>
-                    <portName>application.port</portName>
-                    <portName>jmx.port</portName>
-                  </portNames>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <!--
-            The runnable JAR of the simulator, from this build, copied to target/. It is not a
-            dependency of the test, because it is a whole application.
-          -->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>simulator-jar</id>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <phase>pre-integration-test</phase>
-                <configuration>
-                  <skip>${skipTests}</skip>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
-                      <artifactId>simulator</artifactId>
-                      <version>${project.version}</version>
-                      <classifier>runnable</classifier>
-                      <destFileName>simulator.jar</destFileName>
-                    </artifactItem>
-                  </artifactItems>
-                  <outputDirectory>${project.build.directory}</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <!--
-            Starts the simulator and goes on at once. The test waits until it answers. Maven
-            stops it when the build ends, also when the build fails. Its log goes to a file and
-            not to the console, so the build output stays readable.
-          -->
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>start-simulator</id>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <phase>pre-integration-test</phase>
-                <configuration>
-                  <skip>${skipTests}</skip>
-                  <async>true</async>
-                  <asyncDestroyOnShutdown>true</asyncDestroyOnShutdown>
-                  <executable>${java.home}/bin/java</executable>
-                  <arguments>
-                    <argument>-jar</argument>
-                    <argument>${project.build.directory}/simulator.jar</argument>
-                    <argument>--server.port=${simulator.port}</argument>
-                    <argument>--load-run.application.base-url=http://localhost:${application.port}</argument>
-                    <argument>--load-run.application.metrics-url=http://localhost:${application.port}/q/metrics</argument>
-                    <argument>--load-run.application.jmx-address=localhost:${jmx.port}</argument>
-                    <argument>--load-run.sizes.tiny.stage-length=PT2S</argument>
-                    <argument>--load-run.sizes.tiny.steps=1</argument>
-                    <argument>--load-run.sizes.tiny.drain-at-most=PT1M</argument>
-                    <argument>--logging.file.name=${project.build.directory}/simulator.log</argument>
-                    <argument>--logging.threshold.console=OFF</argument>
-                    <argument>--spring.main.banner-mode=off</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <version>${maven-failsafe-plugin.version}</version>
-            <configuration>
-              <!-- The JMX port of the application under test, where the simulator asks for a full collection. -->
-              <argLine>-Dcom.sun.management.jmxremote.port=${jmx.port} -Dcom.sun.management.jmxremote.rmi.port=${jmx.port} -Dcom.sun.management.jmxremote.host=localhost -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false</argLine>
-              <systemPropertyVariables>
-                <simulator.base-url>http://localhost:${simulator.port}</simulator.base-url>
-                <simulator.log>${project.build.directory}/simulator.log</simulator.log>
-                <application.port>${application.port}</application.port>
-                <!-- The build started the simulator, so a test which finds none fails instead of skipping. -->
-                <simulator.required>true</simulator.required>
-              </systemPropertyVariables>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
     <profile>
       <id>camunda7</id>
       <activation>
