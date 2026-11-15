@@ -66,15 +66,14 @@ What is worth knowing beyond the annotation:
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|               File               |                                 What is different                                  |
-|----------------------------------|------------------------------------------------------------------------------------|
-| `WorkflowTaskHandler.java`       | two methods for one task definition, each with the versions it serves              |
-| `Service.java`                   | one business method per version of the assessment, neither knowing about the other |
-| `model/Aggregate.java`           | `assessedBy` from version 1 next to `riskScore` of the versions after it           |
-| `LoanApprovalProperties.java`    | `manualAssessor`, the name version 1 writes as the assessor                        |
-| `model/AggregateRepository.java` | `@Transactional` on the class                                                      |
-| `loan_approval.bpmn`             | the task is named `assessRisk`, which is the definition both methods refer to      |
-| `LoanApprovalIT.java`            | asserts which of the two methods ran, which is what proves the dispatch            |
+|             File              |                                 What is different                                  |
+|-------------------------------|------------------------------------------------------------------------------------|
+| `WorkflowTaskHandler.java`    | two methods for one task definition, each with the versions it serves              |
+| `Service.java`                | one business method per version of the assessment, neither knowing about the other |
+| `model/Aggregate.java`        | `assessedBy` from version 1 next to `riskScore` of the versions after it           |
+| `LoanApprovalProperties.java` | `manualAssessor`, the name version 1 writes as the assessor                        |
+| `loan_approval.bpmn`          | the task is named `assessRisk`, which is the definition both methods refer to      |
+| `LoanApprovalIT.java`         | asserts which of the two methods ran, which is what proves the dispatch            |
 
 ## Running it
 
