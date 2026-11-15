@@ -172,14 +172,14 @@ def named(path, names):
 
     file = PurePosixPath(path)
     for name in names:
-        if name.endswith("/") and not name.startswith("."):
-            directory = name.rstrip("/")
-            if f"/{directory}/" in f"/{file.parent.as_posix()}/":
-                return True
-            if fnmatch.fnmatch(file.parent.as_posix(), f"*{as_pattern(directory)}*"):
+        # fnmatch lets '*' match a '/' as well. So '**/' becomes '*', which also matches
+        # no directory at all, as a reader of 'templates/**/*.ftl' expects.
+        pattern = as_pattern(name).replace("**/", "*")
+        if name.endswith("/"):
+            # A directory names every file below it, wherever the directory is.
+            if fnmatch.fnmatch(path, pattern + "/*") or fnmatch.fnmatch(path, f"*/{pattern}/*"):
                 return True
             continue
-        pattern = as_pattern(name)
         if "/" not in pattern:
             if "openapi" in file.parts:
                 continue
@@ -187,8 +187,6 @@ def named(path, names):
                 return True
             continue
         if fnmatch.fnmatch(path, pattern) or fnmatch.fnmatch(path, "*/" + pattern):
-            return True
-        if pattern.startswith("**/") and fnmatch.fnmatch(path, pattern[3:]):
             return True
     return False
 
