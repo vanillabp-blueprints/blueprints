@@ -128,12 +128,16 @@ Names this blueprint adds:
    `openapi-generator-maven-plugin` with the settings of the root POM of this blueprint. For a
    system which calls back, write a second OpenAPI file for the callback. `client` generates
    the client of the API and the interface of the callback, `server` the opposite.
-5. Create a Maven module `rest-adapter` per system. It depends on the port, on `client` and on
-   `quarkus-rest-client-jackson`. It implements the port with the generated client, built by
-   `QuarkusRestClientBuilder`. A callback endpoint is a bean which implements the generated
-   callback interface. Add a `@ConfigMapping` for the address, without a default, and a producer
-   of the port's bean with `@Startup`. Fail the start with a message which names the missing
-   key. Index the module and `client` with the `jandex-maven-plugin`.
+   `client` depends on `quarkus-rest-client-jackson`. Give it a `@ConfigMapping` with the prefix
+   of the API and the keys `base-url` (without a default), `connect-timeout` and `read-timeout`,
+   and a producer which builds the client with `QuarkusRestClientBuilder`, with `@Startup`. Fail
+   the start with a message which names `base-url` when it is missing.
+5. Create a Maven module `rest-adapter` per system. It depends on the port and on `client`. It
+   implements the port with the generated client, which it injects. It writes no client
+   configuration. A callback endpoint is a bean which implements the generated callback
+   interface. Add a `@ConfigMapping` for what the adapter needs beyond the client, such as the
+   callback address, and a producer of the port's bean. Fail the start with a message which
+   names the missing key. Index the module and `client` with the `jandex-maven-plugin`.
 6. Make the application depend on the adapters. Set their addresses in
    `application-local.yaml` (the simulator) and `application-real.yaml` (from the
    environment). Make one of them a parent profile with `quarkus.config.profile.parent`, next

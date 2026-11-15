@@ -1,13 +1,10 @@
 package blueprint.externalsystems.esignature.rest.config;
 
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
-
 import blueprint.externalsystems.esignature.ContractSigning;
 import blueprint.externalsystems.esignature.api.client.EnvelopesApi;
+import blueprint.externalsystems.esignature.api.client.config.ESignatureClientProperties;
 import blueprint.externalsystems.esignature.callback.server.SignatureCallbackApi;
 import blueprint.externalsystems.esignature.rest.ContractSigningRestAdapter;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.runtime.Startup;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
@@ -20,7 +17,9 @@ import jakarta.ws.rs.Path;
  * else.
  *
  * <p>
- * Quarkus finds this class, and the endpoint, through the index the build of this module writes.
+ * The client comes from the client module of the API, which builds it out of the properties
+ * {@code e-signature.*}. Quarkus finds this class, and the endpoint, through the index the
+ * build of this module writes.
  * </p>
  */
 @ApplicationScoped
@@ -33,25 +32,21 @@ public class ContractSigningRestAdapterProducer {
 
   /**
    * The e-signature service, over REST. Created while the application starts, so a missing
-   * address stops the start with a message instead of failing the first contract.
+   * callback address stops the start with a message instead of failing the first contract.
    *
-   * @param properties Where the e-signature service is, and where it calls back.
+   * @param client           The generated client, built by the client module.
+   * @param clientProperties Where the e-signature service is, for the messages of the adapter.
+   * @param properties       Where the e-signature service calls back.
    * @return The adapter.
    */
   @Produces
   @Singleton
   @Startup
   public ContractSigning contractSigning(
+      final EnvelopesApi client,
+      final ESignatureClientProperties clientProperties,
       final ContractSigningProperties properties) {
 
-    final var baseUrl = properties
-        .baseUrl()
-        .filter(address -> !address.isBlank())
-        .orElseThrow(() -> new IllegalStateException("""
-            The e-signature service has no address. Set 'e-signature.base-url' to where it \
-            answers. For the simulator of this blueprint that is \
-            http://localhost:8079/e-signature, and the profile 'local' of the application sets \
-            it."""));
     final var callbackUrl = properties
         .callbackUrl()
         .filter(address -> !address.isBlank())
@@ -64,15 +59,7 @@ public class ContractSigningRestAdapterProducer {
                 CALLBACK_PATH,
                 CALLBACK_PATH)));
 
-    // The generated client is an interface. The REST client of Quarkus implements it.
-    final var client = QuarkusRestClientBuilder
-        .newBuilder()
-        .baseUri(URI.create(baseUrl))
-        .connectTimeout(properties.timeout().toMillis(), TimeUnit.MILLISECONDS)
-        .readTimeout(properties.timeout().toMillis(), TimeUnit.MILLISECONDS)
-        .build(EnvelopesApi.class);
-
-    return new ContractSigningRestAdapter(client, baseUrl, callbackUrl);
+    return new ContractSigningRestAdapter(client, clientProperties.baseUrl().orElseThrow(), callbackUrl);
 
   }
 

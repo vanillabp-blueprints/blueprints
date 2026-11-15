@@ -21,18 +21,14 @@
       <version>${project.version}</version>
     </dependency>
     <!--
-      The client of the credit rating, generated from 'credit-rating.yaml'. This adapter writes
-      no HTTP calls and no JSON types of its own.
+      The client of the credit rating, generated from 'credit-rating.yaml'. Its module also
+      builds the client out of the properties 'credit-rating.*'. This adapter writes no HTTP
+      calls, no JSON types and no client configuration of its own.
     -->
     <dependency>
       <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
       <artifactId>credit-rating-api-client</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <!-- The REST client of Quarkus, and JSON. -->
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-rest-client-jackson</artifactId>
     </dependency>
   </dependencies>
 

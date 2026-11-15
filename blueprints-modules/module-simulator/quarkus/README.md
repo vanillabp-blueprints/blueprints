@@ -118,10 +118,19 @@ comes as a `WebApplicationException`. The callback interface returns a `Response
 the endpoint decides its status.
 
 The REST client of Quarkus implements a generated client interface while the application is
-built. The adapter builds the client with `QuarkusRestClientBuilder`, from the address in its
-properties. The callback endpoint is a bean which implements the generated callback interface.
-Quarkus finds both only in an index, so every `client` module and every adapter writes one
-with the `jandex-maven-plugin`.
+built. The `client` module builds the client itself: a producer, for example
+`CreditRatingClientProducer`, calls `QuarkusRestClientBuilder` with the keys of a
+`@ConfigMapping` below the prefix of the API. The keys have the names the REST client of the
+Business Cockpit support uses: `base-url`, `connect-timeout` and `read-timeout`, in
+milliseconds. The support has no module for Quarkus yet, so the producer reads these keys itself. So the application only sets `credit-rating.base-url`, and the adapter injects the
+client. The callback endpoint is a bean which implements the generated callback interface.
+Quarkus finds the producers and the endpoint only in an index, so every `client` module and
+every adapter writes one with the `jandex-maven-plugin`.
+
+The producer of the test API's clients creates a client only when a test asks for it, and
+`SimulatorTestApi` asks the bean container. It reads the user tasks the simulator holds for the
+cockpit into `UserTask`, the model the cockpit generates for its official API
+(`official-gui-api-server`), with a plain Jackson mapper.
 
 The `server` modules are generated for the platform of the simulator, and their POMs carry
 their own settings.

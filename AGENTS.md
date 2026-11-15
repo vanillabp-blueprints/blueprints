@@ -51,8 +51,11 @@ controller implements the generated interface and holds the code of each call, n
 `@GetMapping`, no `@Path` and no record for a request or an answer is written by hand. An API
 which only a browser or the module's own user interface calls keeps its file in
 `src/main/resources/openapi/` of the module. An API with a Java client gets a Maven module
-`<name>-api` with the submodules `client` and `server`. Rule 7 in `CONTRIBUTING.md` has the
-generators and their settings for both platforms.
+`<name>-api` with the submodules `client` and `server`. The `client` module also builds the
+client: an AutoConfiguration on `ClientsConfigurationBase` of the cockpit support on Spring
+Boot, a bean producer on Quarkus. An application only adds the dependency and sets the
+properties. Rule 7 in `CONTRIBUTING.md` has the generators and their settings for both
+platforms.
 
 ## How we write
 

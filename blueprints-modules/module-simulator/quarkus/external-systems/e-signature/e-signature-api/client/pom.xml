@@ -13,21 +13,15 @@
   <description>What the application needs of the e-signature service, generated: the client of e-signature.yaml and the interface of e-signature-callback.yaml.</description>
 
   <!--
-    Only what the generated sources import: the annotations of Jakarta REST, of Jackson and of
-    Jakarta. No Quarkus extension, so the module stays a small library.
+    The generated interface, and the producer which turns it into a client out of the
+    properties. The REST client of Quarkus implements the interface. Until the support of the
+    Business Cockpit has a Quarkus module, the producer reads the keys of its REST client which
+    a blueprint needs, with the same names: 'base-url', 'connect-timeout' and 'read-timeout'.
   -->
   <dependencies>
     <dependency>
-      <groupId>jakarta.ws.rs</groupId>
-      <artifactId>jakarta.ws.rs-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.annotation</groupId>
-      <artifactId>jakarta.annotation-api</artifactId>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-client-jackson</artifactId>
     </dependency>
   </dependencies>
 

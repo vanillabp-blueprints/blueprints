@@ -13,17 +13,34 @@
   <description>The client of the test API, generated from simulator-test-api.yaml. The tests of the workflow module use it.</description>
 
   <!--
-    Only what the generated sources import: the annotations of Spring Web, of Jackson and of
-    Jakarta. No Spring Boot starter, so the module stays a small library.
+    The generated client and its AutoConfiguration. The REST client classes come from the
+    support of the Business Cockpit: 'ClientsConfigurationBase' builds an OpenFeign client out of
+    the standard client keys. The Jackson 2 libraries are there only because the generated
+    supporting files import them. The JSON bodies are read and written with the Jackson 3 mapper
+    of the application.
   -->
   <dependencies>
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-web</artifactId>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>business-cockpit-spring-boot-support</artifactId>
+      <version>${businesscockpit.version}</version>
+    </dependency>
+    <!-- The AutoConfiguration, and the Jackson 3 mapper the client reads and writes JSON with. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-jackson</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.github.openfeign</groupId>
+      <artifactId>feign-jackson</artifactId>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>
@@ -51,11 +68,15 @@
               <inputSpec>${project.basedir}/../simulator-test-api.yaml</inputSpec>
               <apiPackage>blueprint.simulator.testapi.client</apiPackage>
               <modelPackage>blueprint.simulator.testapi.client.model</modelPackage>
-              <!-- A Spring HTTP interface. Whoever calls the API turns it into a client with a RestClient. -->
-              <library>spring-http-interface</library>
+              <invokerPackage>blueprint.simulator.testapi.client.invoker</invokerPackage>
+              <!-- An OpenFeign interface. The AutoConfiguration of this module builds the client. -->
+              <generatorName>java</generatorName>
+              <library>feign</library>
+              <generateSupportingFiles>true</generateSupportingFiles>
+              <supportingFilesToGenerate>${openapi-generator.feign-supporting-files}</supportingFilesToGenerate>
               <configOptions>
-                <!-- The method returns the body. An error status comes as an exception of the RestClient. -->
-                <useResponseEntity>false</useResponseEntity>
+                <!-- The library 'feign' does not know JSpecify. -->
+                <useJspecify>false</useJspecify>
               </configOptions>
             </configuration>
           </execution>

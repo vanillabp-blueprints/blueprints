@@ -3,21 +3,25 @@ package blueprint.workflowmodule.loanapproval;
 import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 
-import java.net.URI;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import org.awaitility.core.ConditionTimeoutException;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import blueprint.simulator.testapi.client.CreditRatingTestApi;
 import blueprint.simulator.testapi.client.ESignatureTestApi;
 import blueprint.simulator.testapi.client.model.Envelope;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.quarkus.arc.Arc;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import io.vanillabp.cockpit.gui.api.v1.OfficialTasklistApi;
+import io.vanillabp.cockpit.gui.api.v1.UserTask;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response.Status;
 
@@ -33,12 +37,18 @@ import jakarta.ws.rs.core.Response.Status;
  *
  * <p>
  * The client of the test API is generated from
- * {@code simulator-test-api/simulator-test-api.yaml}, the file the simulator implements, and
- * the REST client of Quarkus implements it. The REST client exists only while Quarkus runs, so
- * a client is made for each call and not when this class is made: {@link SimulatorExtension}
- * asks {@link #isRunning()} before Quarkus starts. That is why the status is asked with
- * RestAssured. The official API of the cockpit is read with RestAssured as well, because the
- * cockpit publishes no client of its own.
+ * {@code simulator-test-api/simulator-test-api.yaml}, the file the simulator implements. Its
+ * module brings a producer, which builds the clients out of the property
+ * {@code simulator-test-api.base-url}. The clients exist only while Quarkus runs, so a client is
+ * taken from the bean container for each call and not when this class is made:
+ * {@link SimulatorExtension} asks {@link #isRunning()} before Quarkus starts. That is why the
+ * status is asked with RestAssured.
+ * </p>
+ *
+ * <p>
+ * The official API of the cockpit is read with RestAssured, because the cockpit publishes no
+ * Java client of it. The path and the model come from the classes the cockpit generates from
+ * that API, {@link OfficialTasklistApi} and {@link UserTask}.
  * </p>
  *
  * <p>
@@ -56,6 +66,18 @@ public final class SimulatorTestApi {
   private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
   private static final Duration POLL_INTERVAL = Duration.ofMillis(200);
+
+  /**
+   * Reads the answers of the cockpit API. RestAssured's own Jackson registers every Jackson
+   * module on the classpath. The Operaton engine brings the Scala module, which turns a nested
+   * JSON object into a Scala map, and such a map equals no Java map. This mapper knows only the
+   * module for dates.
+   */
+  private static final JsonMapper COCKPIT_JSON = JsonMapper
+      .builder()
+      .addModule(new JavaTimeModule())
+      .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+      .build();
 
   private final String baseUrl;
 
@@ -191,11 +213,11 @@ public final class SimulatorTestApi {
    * @param condition  What the cockpit is expected to know about the task.
    * @return The user task, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitUserTask(
+  public UserTask awaitUserTask(
       final String userTaskId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<UserTask> condition) {
 
-    final var lastSeen = new AtomicReference<Optional<Map<String, Object>>>(Optional.empty());
+    final var lastSeen = new AtomicReference<Optional<UserTask>>(Optional.empty());
 
     try {
 
@@ -232,45 +254,40 @@ public final class SimulatorTestApi {
 
   }
 
-  private Optional<Map<String, Object>> userTask(
+  private Optional<UserTask> userTask(
       final String userTaskId) {
 
     final var response = cockpit()
         .pathParam("userTaskId", userTaskId)
-        .get("/usertask/{userTaskId}");
+        .get(OfficialTasklistApi.PATH_GET_USER_TASK);
 
     // The simulator answers a task it does not know with an error. That only means the report
     // has not arrived yet.
     return response.statusCode() == 200
-        ? Optional.ofNullable(asMap(response))
+        ? Optional.ofNullable(asUserTask(response))
         : Optional.empty();
 
   }
 
-  /**
-   * Reads a JSON object into plain Java maps and lists. {@code response.as(Map.class)} would ask
-   * RestAssured's Jackson, and that registers every Jackson module on the classpath. The Operaton
-   * engine brings the Scala module, which turns a nested JSON object into a Scala map. Such a map
-   * equals no Java map, so an assertion on the details of a task fails although the values are
-   * the same. JsonPath parses with Groovy and returns Java maps on every BPMS. The answers of
-   * the test API are read into generated classes, so only the cockpit's answers need this.
-   */
-  private static Map<String, Object> asMap(
+  private static UserTask asUserTask(
       final Response response) {
 
-    return response
-        .jsonPath()
-        .getMap("$");
+    try {
+      return COCKPIT_JSON.readValue(response.asString(), UserTask.class);
+    } catch (Exception e) {
+      throw new IllegalStateException("The cockpit API answered a user task which cannot be read: "
+          + response.asString(), e);
+    }
 
   }
 
-  private <T> T testApi(
+  private static <T> T testApi(
       final Class<T> api) {
 
-    return QuarkusRestClientBuilder
-        .newBuilder()
-        .baseUri(URI.create(baseUrl))
-        .build(api);
+    return Arc
+        .container()
+        .instance(api)
+        .get();
 
   }
 

@@ -1,13 +1,11 @@
 package blueprint.externalsystems.esignature.rest;
 
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClientResponseException;
-
 import blueprint.externalsystems.esignature.ContractSigning;
 import blueprint.externalsystems.esignature.ContractSigningUnavailableException;
 import blueprint.externalsystems.esignature.ContractToSign;
 import blueprint.externalsystems.esignature.api.client.EnvelopesApi;
 import blueprint.externalsystems.esignature.api.client.model.Envelope;
+import feign.FeignException;
 
 /**
  * The e-signature service, reached over REST. The API is described in
@@ -53,10 +51,15 @@ public class ContractSigningRestAdapter implements ContractSigning {
 
     try {
 
-      eSignature.createEnvelope(new Envelope(
-          contract.contractId(), contract.signer(), contract.text(), callbackUrl));
+      eSignature.createEnvelope(new Envelope()
+          .contractId(contract.contractId())
+          .signer(contract.signer())
+          .document(contract.text())
+          .callbackUrl(callbackUrl));
 
-    } catch (ResourceAccessException | RestClientResponseException e) {
+    } catch (FeignException e) {
+
+      // An error status, no answer at all, or an answer later than the timeout.
 
       throw new ContractSigningUnavailableException("The e-signature service at '"
           + baseUrl

@@ -23,17 +23,14 @@
     <!--
       Generated from the two OpenAPI files of the e-signature service: the client of
       'e-signature.yaml' and the interface of 'e-signature-callback.yaml', which the callback
-      controller implements. This adapter writes no HTTP calls and no JSON types of its own.
+      controller implements. The client module also builds the client out of the properties
+      'e-signature.*'. This adapter writes no HTTP calls, no JSON types and no client
+      configuration of its own.
     -->
     <dependency>
       <groupId>io.vanillabp.blueprint.module-simulator-springboot</groupId>
       <artifactId>e-signature-api-client</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <!-- The REST client of Spring, and JSON. -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-restclient</artifactId>
     </dependency>
     <!-- The endpoint the e-signature service calls back. The application runs it. -->
     <dependency>

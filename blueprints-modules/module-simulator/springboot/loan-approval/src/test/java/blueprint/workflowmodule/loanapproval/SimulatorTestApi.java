@@ -5,21 +5,25 @@ import static org.awaitility.Awaitility.await;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import org.awaitility.core.ConditionTimeoutException;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.client.ResourceAccessException;
+import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.core.env.MapPropertySource;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.support.RestClientAdapter;
-import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import blueprint.simulator.testapi.client.CreditRatingTestApi;
 import blueprint.simulator.testapi.client.ESignatureTestApi;
 import blueprint.simulator.testapi.client.StatusApi;
+import blueprint.simulator.testapi.client.config.SimulatorTestApiClientAutoConfiguration;
 import blueprint.simulator.testapi.client.model.Envelope;
+import feign.FeignException;
+import feign.RetryableException;
+import io.vanillabp.cockpit.gui.api.v1.OfficialTasklistApi;
+import io.vanillabp.cockpit.gui.api.v1.UserTask;
 
 /**
  * The client of the simulator's test API, and of the cockpit API the simulator plays.
@@ -33,9 +37,17 @@ import blueprint.simulator.testapi.client.model.Envelope;
  *
  * <p>
  * The client of the test API is generated from
- * {@code simulator-test-api/simulator-test-api.yaml}, the file the simulator implements. The
- * official API of the cockpit is read with a plain {@link RestClient}, because the cockpit
- * publishes no client of its own.
+ * {@code simulator-test-api/simulator-test-api.yaml}, the file the simulator implements. Its
+ * module brings an AutoConfiguration, so this class gets the clients the way an application
+ * does: it starts a small Spring context with that AutoConfiguration and sets one property. A
+ * JUnit extension uses this class before the context of the test starts, so it cannot take the
+ * clients from there.
+ * </p>
+ *
+ * <p>
+ * The official API of the cockpit is read with a {@link RestClient}, because the cockpit
+ * publishes no Java client of it. The path and the model come from the classes the cockpit
+ * generates from that API, {@link OfficialTasklistApi} and {@link UserTask}.
  * </p>
  *
  * <p>
@@ -53,6 +65,9 @@ public final class SimulatorTestApi {
 
   private static final Duration POLL_INTERVAL = Duration.ofMillis(200);
 
+  /** One client per address, because each holds a small Spring context. */
+  private static final Map<String, SimulatorTestApi> CLIENTS = new ConcurrentHashMap<>();
+
   private final String baseUrl;
 
   private final StatusApi status;
@@ -67,12 +82,17 @@ public final class SimulatorTestApi {
       final String baseUrl) {
 
     this.baseUrl = baseUrl;
-    final var testApi = HttpServiceProxyFactory
-        .builderFor(RestClientAdapter.create(RestClient.create(baseUrl)))
-        .build();
-    this.status = testApi.createClient(StatusApi.class);
-    this.creditRating = testApi.createClient(CreditRatingTestApi.class);
-    this.eSignature = testApi.createClient(ESignatureTestApi.class);
+    final var clients = new AnnotationConfigApplicationContext();
+    clients
+        .getEnvironment()
+        .getPropertySources()
+        .addFirst(new MapPropertySource("simulator", Map.of("simulator-test-api.base-url", baseUrl)));
+    clients.register(JacksonAutoConfiguration.class, SimulatorTestApiClientAutoConfiguration.class);
+    clients.refresh();
+    clients.registerShutdownHook();
+    this.status = clients.getBean(StatusApi.class);
+    this.creditRating = clients.getBean(CreditRatingTestApi.class);
+    this.eSignature = clients.getBean(ESignatureTestApi.class);
     this.cockpit = RestClient.create(baseUrl
         + "/official-api/v1");
 
@@ -85,7 +105,18 @@ public final class SimulatorTestApi {
    */
   public static SimulatorTestApi simulator() {
 
-    return new SimulatorTestApi(System.getProperty("simulator.base-url", DEFAULT_BASE_URL));
+    return CLIENTS.computeIfAbsent(baseUrlOfThisRun(), SimulatorTestApi::new);
+
+  }
+
+  /**
+   * Where the simulator of this test run answers, without building a client.
+   *
+   * @return The address of the simulator.
+   */
+  public static String baseUrlOfThisRun() {
+
+    return System.getProperty("simulator.base-url", DEFAULT_BASE_URL);
 
   }
 
@@ -109,7 +140,8 @@ public final class SimulatorTestApi {
 
     try {
       return "running".equals(status.status());
-    } catch (ResourceAccessException e) {
+    } catch (RetryableException e) {
+      // Nothing answers at the address.
       return false;
     }
 
@@ -151,11 +183,8 @@ public final class SimulatorTestApi {
 
     try {
       return Optional.of(eSignature.envelope(contractId));
-    } catch (RestClientResponseException e) {
-      if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-        return Optional.empty();
-      }
-      throw e;
+    } catch (FeignException.NotFound e) {
+      return Optional.empty();
     }
 
   }
@@ -171,16 +200,15 @@ public final class SimulatorTestApi {
       final String contractId) {
 
     try {
-      return HttpStatus.OK.value()
-          + " "
+      return "200 "
           + eSignature.sign(contractId);
-    } catch (RestClientResponseException e) {
+    } catch (RetryableException e) {
+      throw e;
+    } catch (FeignException e) {
       // 404 and 502 are answers of the simulator as well. Their text says what went wrong.
-      return e
-          .getStatusCode()
-          .value()
+      return e.status()
           + " "
-          + e.getResponseBodyAsString();
+          + e.contentUTF8();
     }
 
   }
@@ -193,11 +221,11 @@ public final class SimulatorTestApi {
    * @param condition  What the cockpit is expected to know about the task.
    * @return The user task, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitUserTask(
+  public UserTask awaitUserTask(
       final String userTaskId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<UserTask> condition) {
 
-    final var lastSeen = new AtomicReference<Optional<Map<String, Object>>>(Optional.empty());
+    final var lastSeen = new AtomicReference<Optional<UserTask>>(Optional.empty());
 
     try {
 
@@ -234,19 +262,18 @@ public final class SimulatorTestApi {
 
   }
 
-  @SuppressWarnings("unchecked")
-  private Optional<Map<String, Object>> userTask(
+  private Optional<UserTask> userTask(
       final String userTaskId) {
 
     return cockpit
         .get()
-        .uri("/usertask/{userTaskId}", userTaskId)
+        .uri(OfficialTasklistApi.PATH_GET_USER_TASK, userTaskId)
         // The simulator answers a task it does not know with an error. That only means the
         // report has not arrived yet.
         .exchange((
             request,
             response) -> response.getStatusCode().is2xxSuccessful()
-                ? Optional.ofNullable((Map<String, Object>) response.bodyTo(Map.class))
+                ? Optional.ofNullable(response.bodyTo(UserTask.class))
                 : Optional.empty());
 
   }

@@ -97,15 +97,53 @@ the opposite for the simulator: the interface of `e-signature.yaml` and the clie
 
 The generator runs with the same settings for every API. They are in the POM of the blueprint:
 
-|          Setting           |                                         Why                                          |
-|----------------------------|--------------------------------------------------------------------------------------|
-| `spring-http-interface`    | the client side: an interface with `@HttpExchange`, which Spring turns into a client |
-| `interfaceOnly`            | the server side: an interface with `@RequestMapping`, which a controller implements  |
-| `requestMappingMode`       | the path of the `servers` entry goes onto the interface, so one simulator plays two  |
-| `useRecords`               | the models are Java records                                                          |
-| `useResponseEntity: false` | a client gets the body, and an error status as an exception of the `RestClient`      |
+|       Setting        |                                         Why                                         |
+|----------------------|-------------------------------------------------------------------------------------|
+| `interfaceOnly`      | the server side: an interface with `@RequestMapping`, which a controller implements |
+| `requestMappingMode` | the path of the `servers` entry goes onto the interface, so one simulator plays two |
+| `useRecords`         | the models of a server are Java records                                             |
 
-The generated code needs Spring Web, Jackson and the Jakarta annotations, and nothing else.
+A `client` module generates with other settings, because its client is built with OpenFeign:
+
+|           Setting           |                                          Why                                           |
+|-----------------------------|----------------------------------------------------------------------------------------|
+| `java` with `feign`         | an OpenFeign interface, which `ClientsConfigurationBase` of the cockpit support builds |
+| `supportingFilesToGenerate` | the few files the interface needs: it extends the marker interface `ApiClient.Api`     |
+| `useJspecify: false`        | the library `feign` does not know JSpecify                                             |
+
+The models of a client are classes with getters, because the `java` generator knows no records.
+
+### A client module builds its client
+
+A `client` module brings an AutoConfiguration, for example `CreditRatingClientAutoConfiguration`.
+It extends `ClientsConfigurationBase` of `business-cockpit-spring-boot-support` and turns the
+properties below the prefix of the API into a client. The properties class extends `Client` of
+the same library, so every client has the same keys:
+
+```yaml
+credit-rating:
+  base-url: http://localhost:8079/credit-rating
+  read-timeout: 2000
+  retry:
+    enabled: true
+```
+
+The [README of the support](https://github.com/vanillabp/business-cockpit/blob/main/support/README.md#rest-clients)
+lists all keys with their defaults. A default which suits one API is set in the constructor of
+its properties class: the credit rating waits two seconds, because the user waits for it. The
+AutoConfiguration checks `base-url` while the application starts.
+
+So the REST adapter only puts itself in front of the client. It injects the generated interface
+and translates between the API and the port. An error status comes as a `FeignException`, no
+answer at all as a `RetryableException`. The application only sets `base-url`, and the tests
+set the same key.
+
+The test API answers most calls with plain text. Its AutoConfiguration reads a `String` as text
+and everything else as JSON, by overriding `configureJsonEncoding`. `SimulatorTestApi` in the
+tests of the workflow module starts a small Spring context with that AutoConfiguration, because
+a JUnit extension asks the simulator before the context of the test exists. It reads the user
+tasks the simulator holds for the cockpit into `UserTask`, the model the cockpit generates for
+its official API (`official-gui-api-server`).
 
 ### Two kinds of simulator
 

@@ -2,14 +2,12 @@ package blueprint.externalsystems.creditrating.rest;
 
 import java.util.Optional;
 
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClientResponseException;
-
 import blueprint.externalsystems.creditrating.CreditRating;
 import blueprint.externalsystems.creditrating.CreditRatingUnavailableException;
 import blueprint.externalsystems.creditrating.CreditScore;
 import blueprint.externalsystems.creditrating.api.client.CreditRatingApi;
+import feign.FeignException;
+import feign.RetryableException;
 
 /**
  * The credit rating, reached over REST. The API is described in
@@ -56,26 +54,26 @@ public class CreditRatingRestAdapter implements CreditRating {
 
       return Optional.of(new CreditScore(creditRating
           .getScore(customerId)
-          .score()));
+          .getScore()));
 
-    } catch (HttpClientErrorException.NotFound e) {
+    } catch (FeignException.NotFound e) {
 
       // The API answers 404 for a customer it does not know. That is an answer, not a failure.
       return Optional.empty();
 
-    } catch (RestClientResponseException e) {
-
-      throw new CreditRatingUnavailableException("The credit rating at '"
-          + baseUrl
-          + "' answered "
-          + e.getStatusCode().value(), e);
-
-    } catch (ResourceAccessException e) {
+    } catch (RetryableException e) {
 
       // Nothing answers at the address, or the answer took longer than the timeout.
       throw new CreditRatingUnavailableException("The credit rating at '"
           + baseUrl
           + "' does not answer", e);
+
+    } catch (FeignException e) {
+
+      throw new CreditRatingUnavailableException("The credit rating at '"
+          + baseUrl
+          + "' answered "
+          + e.status(), e);
 
     }
 

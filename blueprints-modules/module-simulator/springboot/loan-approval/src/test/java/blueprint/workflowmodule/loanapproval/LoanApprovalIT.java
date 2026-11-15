@@ -67,8 +67,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   static void everySystemIsTheSimulator(
       final DynamicPropertyRegistry properties) {
 
-    final var simulator = simulator().baseUrl();
+    final var simulator = SimulatorTestApi.baseUrlOfThisRun();
     properties.add("server.port", () -> PORT);
+    properties.add("simulator-test-api.base-url", () -> simulator);
     properties.add("credit-rating.base-url", () -> simulator
         + "/credit-rating");
     properties.add("e-signature.base-url", () -> simulator
@@ -100,9 +101,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // The cockpit shows the user task, with the details the module reported.
     final var userTask = simulator().awaitUserTask(prepareContractTaskId, task -> true);
-    assertThat(userTask.get("workflowModuleId")).isEqualTo("loan-approval");
-    assertThat(userTask.get("taskDefinition")).isEqualTo("prepareContract");
-    assertThat(userTask.get("details"))
+    assertThat(userTask.getWorkflowModuleId()).isEqualTo("loan-approval");
+    assertThat(userTask.getTaskDefinition()).isEqualTo("prepareContract");
+    assertThat(userTask.getDetails())
         .isEqualTo(Map.of(
             WorkflowTaskHandler.AMOUNT, 5000,
             WorkflowTaskHandler.CREDIT_SCORE, 720));
@@ -120,8 +121,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(sent.getInterestRate()).isEqualByComparingTo(new BigDecimal("3.5"));
     assertThat(simulator().envelope(loanRequestId))
         .hasValueSatisfying(envelope -> {
-          assertThat(envelope.signer()).isEqualTo(customerId);
-          assertThat(envelope.document()).contains("5000", "3.5");
+          assertThat(envelope.getSigner()).isEqualTo(customerId);
+          assertThat(envelope.getDocument()).contains("5000", "3.5");
         });
 
     // The customer signs. The simulator calls the application back, and the workflow ends.
@@ -133,7 +134,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .isNotNull();
 
     // The cockpit took the user task off the list.
-    simulator().awaitUserTask(prepareContractTaskId, task -> task.get("endedAt") != null);
+    simulator().awaitUserTask(prepareContractTaskId, task -> task.getEndedAt() != null);
 
   }
 

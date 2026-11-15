@@ -389,9 +389,29 @@ Each platform has its own generator:
 | Spring Boot | `spring`, `interfaceOnly`, `requestMappingMode` `none`, `useResponseEntity` `false`     | a `@RestController` which implements the interface     |
 | Quarkus     | `jaxrs-spec`, `interfaceOnly`, `returnResponse` `false`, `sourceFolder` `src/main/java` | a bean which implements the interface, without `@Path` |
 
-A client is generated with the library `spring-http-interface`, and a `RestClient` turns it into
-a client. On Quarkus, Quarkus REST takes the paths and the parameters from the interface, so the
-resource class only carries its bean annotation. The paths in the file are complete and the
+On Quarkus, Quarkus REST takes the paths and the parameters from the interface, so the resource
+class only carries its bean annotation.
+
+A `client` module brings the configuration which builds its client. An application, or a test,
+adds the dependency, sets the properties below the prefix of the API, for example
+`credit-rating.base-url`, and injects the generated interface. Nobody writes client
+configuration a second time.
+
+- Spring Boot: the generator `java` with the library `feign` writes an OpenFeign interface. The
+  module has an AutoConfiguration which extends `ClientsConfigurationBase` of
+  `io.vanillabp.businesscockpit:business-cockpit-spring-boot-support`. Its properties class
+  extends `Client` of the same library, so every client has the same keys: `base-url`,
+  `connect-timeout`, `read-timeout`, `retry.*`, `authentication.*`, `proxy.*` and more. The
+  [README of the support](https://github.com/vanillabp/business-cockpit/blob/main/support/README.md#rest-clients)
+  lists them with their defaults. A default which suits one API, such as a short timeout, is
+  set in the constructor of the properties class.
+- Quarkus: the generator `jaxrs-spec` writes the interface, and the REST client of Quarkus
+  implements it. The module has a bean producer and a `@ConfigMapping` with the same key names,
+  `base-url`, `connect-timeout` and `read-timeout`. The support has no Quarkus module yet. When
+  it has one, the producer moves onto it.
+
+Both check `base-url` while the application starts and name the key in their message.
+`module-simulator` shows it for three clients. The paths in the file are complete and the
 server is `http://localhost:8080`. So the file names the URL a person types into the browser
 (Rule 3), and the interface needs no path of its own.
 

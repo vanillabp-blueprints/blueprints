@@ -126,13 +126,19 @@ Names this blueprint adds:
    interface is named after it. Add the modules `client` and `server`, which run the
    `openapi-generator-maven-plugin` with the settings of the root POM of this blueprint. For a
    system which calls back, write a second OpenAPI file for the callback. `client` generates
-   the client of the API and the interface of the callback, `server` the opposite.
+   the client of the API and the interface of the callback, `server` the opposite. `client`
+   generates with `java` and the library `feign`, and depends on
+   `business-cockpit-spring-boot-support`. Give it a properties class which extends `Client`,
+   with the prefix of the API and the defaults which suit it, and an AutoConfiguration which
+   extends `ClientsConfigurationBase` and builds the client. Fail the start with a message which
+   names `base-url` when it is missing. Register the AutoConfiguration in
+   `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
 5. Create a Maven module `rest-adapter` per system. It depends on the port and on `client`. It
-   implements the port with the generated client, created by `HttpServiceProxyFactory` from a
-   `RestClient`. A callback endpoint implements the generated callback interface. Add the
-   properties without a default for the address, and an auto-configuration registered in
-   `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`. Fail the
-   start with a message which names the missing key.
+   implements the port with the generated client, which it injects. It writes no client
+   configuration. A callback endpoint implements the generated callback interface. Add the
+   properties the adapter needs beyond the client, such as the callback address, and an
+   auto-configuration which runs after the one of `client`, registered in the same file. Fail
+   the start with a message which names the missing key.
 6. Make the application depend on the adapters. Set their addresses in
    `application-local.yaml` (the simulator) and `application-real.yaml` (from the
    environment). Activate one of them with `spring.profiles.active`.

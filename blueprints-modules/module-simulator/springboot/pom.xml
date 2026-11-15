@@ -61,6 +61,18 @@
     <businesscockpit-camunda8.version>0.9.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
     <!-- Generates the Java code of the APIs below 'external-systems' from their OpenAPI files. -->
     <openapi-generator.version>7.27.0</openapi-generator.version>
+    <!--
+      A client module generates an OpenFeign interface with the 'java' generator and the library
+      'feign'. The interface extends a marker interface of the generated 'ApiClient', so these
+      supporting files have to be generated too. Nothing else of them is used.
+    -->
+    <openapi-generator.feign-supporting-files>ApiClient.java,ApiResponse.java,ApiResponseDecoder.java,EncodingUtils.java,StringUtil.java,RFC3339DateFormat.java,RFC3339JavaTimeModule.java,RFC3339InstantDeserializer.java,HttpBasicAuth.java,HttpBearerAuth.java,ApiKeyAuth.java</openapi-generator.feign-supporting-files>
+    <!--
+      The client modules use the REST client of the Business Cockpit support, which is built on
+      OpenFeign. All OpenFeign libraries have to be of one version, the one the support is built
+      with.
+    -->
+    <feign.version>13.18</feign.version>
   </properties>
 
   <dependencyManagement>
@@ -69,6 +81,13 @@
         <groupId>io.vanillabp</groupId>
         <artifactId>vanillabp-bom</artifactId>
         <version>${vanillabp.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.github.openfeign</groupId>
+        <artifactId>feign-bom</artifactId>
+        <version>${feign.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -82,14 +101,17 @@
           The settings every API module shares. Each 'client' and 'server' module adds an
           execution per OpenAPI file, with its packages and its side:
 
-            client  library 'spring-http-interface': an interface with @HttpExchange, which
-                    the caller turns into a client with a RestClient
+            client  generator 'java' with the library 'feign': an OpenFeign interface. The
+                    client module brings an AutoConfiguration which builds the client with
+                    'ClientsConfigurationBase' of the Business Cockpit support, so an
+                    application only sets the properties and injects the interface
             server  'interfaceOnly': an interface with @RequestMapping, which a controller
                     implements
 
-          The generated code needs no library beyond Spring Web, Jackson and Jakarta
+          The generated server code needs no library beyond Spring Web, Jackson and Jakarta
           annotations: no Swagger annotations, no jackson-databind-nullable, no bean
-          validation. The models are Java records.
+          validation. Its models are Java records. The 'java' generator of a client knows no
+          records, so the models of a client are classes with getters.
         -->
         <plugin>
           <groupId>org.openapitools</groupId>
@@ -98,6 +120,8 @@
           <configuration>
             <generatorName>spring</generatorName>
             <generateSupportingFiles>false</generateSupportingFiles>
+            <generateApiTests>false</generateApiTests>
+            <generateModelTests>false</generateModelTests>
             <configOptions>
               <useSpringBoot4>true</useSpringBoot4>
               <useTags>true</useTags>
