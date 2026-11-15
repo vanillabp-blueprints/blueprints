@@ -56,7 +56,7 @@ Two things this blueprint leaves out on purpose, and where to find them:
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|              File             |                                        What is different                                        |
+|             File              |                                        What is different                                        |
 |-------------------------------|-------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`          | a signal catch event the workflow waits at, and a service task behind it                        |
 | `Workflow.java`               | `sendSignal`, plus the signal name as a constant                                                |

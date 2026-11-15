@@ -85,7 +85,7 @@ situations side by side.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|                         File                        |                                                   What is different                                                    |
+|                        File                         |                                                   What is different                                                    |
 |-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                                | a call activity pointing at `risk_assessment`, and a task after it using the result                                    |
 | `risk_assessment.bpmn`                              | new: the called process, two service tasks between a plain start and end event                                         |

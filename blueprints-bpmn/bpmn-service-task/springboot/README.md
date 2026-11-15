@@ -45,7 +45,7 @@ Two more things this blueprint carries:
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|                         File                        |                                                    What is different                                                    |
+|                        File                         |                                                    What is different                                                    |
 |-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                                | an error boundary event on the service task, plus the input mapping `ratingProvider`                                    |
 | `CreditRatingClient.java`                           | new: the port to the surrounding system the task talks to                                                               |

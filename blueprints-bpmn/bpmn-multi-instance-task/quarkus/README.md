@@ -64,7 +64,7 @@ the iterations left.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                                          File                                         |                                                                                What is different                                                                                |
+|                                         File                                          |                                                                                What is different                                                                                |
 |---------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                                                                  | a multi-instance service task iterating over an attribute of the aggregate, and a task after it                                                                                 |
 | `Aggregate.java`                                                                      | `partnerIds`, which the model loops over and which is therefore shared with the BPMS, and `offers`, one row per iteration                                                       |

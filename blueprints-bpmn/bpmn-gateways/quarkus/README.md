@@ -64,7 +64,7 @@ its data at home.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                         File                        |                                            What is different                                            |
+|                        File                         |                                            What is different                                            |
 |-----------------------------------------------------|---------------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                                | two exclusive gateways, each with a default flow: one asking the aggregate, one reading a raw attribute |
 | `Aggregate.java`                                    | `ratingBand`, the two getters the first gateway asks, and the annotations which name what is shared     |

@@ -55,7 +55,7 @@ same. `bpmn-user-task` shows them for a person instead of a system.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                        File                       |                                             What is different                                             |
+|                       File                        |                                             What is different                                             |
 |---------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                              | a send task the workflow waits at, an error boundary event on it, and a service task per way out          |
 | `WorkflowTaskHandler.java`                        | the `@WorkflowTask` method of that task, taking `@TaskId` and `@TaskEvent`                                |

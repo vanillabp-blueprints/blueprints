@@ -109,7 +109,7 @@ forgot its null check.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                         File                        |                                         What is different                                          |
+|                        File                         |                                         What is different                                          |
 |-----------------------------------------------------|----------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                                | a call activity, an embedded subprocess, and the gateway which asks whether the second section ran |
 | `document_check.bpmn`                               | new: the called process of the first section                                                       |

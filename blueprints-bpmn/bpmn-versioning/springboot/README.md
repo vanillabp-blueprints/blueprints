@@ -67,7 +67,7 @@ What is worth knowing beyond the annotation:
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|                   File                  |                                 What is different                                  |
+|                  File                   |                                 What is different                                  |
 |-----------------------------------------|------------------------------------------------------------------------------------|
 | `WorkflowTaskHandler.java`              | two methods for one task definition, each with the versions it serves              |
 | `Service.java`                          | one business method per version of the assessment, neither knowing about the other |

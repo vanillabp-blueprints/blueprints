@@ -64,7 +64,7 @@ not, and that is what a task in front of the end event is for.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                         File                        |                                   What is different                                   |
+|                        File                         |                                   What is different                                   |
 |-----------------------------------------------------|---------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                                | two end events, one with a task in front of it and one without                        |
 | `WorkflowTaskHandler.java`                          | the `@WorkflowEnded` method next to the `@WorkflowTask` methods                       |

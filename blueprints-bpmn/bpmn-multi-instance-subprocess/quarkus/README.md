@@ -69,7 +69,7 @@ whenever the model changes.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                                          File                                         |                                                                                What is different                                                                                |
+|                                         File                                          |                                                                                What is different                                                                                |
 |---------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                                                                  | a multi-instance subprocess, a multi-instance task inside it, and a plain task inside it as well                                                                                |
 | `Aggregate.java`                                                                      | a collection per level, and the rows the two loops write                                                                                                                        |

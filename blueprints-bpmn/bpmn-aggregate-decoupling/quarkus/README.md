@@ -73,7 +73,7 @@ It is taken when the answer to both questions is no.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                         File                        |                                          What is different                                          |
+|                        File                         |                                          What is different                                          |
 |-----------------------------------------------------|-----------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                                | an exclusive gateway with a default flow, its conditions naming two getters and no attribute        |
 | `Aggregate.java`                                    | `@NoSyncWithBPMS` on the class, `@SyncWithBPMS` on the two getters, and the data behind the answers |

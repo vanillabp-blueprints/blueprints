@@ -71,7 +71,7 @@ subprocess.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                                          File                                         |                                                            What is different                                                            |
+|                                         File                                          |                                                            What is different                                                            |
 |---------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                                                                  | an ad-hoc subprocess holding three service tasks, a user task and a business rule task ahead of it, and a gateway choosing between them |
 | `loan_approval.dmn`                                                                   | the decision table picking the checks for a request nobody has to look at                                                               |

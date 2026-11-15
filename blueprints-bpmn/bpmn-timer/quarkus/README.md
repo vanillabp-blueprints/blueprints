@@ -51,7 +51,7 @@ explains the expression and which Java types fit.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                         File                        |                                             What is different                                             |
+|                        File                         |                                             What is different                                             |
 |-----------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                                | a timer catch event, a task waiting for a partner, and a timer boundary event on it                       |
 | `WorkflowTaskHandler.java`                          | the `@WorkflowTask` method of the waiting task, taking `@TaskId` and `@TaskEvent`                         |

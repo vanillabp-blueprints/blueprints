@@ -39,7 +39,7 @@ nesting and the event are the model's business.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                         File                        |                                                     What is different                                                      |
+|                        File                         |                                                     What is different                                                      |
 |-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                                | an error boundary event on the first task, and a subprocess which throws an escalation, caught by a non-interrupting event |
 | `Service.java`                                      | throws `TaskException` for the error; one method per branch                                                                |

@@ -48,6 +48,8 @@ from pathlib import Path, PurePosixPath
 
 import yaml
 
+# The import below must not leave a __pycache__ directory in bin/ behind.
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from check_table_paths import CODE_SPAN, as_pattern, file_table_rows  # noqa: E402

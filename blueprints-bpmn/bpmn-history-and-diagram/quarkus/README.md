@@ -52,7 +52,7 @@ tells you what to do, instead of an empty answer.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                         File                        |                                                       What is different                                                       |
+|                        File                         |                                                       What is different                                                       |
 |-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                                | a task the workflow waits at, so a running workflow has something to show, and a task after it                                |
 | `Workflow.java`                                     | the three viewer methods next to `startWorkflow` and `completeTask`                                                           |
