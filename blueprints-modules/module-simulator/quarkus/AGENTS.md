@@ -84,7 +84,7 @@ Names this blueprint adds:
 | `simulator/src/main/java/blueprint/simulator/*/*ApiController.java`                          | the API of a system: implements the generated server interface, and adds what the system does                                  |
 | `simulator/src/main/java/blueprint/simulator/*/*TestApiController.java`                      | the test API, one controller per simulated system. Implements the interface generated from `simulator-test-api.yaml`           |
 | `simulator-test-api/simulator-test-api.yaml`                                                 | the test API as an OpenAPI file; `client` and `server` generate the Java code                                                  |
-| `loan-approval/pom.xml`                                                                      | the profile `start-stop-simulator`: free port, runnable JAR, start, log file                                                   |
+| `loan-approval/pom.xml`                                                                      | the start of the simulator: free port, runnable JAR, start, log file                                                           |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                        | the whole case against the simulator, with all three systems                                                                   |
 | `loan-approval/src/test/java/.../SimulatorExtension.java`                                    | skips without a simulator, fails when the build started one which does not answer, prints its log on a red test                |
 | `loan-approval/src/test/java/.../SimulatorTestApi.java`                                      | the client of the test API, which the REST client of Quarkus implements, and of the cockpit API                                |
@@ -146,9 +146,10 @@ Names this blueprint adds:
    the dev shell simulator. Package it with the classifier `runnable`. The simulator and the
    `server` modules use the platform of the dev shell simulator. Keep its parent in their POMs,
    and never make the application depend on them.
-8. Copy the profile `start-stop-simulator` into the POM of the module which has the
-   integration tests, and the test scope dependency on the simulator with `<type>pom</type>`,
-   which only orders the build. The order of `<modules>` is not enough, above all in a
+8. Copy the plugins which start the simulator into the plain `<build>` of the POM of the module
+   which has the integration tests, not into a profile which switches itself on: such a profile
+   switches off the BPMS profile which is active by default. Copy also the test scope dependency
+   on the simulator with `<type>pom</type>`, which only orders the build. The order of `<modules>` is not enough, above all in a
    parallel build (`-T`).
 9. Copy `SimulatorExtension`, `SimulatorTestApi` and `EverySystemIsTheSimulator`, and write the
    integration test against the simulator, with `@WithTestResource(EverySystemIsTheSimulator.class)`.

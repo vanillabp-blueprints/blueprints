@@ -293,6 +293,24 @@ time. The other way does not work, because the cluster never takes a lease off a
 `do-not-use` is also what every release line before 8.10 did. What a lease costs is in the
 [wiki of the adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds).
 
+### A build without a profile runs on the default BPMS
+
+A README shows `mvn verify` without `-P<bpms>`, so one BPMS profile, mostly `camunda7`, is
+marked `<activeByDefault>true</activeByDefault>`. Maven switches such a profile off as soon as
+any other profile of the same POM is active. That is fine for a profile the user names with
+`-P`, because then the user names the BPMS as well. It is not fine for a profile which
+switches itself on, through a property, a file, the JDK or the operating system. That happens
+on every build where the condition holds, and nobody sees it. The module then has no BPMS
+adapter, and its tests fail with "No VanillaBP BPMS adapter found". CI names a BPMS on every
+build and does not notice.
+
+So a POM with a profile which is active by default has no other profile with an
+`<activation>` of its own. What such a profile would do goes into the plain build. The start
+of the simulator in `module-simulator` and `module-under-load` is an example: it is part of the
+plain build, and `-DskipTests` switches it off. Until the 15th of November 2026 the two
+blueprints had it in a profile which was on unless `simulator.base-url` was given, and a build
+without `-P<bpms>` failed there. `bin/check_default_profiles.py` checks every POM.
+
 ## Rule 5: the aspect is proven by a test
 
 A blueprint ships an integration test which plays through the aspect it shows, with a simulator

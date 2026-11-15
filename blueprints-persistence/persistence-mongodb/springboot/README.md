@@ -33,6 +33,17 @@ property says it. So an application which stores its aggregate in MongoDB but ke
 source around for "the framework" has misunderstood something. There is nothing left to put in
 there.
 
+**The log of delivered tasks shrinks by age, unless you let it shrink earlier.** By default a
+record is deleted when the retention has passed, seven days after the BPMS last handed its task
+out (`lastSeenAt`). A task which stays open keeps its record, because every new delivery of it
+moves that moment forward. Setting `vanillabp.delivery.release-on-workflow-end` to `true`
+deletes the records of a workflow as soon as it ends. It works for the whole application, or for
+one workflow module under `vanillabp.workflow-modules.<id>.delivery`. It is `false` by default,
+because it costs something. VanillaBP then asks the BPMS to report the end of every process of
+the module, and the transaction of that report runs one more delete. What you get for it: the
+collection does not grow with every workflow which ended. This blueprint leaves it off.
+[How long a delivery is remembered](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#how-long-a-delivery-is-remembered) has the details.
+
 **One class more than the base blueprint, and it is the interesting one.**
 `config/MongoTransactions` defines a `MongoTransactionManager`. With a relational database the
 platform contributes a manager itself. For MongoDB it does not, on purpose. A MongoDB

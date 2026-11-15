@@ -64,7 +64,7 @@ Blueprint-specific names, each occurring in more than one place:
 | `external-systems/credit-bureau/credit-bureau-api/pom.xml`          | the API module of the credit bureau with its `client` and `server`                                         |
 | `external-systems/credit-bureau/rest-adapter/pom.xml`               | the module, the generated client and the REST client of Quarkus                                            |
 | `simulator/pom.xml`                                                 | a parent of its own, the generated clients and interfaces, SnakeYAML, the load profile copied in           |
-| `application/pom.xml`                                               | the BPMS adapter, the REST adapter, the Prometheus registry, JMX for `quarkus:dev`, `start-stop-simulator` |
+| `application/pom.xml`                                               | the BPMS adapter, the REST adapter, the Prometheus registry, JMX for `quarkus:dev`, starting the simulator |
 | `simulator/src/main/java/.../SimulatorApplication.java`             | the simulator, an application of its own                                                                   |
 | `simulator/src/main/java/.../loadrun/LoadRunController.java`        | the two URLs of a run; `load-run-api/load-run.yaml` describes them                                         |
 | `simulator/src/main/java/.../config/LoadRunConfiguration.java`      | wires the driver and checks its settings at startup                                                        |
@@ -104,8 +104,9 @@ unchanged.
    the options.
 8. If the project uses another connection pool, change `connections-waiting-meter` and
    `pool-setting` in the `application.yaml` of the simulator.
-9. Copy `LoadRunIT` and the profile `start-stop-simulator` of `application/pom.xml`, with a
-   tiny size. It proves that the driver starts and finishes. Never assert a number of a run in
+9. Copy `LoadRunIT` and the plugins of `application/pom.xml` which start the simulator, with a
+   tiny size. Put them into the plain `<build>`, not into a profile which switches itself on:
+   such a profile switches off the BPMS profile which is active by default. It proves that the driver starts and finishes. Never assert a number of a run in
    a test.
 
 ## Verifying

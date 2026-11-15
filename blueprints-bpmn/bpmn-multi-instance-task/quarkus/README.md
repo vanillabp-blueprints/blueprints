@@ -113,10 +113,14 @@ The file is loaded because the Maven profile `camunda8` makes the config profile
 name the parent of the profile the application runs in. So you choose the engine once, on the
 Maven command line. The build, the tests and `quarkus:dev` all follow it.
 
-That engine has no loop cardinality. It reports neither the number of instances nor, to a
-nested task, the iteration around it. The adapter fills those gaps while deploying. So the same
-Java code and the same annotations work here. The
-[adapter's wiki](https://github.com/vanillabp/camunda8-adapter/wiki/Deviations)
+That engine always iterates over a collection. It reports neither the number of instances nor,
+to a nested task, the iteration around it. The adapter fills those gaps while deploying. So the
+same Java code and the same annotations work here, also for a task in a called process which
+asks for the iteration of its caller. A fixed number of rounds needs no loop cardinality either.
+Write the collection as `=for i in 1..5 return i` and fill in the input element. The item of
+each round is then its counter. This blueprint iterates over the partners, so it needs neither.
+The
+[adapter's wiki](https://github.com/vanillabp/camunda8-adapter/wiki/Deviations#multi-instance-has-no-loop-cardinality)
 says what it does.
 
 [Operaton](https://operaton.org), the open source successor of Camunda 7, is embedded as well

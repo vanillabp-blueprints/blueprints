@@ -58,6 +58,16 @@ So the model says nothing about identity on either engine, and that is what a bl
 show. The difference between the two engines is what the adapter does, not what you have to
 write.
 
+The same holds for an iteration. If the call activity stood inside a multi-instance element, a
+task in the called process would learn the iteration of its caller. It asks with
+`@MultiInstanceElement`, `@MultiInstanceIndex` or `@MultiInstanceTotal` and the ID of the
+caller's element, and nothing is modelled for it. That works as long as both processes work on
+the same workflow aggregate, as they do here. A called process with an aggregate of its own runs
+a business case of its own and learns nothing about its caller. The wikis of
+[Camunda 7](https://github.com/vanillabp/camunda7-adapter/wiki/Configuration#the-iteration-a-called-process-runs-in)
+and [Camunda 8](https://github.com/vanillabp/camunda8-adapter/wiki/Deviations#multi-instance-has-no-loop-cardinality)
+say what each adapter does for it.
+
 That ID is also the only part of the aggregate the BPMS gets to see. `Aggregate` carries
 `@NoSyncWithBPMS`, and not one attribute carries `@SyncWithBPMS`. No expression of either model
 reads an attribute. The call activity maps nothing in and nothing back, and none of the
