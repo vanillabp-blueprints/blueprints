@@ -50,8 +50,8 @@
     <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
     <maven-failsafe-plugin.version>3.6.1</maven-failsafe-plugin.version>
     <maven-enforcer-plugin.version>3.7.0</maven-enforcer-plugin.version>
-    <maven-dependency-plugin.version>3.10.0</maven-dependency-plugin.version>
-    <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
+    <maven-dependency-plugin.version>3.11.0</maven-dependency-plugin.version>
+    <build-helper-maven-plugin.version>3.8.0</build-helper-maven-plugin.version>
     <exec-maven-plugin.version>3.7.0</exec-maven-plugin.version>
     <!-- Not part of the Quarkus BOM, so this blueprint says which version it uses. -->
     <lombok.version>1.18.48</lombok.version>
