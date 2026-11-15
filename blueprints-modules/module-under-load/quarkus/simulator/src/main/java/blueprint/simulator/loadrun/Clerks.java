@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
@@ -41,6 +42,9 @@ final class Clerks {
 
   /** How long a clerk waits before looking at an empty task list again. */
   private static final Duration REFRESH = Duration.ofMillis(500);
+
+  /** How long stopping waits for the clerks, who are cut off in the middle of a call. */
+  private static final Duration STOP_AT_MOST = Duration.ofSeconds(10);
 
   private final LoanApprovalApi loanApproval;
 
@@ -90,10 +94,28 @@ final class Clerks {
 
   }
 
+  /**
+   * Stops the clerks and waits until they have gone, so {@link #failed()} does not change any
+   * more.
+   *
+   * <p>
+   * The clerks look at the task list twice a second, so some of them always wait for an answer
+   * when the run stops. Stopping interrupts that call, and the HTTP client reports it as an
+   * error. That error is the stop, not the application, so it does not count as failed. The
+   * slower the machine, the more calls are going on at that moment.
+   * </p>
+   */
   void stop() {
 
     working = false;
     clerks.shutdownNow();
+    try {
+      clerks.awaitTermination(STOP_AT_MOST.toMillis(), TimeUnit.MILLISECONDS);
+    } catch (final InterruptedException e) {
+      Thread
+          .currentThread()
+          .interrupt();
+    }
 
   }
 
@@ -116,6 +138,10 @@ final class Clerks {
             .interrupt();
         return;
       } catch (final RuntimeException e) {
+        if (!working) {
+          // The run stopped this call, see stop().
+          return;
+        }
         failed.incrementAndGet();
         log.warn("A clerk could not work on an assessment: {}", e.toString());
       }
