@@ -26,3 +26,7 @@ quarkus:
     category:
       "blueprint.workflowmodule":
         level: INFO
+# The partner deadline of the workflow module is three days. Nobody watches a demo that long,
+# so this application shortens it. A real application leaves it out or sets its own value.
+loan-approval:
+  partner-deadline: PT3S

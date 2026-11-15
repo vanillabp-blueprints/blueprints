@@ -57,8 +57,8 @@ import jakarta.enterprise.util.TypeLiteral;
  * </p>
  *
  * <p>
- * Part of the blueprint test harness: identical in every blueprint, kept in sync from
- * {@code templates/test-harness/quarkus/} of the monorepo. Do not edit it here.
+ * Part of the test harness which every blueprint carries in the same form. In a project
+ * made from a blueprint it is a file of that project, so change it as the project needs.
  * </p>
  */
 @QuarkusTest
@@ -161,7 +161,7 @@ public class ApplicationSmokeTest {
             + (bpms.equals("none")
                 ? " Most likely another profile of the POM switched itself on, so Maven"
                     + " switched off the default BPMS profile."
-                    + " bin/check_default_profiles.py finds such a profile."
+                    + " Look in the POM for a profile which has an <activation> of its own."
                 : " Name the BPMS profile with -P on the Maven command line. The test reads"
                     + " -P from there only, not from MAVEN_ARGS or settings.xml."));
 

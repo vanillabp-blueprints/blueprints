@@ -134,14 +134,19 @@ The OpenAPI file is the second file outside that directory. Its name is the use 
 not clash with the file of another module. The frontends of the cockpit blueprints read it from
 this path to generate their client.
 
-Placeholders are the same in every blueprint, so a tool can replace them:
+Placeholders are the same in every blueprint, so a tool can replace them. Only the Maven
+coordinates name the blueprint. Every `AGENTS.md` lists them in its table, with the values of
+that blueprint:
 
-|        Placeholder         |                                Meaning                                |
-|----------------------------|-----------------------------------------------------------------------|
-| `blueprint.workflowmodule` | base package                                                          |
-| `loanapproval`             | use case identifier, Java package                                     |
-| `loan-approval`            | use case identifier, kebab case (workflow module ID, resources, REST) |
-| `loan_approval`            | BPMN process ID                                                       |
+|                    Placeholder                     |                                Meaning                                |
+|----------------------------------------------------|-----------------------------------------------------------------------|
+| `blueprint.workflowmodule`                         | base package                                                          |
+| `loanapproval`                                     | use case identifier, Java package                                     |
+| `loan-approval`                                    | use case identifier, kebab case (workflow module ID, resources, REST) |
+| `loan_approval`                                    | BPMN process ID                                                       |
+| `LoanApproval`                                     | use case identifier, CamelCase (class names)                          |
+| `LOAN_APPROVAL`                                    | use case identifier, upper snake case (table and collection names)    |
+| `io.vanillabp.blueprint.<blueprint-id>-<platform>` | Maven groupId, and `<blueprint-id>` the artifactId of the root POM    |
 
 Inside the classes, an injected bean is named after the role it plays there, not after its
 type. A call then reads like a short sentence about the business case:

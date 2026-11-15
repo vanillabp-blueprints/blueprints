@@ -16,13 +16,16 @@ tasks. The scripts, the UI jar and the image are the same.
 
 ## Placeholders
 
-Replace all of these consistently. They are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint, except the Maven
+coordinates, which carry the name of the blueprint.
 
-|        Placeholder         |                                                      Meaning                                                       |
-|----------------------------|--------------------------------------------------------------------------------------------------------------------|
-| `loan-approval`            | workflow module id: the path `/wm/loan-approval/`, the folder in the UI jar, the start of every web component name |
-| `loan_approval`            | BPMN process id, compared in both data entries                                                                     |
-| `cockpit-workflow-details` | blueprint id: the names of the backend repository, the UI jar and the image                                        |
+|        Placeholder         |                                                                                 Meaning                                                                                 |
+|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval`            | workflow module id: the path `/wm/loan-approval/`, the folder in the UI jar, the start of every web component name                                                      |
+| `loan_approval`            | BPMN process id, compared in both data entries                                                                                                                          |
+| `LoanApproval`             | use case identifier, CamelCase: the start of class names, for example `LoanApprovalProperties`, `LoanApprovalIT` or the interface `LoanApprovalApi` the build generates |
+| `LOAN_APPROVAL`            | use case identifier, upper snake case: table and collection names, and the start of other names in upper case                                                           |
+| `cockpit-workflow-details` | blueprint id: the names of the backend repository, the UI jar and the image                                                                                             |
 
 `loan-approval` and `loan_approval` are in `src/loan-approval.ts` and in `package.json`
 (`config`). The process id must be the one of the BPMN file of the backend. If it is wrong, the
