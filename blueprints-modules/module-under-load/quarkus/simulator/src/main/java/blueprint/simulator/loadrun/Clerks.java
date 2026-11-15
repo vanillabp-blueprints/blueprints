@@ -27,6 +27,12 @@ import blueprint.workflowmodule.loanapproval.api.client.model.OpenAssessment;
  * it first. A claim is never given back: a task list another clerk read a moment ago may
  * still show a task which was decided since.
  * </p>
+ *
+ * <p>
+ * After a call which failed, a clerk waits as long as after an empty task list. So a clerk
+ * never calls the application more often than twice a second while there is nothing to
+ * decide, whether the application answers or not.
+ * </p>
  */
 final class Clerks {
 
@@ -40,7 +46,10 @@ final class Clerks {
 
   static final String APPROVED_FLOW = "Flow_ToPayoutRun";
 
-  /** How long a clerk waits before looking at an empty task list again. */
+  /**
+   * How long a clerk waits before looking at an empty task list again, and after a call which
+   * failed.
+   */
   private static final Duration REFRESH = Duration.ofMillis(500);
 
   /** How long stopping waits for the clerks, who are cut off in the middle of a call. */
@@ -144,7 +153,30 @@ final class Clerks {
         }
         failed.incrementAndGet();
         log.warn("A clerk could not work on an assessment: {}", e.toString());
+        // An application which fails or is gone answers at once. Asking again at once would
+        // turn every clerk into a tight loop and fill the log, so the clerk waits as long as
+        // after an empty task list.
+        if (!waitBeforeLookingAgain()) {
+          return;
+        }
       }
+    }
+
+  }
+
+  /**
+   * @return False if the run interrupted the wait, so the clerk stops.
+   */
+  private boolean waitBeforeLookingAgain() {
+
+    try {
+      Thread.sleep(REFRESH);
+      return true;
+    } catch (final InterruptedException e) {
+      Thread
+          .currentThread()
+          .interrupt();
+      return false;
     }
 
   }
