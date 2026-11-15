@@ -48,18 +48,18 @@ matters: it decides which of the active loops answers. The resolver names the sa
 
 ## Boilerplate files
 
-|                               File                                |                                       Purpose                                        |
-|-------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                        | the BPMS profiles, the Quarkus BOM and the VanillaBP BOM import                      |
-| `loan-approval/pom.xml`                                           | `vanillabp-quarkus-support` and the index of the module's classes, never an adapter  |
-| `application/pom.xml`                                             | `vanillabp-quarkus-integration` and the BPMS adapter, the only place a BPMS is named |
-| `application/src/main/resources/application.yaml`                 | the database, and nothing about the workflow                                         |
-| `loan-approval/src/test/resources/application.yaml`               | the database of the module's own test                                                |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                  |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`      | starts the workflow                                                                  |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                      |
-| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                       |
-| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model            |
+|                               File                                |                                                          Purpose                                                           |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                        | the BPMS profiles, the Quarkus BOM and the VanillaBP BOM import, and the engine versions the JSON dataformat needs         |
+| `loan-approval/pom.xml`                                           | `vanillabp-quarkus-support` and the index of the module's classes, never an adapter                                        |
+| `application/pom.xml`                                             | `vanillabp-quarkus-integration` and the BPMS adapter and the JSON dataformat of its engine, the only place a BPMS is named |
+| `application/src/main/resources/application.yaml`                 | the database, and nothing about the workflow                                                                               |
+| `loan-approval/src/test/resources/application.yaml`               | the database of the module's own test                                                                                      |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                                                        |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`      | starts the workflow                                                                                                        |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                                            |
+| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                                                             |
+| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model                                                  |
 
 `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint. Copy them
 unchanged. Every test class carries `@QuarkusTest` itself. Inheriting it from the base class
@@ -73,6 +73,11 @@ does not make the test a bean.
    collections in a task BEFORE the workflow reaches the subprocess.
 3. Give the subprocess its loop characteristics (`camunda:collection="${regionIds}"` on
    Camunda 7, `inputCollection="=regionIds"` on Camunda 8) and the task inside it its own.
+   On Camunda 7, Operaton and CIB seven each list travels as an object variable. Set
+   `serialization-format: application/json` and the SPIN engine plugin in the profile file of
+   that engine, and add the SPIN JSON dataformat to its Maven profile, as
+   `application-camunda7.yaml` and `application/pom.xml` show. Without them the engine stores
+   the lists with Java serialization, and the adapter warns about it.
 4. In a task which belongs to ONE level, name that element in the annotations:
    `@MultiInstanceElement("SubProcess_AssessRegion")`. **A task which is not multi-instance
    itself still runs inside the iteration of the subprocess around it.** This is how it learns

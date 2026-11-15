@@ -122,6 +122,22 @@
           <version>${camunda7-adapter.version}</version>
           <scope>test</scope>
         </dependency>
+        <!--
+          The JSON dataformat for the list the model loops over, see 'serialization-format' in
+          application-camunda7.yaml. Its version is the engine version of the adapter.
+        -->
+        <dependency>
+          <groupId>org.camunda.bpm</groupId>
+          <artifactId>camunda-engine-plugin-spin</artifactId>
+          <version>${camunda7-engine.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.camunda.spin</groupId>
+          <artifactId>camunda-spin-dataformat-json-jackson</artifactId>
+          <version>${camunda7-engine.version}</version>
+          <scope>test</scope>
+        </dependency>
       </dependencies>
     </profile>
     <profile>
@@ -150,6 +166,22 @@
           <version>${operaton-adapter.version}</version>
           <scope>test</scope>
         </dependency>
+        <!--
+          The JSON dataformat for the list the model loops over, see 'serialization-format' in
+          application-operaton.yaml. Its version is the engine version of the adapter.
+        -->
+        <dependency>
+          <groupId>org.operaton.bpm</groupId>
+          <artifactId>operaton-engine-plugin-spin</artifactId>
+          <version>${operaton-engine.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.operaton.spin</groupId>
+          <artifactId>operaton-spin-dataformat-json-jackson</artifactId>
+          <version>${operaton-engine.version}</version>
+          <scope>test</scope>
+        </dependency>
       </dependencies>
     </profile>
     <profile>
@@ -162,6 +194,22 @@
           <groupId>io.vanillabp</groupId>
           <artifactId>cibseven-adapter-spring-boot</artifactId>
           <version>${cibseven-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <!--
+          The JSON dataformat for the list the model loops over, see 'serialization-format' in
+          application-cibseven.yaml. Its version is the engine version of the adapter.
+        -->
+        <dependency>
+          <groupId>org.cibseven.bpm</groupId>
+          <artifactId>cibseven-engine-plugin-spin</artifactId>
+          <version>${cibseven-engine.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.cibseven.spin</groupId>
+          <artifactId>cibseven-spin-dataformat-json-jackson</artifactId>
+          <version>${cibseven-engine.version}</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
