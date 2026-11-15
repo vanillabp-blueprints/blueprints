@@ -124,7 +124,7 @@ tests are the way to see the button and the form.
 | `src/loan-approval.ts`                | the names shared with the backend and the cockpit: module id, entry, web components                   |
 | `src/data/header.ts`                  | data entry `Header`: `header(currentUser)` names the visual entry and the web component of the button |
 | `src/start-form/start-form.tsx`       | visual entry `StartForm`: the button, which opens the dialog, and the start form, which closes it     |
-| `src/shared/api.ts`                   | the one instance of `StartFormApi`, the client generated into `src/generated/loan-approval`           |
+| `src/shared/api.ts`                   | `loanApproval`, the one instance of the generated `StartFormApi`, typed with `StartFormApiInterface`  |
 | `src/shared/react-element.tsx`        | makes a React component a web component with `defineBcElement` of the kit                             |
 | `src/shared/style.ts`                 | the styles in each shadow root: a button one line high, a form which wraps long words                 |
 | `scripts/build-micro-frontends.mjs`   | builds the entries with esbuild and writes `bc-manifest.json` with `createManifest` of the kit        |

@@ -171,18 +171,29 @@ into its own repository adds the submodule. In your own project, delete `config.
 
 `npm run generate:client` runs the OpenAPI Generator with the generator
 [`typescript-fetch`](https://openapi-generator.tech/docs/generators/typescript-fetch/). It is the
-same tool which writes the Java code of the backend, and it names things the same way. The tag
-`user-tasks` of the OpenAPI file becomes the class `UserTasksApi`, each operation one of its
-methods, and each schema a type of the same name:
+same tool which writes the Java code of the backend, and it names things the same way. The class
+name comes from the tag of the OpenAPI file: the tag `user-tasks` becomes the interface
+`UserTasksApiInterface` and the class `UserTasksApi`, which implements it. Each operation becomes
+a method, and each schema a type of the same name.
+
+`openapitools.json` sets two options of the generator, so the client is called like the Java one:
+
+- `useSingleRequestParameter=false`: a method takes its parameters one by one, in the order of
+  the OpenAPI file, not as one object.
+- `withInterfaces=true`: the generator writes an interface next to each class.
+
+`src/shared/api.ts` creates the one instance which the forms use. It is named after its role,
+the API of the workflow module, and typed with the interface:
 
 ```ts
-const form = await userTasksApi.getAssessRiskForm({ userTaskId });
-await userTasksApi.completeAssessRisk({ userTaskId, assessRiskInput: { riskAssessment } });
+export const loanApproval: UserTasksApiInterface = new UserTasksApi();
+
+const form = await loanApproval.getAssessRiskForm(userTaskId);
+await loanApproval.completeAssessRisk(userTaskId, { riskAssessment });
 ```
 
 The client uses the `fetch` of the browser and needs no library at runtime. An answer which is
-not a success throws a `ResponseError`, and its `response` has the status. `src/shared/api.ts`
-creates the one instance of `UserTasksApi` which the forms use.
+not a success throws a `ResponseError`, and its `response` has the status.
 
 The generator is a Java program. The npm package `@openapitools/openapi-generator-cli` downloads
 it from Maven Central the first time and runs it with `java`. `openapitools.json` pins its
@@ -227,20 +238,20 @@ only says so, and the browser tests are the way to see the forms.
 
 ## How it works
 
-|                  File                  |                                                Role                                                 |
-|----------------------------------------|-----------------------------------------------------------------------------------------------------|
-| `src/loan-approval.ts`                 | the names shared with the backend and the cockpit: module id, process id, task definitions, entries |
-| `src/data/user-task-form.ts`           | data entry `UserTaskForm`: picks the form by `bpmnProcessId` and `taskDefinition`                   |
-| `src/data/user-task-list.ts`           | data entry `UserTaskList`: the column `details.riskAssessment` of the task list                     |
-| `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`: the form of "Assess risk"                                            |
-| `src/forms/check-documents-form.tsx`   | visual entry `CheckDocumentsForm`: the form of "Check documents"                                    |
-| `src/shared/input-form.tsx`            | the four web components of a form with one input field, and the messages between its areas          |
-| `src/shared/react-element.tsx`         | makes a React component a web component with `defineBcElement` of the kit                           |
-| `src/shared/api.ts`                    | the one instance of `UserTasksApi`, the client generated into `src/generated/loan-approval`         |
-| `scripts/build-micro-frontends.mjs`    | builds the entries with esbuild and writes `bc-manifest.json` with `createManifest` of the kit      |
-| `scripts/build-ui-jar.mjs`             | builds the UI jar with a zip library                                                                |
-| `docker/Dockerfile`                    | the nginx image                                                                                     |
-| `test/browser/user-task-forms.test.js` | the browser tests in the host of the kit                                                            |
+|                  File                  |                                                 Role                                                 |
+|----------------------------------------|------------------------------------------------------------------------------------------------------|
+| `src/loan-approval.ts`                 | the names shared with the backend and the cockpit: module id, process id, task definitions, entries  |
+| `src/data/user-task-form.ts`           | data entry `UserTaskForm`: picks the form by `bpmnProcessId` and `taskDefinition`                    |
+| `src/data/user-task-list.ts`           | data entry `UserTaskList`: the column `details.riskAssessment` of the task list                      |
+| `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`: the form of "Assess risk"                                             |
+| `src/forms/check-documents-form.tsx`   | visual entry `CheckDocumentsForm`: the form of "Check documents"                                     |
+| `src/shared/input-form.tsx`            | the four web components of a form with one input field, and the messages between its areas           |
+| `src/shared/react-element.tsx`         | makes a React component a web component with `defineBcElement` of the kit                            |
+| `src/shared/api.ts`                    | `loanApproval`, the one instance of the generated `UserTasksApi`, typed with `UserTasksApiInterface` |
+| `scripts/build-micro-frontends.mjs`    | builds the entries with esbuild and writes `bc-manifest.json` with `createManifest` of the kit       |
+| `scripts/build-ui-jar.mjs`             | builds the UI jar with a zip library                                                                 |
+| `docker/Dockerfile`                    | the nginx image                                                                                      |
+| `test/browser/user-task-forms.test.js` | the browser tests in the host of the kit                                                             |
 
 ### From the list to a completed task
 

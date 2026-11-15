@@ -2,7 +2,7 @@
 // the browser evaluates it, it defines the four web components the data entry UserTaskForm names.
 
 import { Component, input } from '@angular/core';
-import { userTasksApi, type AssessRiskForm } from '../shared/api.ts';
+import { loanApproval, type AssessRiskForm } from '../shared/api.ts';
 import { defineInputForm } from '../shared/input-form.ts';
 import type { Texts } from '../shared/texts.ts';
 import { ASSESS_RISK_ELEMENTS } from '../loan-approval.ts';
@@ -27,8 +27,8 @@ class LoanRequest {
 defineInputForm<AssessRiskForm>(ASSESS_RISK_ELEMENTS, {
   testId: 'assess-risk',
   label: (texts) => texts.riskAssessment,
-  load: (userTaskId) => userTasksApi.getAssessRiskForm({ userTaskId }),
+  load: (userTaskId) => loanApproval.getAssessRiskForm(userTaskId),
   initialInput: (form) => form.riskAssessment ?? '',
-  complete: (userTaskId, riskAssessment) => userTasksApi.completeAssessRisk({ userTaskId, assessRiskInput: { riskAssessment } }),
+  complete: (userTaskId, riskAssessment) => loanApproval.completeAssessRisk(userTaskId, { riskAssessment }),
   information: LoanRequest,
 });

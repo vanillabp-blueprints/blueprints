@@ -42,35 +42,35 @@ extension point differently. Then its types library says so, and these two names
 
 ## Core files
 
-|                File                 |                                                                Why it matters                                                                 |
-|-------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| `src/loan-approval.ts`              | module id, entry name and web component names, in one place                                                                                   |
-| `src/data/header.ts`                | data entry `Header`: returns `[{ entry, element }]` of the button. Plain TypeScript, it must never import React or the form; checks no rights |
-| `src/start-form/start-form.tsx`     | visual entry `StartForm`: the button with `openDialog`, the form with `closeDialog`, the call of the module API                               |
-| `src/shared/api.ts`                 | the one instance of the generated `StartFormApi`, base path `/wm/loan-approval` from the server of the OpenAPI file                           |
-| `scripts/build-micro-frontends.mjs` | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                                                                     |
-| `package.json`                      | `check:entries` with `--data-entry Header`, without which `bc-check-entries` would not check the data entry                                   |
-| `test/browser/header.test.js`       | the browser tests, with a header and without, and next to a module without the entry                                                          |
+|                File                 |                                                                       Why it matters                                                                       |
+|-------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `src/loan-approval.ts`              | module id, entry name and web component names, in one place                                                                                                |
+| `src/data/header.ts`                | data entry `Header`: returns `[{ entry, element }]` of the button. Plain TypeScript, it must never import React or the form; checks no rights              |
+| `src/start-form/start-form.tsx`     | visual entry `StartForm`: the button with `openDialog`, the form with `closeDialog`, the call of the module API                                            |
+| `src/shared/api.ts`                 | `loanApproval`, the one instance of the generated `StartFormApi`; positional parameters, base path `/wm/loan-approval` from the server of the OpenAPI file |
+| `scripts/build-micro-frontends.mjs` | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                                                                                  |
+| `package.json`                      | `check:entries` with `--data-entry Header`, without which `bc-check-entries` would not check the data entry                                                |
+| `test/browser/header.test.js`       | the browser tests, with a header and without, and next to a module without the entry                                                                       |
 
 ## Boilerplate files
 
-|                 File                  |                                   Purpose                                    |
-|---------------------------------------|------------------------------------------------------------------------------|
-| `tsconfig.json`                       | type checking only; esbuild builds                                           |
-| `scripts/fetch-openapi.mjs`           | copies the OpenAPI file from the submodule and checks that it names a server |
-| `openapitools.json`                   | the version of the OpenAPI Generator, the same as in the backend             |
-| `.gitmodules`                         | the submodule `backend`, the backend repository which owns the OpenAPI file  |
-| `scripts/build-ui-jar.mjs`            | the UI jar and its pom                                                       |
-| `scripts/build-image.mjs`             | the nginx image                                                              |
-| `scripts/start.mjs`                   | placeholder for the dev shell                                                |
-| `src/shared/react-element.tsx`        | a React component as a web component, with `defineBcElement` of the kit      |
-| `src/shared/style.ts`                 | the styles, put into each shadow root                                        |
-| `src/shared/texts.ts`                 | the texts in English and German                                              |
-| `docker/Dockerfile`                   | the nginx image                                                              |
-| `docker/nginx.conf`                   | serves `/loan-approval/`, the manifest without caching                       |
-| `test/browser/page.js`                | the test page with `createModuleHost`, which draws the header like a cockpit |
-| `test/browser/server.js`              | serves the test page, `dist/micro-frontends` and the second module           |
-| `test/browser/module-without-header/` | the second module of the tests: a manifest without `Header`                  |
+|                 File                  |                                                                        Purpose                                                                         |
+|---------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `tsconfig.json`                       | type checking only; esbuild builds                                                                                                                     |
+| `scripts/fetch-openapi.mjs`           | copies the OpenAPI file from the submodule and checks that it names a server                                                                           |
+| `openapitools.json`                   | the generator `typescript-fetch`, its version (the same as in the backend) and its options `useSingleRequestParameter=false` and `withInterfaces=true` |
+| `.gitmodules`                         | the submodule `backend`, the backend repository which owns the OpenAPI file                                                                            |
+| `scripts/build-ui-jar.mjs`            | the UI jar and its pom                                                                                                                                 |
+| `scripts/build-image.mjs`             | the nginx image                                                                                                                                        |
+| `scripts/start.mjs`                   | placeholder for the dev shell                                                                                                                          |
+| `src/shared/react-element.tsx`        | a React component as a web component, with `defineBcElement` of the kit                                                                                |
+| `src/shared/style.ts`                 | the styles, put into each shadow root                                                                                                                  |
+| `src/shared/texts.ts`                 | the texts in English and German                                                                                                                        |
+| `docker/Dockerfile`                   | the nginx image                                                                                                                                        |
+| `docker/nginx.conf`                   | serves `/loan-approval/`, the manifest without caching                                                                                                 |
+| `test/browser/page.js`                | the test page with `createModuleHost`, which draws the header like a cockpit                                                                           |
+| `test/browser/server.js`              | serves the test page, `dist/micro-frontends` and the second module                                                                                     |
+| `test/browser/module-without-header/` | the second module of the tests: a manifest without `Header`                                                                                            |
 
 ## Adding this blueprint to an existing project
 

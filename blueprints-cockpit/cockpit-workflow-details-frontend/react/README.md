@@ -116,7 +116,7 @@ browser tests are the way to see the page.
 | `src/data/workflow-list.ts`          | data entry `WorkflowList`: the columns `details.applicant` and `details.status` of the case list                     |
 | `src/pages/loan-approval-page.tsx`   | visual entry `LoanApprovalPage`: the four web components of the page                                                 |
 | `src/shared/react-element.tsx`       | makes a React component a web component with `defineBcElement` of the kit                                            |
-| `src/shared/api.ts`                  | the one instance of `CasesApi`, the client generated into `src/generated/loan-approval`                              |
+| `src/shared/api.ts`                  | `loanApproval`, the one instance of the generated `CasesApi`, typed with `CasesApiInterface`                         |
 | `src/shared/style.ts`                | the styles in each shadow root, which keep long content from widening the page                                       |
 | `scripts/build-micro-frontends.mjs`  | builds the entries with esbuild and writes `bc-manifest.json` with `createManifest` of the kit                       |
 | `test/browser/workflow-page.test.js` | the browser tests in the host of the kit                                                                             |

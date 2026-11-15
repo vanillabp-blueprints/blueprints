@@ -391,8 +391,11 @@ The generated code is written below `target/`. It is not part of the blueprint, 
 
 A frontend of a cockpit blueprint generates its TypeScript client from the same file, with the
 generator `typescript-fetch`. Its names follow the file like the Java names do: the tag
-`user-tasks` becomes the class `UserTasksApi`, and each schema a type of the same name. Nobody
-writes a `fetch` call to the module API by hand. The npm package
+`user-tasks` becomes the class `UserTasksApi`, and each schema a type of the same name. The
+options `useSingleRequestParameter=false` and `withInterfaces=true` make it read like the Java
+client: `loanApproval.completeAssessRisk(userTaskId, { riskAssessment })`, where `loanApproval`
+is typed with the generated `UserTasksApiInterface`. Nobody writes a `fetch` call to the module
+API by hand. The npm package
 `@openapitools/openapi-generator-cli` runs the generator, so the build of a frontend needs a Java
 runtime, but no Maven. `openapitools.json` of the frontend pins the generator to the version of
 `openapi-generator.version` in the backend. The code is written to `src/generated/`, which git

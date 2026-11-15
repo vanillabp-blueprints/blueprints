@@ -14,7 +14,7 @@
 
 import { useEffect, useState } from 'react';
 import type { BcElementProps, BcUserTask, BcWorkflow } from '@vanillabp/bc-module-kit';
-import { ResponseError, casesApi, type Case } from '../shared/api.ts';
+import { ResponseError, loanApproval, type Case } from '../shared/api.ts';
 import { defineReactElement } from '../shared/react-element.tsx';
 import { STYLE } from '../shared/style.ts';
 import { textsFor, type Texts } from '../shared/texts.ts';
@@ -40,7 +40,7 @@ const cases = new Map<string, Promise<Case>>();
 function loadCase(loanRequestId: string) {
   let loading = cases.get(loanRequestId);
   if (!loading) {
-    loading = casesApi.getCase({ loanRequestId });
+    loading = loanApproval.getCase(loanRequestId);
     loading.catch(() => cases.delete(loanRequestId));
     cases.set(loanRequestId, loading);
   }
@@ -167,7 +167,7 @@ function WithdrawButton({ loaded, texts, showNotification, onWithdrawn }: {
     setState('running');
     setProblem(undefined);
     try {
-      await casesApi.withdrawLoanRequest({ loanRequestId: loaded!.loanRequestId });
+      await loanApproval.withdrawLoanRequest(loaded!.loanRequestId);
       cases.delete(loaded!.loanRequestId);
       setState('withdrawn');
       // A cockpit which cannot show notifications refuses; the page says it anyway.

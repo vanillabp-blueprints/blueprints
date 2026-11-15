@@ -18,7 +18,7 @@
   },
   "scripts": {
     "fetch:openapi": "node scripts/fetch-openapi.mjs",
-    "generate:client": "openapi-generator-cli generate --generator-name typescript-fetch --input-spec build/openapi/loan-approval.yaml --output src/generated/loan-approval --global-property apiDocs=false,modelDocs=false",
+    "generate:client": "openapi-generator-cli generate --generator-key loan-approval",
     "typecheck": "tsc --noEmit",
     "build:micro-frontends": "node scripts/build-micro-frontends.mjs",
     "check:entries": "bc-check-entries dist/micro-frontends/bc-manifest.json --metafile build/meta.json --data-entry Header",
