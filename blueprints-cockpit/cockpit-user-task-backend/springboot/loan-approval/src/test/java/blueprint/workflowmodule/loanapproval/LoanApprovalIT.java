@@ -22,6 +22,10 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import org.yaml.snakeyaml.Yaml;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.loanapproval.api.model.AssessRiskForm;
+import blueprint.workflowmodule.loanapproval.api.model.AssessRiskInput;
+import blueprint.workflowmodule.loanapproval.api.model.CheckDocumentsForm;
+import blueprint.workflowmodule.loanapproval.api.model.CheckDocumentsInput;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import io.vanillabp.cockpit.gui.api.v1.UserTask;
 
@@ -98,11 +102,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(details(assessRisk)).doesNotContainKey(WorkflowTaskHandler.RISK_ASSESSMENT);
 
     // The form reads the loan request and completes the task.
-    assertThat(read(assessRiskTaskId, "assess-risk"))
-        .containsEntry("loanRequestId", loanRequestId)
-        .containsEntry("amount", 5000)
-        .doesNotContainKey("riskAssessment");
-    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
+    assertThat(read(assessRiskTaskId, "assess-risk", AssessRiskForm.class))
+        .isEqualTo(new AssessRiskForm(loanRequestId, 5000, null));
+    assertThat(send(assessRiskTaskId, "assess-risk", new AssessRiskInput("acceptable")))
         .isEqualTo(204);
 
     // The second user task is open. Its report carries the risk assessment for the column of
@@ -119,11 +121,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(details(checkDocuments))
         .containsEntry(WorkflowTaskHandler.RISK_ASSESSMENT, "acceptable");
 
-    assertThat(read(checkDocumentsTaskId, "check-documents"))
-        .containsEntry("loanRequestId", loanRequestId)
-        .containsEntry("riskAssessment", "acceptable")
-        .doesNotContainKey("documentsNote");
-    assertThat(send(checkDocumentsTaskId, "check-documents", Map.of("documentsNote", "complete")))
+    assertThat(read(checkDocumentsTaskId, "check-documents", CheckDocumentsForm.class))
+        .isEqualTo(new CheckDocumentsForm(loanRequestId, "acceptable", null));
+    assertThat(send(checkDocumentsTaskId, "check-documents", new CheckDocumentsInput("complete")))
         .isEqualTo(204);
 
     // The workflow ended, and the cockpit took both tasks off the list.
@@ -155,13 +155,13 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // An unknown id, and the id of a task which is not of this form.
     assertThat(status(UUID.randomUUID().toString(), "assess-risk")).isEqualTo(404);
     assertThat(status(assessRiskTaskId, "check-documents")).isEqualTo(404);
-    assertThat(send(assessRiskTaskId, "check-documents", Map.of("documentsNote", "complete")))
+    assertThat(send(assessRiskTaskId, "check-documents", new CheckDocumentsInput("complete")))
         .isEqualTo(404);
 
     // Completed once, the task is gone. The same form sent twice does not complete anything.
-    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
+    assertThat(send(assessRiskTaskId, "assess-risk", new AssessRiskInput("acceptable")))
         .isEqualTo(204);
-    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
+    assertThat(send(assessRiskTaskId, "assess-risk", new AssessRiskInput("acceptable")))
         .isEqualTo(404);
     assertThat(status(assessRiskTaskId, "assess-risk")).isEqualTo(404);
 
@@ -180,8 +180,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         aggregate -> aggregate.getAssessRiskTaskId() != null)
         .getAssessRiskTaskId();
 
-    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", " ")))
+    assertThat(send(assessRiskTaskId, "assess-risk", new AssessRiskInput(" ")))
         .isEqualTo(400);
+    // A map, not the record AssessRiskInput, because a broken form may leave the field out.
     assertThat(send(assessRiskTaskId, "assess-risk", Map.of())).isEqualTo(400);
     assertThat(status(assessRiskTaskId, "assess-risk")).isEqualTo(200);
 
@@ -244,16 +245,16 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   }
 
-  @SuppressWarnings("unchecked")
-  private Map<String, Object> read(
+  private <T> T read(
       final String userTaskId,
-      final String form) {
+      final String form,
+      final Class<T> formType) {
 
     return forms
         .get()
         .uri("/{userTaskId}/{form}", userTaskId, form)
         .retrieve()
-        .body(Map.class);
+        .body(formType);
 
   }
 
@@ -273,7 +274,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   private int send(
       final String userTaskId,
       final String form,
-      final Map<String, Object> input) {
+      final Object input) {
 
     return forms
         .post()

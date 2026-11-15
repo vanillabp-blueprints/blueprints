@@ -55,7 +55,7 @@ controllers in line, or a form reaches nothing.
 | `loan-approval/src/main/java/.../model/Aggregate.java`                            | per user task the id of the open task and the input of its form                                                                                                     |
 | `loan-approval/src/main/java/.../model/AggregateRepository.java`                  | the finders by task id                                                                                                                                              |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                             | both tasks through the endpoints, what the cockpit was told, and every OpenAPI operation mapped                                                                     |
-| `loan-approval/src/test/java/.../CockpitSimulator.java`                           | starts the dev shell simulator as the cockpit of the test                                                                                                           |
+| `loan-approval/src/test/java/.../CockpitSimulator.java`                           | starts the dev shell simulator as the cockpit of the test, and reads user tasks from it into the cockpit's model `UserTask`                                         |
 | `loan-approval/src/main/java/.../config/LoanApprovalAutoConfiguration.java`       | the module wires itself: component scan, `@EntityScan` and `@EnableJpaRepositories` of its own package, with fully qualified bean names                             |
 | `loan-approval/src/main/java/.../config/UserInterfaceRouteAutoConfiguration.java` | the route `/loan-approval/**` without `/loan-approval/api/**` to `loan-approval.user-interface.address`, only with the gateway and the key                          |
 | `loan-approval/src/main/resources/META-INF/spring/...AutoConfiguration.imports`   | names both auto-configurations                                                                                                                                      |
@@ -113,9 +113,10 @@ module a second time, under another name.
    `spring-cloud-gateway-server-webmvc` to the module as an optional dependency, with the
    Spring Cloud BOM. The route class is the same for every module. The library
    `business-cockpit-spring-boot-support` does not have it yet.
-9. Copy `CockpitSimulator`, `dev-shell-simulator.yaml` and the dependency plugin execution of
-   `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the test
-   which checks every OpenAPI operation against the endpoints.
+9. Copy `CockpitSimulator`, `dev-shell-simulator.yaml`, the test dependency
+   `official-gui-api-server` with the models of the cockpit's official API, and the dependency
+   plugin execution of `loan-approval/pom.xml` which copies the simulator. Adapt
+   `LoanApprovalIT`, keeping the test which checks every OpenAPI operation against the endpoints.
 
 ## Verifying
 

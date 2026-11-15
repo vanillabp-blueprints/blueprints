@@ -135,26 +135,26 @@ of its own, because the aggregate holds results, not drafts.
 
 Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user-task-springboot):
 
-|                    File                    |                                                                   What is different                                                                   |
-|--------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `openapi/loan-approval.yaml`               | new: the four endpoints of the forms                                                                                                                  |
-| `loan-approval/loan-approval.yaml`         | the keys the cockpit needs, below `vanillabp.workflow-modules.loan-approval.cockpit`                                                                  |
-| `loan_approval.bpmn`                       | two user tasks in a row, and no service task and no boundary event                                                                                    |
-| `WorkflowTaskHandler.java`                 | a `@WorkflowTask` method per user task, and the `@UserTaskDetailsProvider` method                                                                     |
-| `UserTaskFormController.java`              | new: the endpoints of the forms, which implement the interface generated from the OpenAPI                                                             |
-| `ApiController.java`                       | only starts and shows a loan approval, below `/loan-approval/api/loan-requests`                                                                       |
-| `openapi/loan-requests.yaml`               | new: the API of `ApiController`, from which the build generates `LoanRequestsApi`                                                                     |
-| `Service.java`                             | per user task: keep the id, give a form its data, complete the task with what the user entered                                                        |
-| `Aggregate.java`                           | per user task the id of the open task and what the user entered                                                                                       |
-| `AggregateRepository.java`                 | finds the loan request by the id of an open user task                                                                                                 |
-| `LoanApprovalIT.java`                      | reports to the dev shell simulator and completes both tasks through their endpoints                                                                   |
-| `CockpitSimulator.java`                    | new: starts the dev shell simulator for the test                                                                                                      |
-| `LocalBackend.java`                        | new: runs the workflow module for the development of the user interface                                                                               |
-| `LoanApprovalAutoConfiguration.java`       | new: the module scans its own beans, entities and repositories                                                                                        |
-| `UserInterfaceRouteAutoConfiguration.java` | new: forwards the user interface to an nginx, if the application names one                                                                            |
-| `...AutoConfiguration.imports`             | new: tells Spring Boot about both auto-configurations                                                                                                 |
-| `ModuleTestApplication.java`               | replaces `TestApplication`: scans nothing, the auto-configuration wires the module                                                                    |
-| `loan-approval/pom.xml`                    | the cockpit adapter next to the BPMS adapter in every profile, the JAR of the dev shell simulator for the test, the gateway as an optional dependency |
+|                    File                    |                                                                                         What is different                                                                                          |
+|--------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `openapi/loan-approval.yaml`               | new: the four endpoints of the forms                                                                                                                                                               |
+| `loan-approval/loan-approval.yaml`         | the keys the cockpit needs, below `vanillabp.workflow-modules.loan-approval.cockpit`                                                                                                               |
+| `loan_approval.bpmn`                       | two user tasks in a row, and no service task and no boundary event                                                                                                                                 |
+| `WorkflowTaskHandler.java`                 | a `@WorkflowTask` method per user task, and the `@UserTaskDetailsProvider` method                                                                                                                  |
+| `UserTaskFormController.java`              | new: the endpoints of the forms, which implement the interface generated from the OpenAPI                                                                                                          |
+| `ApiController.java`                       | only starts and shows a loan approval, below `/loan-approval/api/loan-requests`                                                                                                                    |
+| `openapi/loan-requests.yaml`               | new: the API of `ApiController`, from which the build generates `LoanRequestsApi`                                                                                                                  |
+| `Service.java`                             | per user task: keep the id, give a form its data, complete the task with what the user entered                                                                                                     |
+| `Aggregate.java`                           | per user task the id of the open task and what the user entered                                                                                                                                    |
+| `AggregateRepository.java`                 | finds the loan request by the id of an open user task                                                                                                                                              |
+| `LoanApprovalIT.java`                      | reports to the dev shell simulator and completes both tasks through their endpoints                                                                                                                |
+| `CockpitSimulator.java`                    | new: starts the dev shell simulator for the test                                                                                                                                                   |
+| `LocalBackend.java`                        | new: runs the workflow module for the development of the user interface                                                                                                                            |
+| `LoanApprovalAutoConfiguration.java`       | new: the module scans its own beans, entities and repositories                                                                                                                                     |
+| `UserInterfaceRouteAutoConfiguration.java` | new: forwards the user interface to an nginx, if the application names one                                                                                                                         |
+| `...AutoConfiguration.imports`             | new: tells Spring Boot about both auto-configurations                                                                                                                                              |
+| `ModuleTestApplication.java`               | replaces `TestApplication`: scans nothing, the auto-configuration wires the module                                                                                                                 |
+| `loan-approval/pom.xml`                    | the cockpit adapter next to the BPMS adapter in every profile, the JAR of the dev shell simulator and the models of the cockpit's official API for the test, the gateway as an optional dependency |
 
 There is no application module. The application is a repository of its own, see above. So the
 blueprint has no smoke test of an application either. The application repository brings it.
