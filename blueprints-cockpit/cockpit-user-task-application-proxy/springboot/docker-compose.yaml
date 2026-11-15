@@ -86,7 +86,7 @@ services:
   # The database of the cockpit. A replica set of one node, because the cockpit needs
   # transactions. The health check starts the replica set the first time it runs.
   mongodb:
-    image: mongo:8.2
+    image: mongo:8.3
     command: [ "--replSet", "rs0", "--bind_ip_all" ]
     healthcheck:
       test:
