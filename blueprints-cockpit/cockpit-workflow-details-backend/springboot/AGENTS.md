@@ -27,16 +27,16 @@ Replace all of these consistently. They are the same in every blueprint.
 
 Blueprint-specific names, each occurring in more than one place:
 
-|         Name          |                                                              Where it occurs                                                               |
-|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| `reviewLoanRequest`   | the `@WorkflowTask` method, the Camunda 7 `camunda:formKey` and the Camunda 8 `zeebe:formDefinition externalReference` of the user task    |
-| `WithdrawLoanRequest` | the name of the message in the BPMN files and `Workflow.WITHDRAW_LOAN_REQUEST`                                                             |
-| `loanRequestId`       | the id of the aggregate, the path parameter of the OpenAPI, and the correlation key `=loanRequestId` of the message in the Camunda 8 model |
-| `applicant`           | the key in the details of a case (`WorkflowTaskHandler.APPLICANT`), the field of the OpenAPI, the column of the frontend                   |
-| `recordWithdrawal`    | the `@WorkflowTask` method, the Camunda 7 `camunda:expression` and the Camunda 8 `zeebe:taskDefinition type` of the service task           |
-| `status`              | the key in the details of a case (`WorkflowTaskHandler.STATUS`), the field of the OpenAPI, the column of the frontend                      |
-| `/wm/loan-approval`   | the server of the OpenAPI: the path the cockpit serves the module at                                                                       |
-| `/loan-approval`      | the path every endpoint of the module starts with, and the path of `workflow-module-uri`                                                   |
+|         Name          |                                                             Where it occurs                                                             |
+|-----------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `reviewLoanRequest`   | the `@WorkflowTask` method, the Camunda 7 `camunda:formKey` and the Camunda 8 `zeebe:formDefinition externalReference` of the user task |
+| `WithdrawLoanRequest` | the name of the message in the BPMN files and `Workflow.WITHDRAW_LOAN_REQUEST`                                                          |
+| `loanRequestId`       | the id of the aggregate and the path parameter of the OpenAPI                                                                           |
+| `applicant`           | the key in the details of a case (`WorkflowTaskHandler.APPLICANT`), the field of the OpenAPI, the column of the frontend                |
+| `recordWithdrawal`    | the `@WorkflowTask` method, the Camunda 7 `camunda:expression` and the Camunda 8 `zeebe:taskDefinition type` of the service task        |
+| `status`              | the key in the details of a case (`WorkflowTaskHandler.STATUS`), the field of the OpenAPI, the column of the frontend                   |
+| `/wm/loan-approval`   | the server of the OpenAPI: the path the cockpit serves the module at                                                                    |
+| `/loan-approval`      | the path every endpoint of the module starts with, and the path of `workflow-module-uri`                                                |
 
 The cockpit replaces `/wm/loan-approval` by the path of `workflow-module-uri` when it forwards a
 request. Keep the server of the OpenAPI, the path of `workflow-module-uri` and the prefix of the
@@ -48,7 +48,7 @@ controllers in line, or the page reaches nothing.
 |----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract with the frontend: two operations, `servers: /wm/loan-approval`. Change it together with `CasePageController`                                                             |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the user task, and the event subprocess with `triggeredByEvent="true"`, an interrupting message start event, the service task `recordWithdrawal` and the message `WithdrawLoanRequest` |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the same, plus `zeebe:subscription correlationKey="=loanRequestId"` on the message. The adapter does not add it for a start event                                                      |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the same for Camunda 8. Nothing about the correlation is modelled, the adapter adds the correlation key                                                                                |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | `vanillabp.workflow-modules.loan-approval.cockpit.*`: `workflow-module-uri`, `ui-uri-type: ES_MODULES`, `ui-uri-path`                                                                  |
 | `loan-approval/src/main/java/.../WorkflowTaskHandler.java`                             | the `@WorkflowTask` method keeping `@TaskId`, the one recording the withdrawal, and the `@WorkflowDetailsProvider` method filling `details` with `applicant` and `status`              |
 | `loan-approval/src/main/java/.../CasePageController.java`                              | the endpoints of the page, below `/loan-approval/api/cases/{loanRequestId}`. GET reads, POST withdraws, 404 if unknown, 409 if not in review                                           |
@@ -93,9 +93,8 @@ controllers in line, or the page reaches nothing.
    `CANCELLED` for a process which operations cancelled in the BPMS, and that is a different
    thing.
 4. Add an interrupting event subprocess with a message start event, a service task which sets the
-   status, and an end event to the process. The process ends the normal way. On Camunda 8, give
-   its message a `zeebe:subscription` whose correlation key names the id attribute of the
-   aggregate, for example `=loanRequestId`. On Camunda 7 and its forks nothing is needed.
+   status, and an end event to the process. The process ends the normal way. Model nothing about
+   the correlation, on no BPMS: the adapter correlates the message by the id of the aggregate.
 5. In the service method the endpoint calls, correlate the message through `Workflow`. Refuse
    when the status says that the case cannot be withdrawn any more.
 6. Add a `@WorkflowDetailsProvider` method to `WorkflowTaskHandler`. Put the values the columns of

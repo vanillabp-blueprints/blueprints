@@ -28,7 +28,8 @@
       correlates the message, and this interrupting event subprocess ends whatever the case is
       doing, the open user task included. The service task writes the status "withdrawn" to the
       workflow aggregate, and the process reaches its end event: withdrawing is a business
-      decision, so the process ends the normal way.
+      decision, so the process ends the normal way. Nothing about the correlation is modelled:
+      the adapter correlates by the id of the workflow aggregate.
     -->
     <bpmn:subProcess id="SubProcess_WithdrawLoanRequest" name="Withdraw loan request" triggeredByEvent="true">
       <bpmn:startEvent id="StartEvent_WithdrawalRequested" name="Withdrawal requested" isInterrupting="true">
@@ -49,19 +50,8 @@
       </bpmn:endEvent>
     </bpmn:subProcess>
   </bpmn:process>
-  <!--
-    The message name is the string the business code passes to 'correlateMessage'. The
-    correlation key is written here, unlike in a model with an intermediate catch event: the
-    adapter fills it in for catch events and receive tasks only, and Camunda 8 wants one for the
-    message start event of an event subprocess as well. The adapter publishes the message with
-    the id of the workflow aggregate as its key, and 'loanRequestId' is the process variable
-    which holds that id.
-  -->
-  <bpmn:message id="Message_WithdrawLoanRequest" name="WithdrawLoanRequest">
-    <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=loanRequestId" />
-    </bpmn:extensionElements>
-  </bpmn:message>
+  <!-- The message name is the string the business code passes to 'correlateMessage'. -->
+  <bpmn:message id="Message_WithdrawLoanRequest" name="WithdrawLoanRequest" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
       <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">

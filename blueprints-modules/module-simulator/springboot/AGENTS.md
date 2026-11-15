@@ -135,9 +135,10 @@ Names this blueprint adds:
 7. Create the simulator: a Spring Boot application which extends `DevShellSimulator`, scans its
    own package and the one of `DevShellSimulator`, plays each system's API with controllers
    which implement the interfaces of the `server` modules, and offers a test
-   API below `/simulator/test-api/{system}/{action}`. Give it users for the cockpit and a JWT
-   key in its `application.yaml`, because its own file replaces the one of the dev shell
-   simulator. Package it with the classifier `runnable`.
+   API below `/simulator/test-api/{system}/{action}`. Give it users for the cockpit in its
+   `application.yaml`. The database and the JWT key come from the defaults of the dev shell
+   simulator, which count less than the simulator's own file. Package it with the classifier
+   `runnable`.
 8. Copy the profile `start-stop-simulator` into the POM of the module which has the
    integration tests, and the test scope dependency on the simulator with `<type>pom</type>`,
    which only orders the build. The order of `<modules>` is not enough, above all in a
