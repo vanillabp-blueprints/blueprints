@@ -21,12 +21,12 @@ Replace all of these consistently; they are the same in every blueprint.
 
 Blueprint-specific names, each occurring in more than one place:
 
-|          Name          |                                       Where it occurs                                        |
-|------------------------|----------------------------------------------------------------------------------------------|
-| `awaitPartnerApproval` | the `@WorkflowTask` method, the Camunda 7 `camunda:formKey` and the Camunda 8 form reference |
-| `requestDocuments`     | the `@WorkflowTask` method of the other branch and its task definition                       |
-| `recordDocuments`      | the task reading the documents, in the transaction VanillaBP owns                            |
-| `Gateway_Split`        | the element VanillaBP names in its startup warning about a second token                      |
+|          Name          |                                                         Where it occurs                                                         |
+|------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| `awaitPartnerApproval` | the `@WorkflowTask` method, the Camunda 7 `camunda:formKey` and the Camunda 8 form reference                                    |
+| `requestDocuments`     | the `@WorkflowTask` method of the other branch and its task definition                                                          |
+| `recordDocuments`      | the task reading the documents, in the transaction VanillaBP owns                                                               |
+| `Gateway_Split`        | the element VanillaBP names in its startup warning about a second token, until the workflow says `concurrent-branches-reviewed` |
 
 **The rule this blueprint is built on:** while more than one token is in the process, nothing
 writes the workflow aggregate itself. Every branch writes an entity of its own. Breaking the
@@ -34,16 +34,17 @@ rule causes no error, only lost data. That is why it is a rule and not a hint.
 
 ## Core files
 
-|                                            File                                            |                                                          Why it matters                                                          |
-|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the parallel gateway which splits and the one which joins; between them the two branches                                         |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | carries only what a single token writes, plus one relation per branch. NOT the id of the open task                               |
-| `loan-approval/src/main/java/.../loanapproval/model/PartnerApproval.java`                  | the record of the branch the application finishes, with the id of its open task                                                  |
-| `loan-approval/src/main/java/.../loanapproval/model/DocumentCheck.java`                    | the record of the branch the BPMS finishes                                                                                       |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `recordDocuments` runs in VanillaBP's transaction, `approvePartnerRequest` in the application's. Neither touches the other's row |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | one method per branch. The partner branch keeps its task open with `@TaskId`                                                     |
-| `loan-approval/src/test/java/.../DocumentsSimulator.java`                                  | takes a few seconds, which keeps a branch inside its transaction while the other one is answered                                 |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | produces the overlap and asserts that both branches kept their result                                                            |
+|                                            File                                            |                                                            Why it matters                                                            |
+|--------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the parallel gateway which splits and the one which joins; between them the two branches                                             |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | carries only what a single token writes, plus one relation per branch. NOT the id of the open task                                   |
+| `loan-approval/src/main/java/.../loanapproval/model/PartnerApproval.java`                  | the record of the branch the application finishes, with the id of its open task                                                      |
+| `loan-approval/src/main/java/.../loanapproval/model/DocumentCheck.java`                    | the record of the branch the BPMS finishes                                                                                           |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `recordDocuments` runs in VanillaBP's transaction, `approvePartnerRequest` in the application's. Neither touches the other's row     |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | one method per branch. The partner branch keeps its task open with `@TaskId`                                                         |
+| `loan-approval/src/test/java/.../DocumentsSimulator.java`                                  | takes a few seconds, which keeps a branch inside its transaction while the other one is answered                                     |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | produces the overlap and asserts that both branches kept their result                                                                |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | `concurrent-branches-reviewed: true` for `loan_approval`: the branches were checked, so VanillaBP does not warn about a second token |
 
 ## Boilerplate files
 
@@ -89,6 +90,11 @@ extends `WorkflowModuleTest`, never in the base class.
    them slow, instead of blocking a task handler until the test releases it. A handler holds a
    thread of the BPMS (business process management system), and on a remote engine one adapter
    shares only a few of them.
+7. Say in the configuration of the workflow module that the branches were reviewed:
+   `vanillabp.workflow-modules.<workflow-module-id>.workflows.<bpmn-process-id>.concurrent-branches-reviewed: true`.
+   VanillaBP cannot see the split in the code, so without it the startup warning stays. Set it
+   at the workflow only, and only when no two branches write the same column. A version
+   attribute needs no such line, because VanillaBP sees it.
 
 The split alone is not enough here, so the aggregate also carries `@DynamicUpdate`. The
 aggregate holds the foreign keys of both branch entities. So a branch which creates its entity

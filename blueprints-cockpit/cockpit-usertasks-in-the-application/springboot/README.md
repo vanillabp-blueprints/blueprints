@@ -89,7 +89,7 @@ Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user
 | `Permission.java`                  | new: the authorities of the module, one per kind of user task                                                                                                                   |
 | `MethodSecurityConfiguration.java` | new: switches on `@Secured` for the module                                                                                                                                      |
 | `SecurityConfiguration.java`       | new, in the application: HTTP Basic and two demo users                                                                                                                          |
-| `loan-approval.yaml`               | the documents to check, and the declaration of the list the model loops over                                                                                                    |
+| `loan-approval.yaml`               | the documents to check, the declaration of the list the model loops over, and `concurrent-branches-reviewed`, because the branches were checked                                 |
 | `LoanApprovalIT.java`              | the tasks as rows, a draft which stays in its task, completion, cancellation, a task sent twice, tasks and data loaded only when read                                           |
 | `StoredLoanApprovals.java`         | new, in the tests: reads a loan approval with all tasks and their data inside a transaction                                                                                     |
 | `UserTaskFormSecurityIT.java`      | new: who may read, save and complete which form                                                                                                                                 |
@@ -254,6 +254,13 @@ Both branches write to the aggregate when a task is completed. The aggregate car
 `@DynamicUpdate`, so the persistence layer writes only the columns which changed. The risk
 assessment writes its own columns, and a document check writes a row of another table. So
 neither of them puts back an old value of the other.
+
+VanillaBP cannot see that in the code. The aggregate has no version attribute, so at startup it
+warns that the process can hold more than one token. This blueprint has checked its branches, so
+`loan-approval.yaml` says it for the workflow with
+`workflows.loan_approval.concurrent-branches-reviewed: true`, and the warning is silent. The key
+is read at the workflow and nowhere else, because a review is about one model. Check it again
+whenever the model changes.
 
 The tests wait instead of asserting at once. A user task created by a remote engine arrives a
 moment after the workflow was started.

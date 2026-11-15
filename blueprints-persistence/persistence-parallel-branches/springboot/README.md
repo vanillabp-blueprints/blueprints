@@ -65,8 +65,23 @@ The BPMN process 'loan_approval' of workflow module 'loan-approval' can hold mor
 token at a time (e.g. 'Gateway_Split'), but its workflow aggregate has no version attribute
 ```
 
-The warning is right, and it stays. This blueprint answers the question with the data model
-instead of a version attribute.
+The warning is right for a process VanillaBP knows nothing more about. It cannot see the data
+model in the code. This blueprint answers the question with that model instead of a version
+attribute, so it says so for the workflow, in `loan-approval.yaml`:
+
+```yaml
+vanillabp:
+  workflow-modules:
+    loan-approval:
+      workflows:
+        loan_approval:
+          concurrent-branches-reviewed: true
+```
+
+Then the warning is silent for this workflow. The key is read at the workflow and nowhere
+else, because a review is about one model. A workflow added next week gets the warning until
+somebody has looked at it. Set the key only when you made sure that no two branches write the
+same column, and check it again whenever the model changes.
 [The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate)
 has the other three ways, and why they are real alternatives and not opinions.
 
@@ -84,6 +99,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `WorkflowTaskHandler.java`   | the branch methods, two of them keeping the id of an open task (`@TaskId`)                |
 | `DocumentsSimulator.java`    | the surrounding system, and the delay which keeps a branch inside its transaction         |
 | `LoanApprovalIT.java`        | produces the overlap of the two transactions in every run                                 |
+| `loan-approval.yaml`         | `concurrent-branches-reviewed`, which ends the startup warning about a second token       |
 
 ## Running it
 
@@ -206,6 +222,7 @@ says where they are served and how to log in.
 | `.../loanapproval/DocumentsClient.java`                                                | the port to the document service, so a test can put a simulator in its place                     |
 | `loan-approval/src/test/.../DocumentsSimulator.java`                                   | that simulator, taking long enough for the other branch to be answered meanwhile                 |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a workflow, holds one branch, answers the other, and asserts that both results survived   |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | says that the branches were reviewed, so VanillaBP does not warn about a second token            |
 
 The order of events in the test is the whole demonstration. Both branches wait for the
 application first, so nothing runs before the test says so. The test then lets the document

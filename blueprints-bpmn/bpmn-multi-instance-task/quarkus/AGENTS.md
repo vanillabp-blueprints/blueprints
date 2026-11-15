@@ -32,15 +32,15 @@ the BPMS (business process management system) did supply.
 
 ## Core files
 
-|                                            File                                            |                                                 Why it matters                                                 |
-|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance element: what it loops over, what each instance gets, and whether they run at the same time |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | `@MultiInstanceElement`, `@MultiInstanceIndex`, `@MultiInstanceTotal`                                          |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the collection the model iterates over, and the rows the iterations write                                      |
-| `loan-approval/src/main/java/.../loanapproval/model/PartnerOffer.java`                     | a row per iteration, which is what makes concurrent instances harmless                                         |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | one method per iteration and one for the result over all of them                                               |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the elements. So the number of iterations is configuration, not model                                          |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | asserts every row, in no particular order                                                                      |
+|                                            File                                            |                                                                    Why it matters                                                                     |
+|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance element: what it loops over, what each instance gets, and whether they run at the same time                                        |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | `@MultiInstanceElement`, `@MultiInstanceIndex`, `@MultiInstanceTotal`                                                                                 |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the collection the model iterates over, and the rows the iterations write                                                                             |
+| `loan-approval/src/main/java/.../loanapproval/model/PartnerOffer.java`                     | a row per iteration, which is what makes concurrent instances harmless                                                                                |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | one method per iteration and one for the result over all of them                                                                                      |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the elements. So the number of iterations is configuration, not model; `concurrent-branches-reviewed`, because each iteration writes a row of its own |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | asserts every row, in no particular order                                                                                                             |
 
 ## Boilerplate files
 
@@ -76,6 +76,10 @@ does not make the test a bean.
    share. On a remote engine the instances run at the same time, and each of them saves the
    whole aggregate. The one which commits last would put back what it read at its start.
    Nothing reports that.
+   VanillaBP warns at startup about this case, because the aggregate has no version attribute.
+   Once every iteration writes only rows of its own, say so for the workflow with
+   `vanillabp.workflow-modules.<workflow-module-id>.workflows.<bpmn-process-id>.concurrent-branches-reviewed: true`,
+   as `loan-approval.yaml` does. The key is read at the workflow only.
 5. Put anything computed over all iterations into a task AFTER the multi-instance one. An
    iteration sees one element and cannot know whether it is the last.
 6. Keep the number of iterations out of the model. With a list in configuration or in the data,
