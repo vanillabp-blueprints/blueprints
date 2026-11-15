@@ -823,6 +823,15 @@ dashes. GitHub keeps it for thirty days, longer than the log of the job. The iss
 out the name of the first red job. So the failed test is one download away, and you do not have
 to scroll through a log which is thrown away sooner.
 
+A red job of this workflow or of `build.yaml` also attaches the logs of the simulators the tests
+started: `target/dev-shell-simulator.log` of the dev-shell simulator in the cockpit blueprints,
+and `target/simulator.log` of the simulator applications in `module-simulator` and
+`module-under-load`. The simulators write to these files and not to the console, so without the
+upload they are gone with the runner. The artifact is called
+`simulator-logs-<blueprint>-<bpms>-attempt-<n>`, because a re-run of a failed job uploads into
+the same run again. GitHub keeps it for seven days. A blueprint which starts no simulator
+uploads nothing.
+
 A red night becomes a GitHub issue under the label `nightly`, written by `nightly-issue.yaml`.
 There is one issue for the whole night. The first thing in it is the count of the blueprints
 which broke. Many at once means the platform, one alone means that blueprint. While the issue
