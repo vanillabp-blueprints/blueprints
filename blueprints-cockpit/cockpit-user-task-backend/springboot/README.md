@@ -267,9 +267,10 @@ the classpath and checks that every operation in it has its endpoint, so the fil
 cannot drift apart unnoticed. An application with many forms may prefer to generate. Then the
 interfaces come from the same file, and the controller implements them.
 
-The API has POST requests, and the other blueprints have GET requests only, so that a browser is
-the only tool needed. A form sends what the user entered. In this blueprint the browser is the
-cockpit, or the dev shell in its place.
+Completing a task is a POST, because a form calls it. The
+[rules for blueprints](https://github.com/vanillabp-blueprints/blueprints/blob/main/CONTRIBUTING.md#endpoints-which-a-form-calls)
+say so for every endpoint of a form. In this blueprint the form runs in the cockpit, or in the
+dev shell in its place.
 
 The integration test talks to the module the way a form does, only without the proxy of the
 cockpit in between. It starts the dev shell simulator of the cockpit as a process of its own and

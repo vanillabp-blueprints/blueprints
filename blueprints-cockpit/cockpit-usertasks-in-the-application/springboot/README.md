@@ -150,7 +150,9 @@ check, and you get 403, because `risk-officer` may not check documents. The othe
 `clerk`, with the same password, and may only check documents.
 
 Saving and completing are the job of a form. It sends what the user entered as JSON, with PUT
-to save and POST to complete. This blueprint has no forms, so `curl` stands in for one:
+to save and POST to complete, as the
+[rules for blueprints](https://github.com/vanillabp-blueprints/blueprints/blob/main/CONTRIBUTING.md#endpoints-which-a-form-calls)
+say for every endpoint of a form. This blueprint has no forms, so `curl` stands in for one:
 
 ```bash
 curl -u risk-officer:demo -X PUT -H 'Content-Type: application/json' \
