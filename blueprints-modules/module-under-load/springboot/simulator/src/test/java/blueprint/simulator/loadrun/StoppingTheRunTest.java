@@ -36,6 +36,8 @@ public class StoppingTheRunTest {
 
   private static final Duration WAIT_AT_MOST = Duration.ofSeconds(30);
 
+  private static final Duration WATCH = Duration.ofSeconds(2);
+
   private final List<Socket> connections = new CopyOnWriteArrayList<>();
 
   private ServerSocket silentApplication;
@@ -86,6 +88,36 @@ public class StoppingTheRunTest {
     assertThat(customers.failed())
         .describedAs("loan requests which failed")
         .isZero();
+
+  }
+
+  /**
+   * A clerk who looks at the task list twice a second while it is empty must not look more
+   * often when the application refuses every call. Otherwise a dead application gets a tight
+   * loop from every clerk, and the log fills with warnings.
+   */
+  @Test
+  public void aClerkWaitsAfterARefusedCallAsAfterAnEmptyTaskList() throws Exception {
+
+    final int nobodyListens;
+    try (var closedAgain = new ServerSocket(0)) {
+      nobodyListens = closedAgain.getLocalPort();
+    }
+    final var clerks = new Clerks(clientOf(nobodyListens), profile());
+
+    final var giveUpAt = System.nanoTime() + WAIT_AT_MOST.toNanos();
+    while (clerks.failed() == 0 && System.nanoTime() < giveUpAt) {
+      Thread.sleep(10);
+    }
+    final var failedAtTheStart = clerks.failed();
+    Thread.sleep(WATCH.toMillis());
+    final var failedWhileWatching = clerks.failed() - failedAtTheStart;
+    clerks.stop();
+
+    // Two looks a second at an empty task list, and one more for a look already going on.
+    assertThat(failedWhileWatching)
+        .describedAs("refused calls of one clerk in %s", WATCH)
+        .isBetween(1L, WATCH.toSeconds() * 2 + 1);
 
   }
 
