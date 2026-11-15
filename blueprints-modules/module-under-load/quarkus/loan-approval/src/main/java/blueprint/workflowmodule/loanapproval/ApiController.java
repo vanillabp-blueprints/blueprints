@@ -1,15 +1,19 @@
 package blueprint.workflowmodule.loanapproval;
 
+import java.util.List;
 import java.util.UUID;
 
 import blueprint.workflowmodule.loanapproval.api.LoanApprovalApi;
+import blueprint.workflowmodule.loanapproval.api.model.LoanRequest;
+import blueprint.workflowmodule.loanapproval.api.model.OpenAssessment;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * The API of this use case. It consists of GET requests only, so one loan approval can be
- * walked through in a browser - no tooling, no request bodies.
+ * The API of this use case. Every request a person types is a GET, so one loan approval can be
+ * walked through in a browser - no tooling, no request bodies. The one POST is for the front end
+ * of a customer, which hands in documents with the request.
  *
  * <p>
  * It talks to {@link Service} and to nothing else. That the use case happens to be
@@ -18,8 +22,9 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>
  * The paths, the parameters and the answers come from {@link LoanApprovalApi}, the interface
- * the build generates from {@code src/main/resources/openapi/loan-approval.yaml}. This class
- * only implements it.
+ * the build generates from {@code loan-approval-api/loan-approval.yaml}. This class only
+ * implements it. The simulator of this blueprint calls the same API, with the client generated
+ * from the same file.
  * </p>
  */
 @Slf4j
@@ -48,6 +53,52 @@ public class ApiController implements LoanApprovalApi {
         loanRequestId);
 
     return loanRequestId;
+
+  }
+
+  /**
+   * A customer requests a loan and hands in documents with it.
+   *
+   * @param loanRequest The amount and the documents.
+   * @return The id of the loan request started.
+   */
+  @Override
+  public String request(
+      final LoanRequest loanRequest) {
+
+    final var loanRequestId = UUID.randomUUID().toString();
+
+    loanApproval.request(loanRequestId, loanRequest.getAmount(), loanRequest.getDocuments());
+
+    return loanRequestId;
+
+  }
+
+  /**
+   * The assessments which wait for a clerk, as a task list shows them.
+   *
+   * @return Up to 50 open assessments.
+   */
+  @Override
+  public List<OpenAssessment> openAssessments() {
+
+    return loanApproval
+        .openAssessments()
+        .stream()
+        .map(assessment -> new OpenAssessment(assessment.getLoanRequestId(), assessment.getAssessmentTaskId()))
+        .toList();
+
+  }
+
+  /**
+   * How many loan approvals have not reached an end yet, as an operator asks.
+   *
+   * @return The number of unfinished loan approvals.
+   */
+  @Override
+  public Long unfinished() {
+
+    return loanApproval.unfinished();
 
   }
 

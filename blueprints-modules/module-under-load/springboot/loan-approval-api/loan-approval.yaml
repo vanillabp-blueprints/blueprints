@@ -1,0 +1,166 @@
+openapi: 3.0.3
+info:
+  title: Loan approval
+  description: >
+    The API of the use case 'loan-approval'. A person can walk one loan approval through in a
+    browser, because every request a person types is a GET, without any tool and without a request
+    body. The one POST is for the front end of a customer, which hands in documents with the
+    request. The task list and the number of open loan approvals are what a task list and an
+    operator ask for.
+
+    The Maven module 'server' generates the Java interface 'LoanApprovalApi' from this file, and
+    'ApiController' of the workflow module implements it. The module 'client' generates the client
+    the simulator calls the application with, the way real clients do. So the paths, the
+    parameters and the answers below are the contract, and nobody writes them by hand.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: loan-approval
+    description: Operating the use case 'loan-approval'
+paths:
+  /api/loan-approval/start:
+    get:
+      tags:
+        - loan-approval
+      operationId: start
+      summary: Starts one loan approval
+      parameters:
+        - name: amount
+          in: query
+          description: The amount requested
+          schema:
+            type: integer
+            default: 5000
+      responses:
+        '200':
+          description: The id of the loan request started
+          content:
+            text/plain:
+              schema:
+                type: string
+    post:
+      tags:
+        - loan-approval
+      operationId: request
+      summary: A customer requests a loan and hands in documents with it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoanRequest"
+      responses:
+        '200':
+          description: The id of the loan request started
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/loan-approval/open-assessments:
+    get:
+      tags:
+        - loan-approval
+      operationId: openAssessments
+      summary: The assessments which wait for a clerk, as a task list shows them
+      responses:
+        '200':
+          description: Up to 50 open assessments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpenAssessment"
+  /api/loan-approval/unfinished:
+    get:
+      tags:
+        - loan-approval
+      operationId: unfinished
+      summary: How many loan approvals have not reached an end yet
+      responses:
+        '200':
+          description: The number of unfinished loan approvals
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+  /api/loan-approval/{loanRequestId}/assess/{taskId}:
+    get:
+      tags:
+        - loan-approval
+      operationId: assess
+      summary: A clerk decides about a loan
+      parameters:
+        - name: loanRequestId
+          in: path
+          required: true
+          description: The id returned by starting the process
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          description: The id of the user task, which the log names
+          schema:
+            type: string
+        - name: approved
+          in: query
+          description: The decision of the clerk
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: A sentence for the browser
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/loan-approval/{loanRequestId}:
+    get:
+      tags:
+        - loan-approval
+      operationId: show
+      summary: Shows what the process did, which is the second half of operating it in a browser
+      parameters:
+        - name: loanRequestId
+          in: path
+          required: true
+          description: The id returned by starting the process
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The workflow aggregate as it is stored right now
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  schemas:
+    LoanRequest:
+      type: object
+      required:
+        - amount
+        - documents
+      properties:
+        amount:
+          type: integer
+          description: The amount requested
+        documents:
+          type: string
+          description: What the customer hands in with the request
+    OpenAssessment:
+      type: object
+      required:
+        - loanRequestId
+        - taskId
+      properties:
+        loanRequestId:
+          type: string
+          description: The id of the loan request
+        taskId:
+          type: string
+          description: The id of the user task, which a clerk answers

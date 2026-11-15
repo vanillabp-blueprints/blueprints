@@ -16,7 +16,7 @@ import jakarta.inject.Inject;
  * the process, in a real BPMS.
  *
  * <p>
- * Load is not tested here. The load driver is a module of the application, and the test of the
+ * Load is not tested here. The load driver runs in the simulator, and the test of the
  * application runs it. What this test proves is the part the driver relies on: every shape of
  * the process works on its own. The credit bureau answers with a message, or the process stops
  * waiting for it. A clerk decides. An approved loan waits for the payout run and is paid out
@@ -52,9 +52,11 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     loanApproval.assess(loanRequestId, assessment.getAssessmentTaskId(), true);
 
+    // The payout run is a timer of the model, so this step waits for the scheduler of the BPMS.
     final var paidOut = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
+        SCHEDULER_TIMEOUT,
         aggregate -> Boolean.TRUE.equals(aggregate.getPaidOut()));
     assertThat(paidOut.getPayoutRunAt()).isNotNull();
     assertThat(paidOut.getAssessmentTaskId()).isNull();
@@ -69,10 +71,12 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     loanApproval.request(loanRequestId, 5000, "documents");
 
-    // The process gives the bureau ten seconds. The harness waits up to thirty.
+    // The process gives the bureau ten seconds, with a timer. So this step waits for the
+    // scheduler of the BPMS.
     final var assessment = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
+        SCHEDULER_TIMEOUT,
         aggregate -> aggregate.getAssessmentTaskId() != null);
     assertThat(assessment.getCreditScore()).isNull();
 

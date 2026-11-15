@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: Credit bureau
+  version: 1
+  description: |
+    The API of the credit bureau, as its vendor would publish it. The bureau answers later, through a callback, and sometimes not at all. That callback is the second file next to this one, 'credit-bureau-callback.yaml'. The Maven module 'client' generates the Java client of this API, and the module 'server' generates the Java interface the simulator implements. In a real project this file comes from the vendor.
+servers:
+  - url: /credit-bureau
+tags:
+  - name: ScoreRequests
+    description: Questions for the credit score of a customer
+paths:
+  /api/v1/score-requests:
+    post:
+      tags:
+        - ScoreRequests
+      operationId: requestScore
+      summary: Asks for the credit score of a customer
+      description: |
+        The bureau takes the question and answers at once. The score comes later: the bureau posts a Score to the callbackUrl of the question. 'credit-bureau-callback.yaml' describes that request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreRequest"
+      responses:
+        "202":
+          description: The question waits for its answer
+components:
+  schemas:
+    ScoreRequest:
+      type: object
+      required:
+        - loanRequestId
+        - amount
+        - callbackUrl
+      properties:
+        loanRequestId:
+          type: string
+          description: The id the caller gives the question. The callback carries it.
+        amount:
+          type: integer
+          description: The amount the customer asks for
+        callbackUrl:
+          type: string
+          description: |
+            Where the bureau posts the score. The receiver offers the API of 'credit-bureau-callback.yaml' there, so the address ends with the path of that API.

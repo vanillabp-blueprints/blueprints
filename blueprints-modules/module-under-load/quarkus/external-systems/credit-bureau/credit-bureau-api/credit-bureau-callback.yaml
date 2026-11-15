@@ -1,0 +1,40 @@
+openapi: 3.0.3
+info:
+  title: Credit bureau callback
+  version: 1
+  description: |
+    The callback of the credit bureau. This API goes the other way: the application offers it, and the credit bureau calls it when it has the score. The address of the application is the callbackUrl of the question, see 'credit-bureau.yaml'. The Maven module 'client' generates the Java interface the application implements. The module 'server' generates the Java client the simulator calls back with.
+tags:
+  - name: ScoreCallback
+    description: Answers of the credit bureau
+paths:
+  /credit-bureau/callback:
+    post:
+      tags:
+        - ScoreCallback
+      operationId: reportScore
+      summary: Reports the credit score of a customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Score"
+      responses:
+        "204":
+          description: The receiver took the score
+        "404":
+          description: The receiver does not know the question
+components:
+  schemas:
+    Score:
+      type: object
+      required:
+        - loanRequestId
+        - score
+      properties:
+        loanRequestId:
+          type: string
+        score:
+          type: integer
+          description: "The higher, the more likely the customer pays back"

@@ -25,9 +25,10 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  *
  * <p>
- * Nothing here knows about load. The load driver calls the same methods a browser, a task
- * list or a credit bureau would call. That is the point: what is measured is the module as it
- * is, not a version of it made for measuring.
+ * Nothing here knows about load. The load driver runs in a process of its own and reaches
+ * these methods only through the API of the module and the callback of the credit bureau, as a
+ * browser, a task list and a real bureau would. That is the point: what is measured is the
+ * module as it is, not a version of it made for measuring.
  * </p>
  *
  * <p>

@@ -1,10 +1,11 @@
 # The load profile of the workflow module 'loan-approval': what the BPMN model does not say
-# about the load it gets. The load driver of this blueprint reads it, and a skill which puts
-# your own module under load asks you for the same values and writes the same file.
+# about the load it gets. The load driver in the simulator of this blueprint reads it: the
+# build copies it into the simulator. A skill which puts your own module under load asks you
+# for the same values and writes the same file.
 #
 # Every key below a section names a BPMN element by its id, so the profile stays next to the
-# model it describes. A key the driver does not know stops the application with a message, so
-# a typo never falls back to nothing.
+# model it describes. A key the driver does not know stops the simulator with a message, so a
+# typo never falls back to nothing.
 version: 1
 # The BPMN process id this profile is about.
 process: loan_approval

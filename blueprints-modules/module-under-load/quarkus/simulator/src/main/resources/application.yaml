@@ -1,0 +1,41 @@
+# The simulator answers on its own port, next to the application on 8080. The load run is
+# operated here, and the application calls the credit bureau here.
+server:
+  port: 8079
+spring:
+  application:
+    name: simulator
+# The load driver. 'profile' is the load profile next to the BPMN files of the module, which
+# the build copies into the simulator. A size says how long each stage lasts and how many steps
+# of more load come between the steady stage and the peak. 'small' shows a result in a few
+# minutes on a laptop.
+load-run:
+  profile: loan-approval/load-profile.yaml
+  # How many loan requests may be handed in at the same time, like the front ends of many
+  # customers. More customers than that wait in front of them.
+  customer-threads: 16
+  sizes:
+    small:
+      stage-length: PT30S
+      steps: 3
+      drain-at-most: PT2M
+    medium:
+      stage-length: PT2M
+      steps: 6
+      drain-at-most: PT5M
+    large:
+      stage-length: PT5M
+      steps: 10
+      drain-at-most: PT10M
+  # The application under load, as the simulator reaches it from outside: its API, the meters
+  # Quarkus shows in the Prometheus format, and its JMX port for the two full collections. The
+  # pool is Agroal, which Quarkus brings, and the report names its setting.
+  application:
+    base-url: http://localhost:8080
+    metrics-url: http://localhost:8080/q/metrics
+    jmx-address: localhost:9010
+    connections-waiting-meter: agroal_awaiting_count
+    pool-setting: quarkus.datasource.jdbc.max-size
+logging:
+  level:
+    blueprint.simulator: INFO

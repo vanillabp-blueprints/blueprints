@@ -14,11 +14,20 @@
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Blueprint: a workflow module under load</name>
-  <description>A load driver which plays customers, clerks and a neighbour system, and names the pool which runs out first.</description>
+  <description>A load driver which plays customers, clerks and a neighbour system, and names the pool which runs out first. It runs in a simulator of its own, so it does not share the CPU, the heap or the garbage collector with the application it measures.</description>
 
+  <!--
+    Maven sorts these modules by their dependencies. The order below only shows how they
+    belong together. That the simulator is built before the application, whose integration
+    test runs against it, comes from a dependency in application/pom.xml.
+  -->
   <modules>
+    <module>external-systems/credit-bureau/credit-bureau-api</module>
+    <module>external-systems/credit-bureau/rest-adapter</module>
+    <module>loan-approval-api</module>
+    <module>load-run-api</module>
+    <module>simulator</module>
     <module>loan-approval</module>
-    <module>load-driver</module>
     <module>application</module>
   </modules>
 
@@ -39,7 +48,7 @@
     <camunda8-adapter.version>2.0.0-8.10-SNAPSHOT</camunda8-adapter.version>
     <cibseven-adapter.version>2.0.0-2.2-SNAPSHOT</cibseven-adapter.version>
     <operaton-adapter.version>2.0.0-SNAPSHOT</operaton-adapter.version>
-    <!-- Generates the Java interfaces of the APIs from their OpenAPI files. -->
+    <!-- Generates the Java code of the APIs from their OpenAPI files. -->
     <openapi-generator.version>7.27.0</openapi-generator.version>
   </properties>
 
@@ -56,6 +65,45 @@
   </dependencyManagement>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <!--
+          The settings every API module shares. Each 'client' and 'server' module adds an
+          execution per OpenAPI file, with its packages and its side:
+
+            client  library 'spring-http-interface': an interface with @HttpExchange, which
+                    the caller turns into a client with a RestClient
+            server  'interfaceOnly': an interface with @RequestMapping, which a controller
+                    implements
+
+          The generated code needs no library beyond Spring Web, Jackson and Jakarta
+          annotations: no Swagger annotations, no jackson-databind-nullable, no bean
+          validation. The models are Java records.
+        -->
+        <plugin>
+          <groupId>org.openapitools</groupId>
+          <artifactId>openapi-generator-maven-plugin</artifactId>
+          <version>${openapi-generator.version}</version>
+          <configuration>
+            <generatorName>spring</generatorName>
+            <generateSupportingFiles>false</generateSupportingFiles>
+            <configOptions>
+              <useSpringBoot4>true</useSpringBoot4>
+              <useTags>true</useTags>
+              <useRecords>true</useRecords>
+              <useJspecify>true</useJspecify>
+              <openApiNullable>false</openApiNullable>
+              <useBeanValidation>false</useBeanValidation>
+              <documentationProvider>none</documentationProvider>
+              <annotationLibrary>none</annotationLibrary>
+              <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              <generateJsonIncludeAnnotations>false</generateJsonIncludeAnnotations>
+              <generateJsonSetterNullsAnnotations>false</generateJsonSetterNullsAnnotations>
+            </configOptions>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <!--
         A blueprint must never show a deprecated API - it is copied, and what is copied
@@ -112,6 +160,9 @@
         tests, the application brings the adapters. This rule breaks the build if a module
         of this blueprint names an adapter outside the test scope, directly or through
         another dependency. The application module switches the rule off.
+
+        The REST adapter below 'external-systems' is not caught by it. It is chosen by the
+        application, like a BPMS adapter, and the workflow module knows only its port.
       -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

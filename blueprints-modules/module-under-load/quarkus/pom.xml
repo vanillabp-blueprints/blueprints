@@ -7,11 +7,25 @@
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Blueprint: a workflow module under load</name>
-  <description>A load driver which plays customers, clerks and a neighbour system, and names the pool which runs out first.</description>
+  <description>A load driver which plays customers, clerks and a neighbour system, and names the pool which runs out first. It runs in a simulator of its own, so it does not share the CPU, the heap or the garbage collector with the application it measures.</description>
 
+  <!--
+    Maven sorts these modules by their dependencies. The order below only shows how they
+    belong together. That the simulator is built before the application, whose integration
+    test runs against it, comes from a dependency in application/pom.xml.
+
+    The simulator is a Spring Boot application, and so are the parts of the API modules only
+    the simulator uses: the 'client' of 'loan-approval-api' and the 'server' of
+    'credit-bureau-api' and 'load-run-api'. They take the parent of Spring Boot and not this
+    POM. Maven still builds them with the blueprint, because the POMs name them as modules.
+  -->
   <modules>
+    <module>external-systems/credit-bureau/credit-bureau-api</module>
+    <module>external-systems/credit-bureau/rest-adapter</module>
+    <module>loan-approval-api</module>
+    <module>load-run-api</module>
+    <module>simulator</module>
     <module>loan-approval</module>
-    <module>load-driver</module>
     <module>application</module>
   </modules>
 
@@ -36,6 +50,9 @@
     <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
     <maven-failsafe-plugin.version>3.6.1</maven-failsafe-plugin.version>
     <maven-enforcer-plugin.version>3.7.0</maven-enforcer-plugin.version>
+    <maven-dependency-plugin.version>3.10.0</maven-dependency-plugin.version>
+    <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
+    <exec-maven-plugin.version>3.7.0</exec-maven-plugin.version>
     <!-- Not part of the Quarkus BOM, so this blueprint says which version it uses. -->
     <lombok.version>1.18.48</lombok.version>
     <assertj.version>3.27.7</assertj.version>
@@ -46,7 +63,7 @@
     <camunda8-adapter.version>2.0.0-8.10-SNAPSHOT</camunda8-adapter.version>
     <cibseven-adapter.version>2.0.0-2.2-SNAPSHOT</cibseven-adapter.version>
     <operaton-adapter.version>2.0.0-SNAPSHOT</operaton-adapter.version>
-    <!-- Generates the Java interfaces of the APIs from their OpenAPI files. -->
+    <!-- Generates the Java code of the APIs from their OpenAPI files. -->
     <openapi-generator.version>7.27.0</openapi-generator.version>
   </properties>
 
@@ -88,6 +105,62 @@
           <groupId>io.quarkus</groupId>
           <artifactId>quarkus-maven-plugin</artifactId>
           <version>${quarkus.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>io.smallrye</groupId>
+          <artifactId>jandex-maven-plugin</artifactId>
+          <version>${jandex-maven-plugin.version}</version>
+        </plugin>
+        <!--
+          The settings every module shares which generates Jakarta REST code. Each one adds an
+          execution per OpenAPI file, with its packages:
+
+            client    a Jakarta REST interface. The REST client of Quarkus implements it for
+                      the caller.
+            callback  the same kind of interface for the API the application offers. A
+                      resource class implements it.
+            api       the same kind of interface for the API of the workflow module, which
+                      its resource class implements.
+
+          The generated code needs no library beyond Jakarta REST, Jackson and the Jakarta
+          annotations: no Swagger annotations, no bean validation.
+        -->
+        <plugin>
+          <groupId>org.openapitools</groupId>
+          <artifactId>openapi-generator-maven-plugin</artifactId>
+          <version>${openapi-generator.version}</version>
+          <configuration>
+            <generatorName>jaxrs-spec</generatorName>
+            <generateSupportingFiles>false</generateSupportingFiles>
+            <configOptions>
+              <interfaceOnly>true</interfaceOnly>
+              <useJakartaEe>true</useJakartaEe>
+              <useTags>true</useTags>
+              <useSwaggerAnnotations>false</useSwaggerAnnotations>
+              <useMicroProfileOpenAPIAnnotations>false</useMicroProfileOpenAPIAnnotations>
+              <useBeanValidation>false</useBeanValidation>
+              <openApiNullable>false</openApiNullable>
+              <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              <generatePom>false</generatePom>
+              <!-- Where Maven compiles the generated sources from. The generator would choose another directory. -->
+              <sourceFolder>src/main/java</sourceFolder>
+            </configOptions>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${maven-dependency-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>${build-helper-maven-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>${exec-maven-plugin.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>

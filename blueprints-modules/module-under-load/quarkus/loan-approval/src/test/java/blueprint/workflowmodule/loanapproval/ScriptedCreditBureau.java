@@ -13,8 +13,8 @@ import jakarta.inject.Inject;
  * about the loan requests the test told it to stay silent about.
  *
  * <p>
- * In the application, the load driver plays the bureau. The module test has no driver, so it
- * brings this one.
+ * In the application, a REST adapter talks to the bureau the simulator plays. The module test
+ * runs without the simulator, so it brings this one.
  * </p>
  */
 @ApplicationScoped

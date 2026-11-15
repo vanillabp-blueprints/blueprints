@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
+    <artifactId>module-under-load</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>credit-bureau-api</artifactId>
+  <packaging>pom</packaging>
+  <name>API 'credit bureau'</name>
+  <description>The API of the credit bureau and its callback as OpenAPI files, and the Java code generated from them: what the application needs, and what the simulator needs.</description>
+
+  <!--
+    The OpenAPI files 'credit-bureau.yaml' and 'credit-bureau-callback.yaml' next to this POM
+    are the contract between the application and the credit bureau. Nobody writes the Java code
+    for them by hand. 'client' generates what the application needs: the client of the bureau
+    and the interface of the callback. 'server' generates what the simulator needs: the
+    interface of the bureau and the client of the callback. All of it reads the same two files,
+    so both sides always agree.
+  -->
+  <modules>
+    <module>client</module>
+    <module>server</module>
+  </modules>
+</project>

@@ -2,8 +2,8 @@ package blueprint.workflowmodule.loanapproval;
 
 /**
  * The neighbour system this workflow module asks for a credit score. The module knows it only
- * by this role. Whoever builds the application brings the implementation: a client of the real
- * credit bureau, or, in this blueprint, the load driver which plays the bureau.
+ * by this role. Whoever builds the application brings the implementation. In this blueprint
+ * that is a REST adapter, which talks to the simulator in the same way as to a real bureau.
  *
  * <p>
  * The question goes out in a service task, and the answer comes back later as a message,
