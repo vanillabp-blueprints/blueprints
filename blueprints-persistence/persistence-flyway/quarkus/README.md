@@ -134,6 +134,21 @@ The phase-two outbox table is checked the same way. To see either message, point
 `blueprint.schema.vanillabp-location` at a directory without migrations and start the
 application.
 
+### Keeping the delivery table small
+
+`VANILLABP_TASK_DELIVERY` gets one row for every task the BPMS hands over. By default only the
+retention deletes rows: seven days after the BPMS last handed a task out, which is the column
+`LAST_SEEN_AT`. A task which stays open keeps its row, because every new delivery of it moves
+that moment forward. Setting `vanillabp.delivery.release-on-workflow-end` to `true` deletes the
+rows of a workflow as soon as it ends. It works for the whole application, or for one workflow
+module under `vanillabp.workflow-modules.<id>.delivery`. It is `false` by default, because it
+costs something. VanillaBP then asks the BPMS to report the end of every process of the module,
+and the transaction of that report runs one more `DELETE`. That `DELETE` filters by workflow
+module, BPMN process and aggregate, and the schema has no index for it. So an application with a
+large table adds one of its own. What you get for it: the table does not grow with every workflow
+which ended. This blueprint leaves it off.
+[How long a delivery is remembered](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#how-long-a-delivery-is-remembered) has the details.
+
 ## Delta to the base blueprint
 
 Everything about the process, the aggregate and the wiring comes from `module-single`. What was
