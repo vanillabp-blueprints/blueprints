@@ -40,6 +40,9 @@ before(async () => {
     files: { '/': join(import.meta.dirname, 'index.html'), '/host.js': hostBundle },
     folders: {
       '/wm/loan-approval/': microFrontends,
+      // A second workflow module, not a build of this one. It stands for any other module of the
+      // cockpit, so its manifest is written by hand: one entry of its own and no Header. That is
+      // why it does not match the entries of scripts/build-micro-frontends.mjs.
       '/wm/module-without-header/': join(import.meta.dirname, 'module-without-header'),
     },
   });
