@@ -1,12 +1,16 @@
 package blueprint.workflowmodule;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
+import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -49,6 +53,10 @@ import jakarta.enterprise.util.TypeLiteral;
  * </p>
  *
  * <p>
+ * A second test checks that the application runs on the BPMS the Maven build chose.
+ * </p>
+ *
+ * <p>
  * Part of the blueprint test harness: identical in every blueprint, kept in sync from
  * {@code templates/test-harness/quarkus/} of the monorepo. Do not edit it here.
  * </p>
@@ -58,6 +66,18 @@ public class ApplicationSmokeTest {
 
   /** The file a workflow module declares itself with; it contains the module's ID. */
   private static final String WORKFLOW_MODULE_MARKER = "META-INF/workflow-module";
+
+  /**
+   * The system property which carries the BPMS profile of the Maven build. The blueprint POM
+   * sets it for the tests, because Quarkus reads the configuration of that BPMS through it.
+   */
+  private static final String BPMS_OF_THE_BUILD = "quarkus.config.profile.parent";
+
+  /** The file every Quarkus extension describes itself with. */
+  private static final String EXTENSION_DESCRIPTOR = "META-INF/quarkus-extension.properties";
+
+  /** What the capability of every BPMS adapter starts with. The name of its BPMS follows. */
+  private static final String ADAPTER_CAPABILITY = "io.vanillabp.adapter.";
 
   @Test
   public void theApplicationStartsAndEveryWorkflowModuleIsWired() throws Exception {
@@ -99,6 +119,87 @@ public class ApplicationSmokeTest {
                 + WORKFLOW_MODULE_MARKER
                 + " file.")
         .containsExactlyInAnyOrderElementsOf(declared);
+
+  }
+
+  /**
+   * Checks that the test runs on the BPMS the Maven build chose.
+   *
+   * <p>
+   * A Quarkus test does not take its classpath from Maven. It reads the POM again and builds
+   * the application on its own, so it may come to other active profiles. An example: a
+   * profile of the POM switches itself on when a system property is missing. Maven then
+   * switches off the default BPMS profile and has no BPMS adapter. The test JVM has that
+   * property, so there the profile stays off, and the test finds the default adapter. The
+   * test passes on a BPMS the build does not have.
+   * </p>
+   *
+   * <p>
+   * The blueprint POM hands the BPMS profile of the build to every test, as
+   * {@value #BPMS_OF_THE_BUILD}. It is {@code none} if no BPMS profile was active. A test
+   * started by the IDE has no such property, and then there is nothing to compare.
+   * </p>
+   *
+   * @throws Exception If an extension descriptor cannot be read.
+   */
+  @Test
+  public void theTestRunsOnTheBpmsOfTheMavenBuild() throws Exception {
+
+    final var bpms = System.getProperty(BPMS_OF_THE_BUILD);
+    assumeTrue(
+        bpms != null,
+        "Not started by Maven, so there is no BPMS profile to compare the adapters with.");
+
+    final var loaded = loadedBpmsAdapters();
+    assertTrue(
+        loaded.contains(bpms),
+        () -> "Maven built with the BPMS profile '"
+            + bpms
+            + "', but this test loads the adapters "
+            + loaded
+            + ". A Quarkus test reads the POM on its own, and it chose other profiles than Maven."
+            + (bpms.equals("none")
+                ? " Most likely another profile of the POM switched itself on, so Maven"
+                    + " switched off the default BPMS profile."
+                    + " bin/check_default_profiles.py finds such a profile."
+                : " Name the BPMS profile with -P on the Maven command line. The test reads"
+                    + " -P from there only, not from MAVEN_ARGS or settings.xml."));
+
+  }
+
+  /**
+   * The BPMS adapters this test runs on. Every BPMS adapter is a Quarkus extension, and it
+   * provides a capability which names its BPMS, e.g. {@code io.vanillabp.adapter.camunda7}.
+   * VanillaBP finds its adapters by the same capabilities.
+   *
+   * @return The BPMS of each adapter, e.g. {@code camunda7}.
+   * @throws Exception If an extension descriptor cannot be read.
+   */
+  private static Set<String> loadedBpmsAdapters() throws Exception {
+
+    final var adapters = new TreeSet<String>();
+    final var descriptors = ApplicationSmokeTest.class
+        .getClassLoader()
+        .getResources(EXTENSION_DESCRIPTOR);
+
+    while (descriptors.hasMoreElements()) {
+      final var descriptor = new Properties();
+      try (var input = descriptors
+          .nextElement()
+          .openStream()) {
+        descriptor.load(input);
+      }
+      for (final var capability : descriptor
+          .getProperty("provides-capabilities", "")
+          .split(",")) {
+        final var name = capability.trim();
+        if (name.startsWith(ADAPTER_CAPABILITY)) {
+          adapters.add(name.substring(ADAPTER_CAPABILITY.length()));
+        }
+      }
+    }
+
+    return adapters;
 
   }
 
