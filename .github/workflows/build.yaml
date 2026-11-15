@@ -320,6 +320,37 @@ jobs:
               --batch-mode --no-transfer-progress --update-snapshots -P"$engine" \
               -DskipTests -DskipITs ${LEAVE_OUT} dependency:go-offline
           done
+      - name: Resolve what Quarkus needs for tests and dev mode, so the cache holds that too
+        # A job of the matrix runs quarkus:go-offline in bin/resolve_snapshots_at_once.sh. It
+        # resolves a Quarkus application three times: for production, for its tests and for
+        # dev mode. The last two need about a hundred artifacts which no POM names and which
+        # nothing above downloads: the deployment artifacts the tests load, the Dev UI with its
+        # web jars, and the '-dev' artifacts of the extensions. So each of the 150 or so
+        # Quarkus jobs fetched them from Maven Central itself. Under that load Central refused
+        # some of them, and the two repeats of the resolver did not outlast it. Quarkus then
+        # reports "Failed to resolve artifact io.quarkus:quarkus-devui" and drops the HTTP
+        # answer, so bin/mvn_with_retry.sh cannot tell a refused download from a missing
+        # artifact and does not repeat the build.
+        # Every module below a 'quarkus' directory is named on its own. '-amd' on the
+        # blueprint POM would miss the modules whose parent is a different POM.
+        # Every engine, because the adapter of an engine can bring extensions of its own.
+        run: |
+          modules="$(find blueprints-* -path '*/quarkus/*' -name pom.xml \
+            -not -path '*/target/*' -not -path '*/node_modules/*' -printf '%h\n' \
+            | sort | paste -sd, -)"
+          versions="$(find blueprints-* -path '*/quarkus/pom.xml' -not -path '*/target/*' -print0 \
+            | xargs -0 sed -n 's|.*<quarkus.version>\(.*\)</quarkus.version>.*|\1|p' | sort -u)"
+          if [ -z "${modules}" ] || [ -z "${versions}" ]; then
+            echo "::error::Found no Quarkus blueprint, so nothing of Quarkus gets into the cache"
+            exit 1
+          fi
+          for version in ${versions}; do
+            for engine in camunda7 camunda8 operaton cibseven; do
+              mvn -s "$GITHUB_WORKSPACE/.github/maven/settings.xml" \
+                --batch-mode --no-transfer-progress -P"$engine" -pl "${modules}" \
+                "io.quarkus:quarkus-maven-plugin:${version}:go-offline"
+            done
+          done
       - name: Resolve the test provider of Surefire and Failsafe, so the cache holds it too
         # Surefire and Failsafe fetch their JUnit provider only when tests run, and this job
         # runs none. So every job of the matrix fetched surefire-junit-platform itself, and
