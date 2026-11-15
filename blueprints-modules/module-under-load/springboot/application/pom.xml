@@ -63,11 +63,11 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-restclient</artifactId>
-      <scope>test</scope>
-    </dependency>
+    <!--
+      LoadRunIT also needs the REST client of Spring. It comes with the REST adapter of the
+      credit bureau, in the compile scope. Declaring it here in the test scope would take it out
+      of the runnable application.
+    -->
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>

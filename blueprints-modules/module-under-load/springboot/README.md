@@ -236,11 +236,26 @@ at the end as well:
 http://localhost:8079/api/load-run/report
 ```
 
-While the run goes on, the same URL says which stage it is in.
+While the run goes on, the same URL says which stage it is in. This report was measured on this
+blueprint with Camunda 7, on a development machine, with the application and the simulator as
+two processes:
 
-The sample report of this README was measured while the driver still ran inside the
-application, so it is gone. Its numbers counted the driver's own threads. A report of the
-simulator on a development machine follows here once it has been measured.
+```
+Load run 'small' of process 'loan_approval', took 210s
+Hot path: ServiceTask_RequestCreditScore -> CatchEvent_CreditScoreReceived -> UserTask_AssessLoan -> CatchEvent_PayoutRun -> ServiceTask_PayOut
+
+stage     offered/s started/s delivered/s customers conn-wait    outbox  oldest-s     slots   gc-%  live-MB
+warm-up         4.0       3.7        10.3       0.0       0.0       0.1       0.0         -    0.3      100
+steady          4.0       3.9        10.1       0.0       0.0       0.1       0.0         -    0.3      103
+step-1          5.0       4.8        15.3       0.0       0.0       0.1       0.0         -    0.3      102
+step-2          6.0       6.3        16.4       0.0       0.0       0.1       0.0         -    0.3      105
+step-3          7.0       6.4        21.4       0.0       0.0       0.1       0.0         -    0.3      105
+peak            9.0       9.2        23.3       0.0       0.0       0.2       0.0         -    0.4      106
+drain           0.0       0.0         6.8       0.0       0.0       0.0       0.0         -    0.1      114
+
+Nothing ran out at this size. Run the next size to find the limit.
+Compare runs of the same machine only. The numbers of another machine, and of a shared CI runner above all, move more than a real change would.
+```
 
 `small` is sized so that a laptop shows a result in a few minutes. The next step is
 `?size=medium`, two minutes per stage and six steps, and then `?size=large`. All three are in
