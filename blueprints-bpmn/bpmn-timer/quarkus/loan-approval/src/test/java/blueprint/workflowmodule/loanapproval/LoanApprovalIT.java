@@ -51,6 +51,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     return awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
+        SCHEDULER_TIMEOUT,
         aggregate -> aggregate.getPartnerApprovalTaskId() != null)
         .getPartnerApprovalTaskId();
 
@@ -88,6 +89,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequest = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
+        SCHEDULER_TIMEOUT,
         aggregate -> Boolean.TRUE.equals(aggregate.getTimedOut()));
 
     assertThat(loanRequest.getCustomerInformed()).isNull();
