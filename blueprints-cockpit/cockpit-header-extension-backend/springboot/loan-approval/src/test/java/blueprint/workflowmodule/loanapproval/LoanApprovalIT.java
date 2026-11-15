@@ -21,6 +21,8 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import org.yaml.snakeyaml.Yaml;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.loanapproval.api.model.LoanRequest;
+import blueprint.workflowmodule.loanapproval.api.model.StartedLoanRequest;
 import blueprint.workflowmodule.loanapproval.config.LoanApprovalModuleDetails;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import io.vanillabp.cockpit.gui.api.v1.EndReason;
@@ -82,7 +84,6 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void theStartFormStartsALoanApprovalAndTheCaseIsInTheCaseList() {
 
     final var cockpit = CockpitSimulator.start();
@@ -91,13 +92,13 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var started = startForm
         .post()
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Map.of("applicant", "Jane Doe", "amount", 5000))
+        .body(new LoanRequest("Jane Doe", 5000))
         .retrieve()
-        .toEntity(Map.class);
+        .toEntity(StartedLoanRequest.class);
     assertThat(started.getStatusCode().value()).isEqualTo(201);
-    final var loanRequestId = (String) started
+    final var loanRequestId = started
         .getBody()
-        .get("loanRequestId");
+        .loanRequestId();
     assertThat(loanRequestId).isNotBlank();
 
     // The module started the process, and the process waits in the user task.
@@ -131,6 +132,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var before = loanApprovals.count();
 
+    // Maps, not the record LoanRequest, because a broken form may leave a field out.
     assertThat(post(Map.of("applicant", " ", "amount", 5000))).isEqualTo(400);
     assertThat(post(Map.of("applicant", "Jane Doe", "amount", 0))).isEqualTo(400);
     assertThat(post(Map.of("applicant", "Jane Doe"))).isEqualTo(400);
