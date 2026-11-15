@@ -12,6 +12,11 @@
   <name>Workflow module 'loan-approval'</name>
   <description>The workflow module: BPMN models and the code implementing them, packaged as a JAR. It knows the systems around it only through their ports.</description>
 
+  <properties>
+    <!-- '-DskipTests' starts no simulator either. -->
+    <skipTests>false</skipTests>
+  </properties>
+
   <dependencies>
     <!--
       The workflow module knows the VanillaBP APIs, but no BPMS: 'vanillabp-quarkus-support'
@@ -203,136 +208,123 @@
           </execution>
         </executions>
       </plugin>
+      <!--
+        The next four plugins start the simulator before the integration tests, on a free port,
+        and tell the tests where it is. Its log goes to target/simulator.log, and a failing test
+        prints what the simulator logged meanwhile. The simulator ends with the build.
+
+        This is the plain build and not a profile which switches itself on. Such a profile
+        would switch off 'camunda7', the BPMS profile which is active by default, and a build
+        without '-P<bpms>' would have no BPMS adapter.
+
+        To run the tests against a simulator you started yourself, for example while you debug
+        it, name its address. The build still starts its own simulator, and the tests use yours:
+
+          java -jar simulator/target/simulator-1.0.0-SNAPSHOT-runnable.jar
+          mvn verify -Dsimulator.base-url=http://localhost:8079
+
+        A test run from the IDE has none of this. It looks for a simulator at
+        http://localhost:8079 and skips, with a message, when nobody answers.
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>${build-helper-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>simulator-port</id>
+            <goals>
+              <goal>reserve-network-port</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <portNames>
+                <portName>simulator.port</portName>
+              </portNames>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        The runnable JAR of the simulator, from this build, copied to target/. It is not a
+        dependency of the tests, because it is a whole application.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>${maven-dependency-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>simulator-jar</id>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
+                  <artifactId>simulator</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>runnable</classifier>
+                  <destFileName>simulator.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        Starts the simulator and goes on at once. The tests wait until it answers. Maven
+        stops it when the build ends, also when the build fails. Its log goes to a file and
+        not to the console, so the build output stays readable.
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${exec-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>start-simulator</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <async>true</async>
+              <asyncDestroyOnShutdown>true</asyncDestroyOnShutdown>
+              <executable>${java.home}/bin/java</executable>
+              <arguments>
+                <argument>-jar</argument>
+                <argument>${project.build.directory}/simulator.jar</argument>
+                <argument>--server.port=${simulator.port}</argument>
+                <argument>--logging.file.name=${project.build.directory}/simulator.log</argument>
+                <argument>--logging.threshold.console=OFF</argument>
+                <argument>--spring.main.banner-mode=off</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <simulator.base-url>http://localhost:${simulator.port}</simulator.base-url>
+            <simulator.log>${project.build.directory}/simulator.log</simulator.log>
+            <!-- The build started the simulator, so a test which finds none fails instead of skipping. -->
+            <simulator.required>true</simulator.required>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
   <profiles>
-    <!--
-      Starts the simulator before the integration tests, on a free port, and tells the tests
-      where it is. Its log goes to target/simulator.log, and a failing test prints what the
-      simulator logged meanwhile. The simulator ends with the build.
-
-      The profile is on unless 'simulator.base-url' is given. Pass that to run the tests
-      against a simulator you started yourself, for example while you debug it:
-
-        java -jar simulator/target/simulator-1.0.0-SNAPSHOT-runnable.jar
-        mvn verify -Dsimulator.base-url=http://localhost:8079
-
-      A test run from the IDE has no profile at all. It looks for a simulator at
-      http://localhost:8079 and skips, with a message, when nobody answers.
-    -->
-    <profile>
-      <id>start-stop-simulator</id>
-      <activation>
-        <property>
-          <name>!simulator.base-url</name>
-        </property>
-      </activation>
-      <properties>
-        <!-- '-DskipTests' starts no simulator either. -->
-        <skipTests>false</skipTests>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>build-helper-maven-plugin</artifactId>
-            <version>${build-helper-maven-plugin.version}</version>
-            <executions>
-              <execution>
-                <id>simulator-port</id>
-                <goals>
-                  <goal>reserve-network-port</goal>
-                </goals>
-                <phase>initialize</phase>
-                <configuration>
-                  <portNames>
-                    <portName>simulator.port</portName>
-                  </portNames>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <!--
-            The runnable JAR of the simulator, from this build, copied to target/. It is not a
-            dependency of the tests, because it is a whole application.
-          -->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <version>${maven-dependency-plugin.version}</version>
-            <executions>
-              <execution>
-                <id>simulator-jar</id>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <phase>pre-integration-test</phase>
-                <configuration>
-                  <skip>${skipTests}</skip>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
-                      <artifactId>simulator</artifactId>
-                      <version>${project.version}</version>
-                      <classifier>runnable</classifier>
-                      <destFileName>simulator.jar</destFileName>
-                    </artifactItem>
-                  </artifactItems>
-                  <outputDirectory>${project.build.directory}</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <!--
-            Starts the simulator and goes on at once. The tests wait until it answers. Maven
-            stops it when the build ends, also when the build fails. Its log goes to a file and
-            not to the console, so the build output stays readable.
-          -->
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <version>${exec-maven-plugin.version}</version>
-            <executions>
-              <execution>
-                <id>start-simulator</id>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <phase>pre-integration-test</phase>
-                <configuration>
-                  <skip>${skipTests}</skip>
-                  <async>true</async>
-                  <asyncDestroyOnShutdown>true</asyncDestroyOnShutdown>
-                  <executable>${java.home}/bin/java</executable>
-                  <arguments>
-                    <argument>-jar</argument>
-                    <argument>${project.build.directory}/simulator.jar</argument>
-                    <argument>--server.port=${simulator.port}</argument>
-                    <argument>--logging.file.name=${project.build.directory}/simulator.log</argument>
-                    <argument>--logging.threshold.console=OFF</argument>
-                    <argument>--spring.main.banner-mode=off</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <systemPropertyVariables>
-                <simulator.base-url>http://localhost:${simulator.port}</simulator.base-url>
-                <simulator.log>${project.build.directory}/simulator.log</simulator.log>
-                <!-- The build started the simulator, so a test which finds none fails instead of skipping. -->
-                <simulator.required>true</simulator.required>
-              </systemPropertyVariables>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
     <!--
       One profile per BPMS. Each adds two adapters to the test: the BPMS adapter, which runs
       the workflows, and the cockpit adapter of the same BPMS, which reports their user tasks

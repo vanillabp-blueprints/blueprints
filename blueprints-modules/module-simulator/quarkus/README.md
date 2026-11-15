@@ -204,7 +204,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `external-systems/*/*-api/`                                 | new: the OpenAPI files of each system, and the client and server code generated from them      |
 | `simulator-test-api/`                                       | new: the OpenAPI file of the test API, and the client and server code generated from it        |
 | `simulator/`                                                | new: the simulator, an application of its own which extends the dev shell simulator            |
-| `loan-approval/pom.xml`                                     | the ports instead of adapters, the profile `start-stop-simulator`, the cockpit adapters        |
+| `loan-approval/pom.xml`                                     | the ports instead of adapters, the start of the simulator, the cockpit adapters                |
 | `.../loanapproval/Service.java`                             | asks the credit rating before the workflow starts, and hands the contract over                 |
 | `.../loanapproval/SignedContractsHandler.java`              | new: the way back from the e-signature service into the module                                 |
 | `.../loanapproval/ApiController.java`                       | answers 503 with the role of the system when the credit rating does not answer                 |
@@ -252,10 +252,11 @@ reads their `camunda:` attributes:
 mvn verify -Pcibseven
 ```
 
-The Maven profile `start-stop-simulator` of the workflow module starts the simulator on a free
-port, writes its log to `loan-approval/target/simulator.log`, and tells the tests where it is. A
-failing test prints the lines the simulator logged while the test ran. To run the tests against
-a simulator you started yourself, for example to debug it, name its address:
+The POM of the workflow module starts the simulator on a free port, writes its log to
+`loan-approval/target/simulator.log`, and tells the tests where it is. A failing test prints the
+lines the simulator logged while the test ran. To run the tests against a simulator you started
+yourself, for example to debug it, name its address. The build still starts its own simulator,
+and the tests use yours:
 
 ```bash
 mvn verify -Dsimulator.base-url=http://localhost:8079

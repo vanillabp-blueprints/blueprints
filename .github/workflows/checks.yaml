@@ -48,6 +48,11 @@ jobs:
       # 704 measured it, and no test saw it, because a test boots ONE profile.
       - name: Check that the BPMS profiles agree on how identifiers are scoped
         run: python bin/check_scoping_modes.py
+      # A profile which switches itself on switches off the BPMS profile which is active by
+      # default, and a build without -P<bpms> then has no BPMS adapter. CI always names a
+      # BPMS, so no build here would see it. module-simulator and module-under-load did it.
+      - name: Check that no profile switches off the default BPMS profile
+        run: python bin/check_default_profiles.py
       # Active since the first platform twin exists (2026-08-15). It keeps the two twins of
       # a blueprint saying the same thing: every difference between their Java sources is
       # either the platform, and then it is approved with a reason, or a mistake. The index

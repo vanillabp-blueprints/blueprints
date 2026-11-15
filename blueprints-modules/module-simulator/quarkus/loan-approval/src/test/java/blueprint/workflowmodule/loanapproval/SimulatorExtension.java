@@ -22,9 +22,8 @@ import org.junit.jupiter.api.extension.TestWatcher;
  * Two cases are told apart. Started from the IDE, a test finds no simulator unless somebody
  * started one. Then the test is skipped, and the message says how to start the simulator. A
  * skipped test is not a red one. Started by the build, the simulator is there by contract: the
- * Maven profile {@code start-stop-simulator} started it and set {@code simulator.required}. Then
- * a missing simulator fails the test, because a build which skips its tests looks green and
- * proves nothing.
+ * POM of this module started it and set {@code simulator.required}. Then a missing simulator
+ * fails the test, because a build which skips its tests looks green and proves nothing.
  * </p>
  *
  * <p>
