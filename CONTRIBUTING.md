@@ -67,6 +67,8 @@ each blueprint and not in the root POM, for the reason above. In a blueprint wit
 application module, the parent POM declares it and the application switches it off with
 `<phase>none</phase>`. A blueprint without an application declares it and keeps it on.
 `module-standalone` has no such rule, because its application is the workflow module.
+`bin/check_enforcer_rule.py` compares every copy with the one in the root POM of
+`module-single`. An old copy fails no build, so nothing else would notice it.
 
 ## Rule 2: a blueprint shows one aspect
 

@@ -66,6 +66,10 @@ jobs:
       # BPMS, so no build here would see it. module-simulator and module-under-load did it.
       - name: Check that no profile switches off the default BPMS profile
         run: python bin/check_default_profiles.py
+      # Every blueprint carries its own copy of the rule which keeps adapters out of a
+      # workflow module. An old copy fails nothing, so it is not noticed otherwise.
+      - name: Check that every copy of the adapter rule is the same
+        run: python bin/check_enforcer_rule.py
       # Active since the first platform twin exists (2026-08-15). It keeps the two twins of
       # a blueprint saying the same thing: every difference between their Java sources is
       # either the platform, and then it is approved with a reason, or a mistake. The index
