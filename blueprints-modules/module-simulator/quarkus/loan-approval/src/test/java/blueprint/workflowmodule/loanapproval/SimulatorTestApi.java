@@ -3,6 +3,7 @@ package blueprint.workflowmodule.loanapproval;
 import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -11,8 +12,14 @@ import java.util.function.Predicate;
 
 import org.awaitility.core.ConditionTimeoutException;
 
+import blueprint.simulator.testapi.client.CreditRatingTestApi;
+import blueprint.simulator.testapi.client.ESignatureTestApi;
+import blueprint.simulator.testapi.client.model.Envelope;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response.Status;
 
 /**
  * The client of the simulator's test API, and of the cockpit API the simulator plays.
@@ -22,6 +29,16 @@ import io.restassured.specification.RequestSpecification;
  * makes a system act, for example sign a contract. Which of these steps a loan approval needs,
  * and in which order, is known to the test alone. Keep it that way: a test API which knows the
  * process breaks with every change of the model.
+ * </p>
+ *
+ * <p>
+ * The client of the test API is generated from
+ * {@code simulator-test-api/simulator-test-api.yaml}, the file the simulator implements, and
+ * the REST client of Quarkus implements it. The REST client exists only while Quarkus runs, so
+ * a client is made for each call and not when this class is made: {@link SimulatorExtension}
+ * asks {@link #isRunning()} before Quarkus starts. That is why the status is asked with
+ * RestAssured. The official API of the cockpit is read with RestAssured as well, because the
+ * cockpit publishes no client of its own.
  * </p>
  *
  * <p>
@@ -79,8 +96,10 @@ public final class SimulatorTestApi {
   public boolean isRunning() {
 
     try {
-      return "running".equals(testApi()
-          .get("/status")
+      // The path of the generated StatusApi. Its client cannot be used here, see above.
+      return "running".equals(given()
+          .baseUri(baseUrl)
+          .get("/simulator/test-api/status")
           .asString());
     } catch (Exception e) {
       // Nobody answers. RestAssured throws the ConnectException of the JDK for that, but it
@@ -97,9 +116,7 @@ public final class SimulatorTestApi {
    */
   public String nextCustomerId() {
 
-    return testApi()
-        .get("/credit-rating/next-id")
-        .asString();
+    return testApi(CreditRatingTestApi.class).nextId();
 
   }
 
@@ -113,12 +130,7 @@ public final class SimulatorTestApi {
       final String customerId,
       final int score) {
 
-    testApi()
-        .queryParam("customerId", customerId)
-        .queryParam("score", score)
-        .get("/credit-rating/create-rating")
-        .then()
-        .statusCode(200);
+    testApi(CreditRatingTestApi.class).createRating(customerId, score);
 
   }
 
@@ -128,16 +140,19 @@ public final class SimulatorTestApi {
    * @param contractId The id the application gave the contract.
    * @return The document, as the e-signature service received it, or empty if there is none.
    */
-  public Optional<Map<String, Object>> envelope(
+  public Optional<Envelope> envelope(
       final String contractId) {
 
-    final var response = testApi()
-        .queryParam("contractId", contractId)
-        .get("/e-signature/envelope");
-
-    return response.statusCode() == 200
-        ? Optional.ofNullable(asMap(response))
-        : Optional.empty();
+    try {
+      return Optional.of(testApi(ESignatureTestApi.class).envelope(contractId));
+    } catch (WebApplicationException e) {
+      if (e
+          .getResponse()
+          .getStatus() == Status.NOT_FOUND.getStatusCode()) {
+        return Optional.empty();
+      }
+      throw e;
+    }
 
   }
 
@@ -151,13 +166,20 @@ public final class SimulatorTestApi {
   public String sign(
       final String contractId) {
 
-    final var response = testApi()
-        .queryParam("contractId", contractId)
-        .get("/e-signature/sign");
-
-    return response.statusCode()
-        + " "
-        + response.asString();
+    try {
+      return Status.OK.getStatusCode()
+          + " "
+          + testApi(ESignatureTestApi.class).sign(contractId);
+    } catch (WebApplicationException e) {
+      // 404 and 502 are answers of the simulator as well. Their text says what went wrong.
+      return e
+          .getResponse()
+          .getStatus()
+          + " "
+          + e
+              .getResponse()
+              .readEntity(String.class);
+    }
 
   }
 
@@ -230,7 +252,8 @@ public final class SimulatorTestApi {
    * RestAssured's Jackson, and that registers every Jackson module on the classpath. The Operaton
    * engine brings the Scala module, which turns a nested JSON object into a Scala map. Such a map
    * equals no Java map, so an assertion on the details of a task fails although the values are
-   * the same. JsonPath parses with Groovy and returns Java maps on every BPMS.
+   * the same. JsonPath parses with Groovy and returns Java maps on every BPMS. The answers of
+   * the test API are read into generated classes, so only the cockpit's answers need this.
    */
   private static Map<String, Object> asMap(
       final Response response) {
@@ -241,11 +264,13 @@ public final class SimulatorTestApi {
 
   }
 
-  private RequestSpecification testApi() {
+  private <T> T testApi(
+      final Class<T> api) {
 
-    return given()
-        .baseUri(baseUrl)
-        .basePath("/simulator/test-api");
+    return QuarkusRestClientBuilder
+        .newBuilder()
+        .baseUri(URI.create(baseUrl))
+        .build(api);
 
   }
 

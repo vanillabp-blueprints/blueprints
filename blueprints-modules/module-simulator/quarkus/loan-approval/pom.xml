@@ -80,6 +80,21 @@
       <scope>test</scope>
     </dependency>
     <!--
+      The client of the simulator's test API, generated from its OpenAPI file. The REST client
+      of Quarkus implements its interfaces.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
+      <artifactId>simulator-test-api-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-client-jackson</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!--
       Only for the order of the build: the simulator has to be built before these tests run.
       Putting it first in the parent's <modules> is not enough. Maven sorts the modules by their
       dependencies and keeps the order of <modules> only between modules which do not depend on
@@ -143,6 +158,34 @@
 
   <build>
     <plugins>
+      <!--
+        The API of this module is written as the OpenAPI file
+        'src/main/resources/openapi/loan-approval.yaml'. This plugin generates the Java interface
+        'LoanApprovalApi' and the classes of its answers from it. 'ApiController' implements the
+        interface and holds nothing but the code of each call. The settings all generated code
+        shares are in the POM of the blueprint.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>loan-approval-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
+              <configOptions>
+                <!-- A method returns the answer itself. Quarkus turns it into the response. -->
+                <returnResponse>false</returnResponse>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <!--
         A workflow module is a Maven module of its own, so the application's build does not
         see its classes. The index is what makes them visible: without it, the

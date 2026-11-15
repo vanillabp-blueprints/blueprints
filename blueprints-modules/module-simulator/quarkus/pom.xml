@@ -14,9 +14,9 @@
     belong together. That the simulator is built before the workflow module, whose integration
     tests run against it, comes from a dependency in loan-approval/pom.xml.
 
-    Three modules do not take this POM as their parent: the simulator and the two 'server'
+    Four modules do not take this POM as their parent: the simulator and the three 'server'
     modules, whose code only the simulator uses. The simulator extends the dev shell simulator
-    of the Business Cockpit, which is a Spring Boot application. So these three modules build
+    of the Business Cockpit, which is a Spring Boot application. So these four modules build
     with the parent of Spring Boot, and the build packages the simulator as a runnable JAR. The
     application and the workflow module never see a class of it: they talk to the simulator
     over HTTP.
@@ -28,6 +28,7 @@
     <module>external-systems/e-signature/e-signature-api</module>
     <module>external-systems/e-signature/port</module>
     <module>external-systems/e-signature/rest-adapter</module>
+    <module>simulator-test-api</module>
     <module>simulator</module>
     <module>loan-approval</module>
     <module>application</module>
@@ -74,7 +75,7 @@
     -->
     <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
     <businesscockpit-camunda8.version>0.9.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
-    <!-- Generates the Java code of the APIs below 'external-systems' from their OpenAPI files. -->
+    <!-- Generates the Java code of the APIs from their OpenAPI files. -->
     <openapi-generator.version>7.27.0</openapi-generator.version>
   </properties>
 
@@ -123,13 +124,15 @@
           <version>${jandex-maven-plugin.version}</version>
         </plugin>
         <!--
-          The settings every 'client' module shares. Each one adds an execution per OpenAPI
-          file, with its packages:
+          The settings every 'client' module and the workflow module share. Each one adds an
+          execution per OpenAPI file, with its packages:
 
             client    a Jakarta REST interface. The REST client of Quarkus implements it for
                       the caller.
             callback  the same kind of interface for the API the application offers. A
                       resource class implements it.
+            api       the same kind of interface for the API of the workflow module, which
+                      its resource class implements.
 
           The generated code needs no library beyond Jakarta REST, Jackson and the Jakarta
           annotations: no Swagger annotations, no bean validation.

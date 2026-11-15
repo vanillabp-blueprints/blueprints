@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
+    <artifactId>simulator-test-api</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>simulator-test-api-client</artifactId>
+  <name>API 'test API of the simulator': client</name>
+  <description>The client of the test API, generated from simulator-test-api.yaml. The tests of the workflow module use it.</description>
+
+  <!--
+    Only what the generated sources import: the annotations of Jakarta REST, of Jackson and of
+    Jakarta. No Quarkus extension, so the module stays a small library.
+  -->
+  <dependencies>
+    <dependency>
+      <groupId>jakarta.ws.rs</groupId>
+      <artifactId>jakarta.ws.rs-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        Generates the client of the test API from '../simulator-test-api.yaml'. The tests of the
+        workflow module use it.
+        The settings all generated code shares are in the POM of the blueprint.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>simulator-test-api-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/../simulator-test-api.yaml</inputSpec>
+              <apiPackage>blueprint.simulator.testapi.client</apiPackage>
+              <modelPackage>blueprint.simulator.testapi.client.model</modelPackage>
+              <configOptions>
+                <!-- The method returns the body. An error status comes as an exception of the REST client. -->
+                <returnResponse>false</returnResponse>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        The REST client of Quarkus finds the generated interfaces while the tests are built,
+        and only in an index of this JAR.
+      -->
+      <plugin>
+        <groupId>io.smallrye</groupId>
+        <artifactId>jandex-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>make-index</id>
+            <goals>
+              <goal>jandex</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

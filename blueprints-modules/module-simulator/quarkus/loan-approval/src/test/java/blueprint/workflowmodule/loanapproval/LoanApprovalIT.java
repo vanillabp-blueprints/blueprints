@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.loanapproval.api.model.Answer;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -83,8 +84,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(sent.getInterestRate()).isEqualByComparingTo(new BigDecimal("3.5"));
     assertThat(simulator().envelope(loanRequestId))
         .hasValueSatisfying(envelope -> {
-          assertThat(envelope.get("signer")).isEqualTo(customerId);
-          assertThat((String) envelope.get("document")).contains("5000", "3.5");
+          assertThat(envelope.getSigner()).isEqualTo(customerId);
+          assertThat(envelope.getDocument()).contains("5000", "3.5");
         });
 
     // The customer signs. The simulator calls the application back, and the workflow ends.
@@ -108,10 +109,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var answer = api()
         .get("/request?customerId={customerId}&amount=5000", customerId)
-        .as(ApiController.Answer.class);
+        .as(Answer.class);
 
-    assertThat(answer.outcome()).isEqualTo("declined");
-    assertThat(loanApprovals.findByIdOptional(answer.loanRequestId())).isEmpty();
+    assertThat(answer.getOutcome()).isEqualTo("declined");
+    assertThat(loanApprovals.findByIdOptional(answer.getLoanRequestId())).isEmpty();
 
   }
 
@@ -123,10 +124,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var answer = api()
         .get("/request?customerId={customerId}&amount=5000", customerId)
-        .as(ApiController.Answer.class);
+        .as(Answer.class);
 
-    assertThat(answer.outcome()).isEqualTo("declined");
-    assertThat(loanApprovals.findByIdOptional(answer.loanRequestId())).isEmpty();
+    assertThat(answer.getOutcome()).isEqualTo("declined");
+    assertThat(loanApprovals.findByIdOptional(answer.getLoanRequestId())).isEmpty();
 
   }
 
@@ -180,10 +181,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var answer = api()
         .get("/request?customerId={customerId}&amount={amount}", customerId, amount)
-        .as(ApiController.Answer.class);
+        .as(Answer.class);
 
-    assertThat(answer.outcome()).isEqualTo("started");
-    return answer.loanRequestId();
+    assertThat(answer.getOutcome()).isEqualTo("started");
+    return answer.getLoanRequestId();
 
   }
 
