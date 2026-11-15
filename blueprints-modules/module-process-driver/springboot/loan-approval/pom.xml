@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
+    <artifactId>module-process-driver</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>loan-approval</artifactId>
+  <name>Workflow module 'loan-approval'</name>
+  <description>The workflow module: BPMN models and the code implementing them, packaged as a JAR. It knows the systems around it only through their ports.</description>
+
+  <dependencies>
+    <!--
+      The workflow module knows the VanillaBP APIs, but no BPMS: 'vanillabp-spring-boot-support'
+      deliberately does not expose any BPMS API, so the hexagonal architecture cannot be
+      broken by accident. The adapter is chosen by the application (see ../application).
+    -->
+    <dependency>
+      <groupId>io.vanillabp</groupId>
+      <artifactId>vanillabp-spring-boot-support</artifactId>
+    </dependency>
+    <!--
+      The same for the Business Cockpit: its annotations, such as @UserTaskDetailsProvider. It
+      knows no BPMS either. The cockpit adapter of the BPMS is chosen by the application, next
+      to the BPMS adapter.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>business-cockpit-spring-boot-support</artifactId>
+      <version>${businesscockpit.version}</version>
+    </dependency>
+    <!--
+      The systems around the module, as ports: interfaces named after the role each system
+      plays. Not the adapters. Which adapter implements a port is the choice of the
+      application, like the choice of the BPMS adapter.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
+      <artifactId>credit-rating-port</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
+      <artifactId>e-signature-port</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <!--
+      The tests of this module are in ../test-driver. They need the process driver, and the
+      driver needs this module. Maven does not allow such a cycle, not even in the test scope.
+    -->
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        The API of this module is written as the OpenAPI file
+        'src/main/resources/openapi/loan-approval.yaml'. This plugin generates the Java interface
+        'LoanApprovalApi' and the records of its answers from it. 'ApiController' implements the
+        interface and holds nothing but the code of each call. The settings all generated code
+        shares are in the POM of the blueprint.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>loan-approval-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
+              <configOptions>
+                <!-- Only the interface. The controller implements it. -->
+                <interfaceOnly>true</interfaceOnly>
+                <skipDefaultInterface>true</skipDefaultInterface>
+                <!-- The paths in the file are complete, so the interface needs no path of its own. -->
+                <requestMappingMode>none</requestMappingMode>
+                <!-- A method returns the answer itself. Spring Boot turns it into the response. -->
+                <useResponseEntity>false</useResponseEntity>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

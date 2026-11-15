@@ -492,7 +492,7 @@ script names such a category, today `cockpit`. There a twin may be missing while
 `planned` for it. Take the category out of the list when its twin phase starts.
 
 A single blueprint may also start on one platform, when it comes after the twin phase of its
-category. `BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE` names it. The list is empty today. The rule is
+category. `BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE` names it, today `module-process-driver`. The rule is
 the same: the index says `planned` for the missing twin, and the blueprint leaves the list when
 its twin is written.
 

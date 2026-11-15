@@ -1,0 +1,49 @@
+package blueprint.testdriver.loanapproval.steps;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import blueprint.testdriver.loanapproval.Scenario;
+
+/**
+ * Waits until the contract went to the e-signature service and the user task "Check contract"
+ * is open. Both are written by the code of the workflow, after the engine moved on. So when this
+ * step returns, nothing of the steps before is still on its way.
+ */
+@Component
+public class ContractCheckOpenedStep implements Step {
+
+  @Autowired
+  private StepSupport support;
+
+  @Override
+  public String description() {
+
+    return "the contract goes out and the user task 'Check contract' opens";
+
+  }
+
+  @Override
+  public void run(
+      final Scenario scenario) {
+
+    support.awaitLoanApproval(
+        scenario,
+        this,
+        loanRequest -> Boolean.TRUE
+            .equals(loanRequest.getContractSentForSigning()) && loanRequest.getCheckContractTaskId() != null,
+        loanRequest -> {
+          if (loanRequest.getAssessRiskTaskId() != null) {
+            return "the workflow waits in the user task 'Assess risk'. Nobody completed it.";
+          }
+          if (!Boolean.TRUE.equals(loanRequest.getContractSentForSigning())) {
+            return "the contract was not sent to the e-signature service. Look into the log of the"
+                + " simulator for the call to '/e-signature', and into the log of the application"
+                + " for an error of the service task 'Send contract for signing'.";
+          }
+          return "the contract went out, but the workflow did not open the user task 'Check contract'.";
+        });
+
+  }
+
+}

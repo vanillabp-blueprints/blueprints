@@ -58,8 +58,9 @@ ALLOW_FILE = "twin-diff-allow.txt"
 CATEGORIES_BEFORE_THEIR_TWIN_PHASE = ("cockpit",)
 
 # The blueprints which exist on one platform so far, in a category whose twin phase is over.
-# A twin the index says 'planned' for may be missing there. None today.
-BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE = ()
+# A twin the index says 'planned' for may be missing there. 'module-process-driver' started on
+# Spring Boot. Its Quarkus twin follows.
+BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE = ("module-process-driver",)
 
 TODO_REASON = "TODO: say why the twins differ here"
 
