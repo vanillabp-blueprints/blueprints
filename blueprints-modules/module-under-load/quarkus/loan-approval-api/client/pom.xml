@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    The simulator is the only user of this module, and the simulator is a Spring Boot
+    application. So this module takes the parent of Spring Boot, like the simulator, and not
+    the POM of the blueprint. Maven still builds it with the blueprint, because
+    '../pom.xml' names it as a module.
+  -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.2</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
+  <artifactId>loan-approval-api-client</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <name>API 'loan approval': client</name>
+  <description>The client of the workflow module's API, generated from loan-approval.yaml. The simulator uses it.</description>
+
+  <properties>
+    <java.version>21</java.version>
+    <openapi-generator.version>7.27.0</openapi-generator.version>
+  </properties>
+
+  <!--
+    Only what the generated sources import: the annotations of Spring Web, of Jackson and of
+    Jakarta. No Spring Boot starter, so the module stays a small library.
+  -->
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        Generates the client of the loan approval from '../loan-approval.yaml'. The customers
+        and the clerks of the simulator use it.
+        The settings of the generator are written out here, because this module does not
+        take the POM of the blueprint as its parent.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>${openapi-generator.version}</version>
+        <!--
+          The generated code needs no library beyond Spring Web, Jackson and Jakarta
+          annotations: no Swagger annotations, no jackson-databind-nullable, no bean
+          validation. The models are Java records.
+        -->
+        <configuration>
+          <generatorName>spring</generatorName>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <configOptions>
+            <useSpringBoot4>true</useSpringBoot4>
+            <useTags>true</useTags>
+            <useRecords>true</useRecords>
+            <useJspecify>true</useJspecify>
+            <openApiNullable>false</openApiNullable>
+            <useBeanValidation>false</useBeanValidation>
+            <documentationProvider>none</documentationProvider>
+            <annotationLibrary>none</annotationLibrary>
+            <hideGenerationTimestamp>true</hideGenerationTimestamp>
+            <generateJsonIncludeAnnotations>false</generateJsonIncludeAnnotations>
+            <generateJsonSetterNullsAnnotations>false</generateJsonSetterNullsAnnotations>
+          </configOptions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>loan-approval-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/../loan-approval.yaml</inputSpec>
+              <apiPackage>blueprint.workflowmodule.loanapproval.api.client</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.api.client.model</modelPackage>
+              <!-- A Spring HTTP interface. Whoever calls the API turns it into a client with a RestClient. -->
+              <library>spring-http-interface</library>
+              <configOptions>
+                <!-- The method returns the body. An error status comes as an exception of the RestClient. -->
+                <useResponseEntity>false</useResponseEntity>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

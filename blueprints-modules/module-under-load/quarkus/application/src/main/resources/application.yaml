@@ -1,0 +1,60 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is
+# in its own configuration file (loan-approval/loan-approval.yaml inside the module JAR).
+#
+# Nothing about a BPMS is here either. That lives in a profile file per engine,
+# 'application-camunda7.yaml' and 'application-camunda8.yaml', so switching engines is a
+# profile and not an edit.
+quarkus:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, and the profile
+  # files 'application-camunda7.yaml' respectively 'application-camunda8.yaml' apply from
+  # then on - whichever profile the application itself runs in, because they are its PARENT.
+  # Nobody has to name the profile twice.
+  config:
+    profile:
+      parent: "@bpms@"
+  datasource:
+    db-kind: h2
+    username: sa
+    # The pool publishes its meters only when asked to. A monitoring system, and the load
+    # driver of the simulator, read how many threads wait for a connection.
+    metrics:
+      enabled: true
+    jdbc:
+      # A file database rather than one in memory. An in-memory database lives in the heap of
+      # the application, so every finished workflow would stay there and the report would
+      # read it as a live set which never comes back.
+      url: jdbc:h2:./target/loan-approval
+      # The connection pool, at its default. Every handler of a task, every outbox dispatch
+      # thread, every loan request, every score of the credit bureau and every clerk who looks
+      # at the task list draws from it.
+      # When the report names the connections, this is the first setting to look at.
+      max-size: 20
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO
+      # Under load, the module writes several lines per workflow. Writing them is load of its
+      # own and buries what matters. To walk one loan approval through in the browser, set this
+      # to INFO: the log then names the URLs to go on with.
+      "blueprint.workflowmodule.loanapproval":
+        level: WARN
+vanillabp:
+  outbox:
+    # The threads which hand the outbox entries to the BPMS, at their default. When the report
+    # names the age of the oldest outbox entry, this is the setting.
+    dispatch-threads: 4
+  metrics:
+    # How long VanillaBP keeps the number of waiting outbox entries before it counts again.
+    # A monitoring system which reads the meters once a second, like the load driver of the
+    # simulator, gets a fresh number each time.
+    gauge-cache: PT1S
+# The credit bureau. In this blueprint the simulator plays it, on its own port. In production
+# these are the addresses of the real bureau and of this application as the bureau reaches it,
+# and the adapter is the same.
+credit-bureau:
+  base-url: http://localhost:8079/credit-bureau
+  callback-url: http://localhost:8080/credit-bureau/callback

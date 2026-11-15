@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    The simulator is a Spring Boot application in both twins of this blueprint, because it is
+    not what the blueprint shows. It takes the parent of Spring Boot instead of the POM of the
+    blueprint. Maven still builds it with the blueprint, because the POM of the blueprint names
+    it as a module. Nothing of the application depends on it: the application and the test talk
+    to the simulator over HTTP.
+  -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.2</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
+  <artifactId>simulator</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <name>The simulator</name>
+  <description>A Spring Boot application of its own, which holds the load driver: it plays the customers, the clerks and the credit bureau against the application over HTTP, reads the meters of the application and writes the report.</description>
+
+  <properties>
+    <java.version>21</java.version>
+  </properties>
+
+  <dependencies>
+    <!--
+      The APIs the simulator talks to, generated from their OpenAPI files. It calls the
+      application with the client of the workflow module's API, like a browser and a task list
+      would. It plays the credit bureau with the interface of the bureau and the client of its
+      callback. It offers the two URLs of a run with the interface of the load run.
+      The simulator does not depend on the workflow module itself. It knows the application
+      only over HTTP.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
+      <artifactId>loan-approval-api-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
+      <artifactId>credit-bureau-api-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
+      <artifactId>load-run-api-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <!-- For the calls to the application and the callbacks of the credit bureau. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-restclient</artifactId>
+    </dependency>
+    <!-- Reads the load profile. Spring Boot brings it for its own YAML files already. -->
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <!--
+      The load profile belongs next to the BPMN files of the workflow module, because it
+      describes that model. The simulator reads it, so the build copies that one file into the
+      simulator. There is only one file to change, and the simulator does not depend on the
+      module.
+    -->
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>${project.basedir}/../loan-approval/src/main/resources</directory>
+        <includes>
+          <include>loan-approval/load-profile.yaml</include>
+        </includes>
+      </resource>
+    </resources>
+    <plugins>
+      <!--
+        The simulator is an application, so it is packaged as a runnable JAR. It carries the
+        classifier 'runnable', so the plain JAR stays what Maven expects of an artifact. The
+        integration test of the application starts the runnable one.
+      -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <classifier>runnable</classifier>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

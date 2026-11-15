@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
+    <artifactId>module-under-load</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>loan-approval-api</artifactId>
+  <packaging>pom</packaging>
+  <name>API 'loan approval'</name>
+  <description>The API of the workflow module as an OpenAPI file, and the Java code generated from it: the interface the module implements, the client the simulator calls it with.</description>
+
+  <!--
+    The OpenAPI file 'loan-approval.yaml' next to this POM is the API of the workflow module.
+    In other blueprints it sits in the module, because only people in a browser call it. Here
+    the simulator calls it as well, from Java, so it gets a module of its own. 'server'
+    generates the interface the module's ApiController implements, 'client' generates the
+    client of the simulator. Both read the same file, so both sides always agree.
+  -->
+  <modules>
+    <module>client</module>
+    <module>server</module>
+  </modules>
+</project>

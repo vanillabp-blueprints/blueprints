@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.vanillabp.blueprint.module-under-load-quarkus</groupId>
+  <artifactId>module-under-load</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Blueprint: a workflow module under load</name>
+  <description>A load driver which plays customers, clerks and a neighbour system, and names the pool which runs out first. It runs in a simulator of its own, so it does not share the CPU, the heap or the garbage collector with the application it measures.</description>
+
+  <!--
+    Maven sorts these modules by their dependencies. The order below only shows how they
+    belong together. That the simulator is built before the application, whose integration
+    test runs against it, comes from a dependency in application/pom.xml.
+
+    The simulator is a Spring Boot application, and so are the parts of the API modules only
+    the simulator uses: the 'client' of 'loan-approval-api' and the 'server' of
+    'credit-bureau-api' and 'load-run-api'. They take the parent of Spring Boot and not this
+    POM. Maven still builds them with the blueprint, because the POMs name them as modules.
+  -->
+  <modules>
+    <module>external-systems/credit-bureau/credit-bureau-api</module>
+    <module>external-systems/credit-bureau/rest-adapter</module>
+    <module>loan-approval-api</module>
+    <module>load-run-api</module>
+    <module>simulator</module>
+    <module>loan-approval</module>
+    <module>application</module>
+  </modules>
+
+  <properties>
+    <!--
+      The name of the BPMS profile, set by every BPMS profile below and used twice: the build
+      filters it into 'application.yaml' (so the application loads
+      'application-<bpms>.yaml'), and the tests get it as a system property. That way the
+      profile is named ONCE, on the Maven command line.
+    -->
+    <bpms>none</bpms>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>21</maven.compiler.release>
+    <quarkus.version>3.40.1.2</quarkus.version>
+    <jandex-maven-plugin.version>3.6.1</jandex-maven-plugin.version>
+    <!--
+      Without a parent POM nothing manages the versions of the build plugins, and an
+      unversioned plugin is resolved to whatever the local repository last learned about.
+      Naming them keeps a build reproducible.
+    -->
+    <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
+    <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
+    <maven-failsafe-plugin.version>3.6.1</maven-failsafe-plugin.version>
+    <maven-enforcer-plugin.version>3.7.0</maven-enforcer-plugin.version>
+    <maven-dependency-plugin.version>3.10.0</maven-dependency-plugin.version>
+    <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
+    <exec-maven-plugin.version>3.7.0</exec-maven-plugin.version>
+    <!-- Not part of the Quarkus BOM, so this blueprint says which version it uses. -->
+    <lombok.version>1.18.48</lombok.version>
+    <assertj.version>3.27.7</assertj.version>
+    <!-- All VanillaBP artifacts are version managed by the VanillaBP BOM. -->
+    <vanillabp.version>2.0.0-SNAPSHOT</vanillabp.version>
+    <!-- BPMS adapters are released independently of the platform, so they carry their own version. -->
+    <camunda7-adapter.version>2.0.0-SNAPSHOT</camunda7-adapter.version>
+    <camunda8-adapter.version>2.0.0-8.10-SNAPSHOT</camunda8-adapter.version>
+    <cibseven-adapter.version>2.0.0-2.2-SNAPSHOT</cibseven-adapter.version>
+    <operaton-adapter.version>2.0.0-SNAPSHOT</operaton-adapter.version>
+    <!-- Generates the Java code of the APIs from their OpenAPI files. -->
+    <openapi-generator.version>7.27.0</openapi-generator.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>${quarkus.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.vanillabp</groupId>
+        <artifactId>vanillabp-bom</artifactId>
+        <version>${vanillabp.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>${lombok.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>${assertj.version}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-maven-plugin</artifactId>
+          <version>${quarkus.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>io.smallrye</groupId>
+          <artifactId>jandex-maven-plugin</artifactId>
+          <version>${jandex-maven-plugin.version}</version>
+        </plugin>
+        <!--
+          The settings every module shares which generates Jakarta REST code. Each one adds an
+          execution per OpenAPI file, with its packages:
+
+            client    a Jakarta REST interface. The REST client of Quarkus implements it for
+                      the caller.
+            callback  the same kind of interface for the API the application offers. A
+                      resource class implements it.
+            api       the same kind of interface for the API of the workflow module, which
+                      its resource class implements.
+
+          The generated code needs no library beyond Jakarta REST, Jackson and the Jakarta
+          annotations: no Swagger annotations, no bean validation.
+        -->
+        <plugin>
+          <groupId>org.openapitools</groupId>
+          <artifactId>openapi-generator-maven-plugin</artifactId>
+          <version>${openapi-generator.version}</version>
+          <configuration>
+            <generatorName>jaxrs-spec</generatorName>
+            <generateSupportingFiles>false</generateSupportingFiles>
+            <configOptions>
+              <interfaceOnly>true</interfaceOnly>
+              <useJakartaEe>true</useJakartaEe>
+              <useTags>true</useTags>
+              <useSwaggerAnnotations>false</useSwaggerAnnotations>
+              <useMicroProfileOpenAPIAnnotations>false</useMicroProfileOpenAPIAnnotations>
+              <useBeanValidation>false</useBeanValidation>
+              <openApiNullable>false</openApiNullable>
+              <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              <generatePom>false</generatePom>
+              <!-- Where Maven compiles the generated sources from. The generator would choose another directory. -->
+              <sourceFolder>src/main/java</sourceFolder>
+            </configOptions>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${maven-dependency-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>${build-helper-maven-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>${exec-maven-plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven-compiler-plugin.version}</version>
+        <configuration>
+          <!--
+            Lombok is an annotation processor found on the classpath. A JDK 23 or newer does not
+            run such a processor unless the build says so, and then the getters and the logger it
+            writes are simply absent. Saying it here keeps the blueprint building on every JDK
+            from 21 upwards.
+          -->
+          <proc>full</proc>
+          <!-- Parameter names are what VanillaBP binds a task method's arguments by. -->
+          <parameters>true</parameters>
+          <compilerArgs>
+            <!--
+              A blueprint must never show a deprecated API - it is copied, and what is
+              copied spreads. Making the compiler say so is cheaper than noticing it years
+              later.
+            -->
+            <arg>-Xlint:deprecation,removal</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+      <!-- Tests named *IT are integration tests and run in 'verify', not in 'test'. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>${maven-failsafe-plugin.version}</version>
+        <configuration>
+          <systemPropertyVariables>
+            <!-- Quarkus brings its own log manager, and it has to be set before the JVM logs. -->
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <!--
+              The BPMS profile of the build. A test runs in the 'test' profile, so the BPMS
+              profile is its PARENT: what 'application-<bpms>.yaml' says applies as well.
+            -->
+            <quarkus.config.profile.parent>${bpms}</quarkus.config.profile.parent>
+          </systemPropertyVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-surefire-plugin.version}</version>
+        <configuration>
+          <systemPropertyVariables>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <quarkus.config.profile.parent>${bpms}</quarkus.config.profile.parent>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <!--
+        A workflow module never depends on an adapter, neither on a BPMS adapter nor on a
+        cockpit adapter. Its tests may use one, so the test scope is allowed. Outside the
+        tests, the application brings the adapters. This rule breaks the build if a module
+        of this blueprint names an adapter outside the test scope, directly or through
+        another dependency. The application module switches the rule off.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${maven-enforcer-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>no-adapter-in-a-workflow-module</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>io.vanillabp*:*-adapter-spring-boot*</exclude>
+                    <exclude>io.vanillabp*:*-adapter-quarkus*</exclude>
+                  </excludes>
+                  <includes>
+                    <include>io.vanillabp*:*-adapter-spring-boot*:*:*:test</include>
+                    <include>io.vanillabp*:*-adapter-quarkus*:*:*:test</include>
+                  </includes>
+                  <message>A workflow module depends on an adapter only in the test scope. The application brings the adapters.</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!--
+    The BPMS is a Maven profile, never a code change: '-Pcamunda7' (the default) or
+    '-Pcamunda8'. Not a single Java file of this blueprint differs between them - only
+    which adapter is on the classpath and which directory the BPMN files are read from.
+
+    The profiles are declared by the modules which need the adapter: the application, and
+    the workflow module for the sake of its test. Declaring them here as well would only
+    repeat the choice in a place that does not act on it.
+  -->
+</project>

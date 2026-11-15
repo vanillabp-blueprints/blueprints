@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-under-load-springboot</groupId>
+    <artifactId>credit-bureau-api</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>credit-bureau-api-server</artifactId>
+  <name>API 'credit bureau': server</name>
+  <description>What the simulator needs from the two OpenAPI files of the credit bureau: the interface of the bureau and the client of the callback.</description>
+
+  <!--
+    Only what the generated sources import: the annotations of Spring Web, of Jackson and of
+    Jakarta. No Spring Boot starter, so the module stays a small library.
+  -->
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        Generates what the simulator needs: the interface of '../credit-bureau.yaml', which a
+        controller implements, and the client of '../credit-bureau-callback.yaml', which calls
+        the application back with the score.
+        The settings all generated code shares are in the POM of the blueprint.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>credit-bureau-server</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/../credit-bureau.yaml</inputSpec>
+              <apiPackage>blueprint.externalsystems.creditbureau.api.server</apiPackage>
+              <modelPackage>blueprint.externalsystems.creditbureau.api.server.model</modelPackage>
+              <configOptions>
+                <!-- Only the interface. A controller implements it. -->
+                <interfaceOnly>true</interfaceOnly>
+                <skipDefaultInterface>true</skipDefaultInterface>
+                <!-- The path of the servers entry goes onto the interface, so two APIs fit into one application. -->
+                <requestMappingMode>api_interface</requestMappingMode>
+              </configOptions>
+            </configuration>
+          </execution>
+          <execution>
+            <id>credit-bureau-callback-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/../credit-bureau-callback.yaml</inputSpec>
+              <apiPackage>blueprint.externalsystems.creditbureau.callback.client</apiPackage>
+              <modelPackage>blueprint.externalsystems.creditbureau.callback.client.model</modelPackage>
+              <!-- A Spring HTTP interface. Whoever calls the API turns it into a client with a RestClient. -->
+              <library>spring-http-interface</library>
+              <configOptions>
+                <!-- The method returns the body. An error status comes as an exception of the RestClient. -->
+                <useResponseEntity>false</useResponseEntity>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
