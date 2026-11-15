@@ -7,7 +7,7 @@
 0e082f71d3ed69ea  differs  application/src/test/java/blueprint/application/ApplicationSmokeTest.java  # test harness: the beans are asked for in the bean container's own words
 983a8d6284580450  only-springboot  application/src/test/java/blueprint/application/BeanNamesPerModuleIT.java  # only one platform derives bean names from class names, so only there can two modules collide over them
 f622bf4077053086  differs  application/src/test/java/blueprint/application/ModuleConfigurationPerProfileIT.java  # injection annotations, the configuration accessor, and how a test reaches the profile a module file is named after
-96843b3eb4ec6390  differs  application/src/test/java/blueprint/application/ModuleInteractionIT.java  # injection annotations and the way a poll reads an aggregate: one platform needs a transaction of its own for that
+5fd6ca6ea5c63ea4  differs  application/src/test/java/blueprint/application/ModuleInteractionIT.java  # injection annotations and the way a poll reads an aggregate: one platform needs a transaction of its own for that
 c7a3077692278339  only-springboot  banking-api/src/main/java/blueprint/api/WorkflowModuleBeanNameGenerator.java  # naming beans after their module is needed where beans are found by name rather than by type
 b93ff799990107e6  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/ApiController.java  # bean and injection annotations only; the paths and parameters come from the interface each platform generates from the same OpenAPI file
 e0a123b4ca38309f  differs  loan-approval/src/main/java/blueprint/workflowmodule/loanapproval/RiskAssessedListener.java  # the same adapter, listening the way each platform delivers events

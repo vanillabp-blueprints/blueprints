@@ -122,7 +122,7 @@ trail names five changes and the author of each. If `ApplicationSmokeTest` passe
 application boots with the module on the classpath.
 
 The test relies on the outbox trying again quickly. `vanillabp.outbox.attempt-frequency` is two
-seconds in `src/test/resources/application.yaml`, and half a minute by default. A test which
-waits for a notice without setting it runs into its timeout.
+seconds in `src/test/resources/application.yaml`, and half a minute by default. Without it
+the test still passes, but it waits that half minute for the notice.
 
 Do not report success without having run this.
