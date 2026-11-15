@@ -53,7 +53,11 @@ public final class SimulatorTestApi {
   /** Where a simulator started by hand answers. */
   private static final String DEFAULT_BASE_URL = "http://localhost:8079";
 
-  private static final Duration TIMEOUT = Duration.ofSeconds(30);
+  /**
+   * As long as {@code WorkflowModuleTest.TIMEOUT}. A report follows the engine command it is
+   * about, and that command may come one retry of the outbox late.
+   */
+  private static final Duration TIMEOUT = Duration.ofMinutes(1);
 
   private static final Duration POLL_INTERVAL = Duration.ofMillis(200);
 

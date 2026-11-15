@@ -423,11 +423,22 @@ The two platforms have a set each. The sets differ where the platform does. A Qu
 module needs no application class to be booted. And every Quarkus test class carries
 `@QuarkusTest` itself, instead of inheriting it from the base class.
 
-`WorkflowModuleTest` knows two deadlines. `TIMEOUT`, thirty seconds, is for what VanillaBP and
-the blueprint do themselves. `SCHEDULER_TIMEOUT`, two minutes, is for a step which waits for a
+`WorkflowModuleTest` knows two deadlines. `TIMEOUT`, one minute, is for what VanillaBP and the
+blueprint do themselves. `SCHEDULER_TIMEOUT`, two minutes, is for a step which waits for a
 timer of the model. The scheduler of the engine fires the timer, and on a busy machine every
 build shares its threads. A test passes the longer deadline to `awaitAggregate` only for the
 steps which wait for a timer.
+
+`TIMEOUT` is one minute so that one retry of the outbox fits in. On Camunda 7 two engine
+commands for the same workflow may collide, for example a message correlation and the
+completion of a user task. The engine rejects one of them with an optimistic locking error,
+and the outbox tries it again after `vanillabp.outbox.attempt-frequency`, thirty seconds by
+default. With a deadline of thirty seconds this expected collision failed tests by a fraction
+of a second. The second retry comes another minute later, so a step which keeps failing still
+fails the test. The blueprints keep the default retry distance in their tests. A shorter one
+would let a step fail several times within the deadline, and the test would not see it. Only
+a blueprint whose aspect is a receiver which is away sets a shorter distance, and says so in
+its test configuration. `Simulator` waits as long as `TIMEOUT`.
 
 On Quarkus, both test classes also check that a test runs on the BPMS of the Maven build. A
 Quarkus test does not take its classpath from Maven. It reads the POM again and builds the
