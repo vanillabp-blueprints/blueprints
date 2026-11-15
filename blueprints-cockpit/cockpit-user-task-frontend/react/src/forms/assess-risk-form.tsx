@@ -1,7 +1,7 @@
 // Visual entry AssessRiskForm: the form of the user task "Assess risk". It exports nothing. When
 // the browser evaluates it, it defines the four web components the data entry UserTaskForm names.
 
-import { loanApprovalApi, type AssessRiskForm } from '../shared/api.ts';
+import { userTasksApi, type AssessRiskForm } from '../shared/api.ts';
 import { defineInputForm } from '../shared/input-form.tsx';
 import type { Texts } from '../shared/texts.ts';
 import { ASSESS_RISK_ELEMENTS } from '../loan-approval.ts';
@@ -20,8 +20,8 @@ function LoanRequest({ form, texts, language }: { form: AssessRiskForm; texts: T
 defineInputForm<AssessRiskForm>(ASSESS_RISK_ELEMENTS, {
   testId: 'assess-risk',
   label: (texts) => texts.riskAssessment,
-  load: loanApprovalApi.getAssessRiskForm,
+  load: (userTaskId) => userTasksApi.getAssessRiskForm({ userTaskId }),
   initialInput: (form) => form.riskAssessment ?? '',
-  complete: loanApprovalApi.completeAssessRisk,
+  complete: (userTaskId, riskAssessment) => userTasksApi.completeAssessRisk({ userTaskId, assessRiskInput: { riskAssessment } }),
   Information: LoanRequest,
 });

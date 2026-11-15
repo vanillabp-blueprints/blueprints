@@ -17,7 +17,7 @@
 
 import { computed, inject, ref, shallowRef, watch, type Component, type InjectionKey } from 'vue';
 import type { BcUserTask } from '@vanillabp/bc-module-kit';
-import { ApiError } from './api.ts';
+import { ResponseError } from './api.ts';
 import { textsFor, type Texts } from './texts.ts';
 import { defineVueElement, useBcElement } from './vue-element.ts';
 import ActionsArea from './input-form/ActionsArea.ce.vue';
@@ -45,7 +45,7 @@ export type AreaMessage = { input?: string; askForInput?: boolean; completed?: b
 
 export type Problem = 'notFound' | 'failed';
 
-const problemOf = (error: unknown): Problem => (error instanceof ApiError && error.status === 404 ? 'notFound' : 'failed');
+const problemOf = (error: unknown): Problem => (error instanceof ResponseError && error.response.status === 404 ? 'notFound' : 'failed');
 
 /** One form: its definition, and the data of its user tasks, loaded once for all its areas. */
 interface InputFormOfModule {

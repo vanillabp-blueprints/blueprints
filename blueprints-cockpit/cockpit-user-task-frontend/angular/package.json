@@ -18,7 +18,7 @@
   },
   "scripts": {
     "fetch:openapi": "node scripts/fetch-openapi.mjs",
-    "generate:client": "openapi-typescript build/openapi/loan-approval.yaml --output src/generated/loan-approval.ts",
+    "generate:client": "openapi-generator-cli generate --generator-name typescript-fetch --input-spec build/openapi/loan-approval.yaml --output src/generated/loan-approval --global-property apiDocs=false,modelDocs=false",
     "compile": "ngc -p tsconfig.json",
     "build:micro-frontends": "node scripts/build-micro-frontends.mjs",
     "check:entries": "bc-check-entries dist/micro-frontends/bc-manifest.json --metafile build/meta.json",
@@ -32,7 +32,6 @@
     "@angular/common": "22.2.6",
     "@angular/core": "22.2.6",
     "@angular/platform-browser": "22.2.6",
-    "openapi-fetch": "0.17.0",
     "rxjs": "7.8.2",
     "tslib": "2.9.1"
   },
@@ -40,17 +39,12 @@
     "@angular/compiler": "22.2.6",
     "@angular/compiler-cli": "22.2.6",
     "@babel/core": "8.1.2",
+    "@openapitools/openapi-generator-cli": "2.42.2",
     "@vanillabp/bc-module-host": "0.1.0-snapshot.2",
     "@vanillabp/bc-module-kit": "0.1.0-snapshot.2",
     "esbuild": "0.28.2",
     "fflate": "0.8.3",
-    "openapi-typescript": "7.13.0",
     "playwright": "1.65.0",
     "typescript": "6.0.3"
-  },
-  "overrides": {
-    "openapi-typescript": {
-      "typescript": "$typescript"
-    }
   }
 }

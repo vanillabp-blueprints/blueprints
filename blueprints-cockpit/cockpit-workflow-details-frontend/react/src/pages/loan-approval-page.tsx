@@ -14,7 +14,7 @@
 
 import { useEffect, useState } from 'react';
 import type { BcElementProps, BcUserTask, BcWorkflow } from '@vanillabp/bc-module-kit';
-import { ApiError, loanApprovalApi, type Case } from '../shared/api.ts';
+import { ResponseError, casesApi, type Case } from '../shared/api.ts';
 import { defineReactElement } from '../shared/react-element.tsx';
 import { STYLE } from '../shared/style.ts';
 import { textsFor, type Texts } from '../shared/texts.ts';
@@ -26,8 +26,8 @@ type AreaMessage = { withdrawn?: boolean };
 type Problem = 'notFound' | 'hasEnded' | 'failed';
 
 const problemOf = (error: unknown): Problem => {
-  if (error instanceof ApiError && error.status === 404) return 'notFound';
-  if (error instanceof ApiError && error.status === 409) return 'hasEnded';
+  if (error instanceof ResponseError && error.response.status === 404) return 'notFound';
+  if (error instanceof ResponseError && error.response.status === 409) return 'hasEnded';
   return 'failed';
 };
 
@@ -40,7 +40,7 @@ const cases = new Map<string, Promise<Case>>();
 function loadCase(loanRequestId: string) {
   let loading = cases.get(loanRequestId);
   if (!loading) {
-    loading = loanApprovalApi.getCase(loanRequestId);
+    loading = casesApi.getCase({ loanRequestId });
     loading.catch(() => cases.delete(loanRequestId));
     cases.set(loanRequestId, loading);
   }
@@ -167,7 +167,7 @@ function WithdrawButton({ loaded, texts, showNotification, onWithdrawn }: {
     setState('running');
     setProblem(undefined);
     try {
-      await loanApprovalApi.withdrawLoanRequest(loaded!.loanRequestId);
+      await casesApi.withdrawLoanRequest({ loanRequestId: loaded!.loanRequestId });
       cases.delete(loaded!.loanRequestId);
       setState('withdrawn');
       // A cockpit which cannot show notifications refuses; the page says it anyway.

@@ -14,7 +14,7 @@
 
 import { useState, type FormEvent } from 'react';
 import type { BcElementProps } from '@vanillabp/bc-module-kit';
-import { ApiError, loanApprovalApi, type StartedLoanRequest } from '../shared/api.ts';
+import { ResponseError, startFormApi, type StartedLoanRequest } from '../shared/api.ts';
 import { defineReactElement } from '../shared/react-element.tsx';
 import { STYLE } from '../shared/style.ts';
 import { textsFor } from '../shared/texts.ts';
@@ -75,10 +75,10 @@ function StartForm(props: BcElementProps) {
     setSending(true);
     setProblem(undefined);
     try {
-      const started = await loanApprovalApi.requestLoan({ applicant: applicant.trim(), amount: amountAsNumber });
+      const started = await startFormApi.requestLoan({ loanRequest: { applicant: applicant.trim(), amount: amountAsNumber } });
       await props.closeDialog(started);
     } catch (error) {
-      setProblem(error instanceof ApiError && error.status === 400 ? 'refused' : 'failed');
+      setProblem(error instanceof ResponseError && error.response.status === 400 ? 'refused' : 'failed');
       setSending(false);
     }
   };

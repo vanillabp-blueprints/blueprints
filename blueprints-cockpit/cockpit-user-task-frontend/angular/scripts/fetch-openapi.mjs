@@ -1,6 +1,7 @@
 // Copies the OpenAPI file of the workflow module to build/openapi/loan-approval.yaml, where
-// `npm run generate:client` reads it. It also writes the server URL of the file to
-// src/generated/server.ts, and the API client takes that as its base URL.
+// `npm run generate:client` reads it. It also empties src/generated, so no class of an older API
+// stays behind there. The generator makes the first server URL of the file the base path of the
+// client, so this script makes sure the file names one.
 //
 // The backend owns the API, and this project only reads its OpenAPI file. The file is the
 // contract between the two. It comes from the first of these places which has it:
@@ -14,13 +15,13 @@
 //
 // Both paths in package.json are relative to this project.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 
 const projectDir = resolve(import.meta.dirname, '..');
 const { config } = JSON.parse(readFileSync(join(projectDir, 'package.json'), 'utf8'));
 const target = join(projectDir, 'build', 'openapi', `${config.workflowModuleId}.yaml`);
-const serverFile = join(projectDir, 'src', 'generated', 'server.ts');
+const generatedDir = join(projectDir, 'src', 'generated');
 
 function findOpenApi() {
   if (process.env.OPENAPI_FILE) return resolve(process.env.OPENAPI_FILE);
@@ -41,7 +42,7 @@ function findOpenApi() {
 /** The first server URL of the OpenAPI file, read without a YAML library. */
 function serverUrl(yaml, origin) {
   const url = yaml.match(/^servers:[ \t]*\r?\n[ \t]+- url:[ \t]*['"]?([^'"\s#]+)/m)?.[1];
-  if (!url) throw new Error(`${origin} names no server URL, and the API client needs it as its base URL`);
+  if (!url) throw new Error(`${origin} names no server URL, and the API client needs it as its base path`);
   return url;
 }
 
@@ -51,12 +52,7 @@ try {
   const url = serverUrl(yaml, file);
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, yaml);
-  mkdirSync(dirname(serverFile), { recursive: true });
-  writeFileSync(serverFile, [
-    '// Written by scripts/fetch-openapi.mjs from the first server of the OpenAPI file.',
-    `export const SERVER_URL = ${JSON.stringify(url)};`,
-    '',
-  ].join('\n'));
+  rmSync(generatedDir, { recursive: true, force: true });
   console.log(`fetch-openapi: ${relative(projectDir, file)}, server ${url}`);
 } catch (error) {
   console.error(`fetch-openapi: ${error.message}`);

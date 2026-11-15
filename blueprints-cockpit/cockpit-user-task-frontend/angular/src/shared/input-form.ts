@@ -18,7 +18,7 @@
 import { Component, computed, Directive, effect, inject, InjectionToken, input, signal, untracked, type Type } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 import type { BcElementProps, BcUserTask } from '@vanillabp/bc-module-kit';
-import { ApiError } from './api.ts';
+import { ResponseError } from './api.ts';
 import { defineAngularElement } from './angular-element.ts';
 import { textsFor, type Texts } from './texts.ts';
 
@@ -42,7 +42,7 @@ type AreaMessage = { input?: string; askForInput?: boolean; completed?: boolean 
 
 type Problem = 'notFound' | 'failed';
 
-const problemOf = (error: unknown): Problem => (error instanceof ApiError && error.status === 404 ? 'notFound' : 'failed');
+const problemOf = (error: unknown): Problem => (error instanceof ResponseError && error.response.status === 404 ? 'notFound' : 'failed');
 
 /** One form: its definition, and the data of its user tasks, loaded once for all its areas. */
 interface InputFormOfModule {

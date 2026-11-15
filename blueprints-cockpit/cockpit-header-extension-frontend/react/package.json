@@ -18,7 +18,7 @@
   },
   "scripts": {
     "fetch:openapi": "node scripts/fetch-openapi.mjs",
-    "generate:client": "openapi-typescript build/openapi/loan-approval.yaml --output src/generated/loan-approval.ts",
+    "generate:client": "openapi-generator-cli generate --generator-name typescript-fetch --input-spec build/openapi/loan-approval.yaml --output src/generated/loan-approval --global-property apiDocs=false,modelDocs=false",
     "typecheck": "tsc --noEmit",
     "build:micro-frontends": "node scripts/build-micro-frontends.mjs",
     "check:entries": "bc-check-entries dist/micro-frontends/bc-manifest.json --metafile build/meta.json --data-entry Header",
@@ -29,18 +29,17 @@
     "start": "node scripts/start.mjs"
   },
   "dependencies": {
-    "openapi-fetch": "0.17.0",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@openapitools/openapi-generator-cli": "2.42.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vanillabp/bc-module-host": "0.1.0-snapshot.2",
     "@vanillabp/bc-module-kit": "0.1.0-snapshot.2",
     "esbuild": "0.28.2",
     "fflate": "0.8.3",
-    "openapi-typescript": "7.13.0",
     "playwright": "1.65.0",
     "typescript": "5.9.3"
   }
