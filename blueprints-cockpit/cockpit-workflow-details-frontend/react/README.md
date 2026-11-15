@@ -4,7 +4,7 @@
 
 The page of a case for a VanillaBP Business Cockpit, written in React, and the columns of the
 case list. The cockpit loads them at runtime from the workflow module `loan-approval`. This
-project builds them with npm and nothing else, and it delivers them in two ways: as a UI jar for
+project builds them with npm, and it delivers them in two ways: as a UI jar for
 a Java application, and as an nginx image.
 
 It is one of three parts of the blueprint `cockpit-workflow-details`:
@@ -19,8 +19,8 @@ The project is built like
 [`cockpit-user-task-frontend-react`](https://github.com/vanillabp-blueprints/cockpit-user-task-frontend-react),
 which shows the forms of user tasks. Its README explains what this one only links: micro-frontends
 and the two kinds of entries, why the parts come at runtime, the module kit as the minimum, the
-OpenAPI file through a git submodule, why npm builds apart from Maven, and the UI jar and the
-nginx image.
+OpenAPI file through a git submodule and the client generated from it, why npm builds apart from
+Maven, and the UI jar and the nginx image.
 
 ## What this blueprint shows
 
@@ -63,7 +63,8 @@ backend says more.
 
 ## Running it
 
-You need Node.js 24, git and Docker. Docker builds the nginx image.
+You need Node.js 24, a Java runtime 11 or newer, git and Docker. Java runs the OpenAPI
+Generator, which writes the API client. Docker builds the nginx image.
 
 Clone the repository with its submodule, which brings the OpenAPI file of the backend:
 
@@ -88,7 +89,7 @@ The scripts are the same as in `cockpit-user-task-frontend-react`:
 |---------------------------------|----------------------------------------------------------------------------------------------------|
 | `npm run build`                 | all of the following, one after the other                                                          |
 | `npm run fetch:openapi`         | copies the OpenAPI file of the backend into `build/openapi`                                        |
-| `npm run generate:client`       | generates the types of the API client from it                                                      |
+| `npm run generate:client`       | generates the API client from it with the OpenAPI Generator `typescript-fetch`                     |
 | `npm run typecheck`             | checks the types of the whole project                                                              |
 | `npm run build:micro-frontends` | builds the entries and `bc-manifest.json` into `dist/micro-frontends`                              |
 | `npm run check:entries`         | runs `bc-check-entries` of the kit: no bare import, no framework in a data entry, every file there |
@@ -115,7 +116,7 @@ browser tests are the way to see the page.
 | `src/data/workflow-list.ts`          | data entry `WorkflowList`: the columns `details.applicant` and `details.status` of the case list                     |
 | `src/pages/loan-approval-page.tsx`   | visual entry `LoanApprovalPage`: the four web components of the page                                                 |
 | `src/shared/react-element.tsx`       | makes a React component a web component with `defineBcElement` of the kit                                            |
-| `src/shared/api.ts`                  | the client of the module API, typed by the generated `src/generated/loan-approval.ts`                                |
+| `src/shared/api.ts`                  | the one instance of `CasesApi`, the client generated into `src/generated/loan-approval`                              |
 | `src/shared/style.ts`                | the styles in each shadow root, which keep long content from widening the page                                       |
 | `scripts/build-micro-frontends.mjs`  | builds the entries with esbuild and writes `bc-manifest.json` with `createManifest` of the kit                       |
 | `test/browser/workflow-page.test.js` | the browser tests in the host of the kit                                                                             |
@@ -178,7 +179,7 @@ which ended, a case the module does not know, a withdrawal the module refuses, a
 
 - [Loading the parts of a workflow module](https://github.com/vanillabp/business-cockpit/blob/main/skills/business-cockpit-creator/references/module-loading.md): entries, the manifest, areas and the event protocol
 - [The module kit](https://github.com/vanillabp/business-cockpit-module-kit): `@vanillabp/bc-module-kit` and `@vanillabp/bc-module-host`
-- [openapi-fetch](https://openapi-ts.dev/openapi-fetch/): the API client, and `openapi-typescript`, which generates its types
+- [OpenAPI Generator `typescript-fetch`](https://openapi-generator.tech/docs/generators/typescript-fetch/): the generator of the API client, run by [`@openapitools/openapi-generator-cli`](https://github.com/OpenAPITools/openapi-generator-cli)
 
 This blueprint is developed in the monorepo
 [`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a

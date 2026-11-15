@@ -2,10 +2,9 @@
 
 # cockpit-user-task-frontend-react
 
-The forms of two user tasks for a VanillaBP Business Cockpit, written in React. The cockpit
-loads them at runtime from the workflow module `loan-approval`. This project builds them with
-npm and nothing else, and it delivers them in two ways: as a UI jar for a Java application, and
-as an nginx image.
+The forms of two user tasks for a VanillaBP Business Cockpit, written in React. The cockpit loads
+them at runtime from the workflow module `loan-approval`. This project builds them with npm, and it
+delivers them in two ways: as a UI jar for a Java application, and as an nginx image.
 
 It is one of three parts of the blueprint `cockpit-user-task`:
 
@@ -80,7 +79,8 @@ stays the same where it uses the minimum.
 
 ## Running it
 
-You need Node.js 24, git and Docker. Docker builds the nginx image.
+You need Node.js 24, a Java runtime 11 or newer, git and Docker. Java runs the OpenAPI
+Generator, which writes the API client. Docker builds the nginx image.
 
 Clone the repository with its submodule, which brings the OpenAPI file of the backend:
 
@@ -109,7 +109,7 @@ npm test
 |---------------------------------|----------------------------------------------------------------------------------------------------|
 | `npm run build`                 | all of the following, one after the other                                                          |
 | `npm run fetch:openapi`         | copies the OpenAPI file of the backend into `build/openapi`                                        |
-| `npm run generate:client`       | generates the types of the API client from it                                                      |
+| `npm run generate:client`       | generates the API client from it with the OpenAPI Generator `typescript-fetch`                     |
 | `npm run typecheck`             | checks the types of the whole project                                                              |
 | `npm run build:micro-frontends` | builds the entries and `bc-manifest.json` into `dist/micro-frontends`                              |
 | `npm run check:entries`         | runs `bc-check-entries` of the kit: no bare import, no framework in a data entry, every file there |
@@ -121,7 +121,7 @@ npm test
 ### The OpenAPI file of the backend
 
 The forms call the API of the workflow module. The backend describes that API in an OpenAPI
-file. This project generates its typed client from that file, so a changed API breaks the build
+file. This project generates its client from that file, so a changed API breaks the build
 here and not the form in the browser. The file is the contract between the two projects, and it
 is the only thing this project takes from the backend.
 
@@ -134,13 +134,14 @@ backend/loan-approval/src/main/resources/openapi/loan-approval.yaml
 ```
 
 Why a submodule and not a released jar? The frontend builds without the backend being built or
-released, and without Java. It needs no Maven repository and no login to one. The commit of the
+released, and without Maven. It needs no login to a Maven repository. The commit of the
 submodule says exactly which state of the API the frontend was built against, and a pull request
 which moves it shows the change of the API in its diff.
 
-`scripts/fetch-openapi.mjs` copies the file to `build/openapi/loan-approval.yaml`. It also takes
-the first server of the file, `/wm/loan-approval`, as the base URL of the client. To build
-against another file, for example a draft of a new API, set `OPENAPI_FILE` to its path.
+`scripts/fetch-openapi.mjs` copies the file to `build/openapi/loan-approval.yaml`. It also checks
+that the file names a server, because the generator makes the first one, `/wm/loan-approval`, the
+base path of the client. To build against another file, for example a draft of a new API, set
+`OPENAPI_FILE` to its path.
 
 To take a newer API, move the submodule to the newest commit of the backend and commit that:
 
@@ -162,10 +163,37 @@ in `renovate.json`:
 Then Renovate opens a pull request whenever the branch `main` of the backend moves on.
 
 In the monorepo [`blueprints`](https://github.com/vanillabp-blueprints/blueprints), where this
-project is developed, the backend is a directory next to this one, and there is no submodule.
-There the script reads the file named in `config.openapiInMonorepo`. The job which copies this
-project into its own repository adds the submodule. In your own project, delete
-`config.openapiInMonorepo`.
+project is developed, the backend is a directory next to this one, and there is no submodule. There
+the script reads the file named in `config.openapiInMonorepo`. The job which copies this project
+into its own repository adds the submodule. In your own project, delete `config.openapiInMonorepo`.
+
+### The generated client
+
+`npm run generate:client` runs the OpenAPI Generator with the generator
+[`typescript-fetch`](https://openapi-generator.tech/docs/generators/typescript-fetch/). It is the
+same tool which writes the Java code of the backend, and it names things the same way. The tag
+`user-tasks` of the OpenAPI file becomes the class `UserTasksApi`, each operation one of its
+methods, and each schema a type of the same name:
+
+```ts
+const form = await userTasksApi.getAssessRiskForm({ userTaskId });
+await userTasksApi.completeAssessRisk({ userTaskId, assessRiskInput: { riskAssessment } });
+```
+
+The client uses the `fetch` of the browser and needs no library at runtime. An answer which is
+not a success throws a `ResponseError`, and its `response` has the status. `src/shared/api.ts`
+creates the one instance of `UserTasksApi` which the forms use.
+
+The generator is a Java program. The npm package `@openapitools/openapi-generator-cli` downloads
+it from Maven Central the first time and runs it with `java`. `openapitools.json` pins its
+version to the one the backend uses for its Java code. So the build needs a Java runtime, but no
+Maven. If your build agents reach Maven Central only through a mirror, set its address as
+`downloadUrl` in `openapitools.json`. The
+[README of the package](https://github.com/OpenAPITools/openapi-generator-cli) shows how.
+
+The build writes the generated code to `src/generated/loan-approval` every time, and git ignores
+it. The backend does the same with its Java code, which it generates below `target/`. So the
+OpenAPI file is the only source of the client, and nobody edits generated code by hand.
 
 ### With the backend during development
 
@@ -208,7 +236,7 @@ only says so, and the browser tests are the way to see the forms.
 | `src/forms/check-documents-form.tsx`   | visual entry `CheckDocumentsForm`: the form of "Check documents"                                    |
 | `src/shared/input-form.tsx`            | the four web components of a form with one input field, and the messages between its areas          |
 | `src/shared/react-element.tsx`         | makes a React component a web component with `defineBcElement` of the kit                           |
-| `src/shared/api.ts`                    | the client of the module API, typed by the generated `src/generated/loan-approval.ts`               |
+| `src/shared/api.ts`                    | the one instance of `UserTasksApi`, the client generated into `src/generated/loan-approval`         |
 | `scripts/build-micro-frontends.mjs`    | builds the entries with esbuild and writes `bc-manifest.json` with `createManifest` of the kit      |
 | `scripts/build-ui-jar.mjs`             | builds the UI jar with a zip library                                                                |
 | `docker/Dockerfile`                    | the nginx image                                                                                     |
@@ -281,9 +309,10 @@ stays when the cockpit sets a property such as the language.
 ### Three repositories, and the order of their releases
 
 Many companies give their build agents one Docker image with Java and Maven and another one with
-Node. A repository where Maven and npm build together is hard to have there. So a workflow
-module with a user interface has three parts, each built with one tool: the backend with Maven,
-this frontend with npm, and the application with Maven again.
+Node. A repository where Maven and npm build together is hard to have there. So a workflow module
+with a user interface has three parts, each built with one tool: the backend with Maven, this
+frontend with npm, and the application with Maven again. The agent for the frontend needs a Java
+runtime next to Node, because the generator of the API client is a Java program. It needs no Maven.
 
 The frontend needs only the API, and it takes the OpenAPI file from the backend repository
 through its submodule. Only the application needs both. So there is no cycle, and a release goes
@@ -329,7 +358,7 @@ lets browsers keep it for good.
 
 - [Loading the parts of a workflow module](https://github.com/vanillabp/business-cockpit/blob/main/skills/business-cockpit-creator/references/module-loading.md): entries, the manifest, areas and the event protocol
 - [The module kit](https://github.com/vanillabp/business-cockpit-module-kit): `@vanillabp/bc-module-kit` and `@vanillabp/bc-module-host`
-- [openapi-fetch](https://openapi-ts.dev/openapi-fetch/): the API client, and `openapi-typescript`, which generates its types
+- [OpenAPI Generator `typescript-fetch`](https://openapi-generator.tech/docs/generators/typescript-fetch/): the generator of the API client, run by [`@openapitools/openapi-generator-cli`](https://github.com/OpenAPITools/openapi-generator-cli)
 
 This blueprint is developed in the monorepo
 [`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a
