@@ -12,9 +12,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.client.RestClient;
 
+import blueprint.workflowmodule.loanapproval.api.model.AssessRiskForm;
 import blueprint.workflowmodule.loanapproval.model.Aggregate;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
@@ -104,12 +104,9 @@ public class UserInterfaceSmokeTest {
         .get()
         .uri("/api/user-tasks/{userTaskId}/assess-risk", userTaskId)
         .retrieve()
-        .body(new ParameterizedTypeReference<Map<String, Object>>() {
-        });
+        .body(AssessRiskForm.class);
 
-    assertThat(form)
-        .containsEntry("loanRequestId", loanRequestId)
-        .containsEntry("amount", 5000);
+    assertThat(form).isEqualTo(new AssessRiskForm(loanRequestId, 5000, null));
 
   }
 
