@@ -23,6 +23,8 @@ import org.yaml.snakeyaml.Yaml;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.model.Aggregate.Status;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
+import io.vanillabp.cockpit.gui.api.v1.EndReason;
+import io.vanillabp.cockpit.gui.api.v1.Workflow;
 
 /**
  * The integration test of this workflow module. It starts a real workflow in a real BPMS,
@@ -88,22 +90,22 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // The user task is open, and the cockpit shows the case under the business id.
     final var reviewTaskId = awaitReviewTask(loanRequestId);
     final var running = cockpit.awaitWorkflow(loanRequestId, workflow -> true);
-    assertThat(running.get("workflowModuleId")).isEqualTo("loan-approval");
-    assertThat(running.get("bpmnProcessId")).isEqualTo("loan_approval");
-    assertThat(running.get("businessId")).isEqualTo(loanRequestId);
-    assertThat(running.get("uiUriType")).isEqualTo("ES_MODULES");
-    assertThat(running.get("endedAt")).isNull();
+    assertThat(running.getWorkflowModuleId()).isEqualTo("loan-approval");
+    assertThat(running.getBpmnProcessId()).isEqualTo("loan_approval");
+    assertThat(running.getBusinessId()).isEqualTo(loanRequestId);
+    assertThat(running.getUiUriType()).isEqualTo("ES_MODULES");
+    assertThat(running.getEndedAt()).isNull();
     assertThat(details(running))
         .containsEntry(WorkflowTaskHandler.APPLICANT, "Jane Doe")
         .containsEntry(WorkflowTaskHandler.STATUS, "REQUESTED");
 
     // What the case page shows: the open user task, from the cockpit ...
-    final var workflowId = (String) running.get("id");
+    final var workflowId = running.getId();
     final var userTasks = cockpit.awaitUserTasksOfWorkflow(workflowId, tasks -> !tasks.isEmpty());
     assertThat(userTasks).hasSize(1);
-    assertThat(userTasks.getFirst().get("id")).isEqualTo(reviewTaskId);
-    assertThat(userTasks.getFirst().get("taskDefinition")).isEqualTo("reviewLoanRequest");
-    assertThat(userTasks.getFirst().get("endedAt")).isNull();
+    assertThat(userTasks.getFirst().getId()).isEqualTo(reviewTaskId);
+    assertThat(userTasks.getFirst().getTaskDefinition()).isEqualTo("reviewLoanRequest");
+    assertThat(userTasks.getFirst().getEndedAt()).isNull();
 
     // ... and the data of the loan request, from the module.
     assertThat(read(loanRequestId))
@@ -123,18 +125,18 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(loanRequest.getReviewTaskId()).isNull();
     cockpit.awaitUserTasksOfWorkflow(
         workflowId,
-        tasks -> tasks.getFirst().get("endedAt") != null);
+        tasks -> tasks.getFirst().getEndedAt() != null);
 
     // The case list shows the case as ended, and the column says that it was withdrawn. For the
     // cockpit, the case ended normally: withdrawing is a business decision, and the process
     // reached an end event.
     final var withdrawn = cockpit.awaitWorkflow(
         loanRequestId,
-        workflow -> workflow.get("endedAt") != null);
+        workflow -> workflow.getEndedAt() != null);
     assertThat(details(withdrawn))
         .containsEntry(WorkflowTaskHandler.APPLICANT, "Jane Doe")
         .containsEntry(WorkflowTaskHandler.STATUS, "WITHDRAWN");
-    assertThat(withdrawn.get("endReason")).isEqualTo("COMPLETED");
+    assertThat(withdrawn.getEndReason()).isEqualTo(EndReason.COMPLETED);
 
     assertThat(read(loanRequestId)).containsEntry("status", "WITHDRAWN");
 
@@ -157,9 +159,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         aggregate -> aggregate.getStatus() == Status.APPROVED);
     final var approved = cockpit.awaitWorkflow(
         loanRequestId,
-        workflow -> workflow.get("endedAt") != null);
+        workflow -> workflow.getEndedAt() != null);
     assertThat(details(approved)).containsEntry(WorkflowTaskHandler.STATUS, "APPROVED");
-    assertThat(approved.get("endReason")).isEqualTo("COMPLETED");
+    assertThat(approved.getEndReason()).isEqualTo(EndReason.COMPLETED);
 
     // An approved loan request cannot be withdrawn any more.
     assertThat(withdraw(loanRequestId)).isEqualTo(409);
@@ -251,11 +253,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   }
 
-  @SuppressWarnings("unchecked")
   private static Map<String, Object> details(
-      final Map<String, Object> workflow) {
+      final Workflow workflow) {
 
-    final var details = (Map<String, Object>) workflow.get("details");
+    final var details = workflow.getDetails();
     return details == null ? Map.of() : details;
 
   }

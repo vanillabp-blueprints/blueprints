@@ -56,7 +56,7 @@ controllers in line, or the page reaches nothing.
 | `loan-approval/src/main/java/.../Workflow.java`                                        | `startWorkflow`, `completeUserTask` and `correlateMessage`                                                                                                                             |
 | `loan-approval/src/main/java/.../model/Aggregate.java`                                 | the loan request, the id of the open task and the `Status`                                                                                                                             |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                  | withdraw and approve through the module, what the cockpit was told, and every OpenAPI operation mapped                                                                                 |
-| `loan-approval/src/test/java/.../CockpitSimulator.java`                                | starts the dev shell simulator as the cockpit of the test, and reads cases and user tasks from it                                                                                      |
+| `loan-approval/src/test/java/.../CockpitSimulator.java`                                | starts the dev shell simulator as the cockpit of the test, and reads cases and user tasks from it into the cockpit's models                                                            |
 | `loan-approval/src/main/java/.../config/LoanApprovalAutoConfiguration.java`            | the module wires itself: component scan, `@EntityScan` and `@EnableJpaRepositories` of its own package, with fully qualified bean names                                                |
 | `loan-approval/src/main/resources/META-INF/spring/...AutoConfiguration.imports`        | names the auto-configuration                                                                                                                                                           |
 
@@ -105,9 +105,10 @@ controllers in line, or the page reaches nothing.
    the OpenAPI, with the settings of `loan-approval/pom.xml`. Implement the interface in a
    controller with `@RequestMapping("/<workflow-module-id>")`. Answer 404 for an unknown id and
    409 for a case which cannot be withdrawn any more.
-8. Copy `CockpitSimulator`, `dev-shell-simulator.yaml` and the dependency plugin execution of
-   `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the test
-   which checks every OpenAPI operation against the endpoints.
+8. Copy `CockpitSimulator`, `dev-shell-simulator.yaml`, the test dependency
+   `official-gui-api-server` with the models of the cockpit's official API, and the dependency
+   plugin execution of `loan-approval/pom.xml` which copies the simulator. Adapt
+   `LoanApprovalIT`, keeping the test which checks every OpenAPI operation against the endpoints.
 
 ## Verifying
 
