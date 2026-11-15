@@ -52,6 +52,7 @@ the BPMS (business process management system) did supply.
 | `application/src/main/resources/application.yaml`                 | the database, and nothing about the workflow                                                                               |
 | `loan-approval/src/test/resources/application.yaml`               | the database of the module's own test                                                                                      |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                                                        |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`     | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
 | `loan-approval/src/main/java/.../loanapproval/Workflow.java`      | starts the workflow                                                                                                        |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                                            |
 | `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                                                             |

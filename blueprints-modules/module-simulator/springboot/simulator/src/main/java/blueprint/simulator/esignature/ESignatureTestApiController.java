@@ -4,9 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -17,6 +14,7 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import blueprint.externalsystems.esignature.api.server.model.Envelope;
 import blueprint.externalsystems.esignature.callback.client.SignatureCallbackApi;
 import blueprint.externalsystems.esignature.callback.client.model.Callback;
+import blueprint.simulator.testapi.server.ESignatureTestApi;
 
 /**
  * The test API of the simulated e-signature service. It shows what the service was given, and it
@@ -27,10 +25,14 @@ import blueprint.externalsystems.esignature.callback.client.model.Callback;
  * Every action is a GET, so a person can use it in a browser as well, like the API of the
  * application. A test uses the same URLs.
  * </p>
+ *
+ * <p>
+ * The paths and the parameters come from {@link ESignatureTestApi}, the interface generated from
+ * {@code simulator-test-api/simulator-test-api.yaml}. This class only implements it.
+ * </p>
  */
 @RestController
-@RequestMapping("/simulator/test-api/e-signature")
-public class ESignatureTestApiController {
+public class ESignatureTestApiController implements ESignatureTestApi {
 
   private static final Logger log = LoggerFactory.getLogger(ESignatureTestApiController.class);
 
@@ -59,9 +61,9 @@ public class ESignatureTestApiController {
    * @param contractId The id the caller gave the document.
    * @return The document, or 404 if the service holds none of this id.
    */
-  @GetMapping("/envelope")
+  @Override
   public ResponseEntity<Envelope> envelope(
-      @RequestParam final String contractId) {
+      final String contractId) {
 
     return ResponseEntity.of(envelopes.of(contractId));
 
@@ -82,9 +84,9 @@ public class ESignatureTestApiController {
    *         document of this id. 502 if the application did not answer, or if the callback
    *         address does not end with the path of the callback API.
    */
-  @GetMapping("/sign")
+  @Override
   public ResponseEntity<String> sign(
-      @RequestParam final String contractId) {
+      final String contractId) {
 
     final var envelope = envelopes.of(contractId);
     if (envelope.isEmpty()) {

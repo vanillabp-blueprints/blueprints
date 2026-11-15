@@ -9,11 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
-import blueprint.workflowmodule.loanapproval.UserTaskFormController.AssessRiskInput;
+import blueprint.workflowmodule.loanapproval.api.model.AssessRiskInput;
 import blueprint.workflowmodule.loanapproval.config.Permission;
 import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.CheckDocumentTaskData;
@@ -46,13 +45,7 @@ public class UserTaskFormSecurityIT extends WorkflowModuleTest {
     forms.saveAssessRiskForm(loanRequestId, riskAssessment, new AssessRiskInput(true, "draft"));
     assertThat(forms.getAssessRiskForm(loanRequestId, riskAssessment).comment()).isEqualTo("draft");
 
-    forms.completeAssessRisk(
-        loanRequestId,
-        riskAssessment,
-        new AssessRiskInput(true, "stable income"),
-        SecurityContextHolder
-            .getContext()
-            .getAuthentication());
+    forms.completeAssessRisk(loanRequestId, riskAssessment, new AssessRiskInput(true, "stable income"));
 
     // The user who completed the task is the one logged in, not a value of the request.
     final var form = forms.getAssessRiskForm(loanRequestId, riskAssessment);

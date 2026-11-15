@@ -208,7 +208,8 @@ The workflow ends at "Loan request withdrawn". The cockpit adapter reports the e
 and the end of the case. The report of the case reads the aggregate, so its details carry the
 status `WITHDRAWN`.
 
-The endpoints are written by hand, as in `cockpit-user-task-backend`. The integration test reads
+The build generates the interface `CasesApi` and the record `Case` from the OpenAPI, as in
+`cockpit-user-task-backend`, and `CasePageController` implements it. The integration test reads
 the OpenAPI from the classpath and checks that every operation in it has its endpoint.
 
 The integration test talks to the module the way the page does, only without the proxy of the

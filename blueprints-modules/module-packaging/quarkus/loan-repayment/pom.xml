@@ -26,6 +26,8 @@
     <camunda8-adapter.version>2.0.0-8.10-SNAPSHOT</camunda8-adapter.version>
     <cibseven-adapter.version>2.0.0-2.2-SNAPSHOT</cibseven-adapter.version>
     <operaton-adapter.version>2.0.0-SNAPSHOT</operaton-adapter.version>
+    <!-- Generates the Java interface of the API from its OpenAPI file. -->
+    <openapi-generator.version>7.27.0</openapi-generator.version>
   </properties>
 
   <dependencyManagement>
@@ -131,6 +133,53 @@
 
   <build>
     <plugins>
+      <!--
+        The API of this module is written as the OpenAPI file
+        'src/main/resources/openapi/loan-repayment.yaml'. This plugin generates the Java interface
+        'LoanRepaymentApi' from it, with the paths, the parameters and the answers. 'ApiController'
+        implements the interface and holds nothing but the code of each call.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>${openapi-generator.version}</version>
+        <!-- The settings every API of this module shares. -->
+        <configuration>
+          <!-- Jakarta REST, which Quarkus REST implements. -->
+          <generatorName>jaxrs-spec</generatorName>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <configOptions>
+            <useJakartaEe>true</useJakartaEe>
+            <!-- Where the build looks for sources. The default of this generator is a folder it does not. -->
+            <sourceFolder>src/main/java</sourceFolder>
+            <!-- One interface per tag, named after it. -->
+            <useTags>true</useTags>
+            <!-- Only the interface. The resource class implements it. -->
+            <interfaceOnly>true</interfaceOnly>
+            <!-- A method returns the answer itself. Quarkus turns it into the response. -->
+            <returnResponse>false</returnResponse>
+            <!-- No library beyond Jakarta REST and Jackson: no Swagger annotations, no bean validation. -->
+            <useSwaggerAnnotations>false</useSwaggerAnnotations>
+            <useMicroProfileOpenAPIAnnotations>false</useMicroProfileOpenAPIAnnotations>
+            <useBeanValidation>false</useBeanValidation>
+            <generatePom>false</generatePom>
+            <hideGenerationTimestamp>true</hideGenerationTimestamp>
+          </configOptions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>loan-repayment-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-repayment.yaml</inputSpec>
+              <apiPackage>com.acme.loanrepayment.api</apiPackage>
+              <modelPackage>com.acme.loanrepayment.api.model</modelPackage>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <!--
         A workflow module JAR is built by whoever owns it, so it carries its own build: the
         index making its classes visible, and the test configuration its own integration test

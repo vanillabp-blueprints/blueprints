@@ -176,20 +176,21 @@ says where they are served and how to log in.
 
 ## How it works
 
-|                            File                            |                                                 Role                                                  |
-|------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
-| `src/main/resources/META-INF/workflow-module`              | contains `loan-approval`, which makes this application a workflow module                              |
-| `src/main/resources/processes/camunda7/loan_approval.bpmn` | the process: start event, service task, end event. The task names the method implementing it          |
-| `.../loanapproval/model/Aggregate.java`                    | the workflow aggregate, a normal JPA entity keyed by the loan request ID and shared with no BPMS      |
-| `.../loanapproval/Service.java`                            | the business code: builds the aggregate and tells `Workflow` that somebody requested a loan           |
-| `.../loanapproval/Workflow.java`                           | what the application tells the process; the only class using `ProcessService`                         |
-| `.../loanapproval/WorkflowTaskHandler.java`                | what the process tells the application: `@WorkflowService`, `@WorkflowTask`, calls `Service`          |
-| `.../loanapproval/ApiController.java`                      | the GET endpoints operating the process                                                               |
-| `.../loanapproval/config/LoanApprovalProperties.java`      | the module's own configuration, read from `loan-approval.yaml`                                        |
-| `.../workflowmodule/Application.java`                      | the Spring Boot application, which is also the workflow module                                        |
-| `src/test/.../LoanApprovalIT.java`                         | starts a real workflow and waits for the aggregate to have been filled                                |
-| `src/test/.../WorkflowModuleTest.java`                     | its base class: waits for the workflow to make progress. The same in every blueprint                  |
-| `src/test/.../ApplicationSmokeTest.java`                   | boots the application and checks that the workflow module declaring itself is the one VanillaBP wired |
+|                            File                            |                                                            Role                                                            |
+|------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `src/main/resources/META-INF/workflow-module`              | contains `loan-approval`, which makes this application a workflow module                                                   |
+| `src/main/resources/processes/camunda7/loan_approval.bpmn` | the process: start event, service task, end event. The task names the method implementing it                               |
+| `.../loanapproval/model/Aggregate.java`                    | the workflow aggregate, a normal JPA entity keyed by the loan request ID and shared with no BPMS                           |
+| `.../loanapproval/Service.java`                            | the business code: builds the aggregate and tells `Workflow` that somebody requested a loan                                |
+| `.../loanapproval/Workflow.java`                           | what the application tells the process; the only class using `ProcessService`                                              |
+| `.../loanapproval/WorkflowTaskHandler.java`                | what the process tells the application: `@WorkflowService`, `@WorkflowTask`, calls `Service`                               |
+| `.../loanapproval/ApiController.java`                      | the GET endpoints operating the process                                                                                    |
+| `.../openapi/loan-approval.yaml`                           | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `.../loanapproval/config/LoanApprovalProperties.java`      | the module's own configuration, read from `loan-approval.yaml`                                                             |
+| `.../workflowmodule/Application.java`                      | the Spring Boot application, which is also the workflow module                                                             |
+| `src/test/.../LoanApprovalIT.java`                         | starts a real workflow and waits for the aggregate to have been filled                                                     |
+| `src/test/.../WorkflowModuleTest.java`                     | its base class: waits for the workflow to make progress. The same in every blueprint                                       |
+| `src/test/.../ApplicationSmokeTest.java`                   | boots the application and checks that the workflow module declaring itself is the one VanillaBP wired                      |
 
 The order of events: `ApiController` calls `Service#request`. That method builds the aggregate
 and tells `Workflow` what happened, namely `loanRequested`, not "start the process".

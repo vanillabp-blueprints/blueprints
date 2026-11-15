@@ -52,6 +52,8 @@
     <camunda7-engine.version>7.24.0</camunda7-engine.version>
     <operaton-engine.version>2.2.1</operaton-engine.version>
     <cibseven-engine.version>2.2.0</cibseven-engine.version>
+    <!-- Generates the Java interfaces of the APIs from their OpenAPI files. -->
+    <openapi-generator.version>7.27.0</openapi-generator.version>
   </properties>
 
   <dependencyManagement>

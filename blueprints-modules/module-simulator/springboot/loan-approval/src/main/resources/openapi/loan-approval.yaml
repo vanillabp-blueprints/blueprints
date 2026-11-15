@@ -1,0 +1,141 @@
+openapi: 3.0.3
+info:
+  title: Loan approval
+  description: >
+    The API of the use case 'loan-approval'. It has GET requests only, so a person can walk
+    through the process in a browser, without any tool and without a request body.
+
+    The build generates the Java interface 'LoanApprovalApi' and the records below from this
+    file, and 'ApiController' implements it. So the paths, the parameters and the answers below
+    are the contract, and nobody writes them by hand.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: loan-approval
+    description: Operating the use case 'loan-approval'
+paths:
+  /api/loan-approval/request:
+    get:
+      tags:
+        - loan-approval
+      operationId: request
+      summary: Requests a loan
+      parameters:
+        - name: customerId
+          in: query
+          description: The customer asking for the loan
+          schema:
+            type: string
+            default: C-1001
+        - name: amount
+          in: query
+          description: The amount requested
+          schema:
+            type: integer
+            default: 5000
+      responses:
+        '200':
+          description: Whether a workflow started for the loan request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Answer'
+        '503':
+          description: >
+            The credit rating does not answer while the user waits for it. The answer names the
+            role of the system which is missing.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Unavailable'
+  /api/loan-approval/{loanRequestId}/prepare-contract/{taskId}:
+    get:
+      tags:
+        - loan-approval
+      operationId: prepareContract
+      summary: Completes the user task "Prepare contract"
+      parameters:
+        - $ref: '#/components/parameters/LoanRequestId'
+        - name: taskId
+          in: path
+          required: true
+          description: The id of the user task, as the log and the cockpit show it
+          schema:
+            type: string
+        - name: interestRate
+          in: query
+          required: true
+          description: The interest rate of the contract, in percent
+          schema:
+            type: number
+      responses:
+        '200':
+          description: A confirmation
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/loan-approval/{loanRequestId}:
+    get:
+      tags:
+        - loan-approval
+      operationId: show
+      summary: Shows what the process did
+      parameters:
+        - $ref: '#/components/parameters/LoanRequestId'
+      responses:
+        '200':
+          description: The workflow aggregate as it is stored right now
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  parameters:
+    LoanRequestId:
+      name: loanRequestId
+      in: path
+      required: true
+      description: The id of the loan request
+      schema:
+        type: string
+  schemas:
+    Answer:
+      type: object
+      description: The answer to a loan request
+      required:
+        - loanRequestId
+        - outcome
+      properties:
+        loanRequestId:
+          type: string
+          description: The id of the loan request
+        outcome:
+          type: string
+          description: started or declined
+    Unavailable:
+      type: object
+      description: >
+        The answer when a system around the module does not answer, in the fields of a problem
+        detail (RFC 9457). It is a schema of its own and not Spring's ProblemDetail, because how
+        that class is written as JSON depends on the Jackson version on the classpath, and an
+        engine may bring another one.
+      required:
+        - status
+        - title
+        - detail
+        - externalSystem
+      properties:
+        status:
+          type: integer
+          description: The HTTP status, 503
+        title:
+          type: string
+          description: A short summary
+        detail:
+          type: string
+          description: What the user can do
+        externalSystem:
+          type: string
+          description: The role of the system which does not answer

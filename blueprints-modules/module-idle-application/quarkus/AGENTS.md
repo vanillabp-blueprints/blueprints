@@ -28,14 +28,15 @@ Blueprint-specific names, each occurring in more than one place:
 
 ## Core files
 
-|                                            File                                            |                                          Why it matters                                           |
-|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the timer catch event the workflow waits in, and the service task behind it                       |
-| `application/src/main/resources/application.yaml`                                          | `vanillabp.outbox.poll-interval`, the longest an outbox poller may rest while nothing is due      |
-| `application/src/main/resources/application-camunda7.yaml`                                 | `sleep-until-something-is-due`, which stops the embedded engine from asking every 5 to 60 seconds |
-| `loan-approval/src/main/java/.../loanapproval/DatabaseTraffic.java`                        | counts the statements H2 wrote into its trace file, which is how the saving is seen               |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java`                          | the endpoint returning that number                                                                |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | the proof: no statement at all while the workflow waits, and the workflow goes on afterwards      |
+|                                            File                                            |                                                       Why it matters                                                       |
+|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the timer catch event the workflow waits in, and the service task behind it                                                |
+| `application/src/main/resources/application.yaml`                                          | `vanillabp.outbox.poll-interval`, the longest an outbox poller may rest while nothing is due                               |
+| `application/src/main/resources/application-camunda7.yaml`                                 | `sleep-until-something-is-due`, which stops the embedded engine from asking every 5 to 60 seconds                          |
+| `loan-approval/src/main/java/.../loanapproval/DatabaseTraffic.java`                        | counts the statements H2 wrote into its trace file, which is how the saving is seen                                        |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java`                          | the endpoint returning that number                                                                                         |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                              | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | the proof: no statement at all while the workflow waits, and the workflow goes on afterwards                               |
 
 ## Boilerplate files
 

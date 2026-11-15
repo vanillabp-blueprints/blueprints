@@ -2,17 +2,13 @@ package blueprint.workflowmodule.loanapproval;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-
 import blueprint.workflowmodule.loanapproval.Service.Change;
+import blueprint.workflowmodule.loanapproval.api.CasesApi;
+import blueprint.workflowmodule.loanapproval.api.model.Case;
 import blueprint.workflowmodule.loanapproval.model.Aggregate;
 
 /**
@@ -30,14 +26,20 @@ import blueprint.workflowmodule.loanapproval.model.Aggregate;
  *
  * <p>
  * The page knows its case by the business id the cockpit shows, which is the id of the loan
- * request. The endpoints are written by hand, with the type as a record below, rather than
- * generated from the OpenAPI. The integration test reads the OpenAPI and checks that every
- * operation in it has its endpoint here.
+ * request.
+ * </p>
+ *
+ * <p>
+ * The paths and the record {@link Case} come from {@link CasesApi}, the interface the build
+ * generates from the same OpenAPI file. This class only implements it. The OpenAPI names its
+ * paths below the server {@code /wm/loan-approval}, so the interface maps
+ * {@code /api/cases/...}. The {@code @RequestMapping} of this class puts {@code /loan-approval}
+ * in front, which is where the request arrives.
  * </p>
  */
 @RestController
-@RequestMapping("/loan-approval/api/cases/{loanRequestId}")
-public class CasePageController {
+@RequestMapping("/loan-approval")
+public class CasePageController implements CasesApi {
 
   @Autowired
   private Service loanApproval;
@@ -48,9 +50,9 @@ public class CasePageController {
    * @param loanRequestId The id of the loan request, the business id of the case.
    * @return The data of the case.
    */
-  @GetMapping
+  @Override
   public Case getCase(
-      @PathVariable final String loanRequestId) {
+      final String loanRequestId) {
 
     return loanApproval
         .get(loanRequestId)
@@ -66,10 +68,9 @@ public class CasePageController {
    *
    * @param loanRequestId The id of the loan request, the business id of the case.
    */
-  @PostMapping("/withdraw")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Override
   public void withdrawLoanRequest(
-      @PathVariable final String loanRequestId) {
+      final String loanRequestId) {
 
     final var change = loanApproval.withdraw(loanRequestId);
     if (change == Change.NOT_FOUND) {
@@ -88,8 +89,10 @@ public class CasePageController {
       final Aggregate loanRequest) {
 
     return new Case(
-        loanRequest.getLoanRequestId(), loanRequest.getApplicant(), loanRequest.getAmount(), loanRequest.getStatus()
-            .name());
+        loanRequest.getLoanRequestId(), loanRequest.getApplicant(), loanRequest.getAmount(), Case.StatusEnum
+            .fromValue(loanRequest
+                .getStatus()
+                .name()));
 
   }
 
@@ -101,24 +104,6 @@ public class CasePageController {
             + loanRequestId
             + "'");
 
-  }
-
-  /**
-   * What the case page shows. A value which is not there is left out of the JSON, as the
-   * OpenAPI describes it, rather than sent as null.
-   *
-   * @param loanRequestId The id of the loan request.
-   * @param applicant     Who asks for the loan.
-   * @param amount        The amount requested.
-   * @param status        Where the loan request stands: {@code REQUESTED}, {@code APPROVED} or
-   *                      {@code WITHDRAWN}.
-   */
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  public record Case(
-                     String loanRequestId,
-                     String applicant,
-                     Integer amount,
-                     String status) {
   }
 
 }

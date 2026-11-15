@@ -1,0 +1,131 @@
+openapi: 3.0.3
+info:
+  title: Test API of the simulator
+  version: 1.0.0
+  description: |
+    The test API of the simulator. It prepares what a simulated system knows and makes a system act, for example sign a contract. It knows nothing about loans or workflows. Which steps a test needs, and in which order, only the test knows.
+
+    Every action is a GET, so a person can use it in a browser as well, like the API of the application. The Maven module 'server' generates the interfaces the controllers of the simulator implement. The Maven module 'client' generates the client the tests of the workflow module use.
+servers:
+  - url: http://localhost:8079
+tags:
+  - name: Status
+    description: Whether the simulator runs
+  - name: CreditRatingTest
+    description: What the simulated credit rating knows
+  - name: ESignatureTest
+    description: "What the simulated e-signature service holds, and what it does"
+paths:
+  /simulator/test-api/status:
+    get:
+      tags:
+        - Status
+      operationId: status
+      summary: Says that the simulator runs
+      description: "A test asks this before it starts, and skips when nobody answers."
+      responses:
+        "200":
+          description: Always 'running'
+          content:
+            text/plain:
+              schema:
+                type: string
+  /simulator/test-api/credit-rating/next-id:
+    get:
+      tags:
+        - CreditRatingTest
+      operationId: nextId
+      summary: Reserves a customer id nobody used before
+      description: A test which takes its customer from here does not collide with
+        a test which runs at the same time.
+      responses:
+        "200":
+          description: The reserved customer id
+          content:
+            text/plain:
+              schema:
+                type: string
+  /simulator/test-api/credit-rating/create-rating:
+    get:
+      tags:
+        - CreditRatingTest
+      operationId: createRating
+      summary: Sets the score of a customer
+      description: "The caller chooses the id, either a reserved one or one of its\
+        \ own."
+      parameters:
+        - name: customerId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: score
+          in: query
+          required: true
+          description: The score the credit rating answers from now on
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The customer id
+          content:
+            text/plain:
+              schema:
+                type: string
+  /simulator/test-api/e-signature/envelope:
+    get:
+      tags:
+        - ESignatureTest
+      operationId: envelope
+      summary: The document the service holds under an id
+      parameters:
+        - $ref: "#/components/parameters/ContractId"
+      responses:
+        "200":
+          description: "The document, as the e-signature service received it"
+          content:
+            application/json:
+              schema:
+                $ref: ../external-systems/e-signature/e-signature-api/e-signature.yaml#/components/schemas/Envelope
+        "404":
+          description: The service holds no document of this id
+  /simulator/test-api/e-signature/sign:
+    get:
+      tags:
+        - ESignatureTest
+      operationId: sign
+      summary: Signs a document and reports it to the callback address of its envelope
+      description: |
+        The real service does this after the person signed. The callback runs before the answer, so the caller learns at once whether the application took the report.
+      parameters:
+        - $ref: "#/components/parameters/ContractId"
+      responses:
+        "200":
+          description: The text names the status the application answered the callback
+            with
+          content:
+            text/plain:
+              schema:
+                type: string
+        "404":
+          description: The service holds no document of this id
+          content:
+            text/plain:
+              schema:
+                type: string
+        "502":
+          description: "The application did not answer, or the callback address does\
+            \ not end with the path of the callback API"
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  parameters:
+    ContractId:
+      name: contractId
+      in: query
+      required: true
+      description: The id the caller gave the document
+      schema:
+        type: string

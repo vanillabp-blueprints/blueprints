@@ -53,6 +53,7 @@ the BPMS (business process management system) did supply.
 | `application/src/main/resources/application.yaml`                 | the datasource, and the profile the Maven build filters in                                                                          |
 | `application/src/main/resources/application-camunda7.yaml`        | the Camunda 7 settings: the name-clash-avoidance mode, the JSON format of the shared list and the demo user of its web applications |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                                                                 |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`     | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it          |
 | `loan-approval/src/main/java/.../loanapproval/Workflow.java`      | starts the workflow                                                                                                                 |
 | `loan-approval/src/test/java/.../TestApplication.java`            | the minimal application the module's test boots                                                                                     |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                                                     |
