@@ -45,21 +45,22 @@ the framework", the persistence was only half moved.
 
 ## Boilerplate files
 
-|                                  File                                   |                                             Purpose                                             |
-|-------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                              | the Spring Boot parent, the VanillaBP BOM import and the single BPMS profile                    |
-| `loan-approval/pom.xml`                                                 | `vanillabp-spring-boot-support` and `spring-boot-starter-data-mongodb`, never an adapter        |
-| `application/pom.xml`                                                   | `vanillabp-spring-boot-integration` and the BPMS adapter, the only place a BPMS is named        |
-| `loan-approval/src/test/resources/application-camunda8.yaml`            | the cluster address of the module's own test                                                    |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`     | the module's own configuration, loaded by its file name                                         |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`               | base class of the integration test: waits for workflow progress                                 |
-| `loan-approval/src/test/java/.../TestApplication.java`                  | the minimal application booting the module for its test                                         |
-| `application/src/test/java/.../ApplicationSmokeTest.java`               | boots the application, which validates the BPMN-to-code wiring                                  |
-| `application/src/test/java/.../MongoDbForTests.java`                    | the same container class again: the smoke test boots the application, so it needs a MongoDB too |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`            | what the application tells the process; the only class using `ProcessService`                   |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java` | what the process tells the application; contains no business logic                              |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java`       | GET endpoints operating the process                                                             |
-| `docs/loan_approval.png`                                                | the picture of the process the README shows, rendered from the BPMN model                       |
+|                                  File                                   |                                                          Purpose                                                           |
+|-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                              | the Spring Boot parent, the VanillaBP BOM import and the single BPMS profile                                               |
+| `loan-approval/pom.xml`                                                 | `vanillabp-spring-boot-support` and `spring-boot-starter-data-mongodb`, never an adapter                                   |
+| `application/pom.xml`                                                   | `vanillabp-spring-boot-integration` and the BPMS adapter, the only place a BPMS is named                                   |
+| `loan-approval/src/test/resources/application-camunda8.yaml`            | the cluster address of the module's own test                                                                               |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`     | the module's own configuration, loaded by its file name                                                                    |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`               | base class of the integration test: waits for workflow progress                                                            |
+| `loan-approval/src/test/java/.../TestApplication.java`                  | the minimal application booting the module for its test                                                                    |
+| `application/src/test/java/.../ApplicationSmokeTest.java`               | boots the application, which validates the BPMN-to-code wiring                                                             |
+| `application/src/test/java/.../MongoDbForTests.java`                    | the same container class again: the smoke test boots the application, so it needs a MongoDB too                            |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`            | what the application tells the process; the only class using `ProcessService`                                              |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java` | what the process tells the application; contains no business logic                                                         |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java`       | GET endpoints operating the process                                                                                        |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`           | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `docs/loan_approval.png`                                                | the picture of the process the README shows, rendered from the BPMN model                                                  |
 
 `WorkflowModuleTest`, `TestApplication` and `ApplicationSmokeTest` are identical in every
 blueprint. Copy them unchanged. Everything specific to the use case belongs in the test which

@@ -17,8 +17,8 @@ vanillabp:
   outbox:
     poll-interval: PT0.2S
   cockpit:
-    # Where the reports go. The integration test starts the dev shell simulator on a free port,
-    # puts a recorder in front of it and sets this address to the recorder.
+    # Where the reports go. The integration test starts the dev shell simulator on a free port
+    # and sets this address to it.
     rest:
       base-url: http://localhost:8079
 logging:

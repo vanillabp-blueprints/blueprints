@@ -79,7 +79,8 @@ understanding all of them:
 
 ```
 <base-package>.<usecase>
-├── ApiController.java               <- driving adapter: HTTP calls in
+├── ApiController.java               <- driving adapter: HTTP calls in, implements the
+│                                       interface generated from the OpenAPI file (Rule 7)
 ├── Service.java                     <- business code, never touches VanillaBP
 ├── Workflow.java                    <- outgoing: the application tells the process
 ├── WorkflowTaskHandler.java         <- incoming: the process tells the application
@@ -123,10 +124,15 @@ workflow module ID. Only the marker file is outside it.
 ```
 src/main/resources/
 ├── META-INF/workflow-module              <- contains 'loan-approval'
+├── openapi/loan-approval.yaml            <- the API of the use case (Rule 7)
 └── loan-approval/
     ├── loan-approval.yaml                <- the module's own configuration
     └── processes/<adapter-id>/*.bpmn     <- one directory per adapter id
 ```
+
+The OpenAPI file is the second file outside that directory. Its name is the use case, so it does
+not clash with the file of another module. The frontends of the cockpit blueprints read it from
+this path to generate their client.
 
 Placeholders are the same in every blueprint, so a tool can replace them:
 
@@ -184,8 +190,22 @@ You must be able to operate every blueprint with a browser alone:
    for each possible next step.
 3. No `curl`, no request body, no tool beyond the browser.
 
-So the API has GET requests only. The logged URLs are convenient for humans. They also describe
-the state the process reached in a way an agent can read.
+So the API has GET requests where a human works with it directly. The logged URLs are
+convenient for humans. They also describe the state the process reached in a way an agent can
+read.
+
+### Endpoints which a form calls
+
+A form sends what the user entered, and that needs a request body. So the endpoints which a form
+calls are the one exception to the list above:
+
+- The start and every view stay GET requests, and the handler logs their URLs.
+- A form saves a draft with PUT and completes its task with POST. Both send JSON.
+- If the blueprint has no form of its own, its `README.md` shows the `curl` commands which stand
+  in for one.
+
+The exception covers only endpoints which a form, or a button of a page, calls. Every other
+endpoint stays a GET request.
 
 ## Rule 4: no BPMS specifics
 
@@ -325,6 +345,50 @@ The task handler never carries `@Transactional`. VanillaBP fails the boot if it 
 `persistence-custom` is the one exception. Its store is not part of a platform transaction. So
 its service opens the unit of work itself and carries no annotation.
 
+## Rule 7: every API is written as an OpenAPI file
+
+Every HTTP interface of a blueprint is an OpenAPI file first. The build generates the Java code
+from it with the `openapi-generator-maven-plugin`. Nobody writes a path, a parameter annotation
+or a class for a request or an answer by hand. The file is the contract, and a reader, a
+frontend and an agent read it without reading Java.
+
+Where the file lives depends on who calls the API:
+
+- An API which only people in a browser call, or only the TypeScript of the module's own user
+  interface: `src/main/resources/openapi/<use-case>.yaml` in the module whose controller
+  implements it. Its tag is the use case, so the interface is called `LoanApprovalApi` and is
+  generated into the package `<use case package>.api`. Every `ApiController` is such an API.
+- An API with a Java client, such as a system around the application, its simulator or another
+  module: a Maven module `<name>-api` with the file and two submodules. `client` generates what
+  the caller uses, `server` generates the interface the other side implements.
+  `module-simulator` shows it for the credit rating and for the e-signature service, which
+  calls back.
+
+Each platform has its own generator:
+
+|  Platform   |                                 Generator and settings                                  |                     The controller                     |
+|-------------|-----------------------------------------------------------------------------------------|--------------------------------------------------------|
+| Spring Boot | `spring`, `interfaceOnly`, `requestMappingMode` `none`, `useResponseEntity` `false`     | a `@RestController` which implements the interface     |
+| Quarkus     | `jaxrs-spec`, `interfaceOnly`, `returnResponse` `false`, `sourceFolder` `src/main/java` | a bean which implements the interface, without `@Path` |
+
+A client is generated with the library `spring-http-interface`, and a `RestClient` turns it into
+a client. On Quarkus, Quarkus REST takes the paths and the parameters from the interface, so the
+resource class only carries its bean annotation. The paths in the file are complete and the
+server is `http://localhost:8080`. So the file names the URL a person types into the browser
+(Rule 3), and the interface needs no path of its own.
+
+The settings are in the POM of the module which generates. Where several modules generate, the
+blueprint POM shares them in `pluginManagement`. The version is the property
+`openapi-generator.version` of the blueprint POM. There is no shared parent (Rule 1).
+
+An answer of a type the framework already has, such as `WorkflowHistory` of VanillaBP, is
+described in the file and mapped to that type with `schemaMappings`. Then the controller hands
+on what the framework returns, and the file still says what the JSON looks like.
+`bpmn-history-and-diagram` does this.
+
+The generated code is written below `target/`. It is not part of the blueprint, and
+`bin/check_twin_diff.py` does not compare it.
+
 ## The test harness
 
 Every blueprint needs the same for that. So it is written once and copied:
@@ -342,6 +406,12 @@ templates/test-harness/<platform>/
 The two platforms have a set each. The sets differ where the platform does. A Quarkus workflow
 module needs no application class to be booted. And every Quarkus test class carries
 `@QuarkusTest` itself, instead of inheriting it from the base class.
+
+`WorkflowModuleTest` knows two deadlines. `TIMEOUT`, thirty seconds, is for what VanillaBP and
+the blueprint do themselves. `SCHEDULER_TIMEOUT`, two minutes, is for a step which waits for a
+timer of the model. The scheduler of the engine fires the timer, and on a busy machine every
+build shares its threads. A test passes the longer deadline to `awaitAggregate` only for the
+steps which wait for a timer.
 
 They are copies and not a shared module. A blueprint has to build on its own after the split.
 And an agent has to be able to read the code which checks its work.
@@ -384,9 +454,18 @@ script names such a category, today `cockpit`. There a twin may be missing while
 `planned` for it. Take the category out of the list when its twin phase starts.
 
 A single blueprint may also start on one platform, when it comes after the twin phase of its
-category. `BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE` names it, today `module-simulator`. The rule is
+category. `BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE` names it. The list is empty today. The rule is
 the same: the index says `planned` for the missing twin, and the blueprint leaves the list when
 its twin is written.
+
+A twin may hold a Maven module of the other platform, when that module is not part of the
+application. The simulator of `module-simulator` is the one case. It extends the dev shell
+simulator of the Business Cockpit, which exists for Spring Boot only. So the Quarkus twin
+carries the same simulator, a Spring Boot application with the parent of Spring Boot, and
+starts it as a runnable JAR. The application and the tests talk to it over HTTP. Its Java
+sources are the same in both twins, so `check_twin_diff.py` finds no difference there. The
+README of the Quarkus twin calls it "an application of its own" and does not name the platform,
+like every Quarkus README.
 
 Where both twins are there, it compares their Java sources after removing package lines,
 imports and comments. So a different import or a Javadoc written for one platform is never a
@@ -687,9 +766,18 @@ after the four platform repositories which measure the same published snapshot, 
 at 01:11.
 
 It starts with the job `platform`. That job writes down which platform build the night got. No
-job of that run restores the Maven cache, and every
-Maven call passes `--update-snapshots`. So nothing here can quietly build against yesterday's
-framework.
+job of that run restores the Maven cache, and every job resolves its snapshots with
+`--update-snapshots`. So nothing here can quietly build against yesterday's framework.
+
+Every job which builds a blueprint, an application or a bundle resolves its snapshots in a step
+of its own, with `bin/resolve_snapshots_at_once.sh`, and then builds with
+`--no-snapshot-updates`. A build with tests runs for up to twenty minutes, and a publish of the
+framework takes about ten. With
+`--update-snapshots` in the build itself, Maven asks for each snapshot only when a module first
+needs it. A build during a publish can then get one artifact from before the publish and another
+one from after it, and fail without any change here. Resolving everything first takes a minute
+or two, so that window is much smaller. `bin/platform_snapshot.sh` writes down in the summary of
+each job which snapshot builds it took.
 
 Every job which went red attaches its surefire and failsafe reports to the run. The artifact is
 called `test-reports-<blueprint>-<bpms>`, with the slashes of the blueprint path turned into

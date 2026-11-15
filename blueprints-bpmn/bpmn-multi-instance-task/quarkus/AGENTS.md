@@ -32,30 +32,31 @@ the BPMS (business process management system) did supply.
 
 ## Core files
 
-|                                            File                                            |                                                 Why it matters                                                 |
-|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance element: what it loops over, what each instance gets, and whether they run at the same time |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | `@MultiInstanceElement`, `@MultiInstanceIndex`, `@MultiInstanceTotal`                                          |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the collection the model iterates over, and the rows the iterations write                                      |
-| `loan-approval/src/main/java/.../loanapproval/model/PartnerOffer.java`                     | a row per iteration, which is what makes concurrent instances harmless                                         |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | one method per iteration and one for the result over all of them                                               |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the elements. So the number of iterations is configuration, not model                                          |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | asserts every row, in no particular order                                                                      |
+|                                            File                                            |                                                                    Why it matters                                                                     |
+|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance element: what it loops over, what each instance gets, and whether they run at the same time                                        |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | `@MultiInstanceElement`, `@MultiInstanceIndex`, `@MultiInstanceTotal`                                                                                 |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the collection the model iterates over, and the rows the iterations write                                                                             |
+| `loan-approval/src/main/java/.../loanapproval/model/PartnerOffer.java`                     | a row per iteration, which is what makes concurrent instances harmless                                                                                |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | one method per iteration and one for the result over all of them                                                                                      |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the elements. So the number of iterations is configuration, not model; `concurrent-branches-reviewed`, because each iteration writes a row of its own |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | asserts every row, in no particular order                                                                                                             |
 
 ## Boilerplate files
 
-|                               File                                |                                       Purpose                                        |
-|-------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                        | the BPMS profiles, the Quarkus BOM and the VanillaBP BOM import                      |
-| `loan-approval/pom.xml`                                           | `vanillabp-quarkus-support` and the index of the module's classes, never an adapter  |
-| `application/pom.xml`                                             | `vanillabp-quarkus-integration` and the BPMS adapter, the only place a BPMS is named |
-| `application/src/main/resources/application.yaml`                 | the database, and nothing about the workflow                                         |
-| `loan-approval/src/test/resources/application.yaml`               | the database of the module's own test                                                |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                  |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`      | starts the workflow                                                                  |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                      |
-| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                       |
-| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model            |
+|                               File                                |                                                          Purpose                                                           |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                        | the BPMS profiles, the Quarkus BOM and the VanillaBP BOM import, and the engine versions the JSON dataformat needs         |
+| `loan-approval/pom.xml`                                           | `vanillabp-quarkus-support` and the index of the module's classes, never an adapter                                        |
+| `application/pom.xml`                                             | `vanillabp-quarkus-integration` and the BPMS adapter and the JSON dataformat of its engine, the only place a BPMS is named |
+| `application/src/main/resources/application.yaml`                 | the database, and nothing about the workflow                                                                               |
+| `loan-approval/src/test/resources/application.yaml`               | the database of the module's own test                                                                                      |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                                                        |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`     | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`      | starts the workflow                                                                                                        |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                                            |
+| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                                                             |
+| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model                                                  |
 
 `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint. Copy them
 unchanged. Every test class carries `@QuarkusTest` itself. Inheriting it from the base class
@@ -69,6 +70,11 @@ does not make the test a bean.
 2. Add the multi-instance element to the BPMN and let it read that attribute
    (`camunda:collection="${partnerIds}"` on Camunda 7, `inputCollection="=partnerIds"` on
    Camunda 8). Never push a collection into the process as a variable.
+   On Camunda 7, Operaton and CIB seven the list travels as an object variable. Set
+   `serialization-format: application/json` and the SPIN engine plugin in the profile file of
+   that engine, and add the SPIN JSON dataformat to its Maven profile, as
+   `application-camunda7.yaml` and `application/pom.xml` show. Without them the engine stores
+   the list with Java serialization, and the adapter warns about it.
 3. Annotate the parameters of the `@WorkflowTask` method with `@MultiInstanceElement`,
    `@MultiInstanceIndex` or `@MultiInstanceTotal`, whichever the business code needs. Give each
    of them **the ID of the multi-instance element**.
@@ -76,6 +82,10 @@ does not make the test a bean.
    share. On a remote engine the instances run at the same time, and each of them saves the
    whole aggregate. The one which commits last would put back what it read at its start.
    Nothing reports that.
+   VanillaBP warns at startup about this case, because the aggregate has no version attribute.
+   Once every iteration writes only rows of its own, say so for the workflow with
+   `vanillabp.workflow-modules.<workflow-module-id>.workflows.<bpmn-process-id>.concurrent-branches-reviewed: true`,
+   as `loan-approval.yaml` does. The key is read at the workflow only.
 5. Put anything computed over all iterations into a task AFTER the multi-instance one. An
    iteration sees one element and cannot know whether it is the last.
 6. Keep the number of iterations out of the model. With a list in configuration or in the data,

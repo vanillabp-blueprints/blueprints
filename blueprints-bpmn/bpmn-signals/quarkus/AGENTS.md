@@ -34,18 +34,19 @@ catches is a valid outcome.
 
 ## Core files
 
-|                                            File                                            |                                             Why it matters                                              |
-|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the signal catch event and the `bpmn:signal` it references                                              |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                               | `sendSignal(signalName)` and the signal name as a constant. No aggregate is passed                      |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | stores the data the signal cannot carry BEFORE broadcasting, and reads it again when a workflow goes on |
-| `loan-approval/src/main/java/.../loanapproval/model/InterestRate.java`                     | the data a waiting workflow reads: application data, which belongs to no workflow                       |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | where each workflow puts what it read                                                                   |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java`                          | the endpoint which triggers the broadcast. On purpose without a business case id in its path            |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | waiting, one broadcast continuing two workflows, and a signal nobody caught                             |
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/rate_watch.bpmn`    | a second process of the SAME workflow module, waiting for the same signal                               |
-| `loan-approval/src/main/java/.../ratewatch/`                                               | the second use case: own aggregate, own API, no code shared with the loan approval                      |
-| `loan-approval/src/test/java/.../RateWatchIT.java`                                         | proves the scope: one use case broadcasts, the process of the other one continues                       |
+|                                            File                                            |                                                       Why it matters                                                       |
+|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the signal catch event and the `bpmn:signal` it references                                                                 |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                               | `sendSignal(signalName)` and the signal name as a constant. No aggregate is passed                                         |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | stores the data the signal cannot carry BEFORE broadcasting, and reads it again when a workflow goes on                    |
+| `loan-approval/src/main/java/.../loanapproval/model/InterestRate.java`                     | the data a waiting workflow reads: application data, which belongs to no workflow                                          |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | where each workflow puts what it read                                                                                      |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java`                          | the endpoint which triggers the broadcast. On purpose without a business case id in its path                               |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                              | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | waiting, one broadcast continuing two workflows, and a signal nobody caught                                                |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/rate_watch.bpmn`    | a second process of the SAME workflow module, waiting for the same signal                                                  |
+| `loan-approval/src/main/java/.../ratewatch/`                                               | the second use case: own aggregate, own API, no code shared with the loan approval                                         |
+| `loan-approval/src/test/java/.../RateWatchIT.java`                                         | proves the scope: one use case broadcasts, the process of the other one continues                                          |
 
 ## Boilerplate files
 

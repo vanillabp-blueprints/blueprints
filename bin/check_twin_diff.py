@@ -58,9 +58,8 @@ ALLOW_FILE = "twin-diff-allow.txt"
 CATEGORIES_BEFORE_THEIR_TWIN_PHASE = ("cockpit",)
 
 # The blueprints which exist on one platform so far, in a category whose twin phase is over.
-# A twin the index says 'planned' for may be missing there. 'module-simulator' started on
-# Spring Boot, and its Quarkus twin is written later.
-BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE = ("module-simulator",)
+# A twin the index says 'planned' for may be missing there. None today.
+BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE = ()
 
 TODO_REASON = "TODO: say why the twins differ here"
 
@@ -77,7 +76,12 @@ def java_sources(platform_directory):
 
     sources = {}
     for java in sorted(platform_directory.glob("**/src/*/java/**/*.java")):
-        sources[java.relative_to(platform_directory).as_posix()] = java
+        path = java.relative_to(platform_directory)
+        # A build writes the code it generates from an OpenAPI file below 'target'. That code
+        # is not part of the blueprint, and each platform generates its own.
+        if "target" in path.parts:
+            continue
+        sources[path.as_posix()] = java
     return sources
 
 

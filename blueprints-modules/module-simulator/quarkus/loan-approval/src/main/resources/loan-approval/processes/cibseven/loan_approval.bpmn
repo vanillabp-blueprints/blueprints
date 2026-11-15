@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToPrepareContract</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToPrepareContract" sourceRef="StartEvent_LoanRequested" targetRef="UserTask_PrepareContract" />
+    <!--
+      A user task, which the cockpit adapter reports to the Business Cockpit. The form key is
+      the task definition: the @WorkflowTask method of that name is called when the task is
+      created, and the cockpit knows the task by the same name.
+    -->
+    <bpmn:userTask id="UserTask_PrepareContract" name="Prepare contract" camunda:formKey="prepareContract">
+      <bpmn:incoming>Flow_ToPrepareContract</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSendContractForSigning</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_ToSendContractForSigning" sourceRef="UserTask_PrepareContract" targetRef="ServiceTask_SendContractForSigning" />
+    <!-- Hands the contract to the e-signature service. The answer comes later, as a callback. -->
+    <bpmn:serviceTask id="ServiceTask_SendContractForSigning" name="Send contract for signing" camunda:expression="${sendContractForSigning}">
+      <bpmn:incoming>Flow_ToSendContractForSigning</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToAwaitSignedContract</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToAwaitSignedContract" sourceRef="ServiceTask_SendContractForSigning" targetRef="CatchEvent_ContractSigned" />
+    <!--
+      The workflow waits here until the callback of the e-signature service arrives and the
+      application correlates the message. VanillaBP correlates by the workflow aggregate's ID,
+      which the engine knows as the business key of the instance.
+    -->
+    <bpmn:intermediateCatchEvent id="CatchEvent_ContractSigned" name="Contract signed">
+      <bpmn:incoming>Flow_ToAwaitSignedContract</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanApproved</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_ContractSigned" messageRef="Message_ContractSigned" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ToLoanApproved" sourceRef="CatchEvent_ContractSigned" targetRef="EndEvent_LoanApproved" />
+    <bpmn:endEvent id="EndEvent_LoanApproved" name="Loan approved">
+      <bpmn:incoming>Flow_ToLoanApproved</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <!-- The message name is the string the business code passes to 'correlateMessage'. -->
+  <bpmn:message id="Message_ContractSigned" name="ContractSigned" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="145" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_PrepareContract_di" bpmnElement="UserTask_PrepareContract">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_SendContractForSigning_di" bpmnElement="ServiceTask_SendContractForSigning">
+        <dc:Bounds x="400" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CatchEvent_ContractSigned_di" bpmnElement="CatchEvent_ContractSigned">
+        <dc:Bounds x="562" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="542" y="145" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanApproved_di" bpmnElement="EndEvent_LoanApproved">
+        <dc:Bounds x="662" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="645" y="145" width="72" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToPrepareContract_di" bpmnElement="Flow_ToPrepareContract">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSendContractForSigning_di" bpmnElement="Flow_ToSendContractForSigning">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="400" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToAwaitSignedContract_di" bpmnElement="Flow_ToAwaitSignedContract">
+        <di:waypoint x="500" y="120" />
+        <di:waypoint x="562" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanApproved_di" bpmnElement="Flow_ToLoanApproved">
+        <di:waypoint x="598" y="120" />
+        <di:waypoint x="662" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

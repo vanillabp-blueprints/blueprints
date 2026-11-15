@@ -4,12 +4,12 @@
 # people deciding whether a difference is the platform or a mistake.
 
 31120fb94c65de07  only-springboot  src/main/java/blueprint/workflowmodule/Application.java  # one platform boots from a class of the application, the other one needs none
-f6e4425d0b9d8fb8  differs  src/main/java/blueprint/workflowmodule/loanapproval/ApiController.java  # the same GET endpoints, written with the HTTP annotations of the platform
+b93ff799990107e6  differs  src/main/java/blueprint/workflowmodule/loanapproval/ApiController.java  # bean and injection annotations only; the paths and parameters come from the interface each platform generates from the same OpenAPI file
 137184b34e117111  differs  src/main/java/blueprint/workflowmodule/loanapproval/Service.java  # bean and injection annotations, the configuration accessor, and each platform's way of reading an entity by its id
 ff41610897ec70b7  differs  src/main/java/blueprint/workflowmodule/loanapproval/Workflow.java  # bean and injection annotations only; both inject ProcessService here and nowhere else
 cb521ad0be01d01e  differs  src/main/java/blueprint/workflowmodule/loanapproval/WorkflowTaskHandler.java  # bean and injection annotations only; the VanillaBP annotations are identical, which is the point
 4f6d9798ac729e02  differs  src/main/java/blueprint/workflowmodule/loanapproval/config/LoanApprovalProperties.java  # configuration is bound to a class on one platform and to an interface on the other
 6dcdfbe2838c4f44  differs  src/main/java/blueprint/workflowmodule/loanapproval/model/AggregateRepository.java  # each platform's repository idiom
 9fb1f8af132dae40  differs  src/test/java/blueprint/workflowmodule/ApplicationSmokeTest.java  # test harness: the beans are asked for in the bean container's own words
-907bfb10196dd9b7  differs  src/test/java/blueprint/workflowmodule/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
+e3d6f257c62b628e  differs  src/test/java/blueprint/workflowmodule/WorkflowModuleTest.java  # test harness: polling reads the aggregate through the platform's own way of opening a transaction
 d7754fc5324fb76c  differs  src/test/java/blueprint/workflowmodule/loanapproval/LoanApprovalIT.java  # injection annotations, the test class carries @QuarkusTest itself because inheriting it leaves it without a bean, and the aggregate is read through the repository idiom of the platform

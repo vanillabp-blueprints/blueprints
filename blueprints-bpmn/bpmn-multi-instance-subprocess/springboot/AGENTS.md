@@ -34,34 +34,35 @@ matters: it decides which of the active loops answers. The resolver names the sa
 
 ## Core files
 
-|                                            File                                            |                                       Why it matters                                        |
-|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance subprocess, the multi-instance task in it and a plain task in it         |
-| `loan-approval/src/main/java/.../loanapproval/IterationResolver.java`                      | builds one object out of every active iteration. That is the answer for a task in two loops |
-| `loan-approval/src/main/java/.../loanapproval/Iteration.java`                              | what that object is                                                                         |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | a task using the resolver, a task naming one element, and a task after the subprocess       |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | one collection per level, and the rows both levels write                                    |
-| `loan-approval/src/main/java/.../loanapproval/model/PartnerOffer.java`                     | a row per inner iteration, carrying the element of the outer one                            |
-| `loan-approval/src/main/java/.../loanapproval/model/RegionResult.java`                     | a row per outer iteration                                                                   |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the two lists. So the number of iterations per level is configuration, not model            |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | asserts the rows of both levels, in no particular order                                     |
+|                                            File                                            |                                                                          Why it matters                                                                          |
+|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance subprocess, the multi-instance task in it and a plain task in it                                                                              |
+| `loan-approval/src/main/java/.../loanapproval/IterationResolver.java`                      | builds one object out of every active iteration. That is the answer for a task in two loops                                                                      |
+| `loan-approval/src/main/java/.../loanapproval/Iteration.java`                              | what that object is                                                                                                                                              |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | a task using the resolver, a task naming one element, and a task after the subprocess                                                                            |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | one collection per level, and the rows both levels write                                                                                                         |
+| `loan-approval/src/main/java/.../loanapproval/model/PartnerOffer.java`                     | a row per inner iteration, carrying the element of the outer one                                                                                                 |
+| `loan-approval/src/main/java/.../loanapproval/model/RegionResult.java`                     | a row per outer iteration                                                                                                                                        |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the two lists. So the number of iterations per level is configuration, not model; `concurrent-branches-reviewed`, because each iteration writes a row of its own |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | asserts the rows of both levels, in no particular order                                                                                                          |
 
 ## Boilerplate files
 
-|                               File                                |                                             Purpose                                             |
-|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                        | the BPMS profiles and the VanillaBP BOM import                                                  |
-| `loan-approval/pom.xml`                                           | `vanillabp-spring-boot-support`, never an adapter                                               |
-| `application/pom.xml`                                             | the BPMS adapter, the only place a BPMS is named                                                |
-| `application/src/main/java/.../Application.java`                  | the Spring Boot application, in the parent package of the module                                |
-| `application/src/main/resources/application.yaml`                 | the datasource, and the profile the Maven build filters in                                      |
-| `application/src/main/resources/application-camunda7.yaml`        | the Camunda 7 settings: the name-clash-avoidance mode and the demo user of its web applications |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                             |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`      | starts the workflow                                                                             |
-| `loan-approval/src/test/java/.../TestApplication.java`            | the minimal application the module's test boots                                                 |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                 |
-| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                                  |
-| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model                       |
+|                               File                                |                                                               Purpose                                                               |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                        | the BPMS profiles and the VanillaBP BOM import, and the engine versions the JSON dataformat needs                                   |
+| `loan-approval/pom.xml`                                           | `vanillabp-spring-boot-support`, never an adapter                                                                                   |
+| `application/pom.xml`                                             | the BPMS adapter and the JSON dataformat of its engine, the only place a BPMS is named                                              |
+| `application/src/main/java/.../Application.java`                  | the Spring Boot application, in the parent package of the module                                                                    |
+| `application/src/main/resources/application.yaml`                 | the datasource, and the profile the Maven build filters in                                                                          |
+| `application/src/main/resources/application-camunda7.yaml`        | the Camunda 7 settings: the name-clash-avoidance mode, the JSON format of the shared list and the demo user of its web applications |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                                                                 |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`     | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it          |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`      | starts the workflow                                                                                                                 |
+| `loan-approval/src/test/java/.../TestApplication.java`            | the minimal application the module's test boots                                                                                     |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                                                     |
+| `application/src/test/java/.../ApplicationSmokeTest.java`         | boots the application, which validates the BPMN-to-code wiring                                                                      |
+| `docs/loan_approval.png`                                          | the picture of the process the README shows, rendered from the BPMN model                                                           |
 
 `TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
 blueprint. Copy them unchanged.
@@ -74,6 +75,11 @@ blueprint. Copy them unchanged.
    collections in a task BEFORE the workflow reaches the subprocess.
 3. Give the subprocess its loop characteristics (`camunda:collection="${regionIds}"` on
    Camunda 7, `inputCollection="=regionIds"` on Camunda 8) and the task inside it its own.
+   On Camunda 7, Operaton and CIB seven each list travels as an object variable. Set
+   `serialization-format: application/json` and the SPIN engine plugin in the profile file of
+   that engine, and add the SPIN JSON dataformat to its Maven profile, as
+   `application-camunda7.yaml` and `application/pom.xml` show. Without them the engine stores
+   the lists with Java serialization, and the adapter warns about it.
 4. In a task which belongs to ONE level, name that element in the annotations:
    `@MultiInstanceElement("SubProcess_AssessRegion")`. **A task which is not multi-instance
    itself still runs inside the iteration of the subprocess around it.** This is how it learns
@@ -85,6 +91,10 @@ blueprint. Copy them unchanged.
 6. Write a row per iteration, never into an attribute the iterations share. Put the element of
    the enclosing iteration into that row. Otherwise nobody can tell a result apart from its
    siblings later.
+   VanillaBP warns at startup about this case, because the aggregate has no version attribute.
+   Once every iteration writes only rows of its own, say so for the workflow with
+   `vanillabp.workflow-modules.<workflow-module-id>.workflows.<bpmn-process-id>.concurrent-branches-reviewed: true`,
+   as `loan-approval.yaml` does. The key is read at the workflow only.
 7. Put a result over the inner loop into a task at the END of the outer one. Put a result over
    the outer loop into a task AFTER the subprocess. An iteration cannot know whether it is the
    last.

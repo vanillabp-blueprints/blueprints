@@ -1,0 +1,7 @@
+{
+  "manifestVersion": 1,
+  "buildVersion": "1.0.0",
+  "entries": {
+    "UserTaskForm": "entries/user-task-form.js"
+  }
+}

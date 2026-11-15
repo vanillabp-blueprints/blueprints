@@ -21,10 +21,14 @@ BPMS, for example `camunda8-adapter-spring-boot` or
 test scope, because its tests have to run it. Outside the tests, the application brings the
 adapters, once for all its modules.
 
+`io.vanillabp:vanillabp-quarkus-integration` is treated like an adapter. It is the Quarkus
+extension of VanillaBP, and a Quarkus extension belongs to the application. A workflow module
+on Quarkus names it only in the test scope, because its tests boot VanillaBP.
+
 The build checks this. The POM of each blueprint runs the Maven Enforcer rule
-`no-adapter-in-a-workflow-module` for its modules. It fails if a module names an adapter
-outside the test scope, directly or through another dependency. The application module
-switches the rule off, because it is where the adapters belong. There is no shared parent POM,
+`no-adapter-in-a-workflow-module` for its modules. It fails if a module names an adapter or
+the Quarkus extension outside the test scope, directly or through another dependency. The
+application module switches the rule off, because it is where the adapters belong. There is no shared parent POM,
 so every blueprint carries its own copy of the rule (see Rule 1 in `CONTRIBUTING.md`). A new
 blueprint copies the rule with the rest of its POM.
 
@@ -39,6 +43,16 @@ on its methods. A method which throws a `TaskException` gets
 `@Transactional(dontRollbackOn = TaskException.class)` on Quarkus. Without it the transaction of
 the task is marked for rollback, and VanillaBP fails the task. Never annotate the task handler.
 Rule 6 in `CONTRIBUTING.md` says why, and names the one exception, `persistence-custom`.
+
+## Every API is an OpenAPI file
+
+Write an HTTP interface as an OpenAPI file first, and let the build generate the Java code. A
+controller implements the generated interface and holds the code of each call, nothing else. No
+`@GetMapping`, no `@Path` and no record for a request or an answer is written by hand. An API
+which only a browser or the module's own user interface calls keeps its file in
+`src/main/resources/openapi/` of the module. An API with a Java client gets a Maven module
+`<name>-api` with the submodules `client` and `server`. Rule 7 in `CONTRIBUTING.md` has the
+generators and their settings for both platforms.
 
 ## How we write
 

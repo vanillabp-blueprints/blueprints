@@ -27,6 +27,11 @@
       "enabled": false
     },
     {
+      "description": "The SPIN JSON dataformat of Camunda 7, Operaton and CIB seven has to have the version of the engine the adapter brings. A blueprint names that version in a property next to the adapter version, and it is raised together with the adapter. A newer dataformat on its own would run against an older engine.",
+      "matchPackageNames": ["/^org\\.(camunda|operaton|cibseven)\\.bpm:[a-z]+-engine-plugin-spin$/", "/^org\\.(camunda|operaton|cibseven)\\.spin:/"],
+      "enabled": false
+    },
+    {
       "description": "One pull request for everything Maven, minor and patch. The same version is repeated in every blueprint POM on purpose, so an upgrade touches all of them at once and the matrix builds every blueprint for it. Per dependency that was one full run each; grouped it is one run for all of them, and the property that matters is kept: no blueprint stays behind on a version its neighbour already moved.",
       "matchManagers": ["maven", "maven-wrapper"],
       "matchUpdateTypes": ["minor", "patch", "digest"],

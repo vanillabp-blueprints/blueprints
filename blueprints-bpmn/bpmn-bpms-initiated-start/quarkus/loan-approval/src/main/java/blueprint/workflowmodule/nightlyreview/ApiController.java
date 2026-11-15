@@ -2,21 +2,24 @@ package blueprint.workflowmodule.nightlyreview;
 
 import java.util.stream.Collectors;
 
+import blueprint.workflowmodule.nightlyreview.api.NightlyReviewApi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * The API of the review. There is no endpoint starting one, because no endpoint could: the
  * timer starts reviews on its own, and the signal only asks.
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link NightlyReviewApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/nightly-review.yaml}. This class
+ * only implements it.
+ * </p>
  */
 @Slf4j
 @ApplicationScoped
-@Path("/api/nightly-review")
-public class ApiController {
+public class ApiController implements NightlyReviewApi {
 
   @Inject
   Service nightlyReview;
@@ -26,8 +29,7 @@ public class ApiController {
    *
    * @return What was done, for the browser to show.
    */
-  @GET
-  @Path("/request")
+  @Override
   public String request() {
 
     nightlyReview.request();
@@ -45,8 +47,8 @@ public class ApiController {
    *
    * @return Every review this application has seen.
    */
-  @GET
-  public String list() {
+  @Override
+  public String listReviews() {
 
     final var reviews = nightlyReview.getAll();
 
@@ -67,10 +69,9 @@ public class ApiController {
    * @param reviewId The ID VanillaBP assigned.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GET
-  @Path("/{reviewId}")
+  @Override
   public String show(
-      @PathParam("reviewId") final String reviewId) {
+      final String reviewId) {
 
     return nightlyReview
         .get(reviewId)

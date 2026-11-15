@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    The simulator is the only user of this module, and the simulator is a Spring Boot
+    application. So this module takes the parent of Spring Boot, like the simulator, and not
+    the POM of the blueprint. Maven still builds it with the blueprint, because
+    '../pom.xml' names it as a module.
+  -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.2</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
+
+  <artifactId>credit-rating-api-server</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <name>API 'credit rating': server</name>
+  <description>The server interface of the credit rating, generated from credit-rating.yaml. The simulator implements it.</description>
+
+  <properties>
+    <java.version>21</java.version>
+    <openapi-generator.version>7.27.0</openapi-generator.version>
+  </properties>
+
+  <!--
+    Only what the generated sources import: the annotations of Spring Web, of Jackson and of
+    Jakarta. No Spring Boot starter, so the module stays a small library.
+  -->
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        Generates the interface of the credit rating from '../credit-rating.yaml'. A controller of
+        the simulator implements it.
+        The settings of the generator are written out here, because this module does not
+        take the POM of the blueprint as its parent.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>${openapi-generator.version}</version>
+        <!--
+          The generated code needs no library beyond Spring Web, Jackson and Jakarta
+          annotations: no Swagger annotations, no jackson-databind-nullable, no bean
+          validation. The models are Java records.
+        -->
+        <configuration>
+          <generatorName>spring</generatorName>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <configOptions>
+            <useSpringBoot4>true</useSpringBoot4>
+            <useTags>true</useTags>
+            <useRecords>true</useRecords>
+            <useJspecify>true</useJspecify>
+            <openApiNullable>false</openApiNullable>
+            <useBeanValidation>false</useBeanValidation>
+            <documentationProvider>none</documentationProvider>
+            <annotationLibrary>none</annotationLibrary>
+            <hideGenerationTimestamp>true</hideGenerationTimestamp>
+            <generateJsonIncludeAnnotations>false</generateJsonIncludeAnnotations>
+            <generateJsonSetterNullsAnnotations>false</generateJsonSetterNullsAnnotations>
+          </configOptions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>credit-rating-server</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/../credit-rating.yaml</inputSpec>
+              <apiPackage>blueprint.externalsystems.creditrating.api.server</apiPackage>
+              <modelPackage>blueprint.externalsystems.creditrating.api.server.model</modelPackage>
+              <configOptions>
+                <!-- Only the interface. A controller implements it. -->
+                <interfaceOnly>true</interfaceOnly>
+                <skipDefaultInterface>true</skipDefaultInterface>
+                <!-- The path of the servers entry goes onto the interface, so two APIs fit into one application. -->
+                <requestMappingMode>api_interface</requestMappingMode>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

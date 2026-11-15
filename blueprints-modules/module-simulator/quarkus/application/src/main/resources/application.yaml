@@ -1,0 +1,26 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is in its
+# own file (loan-approval/loan-approval.yaml inside the module JAR).
+quarkus:
+  # Two choices, each a profile. Both are PARENT profiles of the profile the application runs
+  # in, so their files apply whichever profile that is. The BPMS is chosen by the Maven
+  # profile: the build replaces the placeholder with its name, so 'application-<bpms>.yaml'
+  # applies. The systems around the application are 'local' by default: every adapter talks to
+  # the simulator. For the real systems, run the application in the profile 'real' as well, for
+  # example with the environment variable QUARKUS_PROFILE=prod,real. A profile wins over its
+  # parents, so every address of 'real' replaces the one of 'local'. Tests get the parents as a
+  # system property.
+  config:
+    profile:
+      parent: "@bpms@,local"
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:loan-approval;DB_CLOSE_DELAY=-1
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  log:
+    category:
+      "blueprint":
+        level: INFO

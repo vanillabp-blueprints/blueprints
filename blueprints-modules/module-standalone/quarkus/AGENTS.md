@@ -50,14 +50,15 @@ places or in none.
 
 ## Boilerplate files
 
-|                        File                         |                                      Purpose                                       |
-|-----------------------------------------------------|------------------------------------------------------------------------------------|
-| `pom.xml`                                           | the only POM: the BPMS profiles, the VanillaBP BOM import and every dependency     |
-| `src/main/resources/application.yaml`               | the datasource and the profile choosing the BPMS                                   |
-| `src/test/java/.../ApplicationSmokeTest.java`       | boots the application and holds the declared workflow module against the wired one |
-| `src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                    |
-| `src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                |
-| `docs/loan_approval.png`                            | the picture of the process the README shows, rendered from the BPMN model          |
+|                        File                         |                                                          Purpose                                                           |
+|-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml`                                           | the only POM: the BPMS profiles, the VanillaBP BOM import and every dependency                                             |
+| `src/main/resources/application.yaml`               | the datasource and the profile choosing the BPMS                                                                           |
+| `src/test/java/.../ApplicationSmokeTest.java`       | boots the application and holds the declared workflow module against the wired one                                         |
+| `src/test/java/.../WorkflowModuleTest.java`         | base class of the integration test: waits for workflow progress                                                            |
+| `src/main/java/.../loanapproval/ApiController.java` | GET endpoints operating the process                                                                                        |
+| `src/main/resources/openapi/loan-approval.yaml`     | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `docs/loan_approval.png`                            | the picture of the process the README shows, rendered from the BPMN model                                                  |
 
 `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint. Copy them
 unchanged. Every test class carries `@QuarkusTest` itself. Inheriting it from the base class
@@ -95,7 +96,10 @@ extends `WorkflowModuleTest`, never in the base class.
    for this use case, add the methods there instead of creating a second one. Never inject
    `ProcessService` into it, and never merge the two workflow classes. `Service` uses `Workflow`
    and is used by `WorkflowTaskHandler`, so merging them creates a circular bean reference.
-7. Add GET endpoints starting the process and showing the aggregate.
+7. Describe the GET endpoints which start the process and show the aggregate in an OpenAPI file,
+   `src/main/resources/openapi/loan-approval.yaml`. Let `openapi-generator-maven-plugin` generate
+   the interface `LoanApprovalApi` from it, and implement the interface in `ApiController`. Write no
+   path and no parameter annotation by hand.
 8. Copy `LoanApprovalIT` and adapt it to the use case.
 
 **Before you choose this shape:** it holds for exactly one use case. A second one in the same

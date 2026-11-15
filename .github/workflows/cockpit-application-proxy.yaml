@@ -86,11 +86,22 @@ jobs:
 
       # 1. The backend: the workflow module into the local Maven repository.
       #    Its own tests run in build.yaml, so they are skipped here.
+      #    The snapshots are resolved at once before each build, and the build keeps them, see
+      #    bin/resolve_snapshots_at_once.sh. The application needs the installed backend for
+      #    that, so its snapshots come right after the backend and before the slow frontend.
+      - name: Resolve the snapshots of the backend at once
+        run: $GITHUB_WORKSPACE/bin/resolve_snapshots_at_once.sh
+          -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
+          --batch-mode --no-transfer-progress -f "$BACKEND/pom.xml" -P${{ matrix.bpms }}
       - name: Install the backend
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
           -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
-          --batch-mode --no-transfer-progress --update-snapshots
+          --batch-mode --no-transfer-progress --no-snapshot-updates
           -f "$BACKEND/pom.xml" -P${{ matrix.bpms }} -DskipTests -DskipITs install
+      - name: Resolve the snapshots of the application at once
+        run: $GITHUB_WORKSPACE/bin/resolve_snapshots_at_once.sh
+          -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
+          --batch-mode --no-transfer-progress -f "$APPLICATION/pom.xml" -P${{ matrix.bpms }}
 
       # 2. The frontend: the micro-frontends and the nginx image. It reads the OpenAPI file from
       #    the backend directory, so it needs nothing of step 1.
@@ -108,7 +119,7 @@ jobs:
       - name: Build and test the application
         run: $GITHUB_WORKSPACE/bin/mvn_with_retry.sh
           -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
-          --batch-mode --no-transfer-progress --update-snapshots
+          --batch-mode --no-transfer-progress --no-snapshot-updates
           -f "$APPLICATION/pom.xml" -P${{ matrix.bpms }} install
 
       - name: The Camunda 8 cluster's log, if something went wrong

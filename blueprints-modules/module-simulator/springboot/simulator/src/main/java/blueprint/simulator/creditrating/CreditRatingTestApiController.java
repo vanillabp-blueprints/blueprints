@@ -1,9 +1,9 @@
 package blueprint.simulator.creditrating;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
+
+import blueprint.simulator.testapi.server.CreditRatingTestApi;
 
 /**
  * The test API of the simulated credit rating. It prepares what the credit rating knows, and
@@ -13,10 +13,14 @@ import org.springframework.web.bind.annotation.RestController;
  * Every action is a GET, so a person can use it in a browser as well, like the API of the
  * application. A test uses the same URLs.
  * </p>
+ *
+ * <p>
+ * The paths and the parameters come from {@link CreditRatingTestApi}, the interface generated from
+ * {@code simulator-test-api/simulator-test-api.yaml}. This class only implements it.
+ * </p>
  */
 @RestController
-@RequestMapping("/simulator/test-api/credit-rating")
-public class CreditRatingTestApiController {
+public class CreditRatingTestApiController implements CreditRatingTestApi {
 
   private final CreditScores scores;
 
@@ -38,10 +42,10 @@ public class CreditRatingTestApiController {
    *
    * @return The reserved customer id.
    */
-  @GetMapping("/next-id")
-  public String nextId() {
+  @Override
+  public ResponseEntity<String> nextId() {
 
-    return scores.nextCustomerId();
+    return ResponseEntity.ok(scores.nextCustomerId());
 
   }
 
@@ -53,13 +57,13 @@ public class CreditRatingTestApiController {
    * @param score      The score the credit rating answers from now on.
    * @return The customer id.
    */
-  @GetMapping("/create-rating")
-  public String createRating(
-      @RequestParam final String customerId,
-      @RequestParam final int score) {
+  @Override
+  public ResponseEntity<String> createRating(
+      final String customerId,
+      final Integer score) {
 
     scores.set(customerId, score);
-    return customerId;
+    return ResponseEntity.ok(customerId);
 
   }
 
