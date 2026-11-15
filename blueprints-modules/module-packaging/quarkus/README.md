@@ -120,6 +120,41 @@ waits for the fix.
 Through all of it the engine stays a Maven profile. `-Pcamunda8` changes what is packaged, what
 the tests run against and what the image contains. Not one line of Java changes.
 
+### Watching it run
+
+Once the runtime runs, somebody has to tell a quiet system from a stalled one. VanillaBP gives
+the numbers and the log context for that, and neither needs a setting. And like everything
+else here, it needs no line about a module.
+
+**Every log line of a task names its workflow.** Around every task delivery and every dispatch
+from the outbox, VanillaBP sets six MDC keys. MDC (mapped diagnostic context) is a set of values
+which the logging library adds to every log line of the current thread. The ones to search by
+are `vanillabp.workflow.module`, `vanillabp.bpmn.process` and `vanillabp.workflow.aggregate.id`.
+So whatever a foreign module logs in its handler can be found by its workflow, although its team
+never passed an id around. Put the keys into the log pattern of the application.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Observability#a-log-pattern-to-paste)
+has a pattern to paste.
+
+**Metrics and health appear as soon as the application brings the extensions for them.**
+VanillaBP publishes its meters through Micrometer, but it does not bring Micrometer itself. This
+blueprint adds none of it, so it reports no metrics and has no health endpoint. An application
+which adds `quarkus-micrometer` with a registry, for example
+`quarkus-micrometer-registry-prometheus`, gets the meters. One which adds
+`quarkus-smallrye-health` gets the readiness check `vanillabp` in `/q/health/ready`.
+
+Two numbers to start with:
+
+- the rate of `vanillabp.task.deliveries` per `workflow.module`. If it is zero while workflows
+  normally run, then either nothing is started or nothing finishes.
+- `vanillabp.outbox.pending` together with `vanillabp.outbox.oldest.pending.age`: work which the
+  application committed and its BPMS did not accept yet.
+
+Where something happened is always a tag, never part of the name of a meter. That fits a project
+which assembles modules. A third module adds a value of the `workflow.module` tag, not a new
+meter. So a dashboard or an alert which groups by that tag covers it without a change.
+[Observability](https://github.com/vanillabp/adapter-platform-integration/wiki/Observability)
+lists every meter, its tags and the question it answers.
+
 ### What comes from `module-multi` unchanged
 
 Having two workflow modules is the subject of that blueprint, so it is not repeated here. Each
@@ -247,6 +282,7 @@ lines. That is the whole promise of this blueprint, and the smoke test keeps it.
 - [How name clashes are avoided](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided): the three modes, and why changing the mode is a migration
 - [Configuration of a workflow module](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#configuration): the file names, the profiles and the priority order
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why there are no process variables
+- [Observability](https://github.com/vanillabp/adapter-platform-integration/wiki/Observability): every meter and its tags, the health endpoint, the MDC keys and a log pattern to paste
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how a BPMN task has to be modelled for that engine
 
 This blueprint is developed in the monorepo
