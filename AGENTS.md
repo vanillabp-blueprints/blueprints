@@ -21,10 +21,14 @@ BPMS, for example `camunda8-adapter-spring-boot` or
 test scope, because its tests have to run it. Outside the tests, the application brings the
 adapters, once for all its modules.
 
+`io.vanillabp:vanillabp-quarkus-integration` is treated like an adapter. It is the Quarkus
+extension of VanillaBP, and a Quarkus extension belongs to the application. A workflow module
+on Quarkus names it only in the test scope, because its tests boot VanillaBP.
+
 The build checks this. The POM of each blueprint runs the Maven Enforcer rule
-`no-adapter-in-a-workflow-module` for its modules. It fails if a module names an adapter
-outside the test scope, directly or through another dependency. The application module
-switches the rule off, because it is where the adapters belong. There is no shared parent POM,
+`no-adapter-in-a-workflow-module` for its modules. It fails if a module names an adapter or
+the Quarkus extension outside the test scope, directly or through another dependency. The
+application module switches the rule off, because it is where the adapters belong. There is no shared parent POM,
 so every blueprint carries its own copy of the rule (see Rule 1 in `CONTRIBUTING.md`). A new
 blueprint copies the rule with the rest of its POM.
 
