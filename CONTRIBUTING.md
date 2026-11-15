@@ -865,7 +865,15 @@ citations into it.
 
 The framework's own repositories keep a `DECISIONS.md` next to their code. A blueprint does not
 cite it either. It belongs to that repository and speaks to whoever changes it. A blueprint
-speaks to somebody who writes an application.
+speaks to somebody who writes an application. Link the wiki page of the adapter or the
+platform which describes the behaviour instead. Where no page describes it, say in plain words
+what happens. A number in another repository can change, and a copied blueprint keeps pointing
+at it. `bin/check_foreign_decisions.py` rejects such a number and a link into the
+`DECISIONS.md` of another repository:
+
+```bash
+python3 bin/check_foreign_decisions.py
+```
 
 ## Formatting
 
