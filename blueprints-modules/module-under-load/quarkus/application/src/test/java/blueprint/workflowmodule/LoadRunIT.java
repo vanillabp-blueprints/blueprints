@@ -59,7 +59,12 @@ public class LoadRunIT {
           "credit-bureau.base-url", "${simulator.base-url:http://localhost:8079}/credit-bureau",
           "credit-bureau.callback-url", "http://localhost:${application.port:8080}/credit-bureau/callback",
           // The drain waits for the payout run, so it comes more often here.
-          "loan-approval.payout-run-every", "PT5S");
+          "loan-approval.payout-run-every", "PT5S",
+          // A database of its own, which ends with the test. The file of the application
+          // outlives the build, and with it the delivery log of VanillaBP. A Camunda 8 cluster
+          // started fresh gives out the same keys again, and VanillaBP would skip those
+          // deliveries as repeated ones.
+          "quarkus.datasource.jdbc.url", "jdbc:h2:mem:load-run-it;DB_CLOSE_DELAY=-1");
 
     }
 
