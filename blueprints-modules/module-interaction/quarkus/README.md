@@ -75,20 +75,33 @@ them.
 
 ## Delta to the base blueprint
 
-Compared to [`module-multi`](https://github.com/vanillabp-blueprints/module-multi-quarkus),
-whose two modules know nothing of each other:
+Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus).
+The rows which say "as in `module-multi`" are what this blueprint shares with
+[`module-multi`](https://github.com/vanillabp-blueprints/module-multi-quarkus), whose two modules know
+nothing of each other:
 
-|                        File                         |                                              What is different                                              |
-|-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
-| `banking-api/.../RiskAssessments.java`              | new: the interface one module offers the other, the request half of the contract                            |
-| `banking-api/.../RiskAssessed.java`                 | new: the event carrying the answer, because the answering module must not know its callers                  |
-| `risk-assessment/`                                  | the second module now answers the first one: its `Service` implements the interface and publishes the event |
-| `.../loanapproval/RiskAssessedListener.java`        | new: where the event enters the asking module and becomes a correlated message                              |
-| `.../loanapproval/Service.java`                     | asks the other module through the interface, and takes its answer onto the aggregate                        |
-| `loan-approval/.../loan_approval.bpmn`              | a service task asking, and a message event waiting for the answer                                           |
-| `risk-assessment/.../risk_assessment.bpmn`          | a service task doing the work, and one publishing the result                                                |
-| `loan-approval/src/test/.../LoanApprovalIT.java`    | stands the other module in with a stub, which is all it takes                                               |
-| `application/src/test/.../ModuleInteractionIT.java` | new: both modules in one application, and the answer arriving at the waiting process                        |
+|                                             File                                             |                                              What is different                                              |
+|----------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `banking-api/.../RiskAssessments.java`                                                       | new: the interface one module offers the other, the request half of the contract                            |
+| `banking-api/.../RiskAssessed.java`                                                          | new: the event carrying the answer, because the answering module must not know its callers                  |
+| `banking-api/pom.xml`                                                                        | new: the Maven module of the contract, with no aggregate, no BPMN and no process                            |
+| `risk-assessment/`                                                                           | the second module now answers the first one: its `Service` implements the interface and publishes the event |
+| `.../loanapproval/RiskAssessedListener.java`                                                 | new: where the event enters the asking module and becomes a correlated message                              |
+| `.../loanapproval/Service.java`                                                              | asks the other module through the interface, and takes its answer onto the aggregate                        |
+| `.../loanapproval/Workflow.java`                                                             | correlates the message `RiskAssessed`                                                                       |
+| `.../loanapproval/WorkflowTaskHandler.java`                                                  | the method of the service task which asks the other module                                                  |
+| `.../loanapproval/model/Aggregate.java`                                                      | `riskScore`, the answer of the other module                                                                 |
+| `loan-approval/.../loan_approval.bpmn`                                                       | a service task asking, and a message event waiting for the answer                                           |
+| `risk-assessment/.../risk_assessment.bpmn`                                                   | a service task doing the work, and one publishing the result                                                |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                             | stands the other module in with a stub, which is all it takes                                               |
+| `application/src/test/.../ModuleInteractionIT.java`                                          | new: both modules in one application, and the answer arriving at the waiting process                        |
+| `application/pom.xml`                                                                        | depends on `risk-assessment` as well, and on Awaitility for the tests                                       |
+| `pom.xml`                                                                                    | the modules `banking-api` and `risk-assessment`                                                             |
+| `loan-approval/pom.xml`                                                                      | depends on `banking-api`                                                                                    |
+| `LoanApprovalProperties.java`, `loan-approval/src/main/resources/loan-approval/*.yaml`       | as in `module-multi`: `rating-provider`, and a module file per environment                                  |
+| `application-camunda8.yaml`                                                                  | as in `module-multi`: `name-clash-avoidance: use-prefix`                                                    |
+| `application/src/main/resources/application.yaml`                                            | as in `module-multi`: logs everything below `blueprint` at INFO                                             |
+| `application/src/test/.../ApplicationSmokeTest.java`, `ModuleConfigurationPerProfileIT.java` | as in `module-multi`: moved to `blueprint.application`, and the module file of the active profile is tested |
 
 Everything else is `module-multi`: the auto-configurations, the bean naming, the module
 configuration per environment, the way the BPMS is chosen.

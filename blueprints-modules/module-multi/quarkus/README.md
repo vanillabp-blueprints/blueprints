@@ -172,17 +172,25 @@ with `ddl-auto`, and the topic gets blueprints of its own.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                              File                               |                                          What is different                                          |
-|-----------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
-| `loan-repayment/`                                               | the second workflow module, same structure, other use case, no shared code with the first           |
-| `banking-commons/`                                              | the library both modules use, plus the auto-configuration contributing its bean                     |
-| `loan-approval/.../loan-approval-test.yaml`, `-prod.yaml`       | new: the module's configuration per environment                                                     |
-| `application/src/main/resources/application-camunda7.yaml`      | new: `name-clash-avoidance: use-prefix`, because two modules can collide                            |
-| `application/src/test/.../ApplicationSmokeTest.java`            | asserts one `ProcessService` per module instead of "at least one", and sits next to the application |
-| `application/src/test/.../ModuleConfigurationPerProfileIT.java` | new: proves that the module file of the active profile is the one that applies                      |
+|                                  File                                  |                                             What is different                                              |
+|------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| `loan-repayment/`                                                      | the second workflow module, same structure, other use case, no shared code with the first                  |
+| `banking-commons/`                                                     | the library both modules use, plus the auto-configuration contributing its bean                            |
+| `pom.xml`                                                              | the modules `banking-commons` and `loan-repayment`                                                         |
+| `application/pom.xml`                                                  | depends on `loan-repayment` as well                                                                        |
+| `loan-approval/pom.xml`                                                | depends on `banking-commons`                                                                               |
+| `.../loanapproval/*.java`                                              | a loan request which names a customer, logged with the name `banking-commons` knows                        |
+| `openapi/loan-approval.yaml`                                           | the start URL takes a `customerId`                                                                         |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`    | `rating-provider`, which each environment sets to its own value                                            |
+| `loan-approval/.../loan-approval-test.yaml`, `loan-approval-prod.yaml` | new: the module's configuration per environment                                                            |
+| `application/src/main/resources/application-camunda7.yaml`             | new: `name-clash-avoidance: use-prefix`, because two modules can collide                                   |
+| `application/src/main/resources/application-camunda8.yaml`             | `name-clash-avoidance: use-prefix` as well                                                                 |
+| `application/src/main/resources/application.yaml`                      | logs everything below `blueprint` at INFO, because the application moved out of `blueprint.workflowmodule` |
+| `application/src/test/.../ApplicationSmokeTest.java`                   | asserts one `ProcessService` per module instead of "at least one", and sits next to the application        |
+| `application/src/test/.../ModuleConfigurationPerProfileIT.java`        | new: proves that the module file of the active profile is the one that applies                             |
 
-Everything else is the base blueprint: the wiring classes, the aggregates, the tests of the
-modules, the way the BPMS is chosen.
+Everything else is the base blueprint: the wiring classes, the tests of the modules, the way
+the BPMS is chosen.
 
 ## Running it
 

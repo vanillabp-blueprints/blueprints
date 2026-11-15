@@ -95,17 +95,20 @@ outbox half alone.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File             |                                    What is different                                    |
-|-----------------------------|-----------------------------------------------------------------------------------------|
-| `application.yaml`          | `vanillabp.outbox.poll-interval`, and a JDBC URL which has H2 write down its statements |
-| `application-camunda7.yaml` | `sleep-until-something-is-due` for the embedded engine                                  |
-| `loan_approval.bpmn`        | a timer catch event for the withdrawal period and a service task behind it              |
-| `DatabaseTraffic.java`      | counts the statements H2 wrote into its trace file                                      |
-| `ApiController.java`        | one more endpoint, which returns that number                                            |
-| `WorkflowTaskHandler.java`  | the `@WorkflowTask` method of the task behind the timer                                 |
-| `Service.java`              | pays out the loan                                                                       |
-| `Aggregate.java`            | `paidOut`                                                                               |
-| `LoanApprovalIT.java`       | no statement while the workflow waits, and the workflow going on when the timer is due  |
+|                                         File                                          |                                            What is different                                             |
+|---------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| `application.yaml`                                                                    | `vanillabp.outbox.poll-interval`, and a JDBC URL which has H2 write down its statements                  |
+| `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | `sleep-until-something-is-due` for the embedded engine, in the application and in the test profile files |
+| `loan_approval.bpmn`                                                                  | a timer catch event for the withdrawal period and a service task behind it                               |
+| `DatabaseTraffic.java`                                                                | counts the statements H2 wrote into its trace file                                                       |
+| `ApiController.java`                                                                  | one more endpoint, which returns that number                                                             |
+| `openapi/loan-approval.yaml`                                                          | the endpoint `/api/loan-approval/statements`                                                             |
+| `WorkflowTaskHandler.java`                                                            | the `@WorkflowTask` method of the task behind the timer                                                  |
+| `Service.java`                                                                        | pays out the loan                                                                                        |
+| `Aggregate.java`                                                                      | `paidOut`                                                                                                |
+| `LoanApprovalProperties.java`                                                         | `databaseTrace`, the trace file `DatabaseTraffic` reads                                                  |
+| `loan-approval.yaml`                                                                  | `database-trace`, the path of that file                                                                  |
+| `LoanApprovalIT.java`                                                                 | no statement while the workflow waits, and the workflow going on when the timer is due                   |
 
 ## Running it
 
