@@ -286,12 +286,10 @@ current activation. So a run whose lock ran out while it was working can no long
 what the newer run wrote. Still, the blueprints write `do-not-use`. On 8.10 the gateway of
 the cluster can lose a leased job when a long poll ends, and the job then waits for a whole
 `job-timeout`. Blueprint builds went red from it. Until Camunda fixes that, the adapter advises
-`do-not-use`, and a blueprint shows the advised way. Why is
-[decision 88 of the adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
-Moving to `use` later costs nothing, because a job which was never leased can be leased at any
-time. The other way does not work, because the cluster never takes a lease off a job again.
-`do-not-use` is also what every release line before 8.10 did. What a lease costs is in the
-[wiki of the adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds).
+`do-not-use`, and a blueprint shows the advised way. Moving to `use` later costs nothing,
+because a job which was never leased can be leased at any time. The other way does not work, because the cluster never takes a lease off a job again.
+`do-not-use` is also what every release line before 8.10 did. Why the adapter advises it, and
+what a lease costs, is in the [wiki of the adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds).
 
 ### A build without a profile runs on the default BPMS
 
@@ -885,7 +883,15 @@ citations into it.
 
 The framework's own repositories keep a `DECISIONS.md` next to their code. A blueprint does not
 cite it either. It belongs to that repository and speaks to whoever changes it. A blueprint
-speaks to somebody who writes an application.
+speaks to somebody who writes an application. Link the wiki page of the adapter or the
+platform which describes the behaviour instead. Where no page describes it, say in plain words
+what happens. A number in another repository can change, and a copied blueprint keeps pointing
+at it. `bin/check_foreign_decisions.py` rejects such a number and a link into the
+`DECISIONS.md` of another repository:
+
+```bash
+python3 bin/check_foreign_decisions.py
+```
 
 ## Formatting
 
