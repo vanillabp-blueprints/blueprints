@@ -144,6 +144,10 @@ def wanted(directories, changed, root):
             # a frontend, an application or a bundle of a cockpit blueprint: its own workflow
             # builds it, together with the backend it needs
             continue
+        if len(parts) > 2 and parts[1].endswith(FRONTEND):
+            # a frontend whose backend is a blueprint of another name, such as
+            # cockpit-process-driver-frontend on module-process-driver: frontend.yaml builds it
+            continue
         if path.count("/") == 0 and path.endswith(".md"):
             # documentation at the top level, README.md and its kind, builds nothing
             continue

@@ -159,6 +159,13 @@ endpoint until `process-driver.enabled` is `true`. The API is an OpenAPI file in
 Only a browser, the dev shell and the tests of a user interface call it, so it has no client
 module.
 
+The blueprint
+[`cockpit-process-driver-frontend`](https://github.com/vanillabp-blueprints/cockpit-process-driver-frontend-react)
+shows the dev shell side. It has the forms of both user tasks and a dev shell with a page
+"Process driver". The page lists the states from `/process-driver/states`, creates a case with
+one click and opens its user task. Somebody who works on a form gets a case in the state they need
+in a few seconds.
+
 What this blueprint leaves out: a library for drivers. Steps, states and waiting are project
 code here, small enough to copy. Whether they belong into a framework is decided after a second
 project has used them.
