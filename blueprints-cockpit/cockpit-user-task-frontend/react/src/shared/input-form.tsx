@@ -14,7 +14,7 @@
 
 import { useEffect, useRef, useState, type ComponentType } from 'react';
 import type { BcElementProps, BcUserTask } from '@vanillabp/bc-module-kit';
-import { ApiError } from './api.ts';
+import { ResponseError } from './api.ts';
 import { defineReactElement } from './react-element.tsx';
 import { STYLE } from './style.ts';
 import { textsFor, type Texts } from './texts.ts';
@@ -39,7 +39,7 @@ type AreaMessage = { input?: string; askForInput?: boolean; completed?: boolean 
 
 type Problem = 'notFound' | 'failed';
 
-const problemOf = (error: unknown): Problem => (error instanceof ApiError && error.status === 404 ? 'notFound' : 'failed');
+const problemOf = (error: unknown): Problem => (error instanceof ResponseError && error.response.status === 404 ? 'notFound' : 'failed');
 
 /** The areas 'body' and 'information' both need the data. It is loaded once for both. */
 function loadOnce<Form>(definition: InputForm<Form>, cache: Map<string, Promise<Form>>, userTaskId: string) {

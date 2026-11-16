@@ -412,6 +412,20 @@ on what the framework returns, and the file still says what the JSON looks like.
 The generated code is written below `target/`. It is not part of the blueprint, and
 `bin/check_twin_diff.py` does not compare it.
 
+A frontend of a cockpit blueprint generates its TypeScript client from the same file, with the
+npm package `@hey-api/openapi-ts`. Its names follow the file like the Java names do: the tag
+`user-tasks` becomes the class `UserTasksApi`, and each schema a type of the same name. A method
+takes one object with all its parameters, and the body comes under the name of its schema:
+`loanApproval.completeAssessRisk({ userTaskId, assessRiskInput: { riskAssessment } })`. It
+returns the data and throws when the answer is not a success. An error interceptor in
+`src/shared/api.ts` turns such an answer into a `ResponseError`, which keeps its status. Nobody
+writes a `fetch` call to the module API by hand. The generator is a Node program with no install
+scripts, so the build of a frontend needs Node and nothing else: no Java, no Maven, and no
+download during the build. `openapi-ts.config.mjs` of the frontend holds the options, and
+`package.json` pins the version exactly, because the 0.x line breaks things in minor versions.
+The code is written to `src/generated/`, which git ignores, as `target/` is ignored on the Java
+side.
+
 ## The test harness
 
 Every blueprint needs the same for that. So it is written once and copied:

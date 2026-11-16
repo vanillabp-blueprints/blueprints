@@ -19,8 +19,8 @@ The project is built like
 [`cockpit-user-task-frontend-react`](https://github.com/vanillabp-blueprints/cockpit-user-task-frontend-react),
 which shows the forms of user tasks. Its README explains what this one only links: micro-frontends
 and the two kinds of entries, why the parts come at runtime, the module kit as the minimum, the
-OpenAPI file through a git submodule, why npm builds apart from Maven, and the UI jar and the
-nginx image.
+OpenAPI file through a git submodule and the client generated from it, why npm builds apart from
+Maven, and the UI jar and the nginx image.
 
 ## What this blueprint shows
 
@@ -88,7 +88,7 @@ The scripts are the same as in `cockpit-user-task-frontend-react`:
 |---------------------------------|----------------------------------------------------------------------------------------------------|
 | `npm run build`                 | all of the following, one after the other                                                          |
 | `npm run fetch:openapi`         | copies the OpenAPI file of the backend into `build/openapi`                                        |
-| `npm run generate:client`       | generates the types of the API client from it                                                      |
+| `npm run generate:client`       | generates the API client from it with `@hey-api/openapi-ts`                                        |
 | `npm run typecheck`             | checks the types of the whole project                                                              |
 | `npm run build:micro-frontends` | builds the entries and `bc-manifest.json` into `dist/micro-frontends`                              |
 | `npm run check:entries`         | runs `bc-check-entries` of the kit: no bare import, no framework in a data entry, every file there |
@@ -115,7 +115,7 @@ browser tests are the way to see the page.
 | `src/data/workflow-list.ts`          | data entry `WorkflowList`: the columns `details.applicant` and `details.status` of the case list                     |
 | `src/pages/loan-approval-page.tsx`   | visual entry `LoanApprovalPage`: the four web components of the page                                                 |
 | `src/shared/react-element.tsx`       | makes a React component a web component with `defineBcElement` of the kit                                            |
-| `src/shared/api.ts`                  | the client of the module API, typed by the generated `src/generated/loan-approval.ts`                                |
+| `src/shared/api.ts`                  | `loanApproval`, the one instance of the generated `CasesApi` and `ResponseError`, which keeps the status             |
 | `src/shared/style.ts`                | the styles in each shadow root, which keep long content from widening the page                                       |
 | `scripts/build-micro-frontends.mjs`  | builds the entries with esbuild and writes `bc-manifest.json` with `createManifest` of the kit                       |
 | `test/browser/workflow-page.test.js` | the browser tests in the host of the kit                                                                             |
@@ -178,7 +178,7 @@ which ended, a case the module does not know, a withdrawal the module refuses, a
 
 - [Loading the parts of a workflow module](https://github.com/vanillabp/business-cockpit/blob/main/skills/business-cockpit-creator/references/module-loading.md): entries, the manifest, areas and the event protocol
 - [The module kit](https://github.com/vanillabp/business-cockpit-module-kit): `@vanillabp/bc-module-kit` and `@vanillabp/bc-module-host`
-- [openapi-fetch](https://openapi-ts.dev/openapi-fetch/): the API client, and `openapi-typescript`, which generates its types
+- [`@hey-api/openapi-ts`](https://heyapi.dev/openapi-ts/get-started): the generator of the API client
 
 This blueprint is developed in the monorepo
 [`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a

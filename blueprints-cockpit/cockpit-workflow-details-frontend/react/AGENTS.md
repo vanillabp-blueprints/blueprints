@@ -43,7 +43,7 @@ per page. Two modules which define the same name break each other.
 | `src/data/workflow-page.ts`          | data entry `WorkflowPage`. Plain TypeScript, it must never import React or the page                                                                   |
 | `src/data/workflow-list.ts`          | data entry `WorkflowList`, the columns `details.applicant` and `details.status`                                                                       |
 | `src/pages/loan-approval-page.tsx`   | visual entry `LoanApprovalPage`: the four web components (`all`, `body`, `information`, `actions`), `getUserTasks` and the messages between the areas |
-| `src/shared/api.ts`                  | the client of the module API, base path `/wm/loan-approval` from the server of the OpenAPI file                                                       |
+| `src/shared/api.ts`                  | `loanApproval`, the one instance of the generated `CasesApi` and `ResponseError`; base URL `/wm/loan-approval` from the OpenAPI file                  |
 | `src/shared/style.ts`                | the styles, put into each shadow root. `overflow-wrap: anywhere` keeps long content from widening the page                                            |
 | `scripts/build-micro-frontends.mjs`  | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                                                                             |
 | `test/browser/workflow-page.test.js` | the browser tests, with areas and with `all` only                                                                                                     |
@@ -54,7 +54,8 @@ per page. Two modules which define the same name break each other.
 |--------------------------------|------------------------------------------------------------------------------------|
 | `package.json`                 | the scripts, and in `config` the module id, the jar coordinates and the image name |
 | `tsconfig.json`                | type checking only; esbuild builds                                                 |
-| `scripts/fetch-openapi.mjs`    | copies the OpenAPI file from the submodule, and its server as the client base URL  |
+| `scripts/fetch-openapi.mjs`    | copies the OpenAPI file from the submodule and checks that it names a server       |
+| `openapi-ts.config.mjs`        | the options of `@hey-api/openapi-ts`, the generator of the API client              |
 | `.gitmodules`                  | the submodule `backend`, the backend repository which owns the OpenAPI file        |
 | `scripts/build-ui-jar.mjs`     | the UI jar and its pom                                                             |
 | `scripts/build-image.mjs`      | the nginx image                                                                    |
@@ -68,8 +69,8 @@ per page. Two modules which define the same name break each other.
 
 ## Adding this blueprint to an existing project
 
-1. If the workflow module has no frontend project yet, copy this one and replace the
-   placeholders. If it has one, take the files below `src` and the scripts it lacks.
+1. If the workflow module has no frontend project yet, copy this one and replace the placeholders.
+   If it has one, take the files below `src`, the scripts it lacks and `openapi-ts.config.mjs`.
 2. Each process with a case page gets a visual entry in `src/pages/` and a case in
    `src/data/workflow-page.ts`. Add the entry to the list in `scripts/build-micro-frontends.mjs`.
 3. Read the open user tasks with `workflow.getUserTasks(activeOnly, limitList...)`. Do not call

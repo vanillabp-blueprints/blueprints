@@ -32,18 +32,18 @@ per page. Two modules which define the same name break each other.
 
 ## Core files
 
-|                  File                  |                                            Why it matters                                             |
-|----------------------------------------|-------------------------------------------------------------------------------------------------------|
-| `src/loan-approval.ts`                 | module id, process id, task definitions, entry names and web component names, in one place            |
-| `src/data/user-task-form.ts`           | data entry `UserTaskForm`. Plain TypeScript, it must never import Angular or a form                   |
-| `src/data/user-task-list.ts`           | data entry `UserTaskList`, the column `details.riskAssessment`                                        |
-| `src/forms/assess-risk-form.ts`        | visual entry `AssessRiskForm`. It exports nothing, evaluating it defines the web components           |
-| `src/forms/check-documents-form.ts`    | visual entry `CheckDocumentsForm`                                                                     |
-| `src/shared/input-form.ts`             | the four components of a form (`all`, `body`, `information`, `actions`) and the messages between them |
-| `src/shared/angular-element.ts`        | an Angular component as a web component: one application, no zone.js, the style in each shadow root   |
-| `src/shared/api.ts`                    | the client of the module API, base path `/wm/loan-approval` from the server of the OpenAPI file       |
-| `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, the Angular linker, and `bc-manifest.json` from esbuild's outputs         |
-| `test/browser/user-task-forms.test.js` | the browser tests, with areas and with `all` only                                                     |
+|                  File                  |                                                              Why it matters                                                              |
+|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| `src/loan-approval.ts`                 | module id, process id, task definitions, entry names and web component names, in one place                                               |
+| `src/data/user-task-form.ts`           | data entry `UserTaskForm`. Plain TypeScript, it must never import Angular or a form                                                      |
+| `src/data/user-task-list.ts`           | data entry `UserTaskList`, the column `details.riskAssessment`                                                                           |
+| `src/forms/assess-risk-form.ts`        | visual entry `AssessRiskForm`. It exports nothing, evaluating it defines the web components                                              |
+| `src/forms/check-documents-form.ts`    | visual entry `CheckDocumentsForm`                                                                                                        |
+| `src/shared/input-form.ts`             | the four components of a form (`all`, `body`, `information`, `actions`) and the messages between them                                    |
+| `src/shared/angular-element.ts`        | an Angular component as a web component: one application, no zone.js, the style in each shadow root                                      |
+| `src/shared/api.ts`                    | `loanApproval`, the one instance of the generated `UserTasksApi` and `ResponseError`; base URL `/wm/loan-approval` from the OpenAPI file |
+| `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, the Angular linker, and `bc-manifest.json` from esbuild's outputs                                            |
+| `test/browser/user-task-forms.test.js` | the browser tests, with areas and with `all` only                                                                                        |
 
 ## Boilerplate files
 
@@ -51,7 +51,8 @@ per page. Two modules which define the same name break each other.
 |-----------------------------|------------------------------------------------------------------------------------|
 | `package.json`              | the scripts, and in `config` the module id, the jar coordinates and the image name |
 | `tsconfig.json`             | for `ngc`, which checks types and templates and writes JavaScript to `build/ngc`   |
-| `scripts/fetch-openapi.mjs` | copies the OpenAPI file from the submodule, and its server as the client base URL  |
+| `scripts/fetch-openapi.mjs` | copies the OpenAPI file from the submodule and checks that it names a server       |
+| `openapi-ts.config.mjs`     | the options of `@hey-api/openapi-ts`, the generator of the API client              |
 | `.gitmodules`               | the submodule `backend`, the backend repository which owns the OpenAPI file        |
 | `scripts/build-ui-jar.mjs`  | the UI jar and its pom                                                             |
 | `scripts/build-image.mjs`   | the nginx image                                                                    |
@@ -65,8 +66,8 @@ per page. Two modules which define the same name break each other.
 
 ## Adding this blueprint to an existing project
 
-1. If the workflow module has no frontend project yet, copy this one and replace the
-   placeholders. If it has one, take the files below `src` and the scripts it lacks.
+1. If the workflow module has no frontend project yet, copy this one and replace the placeholders.
+   If it has one, take the files below `src`, the scripts it lacks and `openapi-ts.config.mjs`.
 2. Each user task gets a visual entry in `src/forms/` and a line in the table of
    `src/data/user-task-form.ts`. Add the entry to the list in
    `scripts/build-micro-frontends.mjs`. A form with one input field can use `defineInputForm`.
