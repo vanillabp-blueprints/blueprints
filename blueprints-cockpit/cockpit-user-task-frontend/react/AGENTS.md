@@ -1,10 +1,10 @@
 # cockpit-user-task-frontend-react
 
 The forms of the workflow module `loan-approval` for a VanillaBP Business Cockpit, in React: two
-user tasks, a data entry which picks the form, a column of the task list. An npm project. Only the
-generator of the API client needs a Java runtime, and no Maven. It builds the micro-frontends, the
-UI jar and an nginx image. The backend with the API and the application are separate projects. The
-OpenAPI file of the backend comes in through the git submodule `backend/`.
+user tasks, a data entry which picks the form, a column of the task list. An npm project without
+Java. It builds the micro-frontends, the UI jar and an nginx image. The backend with the API and
+the application are separate projects. The OpenAPI file of the backend comes in through the git
+submodule `backend/`.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
@@ -33,42 +33,42 @@ per page. Two modules which define the same name break each other.
 
 ## Core files
 
-|                  File                  |                                                                       Why it matters                                                                       |
-|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `src/loan-approval.ts`                 | module id, process id, task definitions, entry names and web component names, in one place                                                                 |
-| `src/data/user-task-form.ts`           | data entry `UserTaskForm`. Plain TypeScript, it must never import React or a form                                                                          |
-| `src/data/user-task-list.ts`           | data entry `UserTaskList`, the column `details.riskAssessment`                                                                                             |
-| `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`. It exports nothing, evaluating it defines the web components                                                                |
-| `src/forms/check-documents-form.tsx`   | visual entry `CheckDocumentsForm`                                                                                                                          |
-| `src/shared/input-form.tsx`            | the four web components of a form (`all`, `body`, `information`, `actions`) and the messages between them                                                  |
-| `src/shared/api.ts`                    | `loanApproval`, the one instance of the generated `UserTasksApi`; positional parameters, base path `/wm/loan-approval` from the server of the OpenAPI file |
-| `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                                                                                  |
-| `test/browser/user-task-forms.test.js` | the browser tests, with areas and with `all` only                                                                                                          |
+|                  File                  |                                                              Why it matters                                                              |
+|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| `src/loan-approval.ts`                 | module id, process id, task definitions, entry names and web component names, in one place                                               |
+| `src/data/user-task-form.ts`           | data entry `UserTaskForm`. Plain TypeScript, it must never import React or a form                                                        |
+| `src/data/user-task-list.ts`           | data entry `UserTaskList`, the column `details.riskAssessment`                                                                           |
+| `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`. It exports nothing, evaluating it defines the web components                                              |
+| `src/forms/check-documents-form.tsx`   | visual entry `CheckDocumentsForm`                                                                                                        |
+| `src/shared/input-form.tsx`            | the four web components of a form (`all`, `body`, `information`, `actions`) and the messages between them                                |
+| `src/shared/api.ts`                    | `loanApproval`, the one instance of the generated `UserTasksApi` and `ResponseError`; base URL `/wm/loan-approval` from the OpenAPI file |
+| `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                                                                |
+| `test/browser/user-task-forms.test.js` | the browser tests, with areas and with `all` only                                                                                        |
 
 ## Boilerplate files
 
-|              File              |                                                                        Purpose                                                                         |
-|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `package.json`                 | the scripts, and in `config` the module id, the jar coordinates and the image name                                                                     |
-| `tsconfig.json`                | type checking only; esbuild builds                                                                                                                     |
-| `scripts/fetch-openapi.mjs`    | copies the OpenAPI file from the submodule and checks that it names a server                                                                           |
-| `openapitools.json`            | the generator `typescript-fetch`, its version (the same as in the backend) and its options `useSingleRequestParameter=false` and `withInterfaces=true` |
-| `.gitmodules`                  | the submodule `backend`, the backend repository which owns the OpenAPI file                                                                            |
-| `scripts/build-ui-jar.mjs`     | the UI jar and its pom                                                                                                                                 |
-| `scripts/build-image.mjs`      | the nginx image                                                                                                                                        |
-| `scripts/start.mjs`            | placeholder for the dev shell                                                                                                                          |
-| `src/shared/react-element.tsx` | a React component as a web component, with `defineBcElement` of the kit                                                                                |
-| `src/shared/texts.ts`          | the texts in English and German                                                                                                                        |
-| `src/shared/style.ts`          | the styles, put into each shadow root                                                                                                                  |
-| `docker/Dockerfile`            | the nginx image                                                                                                                                        |
-| `docker/nginx.conf`            | serves `/loan-approval/`, the manifest without caching                                                                                                 |
-| `test/browser/page.js`         | the test page with `createModuleHost`                                                                                                                  |
-| `test/browser/server.js`       | serves the test page and `dist/micro-frontends` below `/wm/loan-approval/`                                                                             |
+|              File              |                                      Purpose                                       |
+|--------------------------------|------------------------------------------------------------------------------------|
+| `package.json`                 | the scripts, and in `config` the module id, the jar coordinates and the image name |
+| `tsconfig.json`                | type checking only; esbuild builds                                                 |
+| `scripts/fetch-openapi.mjs`    | copies the OpenAPI file from the submodule and checks that it names a server       |
+| `openapi-ts.config.mjs`        | the options of `@hey-api/openapi-ts`, the generator of the API client              |
+| `.gitmodules`                  | the submodule `backend`, the backend repository which owns the OpenAPI file        |
+| `scripts/build-ui-jar.mjs`     | the UI jar and its pom                                                             |
+| `scripts/build-image.mjs`      | the nginx image                                                                    |
+| `scripts/start.mjs`            | placeholder for the dev shell                                                      |
+| `src/shared/react-element.tsx` | a React component as a web component, with `defineBcElement` of the kit            |
+| `src/shared/texts.ts`          | the texts in English and German                                                    |
+| `src/shared/style.ts`          | the styles, put into each shadow root                                              |
+| `docker/Dockerfile`            | the nginx image                                                                    |
+| `docker/nginx.conf`            | serves `/loan-approval/`, the manifest without caching                             |
+| `test/browser/page.js`         | the test page with `createModuleHost`                                              |
+| `test/browser/server.js`       | serves the test page and `dist/micro-frontends` below `/wm/loan-approval/`         |
 
 ## Adding this blueprint to an existing project
 
 1. If the workflow module has no frontend project yet, copy this one and replace the placeholders.
-   If it has one, take the files below `src`, the scripts it lacks and `openapitools.json`.
+   If it has one, take the files below `src`, the scripts it lacks and `openapi-ts.config.mjs`.
 2. Each user task gets a visual entry in `src/forms/` and a line in the table of
    `src/data/user-task-form.ts`. Add the entry to the list in
    `scripts/build-micro-frontends.mjs`. A form with one input field can use `defineInputForm`.
@@ -90,9 +90,9 @@ npm run build
 npm test
 ```
 
-`npm run build` needs a Java runtime 11 or newer for the generator of the API client, and the
-OpenAPI file: the submodule `backend/` filled (`git submodule update --init`), the backend directory
-next to this one in the monorepo, or `OPENAPI_FILE`. `bc-check-entries` has to pass. It runs inside
-`npm run build`. Every browser test has to pass, the ones with areas and the ones with `all` only.
+`npm run build` needs the OpenAPI file: the submodule `backend/` filled
+(`git submodule update --init`), the backend directory next to this one in the monorepo, or
+`OPENAPI_FILE`. `bc-check-entries` has to pass. It runs inside `npm run build`. Every browser test has
+to pass, the ones with areas and the ones with `all` only.
 
 Do not report success without having run this.

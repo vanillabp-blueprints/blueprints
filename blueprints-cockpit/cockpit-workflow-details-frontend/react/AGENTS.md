@@ -1,11 +1,11 @@
 # cockpit-workflow-details-frontend-react
 
-The case page of the workflow module `loan-approval` for a VanillaBP Business Cockpit, in React: a
-data entry which picks the page of a case, the page with the open user tasks, the data of the loan
-request and the button "Withdraw loan request", and two columns of the case list. An npm project.
-Only the generator of the API client needs a Java runtime, and no Maven. It builds the
-micro-frontends, the UI jar and an nginx image. The backend with the API and the application are
-separate projects. The OpenAPI file of the backend comes in through the git submodule `backend/`.
+The case page of the workflow module `loan-approval` for a VanillaBP Business Cockpit, in React:
+a data entry which picks the page of a case, the page with the open user tasks, the data of the
+loan request and the button "Withdraw loan request", and two columns of the case list. An npm
+project without Java. It builds the micro-frontends, the UI jar and an nginx image. The backend with the
+API and the application are separate projects. The OpenAPI file of the backend comes in through
+the git submodule `backend/`.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
@@ -37,40 +37,40 @@ per page. Two modules which define the same name break each other.
 
 ## Core files
 
-|                 File                 |                                                                     Why it matters                                                                     |
-|--------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `src/loan-approval.ts`               | module id, process id, entry name, web component names and the keys of the details, in one place                                                       |
-| `src/data/workflow-page.ts`          | data entry `WorkflowPage`. Plain TypeScript, it must never import React or the page                                                                    |
-| `src/data/workflow-list.ts`          | data entry `WorkflowList`, the columns `details.applicant` and `details.status`                                                                        |
-| `src/pages/loan-approval-page.tsx`   | visual entry `LoanApprovalPage`: the four web components (`all`, `body`, `information`, `actions`), `getUserTasks` and the messages between the areas  |
-| `src/shared/api.ts`                  | `loanApproval`, the one instance of the generated `CasesApi`; positional parameters, base path `/wm/loan-approval` from the server of the OpenAPI file |
-| `src/shared/style.ts`                | the styles, put into each shadow root. `overflow-wrap: anywhere` keeps long content from widening the page                                             |
-| `scripts/build-micro-frontends.mjs`  | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                                                                              |
-| `test/browser/workflow-page.test.js` | the browser tests, with areas and with `all` only                                                                                                      |
+|                 File                 |                                                                    Why it matters                                                                     |
+|--------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `src/loan-approval.ts`               | module id, process id, entry name, web component names and the keys of the details, in one place                                                      |
+| `src/data/workflow-page.ts`          | data entry `WorkflowPage`. Plain TypeScript, it must never import React or the page                                                                   |
+| `src/data/workflow-list.ts`          | data entry `WorkflowList`, the columns `details.applicant` and `details.status`                                                                       |
+| `src/pages/loan-approval-page.tsx`   | visual entry `LoanApprovalPage`: the four web components (`all`, `body`, `information`, `actions`), `getUserTasks` and the messages between the areas |
+| `src/shared/api.ts`                  | `loanApproval`, the one instance of the generated `CasesApi` and `ResponseError`; base URL `/wm/loan-approval` from the OpenAPI file                  |
+| `src/shared/style.ts`                | the styles, put into each shadow root. `overflow-wrap: anywhere` keeps long content from widening the page                                            |
+| `scripts/build-micro-frontends.mjs`  | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                                                                             |
+| `test/browser/workflow-page.test.js` | the browser tests, with areas and with `all` only                                                                                                     |
 
 ## Boilerplate files
 
-|              File              |                                                                        Purpose                                                                         |
-|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `package.json`                 | the scripts, and in `config` the module id, the jar coordinates and the image name                                                                     |
-| `tsconfig.json`                | type checking only; esbuild builds                                                                                                                     |
-| `scripts/fetch-openapi.mjs`    | copies the OpenAPI file from the submodule and checks that it names a server                                                                           |
-| `openapitools.json`            | the generator `typescript-fetch`, its version (the same as in the backend) and its options `useSingleRequestParameter=false` and `withInterfaces=true` |
-| `.gitmodules`                  | the submodule `backend`, the backend repository which owns the OpenAPI file                                                                            |
-| `scripts/build-ui-jar.mjs`     | the UI jar and its pom                                                                                                                                 |
-| `scripts/build-image.mjs`      | the nginx image                                                                                                                                        |
-| `scripts/start.mjs`            | placeholder for the dev shell                                                                                                                          |
-| `src/shared/react-element.tsx` | a React component as a web component, with `defineBcElement` of the kit                                                                                |
-| `src/shared/texts.ts`          | the texts in English and German                                                                                                                        |
-| `docker/Dockerfile`            | the nginx image                                                                                                                                        |
-| `docker/nginx.conf`            | serves `/loan-approval/`, the manifest without caching                                                                                                 |
-| `test/browser/page.js`         | the test page with `createModuleHost`, which answers `workflow.getUserTasks`                                                                           |
-| `test/browser/server.js`       | serves the test page and `dist/micro-frontends` below `/wm/loan-approval/`                                                                             |
+|              File              |                                      Purpose                                       |
+|--------------------------------|------------------------------------------------------------------------------------|
+| `package.json`                 | the scripts, and in `config` the module id, the jar coordinates and the image name |
+| `tsconfig.json`                | type checking only; esbuild builds                                                 |
+| `scripts/fetch-openapi.mjs`    | copies the OpenAPI file from the submodule and checks that it names a server       |
+| `openapi-ts.config.mjs`        | the options of `@hey-api/openapi-ts`, the generator of the API client              |
+| `.gitmodules`                  | the submodule `backend`, the backend repository which owns the OpenAPI file        |
+| `scripts/build-ui-jar.mjs`     | the UI jar and its pom                                                             |
+| `scripts/build-image.mjs`      | the nginx image                                                                    |
+| `scripts/start.mjs`            | placeholder for the dev shell                                                      |
+| `src/shared/react-element.tsx` | a React component as a web component, with `defineBcElement` of the kit            |
+| `src/shared/texts.ts`          | the texts in English and German                                                    |
+| `docker/Dockerfile`            | the nginx image                                                                    |
+| `docker/nginx.conf`            | serves `/loan-approval/`, the manifest without caching                             |
+| `test/browser/page.js`         | the test page with `createModuleHost`, which answers `workflow.getUserTasks`       |
+| `test/browser/server.js`       | serves the test page and `dist/micro-frontends` below `/wm/loan-approval/`         |
 
 ## Adding this blueprint to an existing project
 
 1. If the workflow module has no frontend project yet, copy this one and replace the placeholders.
-   If it has one, take the files below `src`, the scripts it lacks and `openapitools.json`.
+   If it has one, take the files below `src`, the scripts it lacks and `openapi-ts.config.mjs`.
 2. Each process with a case page gets a visual entry in `src/pages/` and a case in
    `src/data/workflow-page.ts`. Add the entry to the list in `scripts/build-micro-frontends.mjs`.
 3. Read the open user tasks with `workflow.getUserTasks(activeOnly, limitList...)`. Do not call
@@ -95,9 +95,9 @@ npm run build
 npm test
 ```
 
-`npm run build` needs a Java runtime 11 or newer for the generator of the API client, and the
-OpenAPI file: the submodule `backend/` filled (`git submodule update --init`), the backend directory
-next to this one in the monorepo, or `OPENAPI_FILE`. `bc-check-entries` has to pass. It runs inside
-`npm run build`. Every browser test has to pass, the ones with areas and the ones with `all` only.
+`npm run build` needs the OpenAPI file: the submodule `backend/` filled
+(`git submodule update --init`), the backend directory next to this one in the monorepo, or
+`OPENAPI_FILE`. `bc-check-entries` has to pass. It runs inside `npm run build`. Every browser test
+has to pass, the ones with areas and the ones with `all` only.
 
 Do not report success without having run this.

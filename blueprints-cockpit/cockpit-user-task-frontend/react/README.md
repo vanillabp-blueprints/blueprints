@@ -2,9 +2,10 @@
 
 # cockpit-user-task-frontend-react
 
-The forms of two user tasks for a VanillaBP Business Cockpit, written in React. The cockpit loads
-them at runtime from the workflow module `loan-approval`. This project builds them with npm, and it
-delivers them in two ways: as a UI jar for a Java application, and as an nginx image.
+The forms of two user tasks for a VanillaBP Business Cockpit, written in React. The cockpit
+loads them at runtime from the workflow module `loan-approval`. This project builds them with
+npm and nothing else, and it delivers them in two ways: as a UI jar for a Java application, and
+as an nginx image.
 
 It is one of three parts of the blueprint `cockpit-user-task`:
 
@@ -79,8 +80,7 @@ stays the same where it uses the minimum.
 
 ## Running it
 
-You need Node.js 24, a Java runtime 11 or newer, git and Docker. Java runs the OpenAPI
-Generator, which writes the API client. Docker builds the nginx image.
+You need Node.js 24, git and Docker. Docker builds the nginx image.
 
 Clone the repository with its submodule, which brings the OpenAPI file of the backend:
 
@@ -109,7 +109,7 @@ npm test
 |---------------------------------|----------------------------------------------------------------------------------------------------|
 | `npm run build`                 | all of the following, one after the other                                                          |
 | `npm run fetch:openapi`         | copies the OpenAPI file of the backend into `build/openapi`                                        |
-| `npm run generate:client`       | generates the API client from it with the OpenAPI Generator `typescript-fetch`                     |
+| `npm run generate:client`       | generates the API client from it with `@hey-api/openapi-ts`                                        |
 | `npm run typecheck`             | checks the types of the whole project                                                              |
 | `npm run build:micro-frontends` | builds the entries and `bc-manifest.json` into `dist/micro-frontends`                              |
 | `npm run check:entries`         | runs `bc-check-entries` of the kit: no bare import, no framework in a data entry, every file there |
@@ -134,13 +134,13 @@ backend/loan-approval/src/main/resources/openapi/loan-approval.yaml
 ```
 
 Why a submodule and not a released jar? The frontend builds without the backend being built or
-released, and without Maven. It needs no login to a Maven repository. The commit of the
+released, and without Java. It needs no Maven repository and no login to one. The commit of the
 submodule says exactly which state of the API the frontend was built against, and a pull request
 which moves it shows the change of the API in its diff.
 
 `scripts/fetch-openapi.mjs` copies the file to `build/openapi/loan-approval.yaml`. It also checks
 that the file names a server, because the generator makes the first one, `/wm/loan-approval`, the
-base path of the client. To build against another file, for example a draft of a new API, set
+base URL of the client. To build against another file, for example a draft of a new API, set
 `OPENAPI_FILE` to its path.
 
 To take a newer API, move the submodule to the newest commit of the backend and commit that:
@@ -163,44 +163,47 @@ in `renovate.json`:
 Then Renovate opens a pull request whenever the branch `main` of the backend moves on.
 
 In the monorepo [`blueprints`](https://github.com/vanillabp-blueprints/blueprints), where this
-project is developed, the backend is a directory next to this one, and there is no submodule. There
-the script reads the file named in `config.openapiInMonorepo`. The job which copies this project
-into its own repository adds the submodule. In your own project, delete `config.openapiInMonorepo`.
+project is developed, the backend is a directory next to this one, and there is no submodule.
+There the script reads the file named in `config.openapiInMonorepo`. The job which copies this
+project into its own repository adds the submodule. In your own project, delete
+`config.openapiInMonorepo`.
 
 ### The generated client
 
-`npm run generate:client` runs the OpenAPI Generator with the generator
-[`typescript-fetch`](https://openapi-generator.tech/docs/generators/typescript-fetch/). It is the
-same tool which writes the Java code of the backend, and it names things the same way. The class
-name comes from the tag of the OpenAPI file: the tag `user-tasks` becomes the interface
-`UserTasksApiInterface` and the class `UserTasksApi`, which implements it. Each operation becomes
+`npm run generate:client` runs [`@hey-api/openapi-ts`](https://heyapi.dev/openapi-ts/get-started).
+It names things the way the Java code of the backend is named. The class name comes from the tag
+of the OpenAPI file: the tag `user-tasks` becomes the class `UserTasksApi`. Each operation becomes
 a method, and each schema a type of the same name.
 
-`openapitools.json` sets two options of the generator, so the client is called like the Java one:
+`openapi-ts.config.mjs` sets the options of the generator:
 
-- `useSingleRequestParameter=false`: a method takes its parameters one by one, in the order of
-  the OpenAPI file, not as one object.
-- `withInterfaces=true`: the generator writes an interface next to each class.
+- one class per tag, named like the Java client,
+- a method takes one object with all its parameters, and the body comes under the name of its
+  schema,
+- a method returns the data of the answer, and it throws when the answer is not a success.
 
 `src/shared/api.ts` creates the one instance which the forms use. It is named after its role,
-the API of the workflow module, and typed with the interface:
+the API of the workflow module:
 
 ```ts
-export const loanApproval: UserTasksApiInterface = new UserTasksApi();
+export const loanApproval = new UserTasksApi();
 
-const form = await loanApproval.getAssessRiskForm(userTaskId);
-await loanApproval.completeAssessRisk(userTaskId, { riskAssessment });
+const form = await loanApproval.getAssessRiskForm({ userTaskId });
+await loanApproval.completeAssessRisk({ userTaskId, assessRiskInput: { riskAssessment } });
 ```
 
-The client uses the `fetch` of the browser and needs no library at runtime. An answer which is
-not a success throws a `ResponseError`, and its `response` has the status.
+The client uses the `fetch` of the browser. The generator copies the code for it into the
+generated files, so the forms need no library for it at runtime. When an answer is not a success,
+the generated client throws only its body, and the OpenAPI file gives errors no body. So
+`api.ts` adds an error interceptor, which throws a `ResponseError` instead. Its `response` has the
+status, and that is how a form tells 404 from other failures. A network error brings no answer,
+and the call throws what `fetch` threw.
 
-The generator is a Java program. The npm package `@openapitools/openapi-generator-cli` downloads
-it from Maven Central the first time and runs it with `java`. `openapitools.json` pins its
-version to the one the backend uses for its Java code. So the build needs a Java runtime, but no
-Maven. If your build agents reach Maven Central only through a mirror, set its address as
-`downloadUrl` in `openapitools.json`. The
-[README of the package](https://github.com/OpenAPITools/openapi-generator-cli) shows how.
+The generator is a Node program and an exact dev dependency in `package.json`. It has no install
+scripts, and it downloads nothing when it runs. So the build needs Node and nothing else: no Java,
+which many build agents for Node do not have, and no access to Maven Central. The version is
+pinned exactly, because the 0.x line of the generator breaks things in minor versions. Check a
+new version by hand before you take it.
 
 The build writes the generated code to `src/generated/loan-approval` every time, and git ignores
 it. The backend does the same with its Java code, which it generates below `target/`. So the
@@ -238,20 +241,20 @@ only says so, and the browser tests are the way to see the forms.
 
 ## How it works
 
-|                  File                  |                                                 Role                                                 |
-|----------------------------------------|------------------------------------------------------------------------------------------------------|
-| `src/loan-approval.ts`                 | the names shared with the backend and the cockpit: module id, process id, task definitions, entries  |
-| `src/data/user-task-form.ts`           | data entry `UserTaskForm`: picks the form by `bpmnProcessId` and `taskDefinition`                    |
-| `src/data/user-task-list.ts`           | data entry `UserTaskList`: the column `details.riskAssessment` of the task list                      |
-| `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`: the form of "Assess risk"                                             |
-| `src/forms/check-documents-form.tsx`   | visual entry `CheckDocumentsForm`: the form of "Check documents"                                     |
-| `src/shared/input-form.tsx`            | the four web components of a form with one input field, and the messages between its areas           |
-| `src/shared/react-element.tsx`         | makes a React component a web component with `defineBcElement` of the kit                            |
-| `src/shared/api.ts`                    | `loanApproval`, the one instance of the generated `UserTasksApi`, typed with `UserTasksApiInterface` |
-| `scripts/build-micro-frontends.mjs`    | builds the entries with esbuild and writes `bc-manifest.json` with `createManifest` of the kit       |
-| `scripts/build-ui-jar.mjs`             | builds the UI jar with a zip library                                                                 |
-| `docker/Dockerfile`                    | the nginx image                                                                                      |
-| `test/browser/user-task-forms.test.js` | the browser tests in the host of the kit                                                             |
+|                  File                  |                                                     Role                                                     |
+|----------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| `src/loan-approval.ts`                 | the names shared with the backend and the cockpit: module id, process id, task definitions, entries          |
+| `src/data/user-task-form.ts`           | data entry `UserTaskForm`: picks the form by `bpmnProcessId` and `taskDefinition`                            |
+| `src/data/user-task-list.ts`           | data entry `UserTaskList`: the column `details.riskAssessment` of the task list                              |
+| `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`: the form of "Assess risk"                                                     |
+| `src/forms/check-documents-form.tsx`   | visual entry `CheckDocumentsForm`: the form of "Check documents"                                             |
+| `src/shared/input-form.tsx`            | the four web components of a form with one input field, and the messages between its areas                   |
+| `src/shared/react-element.tsx`         | makes a React component a web component with `defineBcElement` of the kit                                    |
+| `src/shared/api.ts`                    | `loanApproval`, the one instance of the generated `UserTasksApi` and `ResponseError`, which keeps the status |
+| `scripts/build-micro-frontends.mjs`    | builds the entries with esbuild and writes `bc-manifest.json` with `createManifest` of the kit               |
+| `scripts/build-ui-jar.mjs`             | builds the UI jar with a zip library                                                                         |
+| `docker/Dockerfile`                    | the nginx image                                                                                              |
+| `test/browser/user-task-forms.test.js` | the browser tests in the host of the kit                                                                     |
 
 ### From the list to a completed task
 
@@ -320,10 +323,9 @@ stays when the cockpit sets a property such as the language.
 ### Three repositories, and the order of their releases
 
 Many companies give their build agents one Docker image with Java and Maven and another one with
-Node. A repository where Maven and npm build together is hard to have there. So a workflow module
-with a user interface has three parts, each built with one tool: the backend with Maven, this
-frontend with npm, and the application with Maven again. The agent for the frontend needs a Java
-runtime next to Node, because the generator of the API client is a Java program. It needs no Maven.
+Node. A repository where Maven and npm build together is hard to have there. So a workflow
+module with a user interface has three parts, each built with one tool: the backend with Maven,
+this frontend with npm, and the application with Maven again.
 
 The frontend needs only the API, and it takes the OpenAPI file from the backend repository
 through its submodule. Only the application needs both. So there is no cycle, and a release goes
@@ -369,7 +371,7 @@ lets browsers keep it for good.
 
 - [Loading the parts of a workflow module](https://github.com/vanillabp/business-cockpit/blob/main/skills/business-cockpit-creator/references/module-loading.md): entries, the manifest, areas and the event protocol
 - [The module kit](https://github.com/vanillabp/business-cockpit-module-kit): `@vanillabp/bc-module-kit` and `@vanillabp/bc-module-host`
-- [OpenAPI Generator `typescript-fetch`](https://openapi-generator.tech/docs/generators/typescript-fetch/): the generator of the API client, run by [`@openapitools/openapi-generator-cli`](https://github.com/OpenAPITools/openapi-generator-cli)
+- [`@hey-api/openapi-ts`](https://heyapi.dev/openapi-ts/get-started): the generator of the API client
 
 This blueprint is developed in the monorepo
 [`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a

@@ -63,5 +63,5 @@ node_modules/
 dist/
 # the OpenAPI file of the workflow module, copied there by scripts/fetch-openapi.mjs
 build/
-# the API client, which the OpenAPI Generator writes from the OpenAPI file
+# the API client, which @hey-api/openapi-ts writes from the OpenAPI file
 src/generated/

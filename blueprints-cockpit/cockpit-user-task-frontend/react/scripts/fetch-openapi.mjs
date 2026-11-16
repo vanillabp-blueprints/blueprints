@@ -1,6 +1,6 @@
 // Copies the OpenAPI file of the workflow module to build/openapi/loan-approval.yaml, where
 // `npm run generate:client` reads it. It also empties src/generated, so no class of an older API
-// stays behind there. The generator makes the first server URL of the file the base path of the
+// stays behind there. The generator makes the first server URL of the file the base URL of the
 // client, so this script makes sure the file names one.
 //
 // The backend owns the API, and this project only reads its OpenAPI file. The file is the
@@ -42,7 +42,7 @@ function findOpenApi() {
 /** The first server URL of the OpenAPI file, read without a YAML library. */
 function serverUrl(yaml, origin) {
   const url = yaml.match(/^servers:[ \t]*\r?\n[ \t]+- url:[ \t]*['"]?([^'"\s#]+)/m)?.[1];
-  if (!url) throw new Error(`${origin} names no server URL, and the API client needs it as its base path`);
+  if (!url) throw new Error(`${origin} names no server URL, and the API client needs it as its base URL`);
   return url;
 }
 
