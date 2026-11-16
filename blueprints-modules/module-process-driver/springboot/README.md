@@ -167,19 +167,24 @@ project has used them.
 
 Compared to [`module-simulator`](https://github.com/vanillabp-blueprints/module-simulator-springboot):
 
-|                              File                              |                                    What is different                                     |
-|----------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/.../loan_approval.bpmn`      | a gateway and the task "Assess risk", the task "Check contract" instead of the message   |
-| `.../loanapproval/model/Aggregate.java`                        | the answer for the gateway, the ids of both open tasks, the signature as a fact          |
-| `.../loanapproval/Service.java`                                | assesses the risk, takes the signature, refuses to check a contract which is not signed  |
-| `.../loanapproval/ContractNotSignedException.java`             | new: the reason "Check contract" cannot be completed yet                                 |
-| `.../loanapproval/ApiController.java`                          | completes both tasks, and answers 409 while the signature is missing                     |
-| `.../openapi/loan-approval.yaml`                               | the two tasks instead of "Prepare contract", and the 409                                 |
-| `.../loanapproval/config/LoanApprovalProperties.java`          | the limit of the risk assessment                                                         |
-| `loan-approval/pom.xml`                                        | no tests, no simulator start, no BPMS profiles: all of it moved to `test-driver`         |
-| `test-driver/`                                                 | new: the process driver, its REST API, and the tests of the workflow module              |
-| `test-driver/src/main/java/blueprint/testdriver/simulator/...` | `SimulatorTestApi`, moved from the tests of `loan-approval`, because the driver needs it |
-| `application/pom.xml`                                          | the Maven profile `test-driver`                                                          |
+|                                File                                 |                                         What is different                                         |
+|---------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/.../loan_approval.bpmn`           | a gateway and the task "Assess risk", the task "Check contract" instead of the message            |
+| `.../loanapproval/model/Aggregate.java`                             | the answer for the gateway, the ids of both open tasks, the signature as a fact                   |
+| `.../loanapproval/Service.java`                                     | assesses the risk, takes the signature, refuses to check a contract which is not signed           |
+| `.../loanapproval/ContractNotSignedException.java`                  | new: the reason "Check contract" cannot be completed yet                                          |
+| `.../loanapproval/ApiController.java`                               | completes both tasks, and answers 409 while the signature is missing                              |
+| `.../openapi/loan-approval.yaml`                                    | the two tasks instead of "Prepare contract", and the 409                                          |
+| `.../loanapproval/config/LoanApprovalProperties.java`               | the limit of the risk assessment                                                                  |
+| `.../loanapproval/Workflow.java`                                    | completes "Assess risk" and "Check contract" instead of correlating the message "Contract signed" |
+| `.../loanapproval/WorkflowTaskHandler.java`                         | opens "Assess risk" and "Check contract" instead of "Prepare contract"                            |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | the limit from which "Assess risk" comes first                                                    |
+| `loan-approval/src/test/`                                           | gone: the tests of the workflow module live in `test-driver`                                      |
+| `pom.xml`                                                           | its own coordinates and description, and the module `test-driver`                                 |
+| `loan-approval/pom.xml`                                             | no tests, no simulator start, no BPMS profiles: all of it moved to `test-driver`                  |
+| `test-driver/`                                                      | new: the process driver, its REST API, and the tests of the workflow module                       |
+| `test-driver/src/main/java/blueprint/testdriver/simulator/...`      | `SimulatorTestApi`, moved from the tests of `loan-approval`, because the driver needs it          |
+| `application/pom.xml`                                               | the Maven profile `test-driver`                                                                   |
 
 ## Running it
 
