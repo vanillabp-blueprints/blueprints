@@ -53,6 +53,8 @@ jobs:
         run: python bin/check_delta_tables.py blueprints.yaml
       - name: Check that no decision of another repository is cited by number
         run: python bin/check_foreign_decisions.py
+      - name: Check that no link points at a README anchor of spi-for-java
+        run: python bin/check_spi_readme_links.py
       - name: Check the test harness copies against their reference
         run: python bin/sync_harness.py --check
       # A blueprint whose BPMS profiles scope identifiers differently describes a switch
