@@ -6,7 +6,7 @@
 // 'details' of every later user task. The cockpit reads it there by the path of the column.
 
 import type { ColumnsOfUserTaskFunction, GuiApiData } from '@vanillabp/bc-module-kit';
-import { BPMN_PROCESS_ID } from '../loan-approval.ts';
+import { BPMN_PROCESS_ID } from '@loan-approval';
 
 export const userTaskListColumns: ColumnsOfUserTaskFunction<GuiApiData> = (userTask) => {
   if (userTask.bpmnProcessId !== BPMN_PROCESS_ID) return undefined;

@@ -1,10 +1,9 @@
 // Visual entry CheckDocumentsForm: the form of the user task "Check documents". It shows the risk
 // assessment of the user task before, which it may not change, and asks for a note.
 
-import { loanApproval, type CheckDocumentsForm } from '../shared/api.ts';
-import { defineInputForm } from '../shared/input-form.tsx';
-import type { Texts } from '../shared/texts.ts';
-import { CHECK_DOCUMENTS_ELEMENTS } from '../loan-approval.ts';
+import { loanApproval, type CheckDocumentsForm } from '@gui-client';
+import { defineInputForm, type Texts } from '@shared';
+import { CHECK_DOCUMENTS_ELEMENTS } from '@loan-approval';
 
 function LoanRequest({ form, texts }: { form: CheckDocumentsForm; texts: Texts }) {
   return (

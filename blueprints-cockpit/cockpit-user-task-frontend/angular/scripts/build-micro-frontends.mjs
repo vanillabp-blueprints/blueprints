@@ -48,6 +48,21 @@ const angularLinker = {
   },
 };
 
+/**
+ * The path aliases of tsconfig.json, such as '@shared', for the JavaScript which ngc wrote. ngc
+ * keeps such an import as it is, and the alias points to the TypeScript file in src. Here it
+ * points to the JavaScript file which ngc wrote from it, in build/ngc.
+ */
+const { paths } = JSON.parse(readFileSync(join(projectDir, 'tsconfig.json'), 'utf8')).compilerOptions;
+const compiled = Object.fromEntries(Object.entries(paths)
+  .map(([alias, [file]]) => [alias, join(projectDir, file.replace(/^\.\/src\//, 'build/ngc/').replace(/\.ts$/, '.js'))]));
+const pathAliases = {
+  name: 'path-aliases',
+  setup(esbuild) {
+    esbuild.onResolve({ filter: /^@[a-z-]+$/ }, ({ path }) => (compiled[path] ? { path: compiled[path] } : undefined));
+  },
+};
+
 rmSync(outdir, { recursive: true, force: true });
 mkdirSync(outdir, { recursive: true });
 mkdirSync(join(projectDir, 'build'), { recursive: true });
@@ -68,7 +83,7 @@ const bundle = await build({
   platform: 'browser',
   // Angular reads these to leave out its checks for development and its runtime compiler.
   define: { ngDevMode: 'false', ngJitMode: 'false', ngI18nClosureMode: 'false', ngServerMode: 'false' },
-  plugins: [angularLinker],
+  plugins: [pathAliases, angularLinker],
   logLevel: 'warning',
 });
 

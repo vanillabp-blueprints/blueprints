@@ -14,7 +14,7 @@ import {
   CHECK_DOCUMENTS,
   CHECK_DOCUMENTS_ELEMENTS,
   CHECK_DOCUMENTS_FORM,
-} from '../loan-approval.ts';
+} from '@loan-approval';
 
 /** The forms of the process loan_approval, by task definition. */
 const loanApprovalForms: Record<string, BcPageParts> = {

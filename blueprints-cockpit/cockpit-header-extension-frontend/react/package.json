@@ -19,12 +19,13 @@
   "scripts": {
     "fetch:openapi": "node scripts/fetch-openapi.mjs",
     "generate:client": "openapi-ts",
+    "check:imports": "node scripts/check-imports.mjs",
     "typecheck": "tsc --noEmit",
     "build:micro-frontends": "node scripts/build-micro-frontends.mjs",
     "check:entries": "bc-check-entries dist/micro-frontends/bc-manifest.json --metafile build/meta.json --data-entry Header",
     "build:jar": "node scripts/build-ui-jar.mjs",
     "build:image": "node scripts/build-image.mjs",
-    "build": "npm run fetch:openapi && npm run generate:client && npm run typecheck && npm run build:micro-frontends && npm run check:entries && npm run build:jar && node scripts/build-image.mjs --skip-without-docker",
+    "build": "npm run check:imports && npm run fetch:openapi && npm run generate:client && npm run typecheck && npm run build:micro-frontends && npm run check:entries && npm run build:jar && node scripts/build-image.mjs --skip-without-docker",
     "test": "node --test --test-concurrency=1 \"test/browser/**/*.test.js\"",
     "start": "node scripts/start.mjs"
   },

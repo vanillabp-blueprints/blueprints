@@ -1,7 +1,6 @@
 <!-- The message shown when the module API fails or the user task is gone. -->
 <script setup lang="ts">
-import type { Texts } from '../texts.ts';
-import type { Problem } from '../input-form.ts';
+import type { Texts, Problem } from '@shared';
 
 defineProps<{ testId: string; problem?: Problem; texts: Texts }>();
 </script>

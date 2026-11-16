@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import type { BcUserTask } from '@vanillabp/bc-module-kit';
-import { useArea, useFormData, type AreaMessage } from '../input-form.ts';
+import { useArea, useFormData, type AreaMessage } from '@shared';
 import InputField from './InputField.ce.vue';
 import ProblemText from './ProblemText.ce.vue';
 

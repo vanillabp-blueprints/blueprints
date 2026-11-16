@@ -1,6 +1,6 @@
 <!-- The input field of a form, with its label. It tells every change through the event 'change'. -->
 <script setup lang="ts">
-import type { Texts } from '../texts.ts';
+import type { Texts } from '@shared';
 
 defineProps<{ testId: string; label: string; value: string; disabled: boolean; texts: Texts }>();
 const emit = defineEmits<{ change: [value: string] }>();

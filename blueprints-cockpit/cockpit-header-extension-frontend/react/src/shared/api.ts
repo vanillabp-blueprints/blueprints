@@ -12,10 +12,9 @@
 // the browser talks to one origin only. The module starts the process itself, and the cockpit
 // learns about the new case from the cockpit adapter, like about every other case.
 
-import { client } from '../generated/loan-approval/client.gen.ts';
-import { StartFormApi } from '../generated/loan-approval/index.ts';
+import { client, StartFormApi } from '@generated';
 
-export type { LoanRequest, StartedLoanRequest } from '../generated/loan-approval/index.ts';
+export type { LoanRequest, StartedLoanRequest } from '@generated';
 
 /**
  * An answer which is not a success. The generated client throws only the body of such an answer,

@@ -54,23 +54,25 @@ extension point differently. Then its types library says so, and these two names
 
 ## Boilerplate files
 
-|                 File                  |                                   Purpose                                    |
-|---------------------------------------|------------------------------------------------------------------------------|
-| `tsconfig.json`                       | type checking only; esbuild builds                                           |
-| `scripts/fetch-openapi.mjs`           | copies the OpenAPI file from the submodule and checks that it names a server |
-| `openapi-ts.config.mjs`               | the options of `@hey-api/openapi-ts`, the generator of the API client        |
-| `.gitmodules`                         | the submodule `backend`, the backend repository which owns the OpenAPI file  |
-| `scripts/build-ui-jar.mjs`            | the UI jar and its pom                                                       |
-| `scripts/build-image.mjs`             | the nginx image                                                              |
-| `scripts/start.mjs`                   | placeholder for the dev shell                                                |
-| `src/shared/react-element.tsx`        | a React component as a web component, with `defineBcElement` of the kit      |
-| `src/shared/style.ts`                 | the styles, put into each shadow root                                        |
-| `src/shared/texts.ts`                 | the texts in English and German                                              |
-| `docker/Dockerfile`                   | the nginx image                                                              |
-| `docker/nginx.conf`                   | serves `/loan-approval/`, the manifest without caching                       |
-| `test/browser/page.js`                | the test page with `createModuleHost`, which draws the header like a cockpit |
-| `test/browser/server.js`              | serves the test page, `dist/micro-frontends` and the second module           |
-| `test/browser/module-without-header/` | the second module of the tests: a manifest without `Header`                  |
+|                 File                  |                                                          Purpose                                                          |
+|---------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `tsconfig.json`                       | type checking only; esbuild builds; `paths` holds the aliases `@loan-approval`, `@shared`, `@gui-client` and `@generated` |
+| `src/shared/index.ts`                 | what the other directories import as `@shared`                                                                            |
+| `scripts/check-imports.mjs`           | fails `npm run build` on an import with `../`; import through an alias instead                                            |
+| `scripts/fetch-openapi.mjs`           | copies the OpenAPI file from the submodule and checks that it names a server                                              |
+| `openapi-ts.config.mjs`               | the options of `@hey-api/openapi-ts`, the generator of the API client                                                     |
+| `.gitmodules`                         | the submodule `backend`, the backend repository which owns the OpenAPI file                                               |
+| `scripts/build-ui-jar.mjs`            | the UI jar and its pom                                                                                                    |
+| `scripts/build-image.mjs`             | the nginx image                                                                                                           |
+| `scripts/start.mjs`                   | placeholder for the dev shell                                                                                             |
+| `src/shared/react-element.tsx`        | a React component as a web component, with `defineBcElement` of the kit                                                   |
+| `src/shared/style.ts`                 | the styles, put into each shadow root                                                                                     |
+| `src/shared/texts.ts`                 | the texts in English and German                                                                                           |
+| `docker/Dockerfile`                   | the nginx image                                                                                                           |
+| `docker/nginx.conf`                   | serves `/loan-approval/`, the manifest without caching                                                                    |
+| `test/browser/page.js`                | the test page with `createModuleHost`, which draws the header like a cockpit                                              |
+| `test/browser/server.js`              | serves the test page, `dist/micro-frontends` and the second module                                                        |
+| `test/browser/module-without-header/` | the second module of the tests: a manifest without `Header`                                                               |
 
 ## Adding this blueprint to an existing project
 

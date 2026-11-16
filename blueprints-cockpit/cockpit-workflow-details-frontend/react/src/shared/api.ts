@@ -11,10 +11,9 @@
 // the browser talks to one origin only. The module withdraws the loan request itself, and the
 // cockpit learns about it from the cockpit adapter, like about every other end.
 
-import { client } from '../generated/loan-approval/client.gen.ts';
-import { CasesApi } from '../generated/loan-approval/index.ts';
+import { client, CasesApi } from '@generated';
 
-export type { Case } from '../generated/loan-approval/index.ts';
+export type { Case } from '@generated';
 
 /**
  * An answer which is not a success. The generated client throws only the body of such an answer,

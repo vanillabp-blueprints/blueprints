@@ -289,6 +289,30 @@ only says so, and the browser tests are the way to see the forms.
 The module does not keep a draft. Only the result of a completed user task goes into the
 workflow aggregate. How to keep a draft is the subject of another blueprint.
 
+### Imports through path aliases
+
+A file imports from another directory through a path alias, never with `../`. The aliases are
+the `paths` of `tsconfig.json`:
+
+|      Alias       |               Points to                |                           What it is                           |
+|------------------|----------------------------------------|----------------------------------------------------------------|
+| `@loan-approval` | `src/loan-approval.ts`                 | the names the module shares with its backend and the cockpit   |
+| `@shared`        | `src/shared/index.ts`                  | what the other parts take from `src/shared`                    |
+| `@gui-client`    | `src/shared/api.ts`                    | the client of the module API, and `ResponseError`              |
+| `@generated`     | `src/generated/loan-approval/index.ts` | what the generator writes; only `src/shared/api.ts` imports it |
+
+An import names what it wants, not where the file is. A file which moves changes one line of
+`tsconfig.json` and no import. `src/shared/index.ts` exports what the other parts use, and
+nothing else. Inside one directory a file imports its neighbour with `./`.
+
+esbuild reads the same `paths`, because `scripts/build-micro-frontends.mjs` hands it
+`tsconfig.json`. No plugin and no extra package is needed. The browser tests import no source file,
+they load the build. So they need no aliases.
+
+`npm run build` starts with `npm run check:imports`. `scripts/check-imports.mjs` fails the build
+if a file in `src` imports with `../`, so the rule stays. The generated client is left out. The
+project has no ESLint, which is why it is a script and not a lint rule.
+
 ### Test ids
 
 These `data-testid`s are the same in the React, the Angular and the Vue frontend, so the same
