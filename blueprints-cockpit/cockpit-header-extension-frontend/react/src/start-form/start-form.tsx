@@ -75,7 +75,7 @@ function StartForm(props: BcElementProps) {
     setSending(true);
     setProblem(undefined);
     try {
-      const started = await loanApproval.requestLoan({ applicant: applicant.trim(), amount: amountAsNumber });
+      const started = await loanApproval.requestLoan({ loanRequest: { applicant: applicant.trim(), amount: amountAsNumber } });
       await props.closeDialog(started);
     } catch (error) {
       setProblem(error instanceof ResponseError && error.response.status === 400 ? 'refused' : 'failed');

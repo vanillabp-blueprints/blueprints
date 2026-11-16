@@ -40,7 +40,7 @@ const cases = new Map<string, Promise<Case>>();
 function loadCase(loanRequestId: string) {
   let loading = cases.get(loanRequestId);
   if (!loading) {
-    loading = loanApproval.getCase(loanRequestId);
+    loading = loanApproval.getCase({ loanRequestId });
     loading.catch(() => cases.delete(loanRequestId));
     cases.set(loanRequestId, loading);
   }
@@ -167,7 +167,7 @@ function WithdrawButton({ loaded, texts, showNotification, onWithdrawn }: {
     setState('running');
     setProblem(undefined);
     try {
-      await loanApproval.withdrawLoanRequest(loaded!.loanRequestId);
+      await loanApproval.withdrawLoanRequest({ loanRequestId: loaded!.loanRequestId });
       cases.delete(loaded!.loanRequestId);
       setState('withdrawn');
       // A cockpit which cannot show notifications refuses; the page says it anyway.

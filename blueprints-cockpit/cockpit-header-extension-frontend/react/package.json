@@ -18,7 +18,7 @@
   },
   "scripts": {
     "fetch:openapi": "node scripts/fetch-openapi.mjs",
-    "generate:client": "openapi-generator-cli generate --generator-key loan-approval",
+    "generate:client": "openapi-ts",
     "typecheck": "tsc --noEmit",
     "build:micro-frontends": "node scripts/build-micro-frontends.mjs",
     "check:entries": "bc-check-entries dist/micro-frontends/bc-manifest.json --metafile build/meta.json --data-entry Header",
@@ -33,7 +33,7 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
-    "@openapitools/openapi-generator-cli": "2.42.2",
+    "@hey-api/openapi-ts": "0.99.0",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vanillabp/bc-module-host": "0.1.0-snapshot.2",

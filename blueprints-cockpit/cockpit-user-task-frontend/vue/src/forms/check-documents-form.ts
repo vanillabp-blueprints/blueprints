@@ -9,8 +9,8 @@ import CheckDocumentsInformation from './CheckDocumentsInformation.ce.vue';
 defineInputForm<CheckDocumentsForm>(CHECK_DOCUMENTS_ELEMENTS, {
   testId: 'check-documents',
   label: (texts) => texts.documentsNote,
-  load: (userTaskId) => loanApproval.getCheckDocumentsForm(userTaskId),
+  load: (userTaskId) => loanApproval.getCheckDocumentsForm({ userTaskId }),
   initialInput: (form) => form.documentsNote ?? '',
-  complete: (userTaskId, documentsNote) => loanApproval.completeCheckDocuments(userTaskId, { documentsNote }),
+  complete: (userTaskId, documentsNote) => loanApproval.completeCheckDocuments({ userTaskId, checkDocumentsInput: { documentsNote } }),
   information: CheckDocumentsInformation,
 });
