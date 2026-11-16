@@ -10,7 +10,7 @@
 // there, only without the button.
 
 import type { BcElementRef, GuiApiData } from '@vanillabp/bc-module-kit';
-import { START_FORM, START_FORM_ELEMENTS } from '../loan-approval.ts';
+import { START_FORM, START_FORM_ELEMENTS } from '@loan-approval';
 
 /** undefined: no button for this user. Here only while nobody is logged in. */
 export const header = (currentUser: GuiApiData | undefined): BcElementRef[] | undefined => {

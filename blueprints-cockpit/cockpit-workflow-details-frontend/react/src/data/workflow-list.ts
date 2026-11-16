@@ -9,7 +9,7 @@
 // end event of the process, because withdrawing is a business decision. The README says more.
 
 import type { ColumnsOfWorkflowFunction, GuiApiData } from '@vanillabp/bc-module-kit';
-import { BPMN_PROCESS_ID, DETAILS_APPLICANT, DETAILS_STATUS } from '../loan-approval.ts';
+import { BPMN_PROCESS_ID, DETAILS_APPLICANT, DETAILS_STATUS } from '@loan-approval';
 
 export const workflowListColumns: ColumnsOfWorkflowFunction<GuiApiData> = (workflow) => {
   if (workflow.bpmnProcessId !== BPMN_PROCESS_ID) return undefined;

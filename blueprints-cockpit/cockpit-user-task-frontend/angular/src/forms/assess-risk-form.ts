@@ -2,10 +2,9 @@
 // the browser evaluates it, it defines the four web components the data entry UserTaskForm names.
 
 import { Component, input } from '@angular/core';
-import { loanApproval, type AssessRiskForm } from '../shared/api.ts';
-import { defineInputForm } from '../shared/input-form.ts';
-import type { Texts } from '../shared/texts.ts';
-import { ASSESS_RISK_ELEMENTS } from '../loan-approval.ts';
+import { loanApproval, type AssessRiskForm } from '@gui-client';
+import { defineInputForm, type Texts } from '@shared';
+import { ASSESS_RISK_ELEMENTS } from '@loan-approval';
 
 @Component({
   // Not the name of a web component of this form: that element would get the web component.

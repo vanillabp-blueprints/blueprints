@@ -196,8 +196,10 @@ The client uses the `fetch` of the browser. The generator copies the code for it
 generated files, so the forms need no library for it at runtime. When an answer is not a success,
 the generated client throws only its body, and the OpenAPI file gives errors no body. So
 `api.ts` adds an error interceptor, which throws a `ResponseError` instead. Its `response` has the
-status, and that is how a form tells 404 from other failures. A network error brings no answer,
-and the call throws what `fetch` threw.
+status, and that is how a form tells the answers apart. 404 means that the task is not open any
+more. 409 means that somebody else took the task over in the cockpit, so the form says so and
+completes nothing. Every other answer is a failure the user may try again. A network error brings
+no answer, and the call throws what `fetch` threw.
 
 The generator is a Node program and an exact dev dependency in `package.json`. It has no install
 scripts, and it downloads nothing when it runs. So the build needs Node and nothing else: no Java,
@@ -287,6 +289,30 @@ only says so, and the browser tests are the way to see the forms.
 The module does not keep a draft. Only the result of a completed user task goes into the
 workflow aggregate. How to keep a draft is the subject of another blueprint.
 
+### Imports through path aliases
+
+A file imports from another directory through a path alias, never with `../`. The aliases are
+the `paths` of `tsconfig.json`:
+
+|      Alias       |               Points to                |                           What it is                           |
+|------------------|----------------------------------------|----------------------------------------------------------------|
+| `@loan-approval` | `src/loan-approval.ts`                 | the names the module shares with its backend and the cockpit   |
+| `@shared`        | `src/shared/index.ts`                  | what the other parts take from `src/shared`                    |
+| `@gui-client`    | `src/shared/api.ts`                    | the client of the module API, and `ResponseError`              |
+| `@generated`     | `src/generated/loan-approval/index.ts` | what the generator writes; only `src/shared/api.ts` imports it |
+
+An import names what it wants, not where the file is. A file which moves changes one line of
+`tsconfig.json` and no import. `src/shared/index.ts` exports what the other parts use, and
+nothing else. Inside one directory a file imports its neighbour with `./`.
+
+esbuild reads the same `paths`, because `scripts/build-micro-frontends.mjs` hands it
+`tsconfig.json`. No plugin and no extra package is needed. The browser tests import no source file,
+they load the build. So they need no aliases.
+
+`npm run build` starts with `npm run check:imports`. `scripts/check-imports.mjs` fails the build
+if a file in `src` imports with `../`, so the rule stays. The generated client is left out. The
+project has no ESLint, which is why it is a script and not a lint rule.
+
 ### Test ids
 
 These `data-testid`s are the same in the React, the Angular and the Vue frontend, so the same
@@ -318,7 +344,8 @@ backend. The tests answer the module API inside the browser, at the network leve
 run unchanged. Every form is tested twice: in a host with the areas `body`, `information` and
 `actions`, and in a host which only knows `all`. The tests also check that the data entries load
 neither React nor a form, that opening one form does not load the other, and that the typed text
-stays when the cockpit sets a property such as the language.
+stays when the cockpit sets a property such as the language, and that a 404 and a 409 each show
+their own message.
 
 ### Three repositories, and the order of their releases
 

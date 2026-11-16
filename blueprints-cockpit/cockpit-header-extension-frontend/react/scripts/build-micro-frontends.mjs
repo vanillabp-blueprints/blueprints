@@ -33,6 +33,9 @@ const entryPoints = Object.fromEntries(Object.entries(entries).map(([name, sourc
 const bundle = await build({
   entryPoints,
   absWorkingDir: projectDir,
+  // The path aliases, such as '@shared', come from the paths of tsconfig.json. So the build, the
+  // type check and the editor read them from one place.
+  tsconfig: join(projectDir, 'tsconfig.json'),
   outdir,
   bundle: true,
   splitting: true,

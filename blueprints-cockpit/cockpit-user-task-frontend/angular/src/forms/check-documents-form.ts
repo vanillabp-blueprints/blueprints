@@ -2,10 +2,9 @@
 // assessment of the user task before, which it may not change, and asks for a note.
 
 import { Component, input } from '@angular/core';
-import { loanApproval, type CheckDocumentsForm } from '../shared/api.ts';
-import { defineInputForm } from '../shared/input-form.ts';
-import type { Texts } from '../shared/texts.ts';
-import { CHECK_DOCUMENTS_ELEMENTS } from '../loan-approval.ts';
+import { loanApproval, type CheckDocumentsForm } from '@gui-client';
+import { defineInputForm, type Texts } from '@shared';
+import { CHECK_DOCUMENTS_ELEMENTS } from '@loan-approval';
 
 @Component({
   // Not the name of a web component of this form: that element would get the web component.

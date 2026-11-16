@@ -9,7 +9,9 @@ export default defineConfig({
   output: 'src/generated/loan-approval',
   plugins: [
     // An answer which is not a success throws, see the error interceptor in src/shared/api.ts.
-    { name: '@hey-api/client-fetch', throwOnError: true },
+    // The index of the generated files exports the client as well, so src/shared/api.ts imports
+    // all of it from '@generated'.
+    { name: '@hey-api/client-fetch', throwOnError: true, exportFromIndex: true },
     '@hey-api/typescript',
     {
       name: '@hey-api/sdk',

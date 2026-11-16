@@ -1,7 +1,7 @@
 <!-- What the form of "Assess risk" shows to read: the loan request and its amount. -->
 <script setup lang="ts">
-import type { AssessRiskForm } from '../shared/api.ts';
-import type { Texts } from '../shared/texts.ts';
+import type { AssessRiskForm } from '@gui-client';
+import type { Texts } from '@shared';
 
 defineProps<{ form: AssessRiskForm; texts: Texts; language: string }>();
 </script>

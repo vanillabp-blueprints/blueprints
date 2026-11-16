@@ -47,22 +47,24 @@ per page. Two modules which define the same name break each other.
 
 ## Boilerplate files
 
-|            File             |                                      Purpose                                       |
-|-----------------------------|------------------------------------------------------------------------------------|
-| `package.json`              | the scripts, and in `config` the module id, the jar coordinates and the image name |
-| `tsconfig.json`             | for `ngc`, which checks types and templates and writes JavaScript to `build/ngc`   |
-| `scripts/fetch-openapi.mjs` | copies the OpenAPI file from the submodule and checks that it names a server       |
-| `openapi-ts.config.mjs`     | the options of `@hey-api/openapi-ts`, the generator of the API client              |
-| `.gitmodules`               | the submodule `backend`, the backend repository which owns the OpenAPI file        |
-| `scripts/build-ui-jar.mjs`  | the UI jar and its pom                                                             |
-| `scripts/build-image.mjs`   | the nginx image                                                                    |
-| `scripts/start.mjs`         | placeholder for the dev shell                                                      |
-| `src/shared/texts.ts`       | the texts in English and German                                                    |
-| `src/shared/style.ts`       | the styles, put into each shadow root                                              |
-| `docker/Dockerfile`         | the nginx image                                                                    |
-| `docker/nginx.conf`         | serves `/loan-approval/`, the manifest without caching                             |
-| `test/browser/page.js`      | the test page with `createModuleHost`                                              |
-| `test/browser/server.js`    | serves the test page and `dist/micro-frontends` below `/wm/loan-approval/`         |
+|            File             |                                                                                 Purpose                                                                                 |
+|-----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `package.json`              | the scripts, and in `config` the module id, the jar coordinates and the image name                                                                                      |
+| `tsconfig.json`             | for `ngc`, which checks types and templates and writes JavaScript to `build/ngc`; `paths` holds the aliases `@loan-approval`, `@shared`, `@gui-client` and `@generated` |
+| `src/shared/index.ts`       | what the other directories import as `@shared`                                                                                                                          |
+| `scripts/check-imports.mjs` | fails `npm run build` on an import with `../`; import through an alias instead                                                                                          |
+| `scripts/fetch-openapi.mjs` | copies the OpenAPI file from the submodule and checks that it names a server                                                                                            |
+| `openapi-ts.config.mjs`     | the options of `@hey-api/openapi-ts`, the generator of the API client                                                                                                   |
+| `.gitmodules`               | the submodule `backend`, the backend repository which owns the OpenAPI file                                                                                             |
+| `scripts/build-ui-jar.mjs`  | the UI jar and its pom                                                                                                                                                  |
+| `scripts/build-image.mjs`   | the nginx image                                                                                                                                                         |
+| `scripts/start.mjs`         | placeholder for the dev shell                                                                                                                                           |
+| `src/shared/texts.ts`       | the texts in English and German                                                                                                                                         |
+| `src/shared/style.ts`       | the styles, put into each shadow root                                                                                                                                   |
+| `docker/Dockerfile`         | the nginx image                                                                                                                                                         |
+| `docker/nginx.conf`         | serves `/loan-approval/`, the manifest without caching                                                                                                                  |
+| `test/browser/page.js`      | the test page with `createModuleHost`                                                                                                                                   |
+| `test/browser/server.js`    | serves the test page and `dist/micro-frontends` below `/wm/loan-approval/`                                                                                              |
 
 ## Adding this blueprint to an existing project
 

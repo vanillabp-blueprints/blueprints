@@ -1,7 +1,7 @@
 <!-- The area 'all': everything in one web component, so no messages are needed. -->
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useArea, useCompletion, useFormData } from '../input-form.ts';
+import { useArea, useCompletion, useFormData } from '@shared';
 import CompleteButton from './CompleteButton.ce.vue';
 import InputField from './InputField.ce.vue';
 import ProblemText from './ProblemText.ce.vue';
