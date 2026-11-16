@@ -1,6 +1,7 @@
 package blueprint.workflowmodule.loanapproval;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -11,6 +12,7 @@ import blueprint.workflowmodule.loanapproval.api.model.AssessRiskForm;
 import blueprint.workflowmodule.loanapproval.api.model.AssessRiskInput;
 import blueprint.workflowmodule.loanapproval.api.model.CheckDocumentsForm;
 import blueprint.workflowmodule.loanapproval.api.model.CheckDocumentsInput;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 /**
@@ -40,6 +42,14 @@ import blueprint.workflowmodule.loanapproval.api.model.CheckDocumentsInput;
  * and completes the user task. A task which is not open answers 404: the id is unknown, or the
  * task was completed already.
  * </p>
+ *
+ * <p>
+ * POST answers 409 if somebody else took the task over in the cockpit. Two users may open the
+ * same task, and the cockpit lets one of them take it over. The other one still has the form on
+ * the screen. Completing it would take the work out of the hands of the user who has it now. So
+ * the module asks the {@link Cockpit} first, and refuses. Reading the form stays allowed,
+ * because reading takes nothing away from anybody.
+ * </p>
  */
 @RestController
 @RequestMapping("/loan-approval")
@@ -47,6 +57,13 @@ public class UserTaskFormController implements UserTasksApi {
 
   @Autowired
   private Service loanApproval;
+
+  @Autowired
+  private Cockpit cockpit;
+
+  /** The request being answered. Spring injects a proxy which reaches the current one. */
+  @Autowired
+  private HttpServletRequest request;
 
   /**
    * What the form "Assess risk" shows ({@code getAssessRiskForm}).
@@ -78,6 +95,7 @@ public class UserTaskFormController implements UserTasksApi {
       final AssessRiskInput input) {
 
     final var riskAssessment = required(input.riskAssessment(), "riskAssessment");
+    refuseIfSomebodyElseTookOver(userTaskId);
 
     if (!loanApproval.assessRisk(userTaskId, riskAssessment)) {
       throw notOpen(userTaskId);
@@ -115,6 +133,7 @@ public class UserTaskFormController implements UserTasksApi {
       final CheckDocumentsInput input) {
 
     final var documentsNote = required(input.documentsNote(), "documentsNote");
+    refuseIfSomebodyElseTookOver(userTaskId);
 
     if (!loanApproval.checkDocuments(userTaskId, documentsNote)) {
       throw notOpen(userTaskId);
@@ -132,6 +151,18 @@ public class UserTaskFormController implements UserTasksApi {
           + "' is empty");
     }
     return value;
+
+  }
+
+  private void refuseIfSomebodyElseTookOver(
+      final String userTaskId) {
+
+    if (cockpit.saysSomebodyElseTookOver(userTaskId, request.getHeader(HttpHeaders.COOKIE))) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Somebody else took over the user task '"
+              + userTaskId
+              + "'");
+    }
 
   }
 

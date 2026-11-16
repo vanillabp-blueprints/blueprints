@@ -43,7 +43,7 @@ public class Aggregate {
    * The natural id of the use case. The start form gets it as the answer, and the cockpit shows
    * it as the business id of the case.
    *
-   * @see <a href="https://github.com/vanillabp/spi-for-java#natural-ids">Natural ids</a>
+   * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/The-workflow-aggregate#natural-ids">Natural ids</a>
    */
   @Id
   private String loanRequestId;

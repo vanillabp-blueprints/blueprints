@@ -14,11 +14,9 @@
 
 import { useEffect, useState } from 'react';
 import type { BcElementProps, BcUserTask, BcWorkflow } from '@vanillabp/bc-module-kit';
-import { ResponseError, loanApproval, type Case } from '../shared/api.ts';
-import { defineReactElement } from '../shared/react-element.tsx';
-import { STYLE } from '../shared/style.ts';
-import { textsFor, type Texts } from '../shared/texts.ts';
-import { LOAN_APPROVAL_PAGE_ELEMENTS } from '../loan-approval.ts';
+import { ResponseError, loanApproval, type Case } from '@gui-client';
+import { defineReactElement, STYLE, textsFor, type Texts } from '@shared';
+import { LOAN_APPROVAL_PAGE_ELEMENTS } from '@loan-approval';
 
 /** What one area tells another one of the same page. */
 type AreaMessage = { withdrawn?: boolean };

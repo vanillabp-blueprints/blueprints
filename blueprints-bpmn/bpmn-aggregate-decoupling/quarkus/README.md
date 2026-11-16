@@ -54,7 +54,7 @@ public class Aggregate {
 
 The BPMS holds the two answers and the id of the workflow aggregate. The id is the one value
 the annotations cannot keep out, because VanillaBP needs it to find the workflow again. That is
-a good reason to make it a [natural id](https://github.com/vanillabp/spi-for-java#natural-ids)
+a good reason to make it a [natural id](https://github.com/vanillabp/spi-for-java/wiki/The-workflow-aggregate#natural-ids)
 of the business case. This application uses the id of the loan request. So a workflow started
 twice for the same request is a duplicate you can detect, not a second case.
 
@@ -226,8 +226,8 @@ which attributes an adapter shares by default, and what a nested value turns int
 - [Decoupling BPMN from the data model](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#decoupling-bpmn-from-the-data-model): the pattern this blueprint follows, and what reading an attribute costs instead
 - [Sharing workflow-aggregate data](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms): `@SyncWithBPMS`, `@NoSyncWithBPMS`, and what a BPMS gets to see
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why there are no process variables, and what a condition can read
-- [Natural ids](https://github.com/vanillabp/spi-for-java#natural-ids): the one value every BPMS is given, and why a business identifier belongs there
-- [Wire up an expression](https://github.com/vanillabp/spi-for-java#wire-up-an-expression): how an expression in the model reaches your data
+- [Natural ids](https://github.com/vanillabp/spi-for-java/wiki/The-workflow-aggregate#natural-ids): the one value every BPMS is given, and why a business identifier belongs there
+- [Wire up an expression](https://github.com/vanillabp/spi-for-java/wiki/Wiring-an-expression): how an expression in the model reaches your data
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: the expression language of that engine
 
 This blueprint is developed in the monorepo

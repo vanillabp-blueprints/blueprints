@@ -28,7 +28,7 @@ import io.vanillabp.spi.process.ProcessService;
  * start is only sent after that transaction committed.
  * </p>
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-process">Wire up a
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process">Wire up a
  *      process</a>
  */
 @Component

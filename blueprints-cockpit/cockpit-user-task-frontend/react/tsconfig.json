@@ -10,7 +10,13 @@
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "@loan-approval": ["./src/loan-approval.ts"],
+      "@shared": ["./src/shared/index.ts"],
+      "@gui-client": ["./src/shared/api.ts"],
+      "@generated": ["./src/generated/loan-approval/index.ts"]
+    }
   },
   "include": ["src"]
 }

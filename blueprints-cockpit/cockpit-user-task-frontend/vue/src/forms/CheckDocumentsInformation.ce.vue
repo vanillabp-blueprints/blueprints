@@ -1,7 +1,7 @@
 <!-- What the form of "Check documents" shows to read: the loan request and the risk assessment. -->
 <script setup lang="ts">
-import type { CheckDocumentsForm } from '../shared/api.ts';
-import type { Texts } from '../shared/texts.ts';
+import type { CheckDocumentsForm } from '@gui-client';
+import type { Texts } from '@shared';
 
 defineProps<{ form: CheckDocumentsForm; texts: Texts; language: string }>();
 </script>

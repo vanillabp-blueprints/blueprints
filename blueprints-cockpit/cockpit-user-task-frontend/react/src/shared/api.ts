@@ -12,10 +12,9 @@
 // the browser talks to one origin only, and the cockpit never sees the data of the form. The
 // module completes the user task itself, and that is what tells the cockpit about it.
 
-import { client } from '../generated/loan-approval/client.gen.ts';
-import { UserTasksApi } from '../generated/loan-approval/index.ts';
+import { client, UserTasksApi } from '@generated';
 
-export type { AssessRiskForm, CheckDocumentsForm } from '../generated/loan-approval/index.ts';
+export type { AssessRiskForm, CheckDocumentsForm } from '@generated';
 
 /**
  * An answer which is not a success. The generated client throws only the body of such an answer,

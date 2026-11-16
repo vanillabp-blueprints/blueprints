@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 
 import blueprint.testdriver.loanapproval.ProcessState;
 import blueprint.testdriver.loanapproval.Scenario;
@@ -58,11 +59,32 @@ public class AssessRiskIT extends ScenarioTest {
   @Test
   public void anAssessedRiskSendsTheContractForSigning() {
 
+    assessTheRisk(HttpMethod.GET);
+    theContractGoesOutForSigning();
+
+  }
+
+  @Test
+  public void theFormAssessesTheRiskWithPost() {
+
+    assessTheRisk(HttpMethod.POST);
+    theContractGoesOutForSigning();
+
+  }
+
+  /** A person in the browser sends GET, the form of the user task sends POST. */
+  private void assessTheRisk(
+      final HttpMethod method) {
+
     assertThat(api
-        .get()
+        .method(method)
         .uri("/{loanRequestId}/assess-risk/{taskId}", scenario.getLoanRequestId(), taskId)
         .retrieve()
         .body(String.class)).contains("assessed");
+
+  }
+
+  private void theContractGoesOutForSigning() {
 
     final var loanRequest = awaitAggregate(
         loanApprovals,

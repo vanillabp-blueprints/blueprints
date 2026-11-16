@@ -16,8 +16,10 @@ import blueprint.workflowmodule.loanapproval.api.model.Unavailable;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * The API of this use case. It consists of GET requests only, so the process can be walked
- * through in a browser. No tooling, no request bodies.
+ * The API of this use case. A person walks through the process in a browser with its GET
+ * requests. No tooling, no request bodies. The forms of the user tasks complete them with POST on
+ * the same paths, as forms do, see CONTRIBUTING.md. Both ways end in the same call of
+ * {@link Service}.
  *
  * <p>
  * It talks to {@link Service} and to nothing else. When a system around the module does not
@@ -102,6 +104,39 @@ public class ApiController implements LoanApprovalApi {
     return "Loan approval '"
         + loanRequestId
         + "' approved";
+
+  }
+
+  /**
+   * Completes the user task "Assess risk". The form of the task calls this one.
+   *
+   * @param loanRequestId The id of the loan request.
+   * @param taskId        The id of the user task, as the log and the cockpit show it.
+   * @return A confirmation.
+   */
+  @Override
+  public String completeAssessRisk(
+      final String loanRequestId,
+      final String taskId) {
+
+    return assessRisk(loanRequestId, taskId);
+
+  }
+
+  /**
+   * Completes the user task "Check contract", once the customer signed the contract. The form of
+   * the task calls this one.
+   *
+   * @param loanRequestId The id of the loan request.
+   * @param taskId        The id of the user task, as the log and the cockpit show it.
+   * @return A confirmation.
+   */
+  @Override
+  public String completeCheckContract(
+      final String loanRequestId,
+      final String taskId) {
+
+    return checkContract(loanRequestId, taskId);
 
   }
 

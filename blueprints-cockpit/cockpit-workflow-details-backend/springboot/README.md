@@ -115,6 +115,8 @@ Compared to [`cockpit-user-task-backend`](https://github.com/vanillabp-blueprint
 | `WorkflowTaskHandler.java`                 | two `@WorkflowTask` methods, and a `@WorkflowDetailsProvider` method instead of the `@UserTaskDetailsProvider` method      |
 | `CasePageController.java`                  | new, instead of `UserTaskFormController.java`: reads a case and withdraws it, below `/loan-approval/api/cases`             |
 | `UserTaskFormController.java`              | deleted, `CasePageController.java` takes its place                                                                         |
+| `Cockpit.java`                             | deleted: no form completes a user task here, so nothing asks the cockpit who took one over                                 |
+| `CockpitGuiApi.java`                       | deleted, together with `Cockpit.java`                                                                                      |
 | `ApiController.java`                       | starts a loan approval with an applicant, approves it and shows it                                                         |
 | `openapi/loan-requests.yaml`               | the start takes an applicant, and a new endpoint approves a loan request                                                   |
 | `Service.java`                             | keeps the id of the user task, approves, withdraws by correlating the message, and records the withdrawal                  |

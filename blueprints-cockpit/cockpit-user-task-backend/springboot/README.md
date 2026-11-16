@@ -77,6 +77,24 @@ module writes it to the workflow aggregate and completes the user task with
 `ProcessService#completeUserTask`. The cockpit adapter sees the task end in the BPMS (business
 process management system) and tells the cockpit. The cockpit never sees the data of a form.
 
+### A task somebody else took over answers 409
+
+Two users can have the same task open. One of them takes it over in the cockpit and becomes its
+assignee. The other one still sees the form. If that user completes it, the task is gone for the
+user who has it now. So `POST` answers 409 Conflict for a task which is assigned to somebody else,
+and the task stays open. The forms show their own message for it.
+
+The cockpit keeps the assignee in its own store and tells nobody about it. So the module asks the
+cockpit, in `Cockpit`, before it completes a task. It sends the cookie of the request along, which
+holds the login of the user. The cockpit answers who that user is and whom the task is assigned
+to, and the module compares the two. A task without an assignee, or one assigned to the user who
+sends the form, is completed as before.
+
+The module asks only if the application sets `loan-approval.cockpit.address`, the address of the
+cockpit. Without it, or without a cookie, nothing is asked. So the URLs of the log still work in a
+browser alone. Any answer which is not clear counts as "nobody else took it", because a form which
+is refused for no reason is worse than one which is not refused. Reading a form is never refused.
+
 ### What the cockpit shows about a task
 
 The cockpit adapter reports every user task of the
@@ -141,7 +159,8 @@ Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user
 | `loan-approval/loan-approval.yaml`         | the keys the cockpit needs, below `vanillabp.workflow-modules.loan-approval.cockpit`                                                                  |
 | `loan_approval.bpmn`                       | two user tasks in a row, and no service task and no boundary event                                                                                    |
 | `WorkflowTaskHandler.java`                 | a `@WorkflowTask` method per user task, and the `@UserTaskDetailsProvider` method                                                                     |
-| `UserTaskFormController.java`              | new: the endpoints of the forms, which implement the interface generated from the OpenAPI                                                             |
+| `UserTaskFormController.java`              | new: the endpoints of the forms, which implement the interface generated from the OpenAPI; 409 for a task somebody else took over                     |
+| `Cockpit.java`                             | new: asks the cockpit whether somebody else took over a user task                                                                                     |
 | `ApiController.java`                       | only starts and shows a loan approval, below `/loan-approval/api/loan-requests`                                                                       |
 | `Workflow.java`                            | `documentsChecked` completes the second user task; no `loanRequestWithdrawn` and no BPMN error                                                        |
 | `openapi/loan-requests.yaml`               | new: the API of `ApiController`, from which the build generates `LoanRequestsApi`                                                                     |
@@ -150,6 +169,7 @@ Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user
 | `AggregateRepository.java`                 | finds the loan request by the id of an open user task                                                                                                 |
 | `LoanApprovalIT.java`                      | reports to the dev shell simulator and completes both tasks through their endpoints                                                                   |
 | `CockpitSimulator.java`                    | new: starts the dev shell simulator for the test                                                                                                      |
+| `CockpitGuiApi.java`                       | new: answers for the cockpit who is logged in and whom a task is assigned to, for the test                                                            |
 | `LocalBackend.java`                        | new: runs the workflow module for the development of the user interface                                                                               |
 | `LoanApprovalAutoConfiguration.java`       | new: the module scans its own beans, entities and repositories                                                                                        |
 | `UserInterfaceRouteAutoConfiguration.java` | new: forwards the user interface to an nginx, if the application names one                                                                            |
@@ -245,11 +265,13 @@ does. The frontend's README shows how.
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest               |
 | `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of each user task, and says what the cockpit shows about a task                           |
 | `.../loanapproval/UserTaskFormController.java`                                         | the endpoints of the forms: GET reads what a form shows, POST completes the task                       |
+| `.../loanapproval/Cockpit.java`                                                        | asks the cockpit whether somebody else took over a task, if `loan-approval.cockpit.address` is set     |
 | `.../loanapproval/Service.java`                                                        | finds the loan request by the id of its open task, writes the input and completes the task             |
 | `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                        |
 | `.../loanapproval/model/Aggregate.java`                                                | the id of each open task, and what the user entered in each form                                       |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays both tasks through, and checks what the cockpit was told                                         |
 | `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test                                               |
+| `loan-approval/src/test/.../CockpitGuiApi.java`                                        | stands in for the interface of the cockpit which `Cockpit` asks                                        |
 | `.../loanapproval/config/LoanApprovalAutoConfiguration.java`                           | wires the module into any application which has it as a dependency                                     |
 | `.../loanapproval/config/UserInterfaceRouteAutoConfiguration.java`                     | forwards the files of the user interface to an nginx, if `loan-approval.user-interface.address` is set |
 
@@ -263,6 +285,8 @@ A user opens the task in the cockpit. The cockpit loads the form of the module, 
 calls `GET .../api/user-tasks/{userTaskId}/assess-risk` with the id of the task. The cockpit knows
 the task by the same id the handler got, so `Service` finds the loan request by it. A task which
 is not open answers 404: the id is unknown, or the task was completed already.
+If the cockpit says that somebody else took the task over, `POST` answers 409 and completes
+nothing.
 
 The user enters the assessment, and the form sends it with `POST`. `Service` writes it to the
 aggregate, and `Workflow#riskAssessed` completes the user task. The BPMS moves on to "Check

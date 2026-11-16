@@ -26,7 +26,7 @@ import io.vanillabp.spi.service.WorkflowTask;
  * loads the aggregate, runs the method and saves the aggregate in one transaction it owns.
  * </p>
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-task">Wire up a task</a>
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-task">Wire up a task</a>
  */
 @Component
 @WorkflowService(

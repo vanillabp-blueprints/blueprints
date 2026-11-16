@@ -426,6 +426,12 @@ download during the build. `openapi-ts.config.mjs` of the frontend holds the opt
 The code is written to `src/generated/`, which git ignores, as `target/` is ignored on the Java
 side.
 
+The sources of a frontend import from another directory through the path aliases of its
+`tsconfig.json`, never with `../`: `@loan-approval`, `@shared`, `@gui-client` (the client with
+`api.ts`) and `@generated`. A directory which others import from has an `index.ts`. The build
+reads the same aliases, and `scripts/check-imports.mjs`, the first step of `npm run build`, fails
+on an import with `../`. The README of each frontend has the table of its aliases.
+
 ## The test harness
 
 Every blueprint needs the same for that. So it is written once and copied:
@@ -973,6 +979,14 @@ at it. `bin/check_foreign_decisions.py` rejects such a number and a link into th
 
 ```bash
 python3 bin/check_foreign_decisions.py
+```
+
+The SPI is documented in the [wiki of spi-for-java](https://github.com/vanillabp/spi-for-java/wiki),
+one page per topic. Link that page, never an anchor of the README of spi-for-java. The README
+only lists the wiki pages. `bin/check_spi_readme_links.py` rejects such a link:
+
+```bash
+python3 bin/check_spi_readme_links.py
 ```
 
 ## Formatting

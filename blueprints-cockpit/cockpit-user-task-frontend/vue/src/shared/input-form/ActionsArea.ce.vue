@@ -5,7 +5,7 @@
 -->
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { useArea, useCompletion, type AreaMessage } from '../input-form.ts';
+import { useArea, useCompletion, type AreaMessage } from '@shared';
 import CompleteButton from './CompleteButton.ce.vue';
 import ProblemText from './ProblemText.ce.vue';
 

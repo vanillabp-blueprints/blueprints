@@ -42,7 +42,7 @@ import jakarta.inject.Inject;
  * {@code TaskException} passes it.
  * </p>
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-process">Wire up a
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process">Wire up a
  *      process</a>
  */
 @ApplicationScoped

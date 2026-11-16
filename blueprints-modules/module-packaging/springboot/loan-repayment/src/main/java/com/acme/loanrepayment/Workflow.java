@@ -14,7 +14,7 @@ import io.vanillabp.spi.process.ProcessService;
  * {@link com.acme.loanapproval.Workflow} - same shape, different process,
  * no shared code.
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-process">Wire up a
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process">Wire up a
  *      process</a>
  */
 @Component

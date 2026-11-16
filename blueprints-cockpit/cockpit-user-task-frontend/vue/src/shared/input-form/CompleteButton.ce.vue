@@ -1,6 +1,6 @@
 <!-- The button "Complete". It is enabled while the user task is open and the field is filled. -->
 <script setup lang="ts">
-import type { Texts } from '../texts.ts';
+import type { Texts } from '@shared';
 
 defineProps<{ testId: string; input: string; state: 'open' | 'running' | 'completed'; texts: Texts }>();
 const emit = defineEmits<{ complete: [] }>();

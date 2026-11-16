@@ -6,7 +6,7 @@
 // A cockpit without areas shows the one of 'all'.
 
 import type { GuiApiData, WorkflowPageFunction } from '@vanillabp/bc-module-kit';
-import { BPMN_PROCESS_ID, LOAN_APPROVAL_PAGE, LOAN_APPROVAL_PAGE_ELEMENTS } from '../loan-approval.ts';
+import { BPMN_PROCESS_ID, LOAN_APPROVAL_PAGE, LOAN_APPROVAL_PAGE_ELEMENTS } from '@loan-approval';
 
 /** undefined tells the cockpit that this case is not one of this module. */
 export const workflowPage: WorkflowPageFunction<GuiApiData> = (workflow) => {

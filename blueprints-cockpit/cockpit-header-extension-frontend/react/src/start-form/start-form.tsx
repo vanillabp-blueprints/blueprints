@@ -14,11 +14,9 @@
 
 import { useState, type FormEvent } from 'react';
 import type { BcElementProps } from '@vanillabp/bc-module-kit';
-import { ResponseError, loanApproval, type StartedLoanRequest } from '../shared/api.ts';
-import { defineReactElement } from '../shared/react-element.tsx';
-import { STYLE } from '../shared/style.ts';
-import { textsFor } from '../shared/texts.ts';
-import { START_FORM, START_FORM_ELEMENTS } from '../loan-approval.ts';
+import { ResponseError, loanApproval, type StartedLoanRequest } from '@gui-client';
+import { defineReactElement, STYLE, textsFor } from '@shared';
+import { START_FORM, START_FORM_ELEMENTS } from '@loan-approval';
 
 /**
  * The button in the header. It opens the start form in a dialog of the cockpit and waits until

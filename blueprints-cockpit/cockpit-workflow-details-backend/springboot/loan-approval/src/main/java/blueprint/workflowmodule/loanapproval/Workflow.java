@@ -29,7 +29,7 @@ import io.vanillabp.spi.process.ProcessService;
  * process where it was, rather than withdrawing a loan request for work that was undone.
  * </p>
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-process">Wire up a
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process">Wire up a
  *      process</a>
  */
 @Component

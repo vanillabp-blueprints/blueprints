@@ -1,6 +1,6 @@
 <!-- The area 'information': the data to read. -->
 <script setup lang="ts">
-import { useArea, useFormData } from '../input-form.ts';
+import { useArea, useFormData } from '@shared';
 
 const area = useArea();
 const { definition, texts, language } = area;

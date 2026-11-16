@@ -101,7 +101,7 @@ blueprint. Copy them unchanged.
 
 The `resolverBean` of `@MultiInstanceElement` is for nested iterations, like a multi-instance
 task inside a multi-instance subprocess. This blueprint does not need it. The
-[SPI documentation](https://github.com/vanillabp/spi-for-java#multi-instance) shows it.
+[SPI documentation](https://github.com/vanillabp/spi-for-java/wiki/Multi-instance#nested-multi-instance-activities) shows it.
 
 ## Verifying
 

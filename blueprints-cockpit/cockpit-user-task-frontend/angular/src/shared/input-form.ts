@@ -40,9 +40,16 @@ export interface InputForm<Form> {
 /** What one area tells another one of the same form. */
 type AreaMessage = { input?: string; askForInput?: boolean; completed?: boolean };
 
-type Problem = 'notFound' | 'failed';
+type Problem = 'notFound' | 'claimed' | 'failed';
 
-const problemOf = (error: unknown): Problem => (error instanceof ResponseError && error.response.status === 404 ? 'notFound' : 'failed');
+/**
+ * What went wrong, from the status of the answer. 404: the task is not open any more. 409:
+ * somebody else took the task over in the cockpit, and it is still open for them. Everything
+ * else, a network error included, is a failure the user may try again.
+ */
+const PROBLEMS: Record<number, Problem> = { 404: 'notFound', 409: 'claimed' };
+
+const problemOf = (error: unknown): Problem => (error instanceof ResponseError && PROBLEMS[error.response.status]) || 'failed';
 
 /** One form: its definition, and the data of its user tasks, loaded once for all its areas. */
 interface InputFormOfModule {

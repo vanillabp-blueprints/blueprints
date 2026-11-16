@@ -264,8 +264,8 @@ application. That is also why only the data model decides their types.
 
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): one aggregate per business case, and the getters a model reads
 - [Sharing workflow-aggregate data](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms): `@SyncWithBPMS`, `@NoSyncWithBPMS`, and what a BPMS gets to see
-- [Call activities](https://github.com/vanillabp/spi-for-java#call-activities): when a section becomes a process of its own
-- [Wire up a process](https://github.com/vanillabp/spi-for-java#wire-up-a-process): `@WorkflowService`, `@BpmnProcess` and what `secondaryBpmnProcesses` is for
+- [Call activities](https://github.com/vanillabp/spi-for-java/wiki/Call-activities): when a section becomes a process of its own
+- [Wire up a process](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process): `@WorkflowService`, `@BpmnProcess` and what `secondaryBpmnProcesses` is for
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how that engine scopes the variables of a section
 
 This blueprint is developed in the monorepo

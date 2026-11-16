@@ -78,7 +78,7 @@ a call activity is for. A process used by several different parent processes wou
 workflow aggregate of its own. VanillaBP answers that case differently. Model the other process
 as a collapsed pool and start it from a service task. Then the two stay separate business cases
 with separate data. The
-[SPI documentation](https://github.com/vanillabp/spi-for-java#call-activities) puts both
+[SPI documentation](https://github.com/vanillabp/spi-for-java/wiki/Call-activities) puts both
 situations side by side.
 
 ## Delta to the base blueprint
@@ -223,8 +223,8 @@ only the BPMN files change.
 
 ## Documentation
 
-- [Call activities](https://github.com/vanillabp/spi-for-java#call-activities): decomposition and reuse, and why they are modelled differently
-- [Wire up a process](https://github.com/vanillabp/spi-for-java#wire-up-a-process): `@WorkflowService`, `@BpmnProcess` and what `secondaryBpmnProcesses` is for
+- [Call activities](https://github.com/vanillabp/spi-for-java/wiki/Call-activities): decomposition and reuse, and why they are modelled differently
+- [Wire up a process](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process): `@WorkflowService`, `@BpmnProcess` and what `secondaryBpmnProcesses` is for
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): one aggregate per business case, and why there are no process variables
 - [Sharing workflow-aggregate data](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#fine-grained-control-over-attributes-synchronized-to-the-bpms): `@SyncWithBPMS`, `@NoSyncWithBPMS`, and what a BPMS gets to see
 - [Digging into call activities](https://github.com/vanillabp/adapter-platform-integration/wiki/Viewing-workflows#digging-into-call-activities): following a workflow across a call activity

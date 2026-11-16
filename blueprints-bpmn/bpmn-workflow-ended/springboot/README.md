@@ -208,7 +208,7 @@ listener only where a method exists.
 
 - [Workflow tasks](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks): what a BPMS reports about the end of a workflow, and what each one can tell apart
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why the closing time belongs onto the aggregate
-- [Wire up a task](https://github.com/vanillabp/spi-for-java#wire-up-a-task): the contract this method shares with a `@WorkflowTask`
+- [Wire up a task](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-task): the contract this method shares with a `@WorkflowTask`
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: whether it names the end event and whether it reports a cancelled workflow
 
 This blueprint is developed in the monorepo

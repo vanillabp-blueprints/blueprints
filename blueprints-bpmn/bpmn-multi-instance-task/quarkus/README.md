@@ -207,9 +207,9 @@ remote one.
 
 ## Documentation
 
-- [Multi-instance](https://github.com/vanillabp/spi-for-java#multi-instance): the three annotations, and the resolver for nested iterations
+- [Multi-instance](https://github.com/vanillabp/spi-for-java/wiki/Multi-instance): the three annotations, and the resolver for nested iterations
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why the collection is an attribute rather than a variable, and what several writers do to a row
-- [Wire up a task](https://github.com/vanillabp/spi-for-java#wire-up-a-task): what a `@WorkflowTask` method may be handed
+- [Wire up a task](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-task): what a `@WorkflowTask` method may be handed
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: what that engine reports about an iteration
 - [What becomes of a shared value on Camunda 7](https://github.com/vanillabp/camunda7-adapter/wiki/What-becomes-of-a-shared-value): the partner ids travel to that engine as an object variable, and the serialization format an application needs so a list of ids stays readable
 
