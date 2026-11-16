@@ -90,7 +90,7 @@ blueprint. Copy them unchanged.
    data included. The BPMS holds the answers and the id of the aggregate.
 6. Make that id a natural id of the business case. It is the one value every BPMS gets. So a
    business identifier there lets you detect a duplicate start
-   ([natural ids](https://github.com/vanillabp/spi-for-java#natural-ids)).
+   ([natural ids](https://github.com/vanillabp/spi-for-java/wiki/The-workflow-aggregate#natural-ids)).
 7. Let the business code derive the data behind the answers. Thresholds, tables and rules
    belong in `Service` and in configuration, never in a condition of the model.
 8. Add the conditions in the expression language of the engine: `${approvableWithoutReview}`

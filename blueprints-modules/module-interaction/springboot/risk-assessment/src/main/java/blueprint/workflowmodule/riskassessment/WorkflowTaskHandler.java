@@ -12,7 +12,7 @@ import io.vanillabp.spi.service.WorkflowTask;
  * What the process of this module tells the application: the incoming half of its BPMN
  * wiring.
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-task">Wire up a task</a>
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-task">Wire up a task</a>
  */
 @Component
 @WorkflowService(

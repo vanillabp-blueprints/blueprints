@@ -260,7 +260,7 @@ itself.
 - [How name clashes are avoided](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided): the modes keeping two workflow modules apart, and what each of them costs
 - [Two writers on one aggregate](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate): where the second writer comes from, the four ways to deal with it, and what VanillaBP reports
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why there are no process variables
-- [Wire up a process / Wire up a task](https://github.com/vanillabp/spi-for-java#usage): the annotations used in `WorkflowTaskHandler.java`
+- [Wiring a process](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process) / [Wiring a task](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-task): the annotations used in `WorkflowTaskHandler.java`
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how a BPMN task has to be modelled for that engine
 - [What becomes of a shared value on Camunda 7](https://github.com/vanillabp/camunda7-adapter/wiki/What-becomes-of-a-shared-value):
   each of the two branch entities goes into one object variable, and what to configure so

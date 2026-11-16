@@ -215,7 +215,7 @@ would pass on an embedded engine and fail on a remote one.
 - [Completing and canceling asynchronous tasks](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#completing-and-canceling-asynchronous-tasks): the rules those two calls follow
 - [Parameters](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#parameters): `@TaskId`, `@TaskEvent` and everything else a handler may ask for
 - [What happens when my handler throws?](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#what-happens-when-my-handler-throws): why sending the request twice has to be prevented by the aggregate
-- [User tasks and asynchronous tasks](https://github.com/vanillabp/spi-for-java#user-tasks-and-asynchronous-tasks): the annotations used in `WorkflowTaskHandler.java`
+- [User tasks and asynchronous tasks](https://github.com/vanillabp/spi-for-java/wiki/User-tasks-and-asynchronous-tasks): the annotations used in `WorkflowTaskHandler.java`
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how a task has to be modelled so that it can stay open
 
 This blueprint is developed in the monorepo

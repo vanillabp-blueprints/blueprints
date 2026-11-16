@@ -24,7 +24,7 @@ import io.vanillabp.spi.process.ProcessService;
  * outbox. So nothing leaves the application for a change which was rolled back.
  * </p>
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-process">Wire up a
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process">Wire up a
  *      process</a>
  */
 @Component

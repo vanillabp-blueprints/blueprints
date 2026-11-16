@@ -313,7 +313,7 @@ neither of them, and its reports carry the state of the moment they go out.
 - [Aggregate persistence](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#aggregate-persistence): the interface this blueprint implements, and when an application needs to
 - [What the outbox guarantees](https://github.com/vanillabp/adapter-platform-integration/wiki/Quarkus-integration#what-the-outbox-guarantees): why a report is written first and sent afterwards, and what that costs
 - [Workflow modules](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules): what a workflow module is, its ID, and where its BPMN files are looked for
-- [Wire up a process / Wire up a task](https://github.com/vanillabp/spi-for-java#usage): the annotations used in `WorkflowTaskHandler.java`
+- [Wiring a process](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process) / [Wiring a task](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-task): the annotations used in `WorkflowTaskHandler.java`
 - [Hibernate Envers](https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html#envers): the auditing itself, its tables and its queries
 - [The Envers extension](https://quarkus.io/guides/hibernate-orm#envers): what the extension adds and what it can be configured with
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how a BPMN task has to be modelled for that engine

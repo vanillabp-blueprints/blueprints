@@ -310,7 +310,7 @@ would then test a configuration this blueprint does not ship.
 - [BPMS migration](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-migration): the priority list, the election, the cache, and migrating between tenant setups
 - [Configure the adapters](https://github.com/vanillabp/adapter-platform-integration/wiki/Spring-Boot-integration#configure-the-adapters): where adapter configuration lives and how it is bound
 - [How name clashes are avoided](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided): the same mechanism migrates a setup between two of these modes
-- [Wire up a process](https://github.com/vanillabp/spi-for-java#wire-up-a-process): what the code in this blueprint does, without any of it knowing about a BPMS
+- [Wire up a process](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process): what the code in this blueprint does, without any of it knowing about a BPMS
 
 This blueprint is developed in the monorepo
 [`blueprints`](https://github.com/vanillabp-blueprints/blueprints). This repository is a

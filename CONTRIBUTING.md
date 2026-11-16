@@ -975,6 +975,14 @@ at it. `bin/check_foreign_decisions.py` rejects such a number and a link into th
 python3 bin/check_foreign_decisions.py
 ```
 
+The SPI is documented in the [wiki of spi-for-java](https://github.com/vanillabp/spi-for-java/wiki),
+one page per topic. Link that page, never an anchor of the README of spi-for-java. The README
+only lists the wiki pages. `bin/check_spi_readme_links.py` rejects such a link:
+
+```bash
+python3 bin/check_spi_readme_links.py
+```
+
 ## Formatting
 
 Spotless runs during `process-sources` and fails the build on violations:

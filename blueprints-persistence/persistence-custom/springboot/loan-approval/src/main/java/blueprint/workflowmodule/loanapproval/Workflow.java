@@ -35,7 +35,7 @@ import io.vanillabp.spi.process.ProcessService;
  * it is open before it starts a workflow.
  * </p>
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-process">Wire up a
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process">Wire up a
  *      process</a>
  */
 @Component

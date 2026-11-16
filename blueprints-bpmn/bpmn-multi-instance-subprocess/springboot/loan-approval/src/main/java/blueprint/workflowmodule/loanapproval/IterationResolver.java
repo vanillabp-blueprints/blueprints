@@ -27,7 +27,7 @@ import io.vanillabp.spi.service.MultiInstanceElementResolver;
  * way.
  * </p>
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#multi-instance">Multi-instance</a>
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Multi-instance">Multi-instance</a>
  */
 @Component
 public class IterationResolver implements MultiInstanceElementResolver<Aggregate, Iteration> {
