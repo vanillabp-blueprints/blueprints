@@ -5,8 +5,6 @@ import java.util.function.Function;
 
 import blueprint.testdriver.loanapproval.steps.ContractCheckOpenedStep;
 import blueprint.testdriver.loanapproval.steps.ContractSignedStep;
-import blueprint.testdriver.loanapproval.steps.LoanRequestedStep;
-import blueprint.testdriver.loanapproval.steps.RiskAssessedOnTheWayStep;
 import blueprint.testdriver.loanapproval.steps.RiskAssessmentOpenedStep;
 import blueprint.testdriver.loanapproval.steps.Step;
 import blueprint.workflowmodule.loanapproval.model.Aggregate;
@@ -23,9 +21,10 @@ import blueprint.workflowmodule.loanapproval.model.Aggregate;
  * </p>
  *
  * <p>
- * Each state lists the steps which lead to it, in their order. This list is the only place
- * where the tests know the process. A change of the model changes a step or a list here, and
- * no test.
+ * Each state names only the step which finishes it. Every step names the steps right before
+ * it, and the driver follows them back to the start. So the way to a state is written down in
+ * small pieces, each in the step it belongs to. The steps and this enum are the only place where
+ * the tests know the process. A change of the model changes one or two steps, and no test.
  * </p>
  */
 public enum ProcessState {
@@ -58,25 +57,17 @@ public enum ProcessState {
   }
 
   /**
-   * The steps which lead to this state, in their order.
+   * The steps which finish this state, normally one. The driver runs the steps they need before
+   * them, see {@link Step#prerequisites()}.
    *
    * @return The classes of the steps. The driver knows one instance of each.
    */
-  public List<Class<? extends Step>> prerequisiteSteps() {
+  public List<Class<? extends Step>> finishingSteps() {
 
     return switch (this) {
-      case ASSESS_RISK_USER_TASK -> List.of(
-          LoanRequestedStep.class,
-          RiskAssessmentOpenedStep.class);
-      case CHECK_CONTRACT_USER_TASK_WITHOUT_SIGNATURE -> List.of(
-          LoanRequestedStep.class,
-          RiskAssessedOnTheWayStep.class,
-          ContractCheckOpenedStep.class);
-      case CHECK_CONTRACT_USER_TASK -> List.of(
-          LoanRequestedStep.class,
-          RiskAssessedOnTheWayStep.class,
-          ContractCheckOpenedStep.class,
-          ContractSignedStep.class);
+      case ASSESS_RISK_USER_TASK -> List.of(RiskAssessmentOpenedStep.class);
+      case CHECK_CONTRACT_USER_TASK_WITHOUT_SIGNATURE -> List.of(ContractCheckOpenedStep.class);
+      case CHECK_CONTRACT_USER_TASK -> List.of(ContractSignedStep.class);
     };
 
   }

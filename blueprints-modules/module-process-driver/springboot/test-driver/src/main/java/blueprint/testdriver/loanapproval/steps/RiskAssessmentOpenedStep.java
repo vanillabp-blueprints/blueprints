@@ -1,5 +1,7 @@
 package blueprint.testdriver.loanapproval.steps;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +20,16 @@ public class RiskAssessmentOpenedStep implements Step {
 
   @Autowired
   private StepSupport support;
+
+  /**
+   * The task opens right after the loan request, if the amount is large.
+   */
+  @Override
+  public List<Class<? extends Step>> prerequisites() {
+
+    return List.of(LoanRequestedStep.class);
+
+  }
 
   @Override
   public String description() {

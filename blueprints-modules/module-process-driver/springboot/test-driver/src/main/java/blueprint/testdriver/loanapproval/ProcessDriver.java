@@ -1,5 +1,9 @@
 package blueprint.testdriver.loanapproval;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -12,8 +16,8 @@ import blueprint.testdriver.loanapproval.steps.StepSupport;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Brings a real loan approval to a point of its process. It runs the steps of the
- * {@link ProcessState}, one after the other. Every step goes through the business code of the
+ * Brings a real loan approval to a point of its process. It runs the steps which finish the
+ * {@link ProcessState}, and before them the steps they need, one after the other. Every step goes through the business code of the
  * workflow module and through the test API of the simulator, and waits for the aggregate. The
  * driver never talks to a BPMS, and it never jumps into the engine. A loan approval it brings
  * somewhere went the whole way, as a real one does.
@@ -23,12 +27,19 @@ import lombok.extern.slf4j.Slf4j;
  * state. The dev shell and the tests of a user interface call the same through the REST API of
  * {@link ProcessDriverController}.
  * </p>
+ *
+ * <p>
+ * Each step names only its direct prerequisites. The driver follows them depth first: the
+ * prerequisites of a step run before the step, in the order the step names them, and a step
+ * which two other steps need runs only once. It does this for every state when it is created,
+ * so a missing step or a cycle stops the start of the application, and not a test in the middle.
+ * </p>
  */
 @Slf4j
 @Component
 public class ProcessDriver {
 
-  private final Map<Class<? extends Step>, Step> steps;
+  private final Map<ProcessState, List<Step>> stepsOfState = new EnumMap<>(ProcessState.class);
 
   private final StepSupport support;
 
@@ -36,10 +47,86 @@ public class ProcessDriver {
       final List<Step> steps,
       final StepSupport support) {
 
-    this.steps = steps
+    final var stepByClass = steps
         .stream()
         .collect(Collectors.toMap(Step::getClass, Function.identity()));
+    for (final var state : ProcessState.values()) {
+      stepsOfState.put(state, resolve(state.finishingSteps(), stepByClass));
+    }
     this.support = support;
+
+  }
+
+  /**
+   * The steps the driver runs for a state, in their order.
+   *
+   * @param state A state of the process.
+   * @return The steps, each one once.
+   */
+  List<Step> stepsOf(
+      final ProcessState state) {
+
+    return stepsOfState.get(state);
+
+  }
+
+  /**
+   * Puts the given steps and all steps they need into the order in which they have to run.
+   *
+   * @param targets     The steps which have to be done at the end.
+   * @param stepByClass The instance of each step.
+   * @return Every needed step once, each one after its prerequisites.
+   * @throws IllegalStateException If a step has no instance, or if steps need each other in a
+   *                               cycle.
+   */
+  static List<Step> resolve(
+      final Collection<Class<? extends Step>> targets,
+      final Map<Class<? extends Step>, Step> stepByClass) {
+
+    final var ordered = new LinkedHashSet<Step>();
+    for (final var target : targets) {
+      visit(target, stepByClass, new LinkedHashSet<>(), ordered);
+    }
+    return List.copyOf(ordered);
+
+  }
+
+  private static void visit(
+      final Class<? extends Step> stepClass,
+      final Map<Class<? extends Step>, Step> stepByClass,
+      final LinkedHashSet<Class<? extends Step>> onTheWay,
+      final LinkedHashSet<Step> ordered) {
+
+    final var step = stepByClass.get(stepClass);
+    if (step == null) {
+      throw new IllegalStateException("There is no bean of the step "
+          + stepClass.getSimpleName()
+          + ". Annotate it with @Component.");
+    }
+    if (ordered.contains(step)) {
+      return;
+    }
+    // The steps we are inside of right now. Meeting one of them again means a cycle, which
+    // would otherwise end in a StackOverflowError without a hint which steps are wrong.
+    if (!onTheWay.add(stepClass)) {
+      final var cycle = new ArrayList<String>();
+      var inCycle = false;
+      for (final var before : onTheWay) {
+        inCycle |= before.equals(stepClass);
+        if (inCycle) {
+          cycle.add(before.getSimpleName());
+        }
+      }
+      cycle.add(stepClass.getSimpleName());
+      throw new IllegalStateException("The prerequisites of the steps form a cycle: "
+          + String.join(" -> ", cycle)
+          + ". Remove one of these names from prerequisites().");
+    }
+    for (final var prerequisite : step.prerequisites()) {
+      visit(prerequisite, stepByClass, onTheWay, ordered);
+    }
+    onTheWay.remove(stepClass);
+    ordered.add(step);
 
   }
 
@@ -74,8 +161,7 @@ public class ProcessDriver {
 
     final var scenario = new Scenario(state, testData);
 
-    for (final var stepClass : state.prerequisiteSteps()) {
-      final var step = steps.get(stepClass);
+    for (final var step : stepsOfState.get(state)) {
       log.debug("{} on the way to {}: {}", scenario.getLoanRequestId(), state, step.description());
       step.run(scenario);
     }

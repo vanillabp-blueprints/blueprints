@@ -1,5 +1,7 @@
 package blueprint.testdriver.loanapproval.steps;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +21,16 @@ public class ContractSignedStep implements Step {
 
   @Autowired
   private StepSupport support;
+
+  /**
+   * The simulator can only sign a contract which it got.
+   */
+  @Override
+  public List<Class<? extends Step>> prerequisites() {
+
+    return List.of(ContractCheckOpenedStep.class);
+
+  }
 
   @Override
   public String description() {

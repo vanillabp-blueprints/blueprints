@@ -1,5 +1,7 @@
 package blueprint.testdriver.loanapproval.steps;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +17,16 @@ public class ContractCheckOpenedStep implements Step {
 
   @Autowired
   private StepSupport support;
+
+  /**
+   * The contract goes out only after the risk is assessed, if the amount needed it.
+   */
+  @Override
+  public List<Class<? extends Step>> prerequisites() {
+
+    return List.of(RiskAssessedOnTheWayStep.class);
+
+  }
 
   @Override
   public String description() {

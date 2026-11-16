@@ -1,13 +1,35 @@
 package blueprint.testdriver.loanapproval.steps;
 
+import java.util.List;
+
 import blueprint.testdriver.loanapproval.Scenario;
 
 /**
  * One step on the way to a state of the process. A step does one thing: it prepares data in the
  * simulator, triggers something, or waits. Then it waits until the application shows the
  * result, so the next step starts from a known state.
+ *
+ * <p>
+ * A step names only the steps which have to be done right before it, with
+ * {@link #prerequisites()}. The driver follows these names back to the first step. So a new task
+ * in the model is a change of two steps: the new one names its predecessor, and the step after
+ * it names the new one. No other step and no state changes.
+ * </p>
  */
 public interface Step {
+
+  /**
+   * The steps which have to be done right before this one. Only the direct ones: the driver
+   * finds the steps before them by itself, and it runs a step only once, even if two steps name
+   * it.
+   *
+   * @return The classes of the steps. Empty for a step which starts a loan request.
+   */
+  default List<Class<? extends Step>> prerequisites() {
+
+    return List.of();
+
+  }
 
   /**
    * What the step does, for the log and for the message when a state is not reached.

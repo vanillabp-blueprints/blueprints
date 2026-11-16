@@ -29,8 +29,8 @@ Names this blueprint adds:
 | `test-driver`                              | the Maven module of the driver, and of the tests of the workflow module              |
 | `blueprint.testdriver.loanapproval`        | the package of the driver, deliberately NOT below the package of the workflow module |
 | `blueprint.testdriver.simulator`           | `SimulatorTestApi`, the client of the test API of the simulator                      |
-| `ProcessState`                             | the states a scenario can reach, each with the list of its steps                     |
-| `*Step`                                    | one step on the way, named after what is true when it is done                        |
+| `ProcessState`                             | the states a scenario can reach, each with the step which finishes it                |
+| `*Step`                                    | one step, named after what is true when it is done, with its direct predecessors     |
 | `TestData`                                 | what a scenario says about the case, with defaults which make sense for the business |
 | `process-driver.*`                         | the configuration of the driver: `enabled`, `simulator-base-url`, `timeout`          |
 | `/process-driver/states`, `.../advance-to` | the REST API of the driver, for the dev shell and the tests of a user interface      |
@@ -38,7 +38,11 @@ Names this blueprint adds:
 **The rules this blueprint is built on:**
 
 1. A test never plays the history of its case. It calls `advanceTo(state, testData)` and starts
-   there. The steps on the way are in `ProcessState` and nowhere else.
+   there. The way to a state is in `ProcessState` and in the steps, and nowhere else. A step
+   names only the steps right before it, in `prerequisites()`, and a state names only the step
+   which finishes it. The driver follows the names back to the start, runs each step once and
+   checks all states when it is created. Never list the whole way in one place: a new task
+   would then change every list.
 2. A state names a point where the workflow waits, together with its history. Two states may
    name the same task. `_USER_TASK` at the end means the task is open, and the driver leaves it
    open.
@@ -66,8 +70,8 @@ Names this blueprint adds:
 
 |                                       File                                       |                                         Why it matters                                          |
 |----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `test-driver/src/main/java/.../ProcessState.java`                                | the states and the steps of each. The only place where the tests know the process               |
-| `test-driver/src/main/java/.../ProcessDriver.java`                               | `advanceTo`: runs the steps of a state and logs where the case is                               |
+| `test-driver/src/main/java/.../ProcessState.java`                                | the states and the step which finishes each; with the steps, all the tests know of the process  |
+| `test-driver/src/main/java/.../ProcessDriver.java`                               | follows the prerequisites of the steps; `advanceTo` runs them and logs where the case is        |
 | `test-driver/src/main/java/.../TestData.java`                                    | the defaults of a scenario, and the withers a test changes them with                            |
 | `test-driver/src/main/java/.../steps/StepSupport.java`                           | waits for the aggregate in transactions of its own, turns a timeout into the reason             |
 | `test-driver/src/main/java/.../steps/RiskAssessedOnTheWayStep.java`              | the branch: completes "Assess risk" only if the amount needs it                                 |
@@ -119,10 +123,11 @@ Names this blueprint adds:
    the tests along. The workflow module keeps no tests.
 5. Write one `Step` per thing that happens on the way. Each step waits for the aggregate at its
    end, through `StepSupport`, and passes a diagnosis which says why the state was not reached.
-   Run every call of the business code through `StepSupport.inOwnTransaction`.
+   Run every call of the business code through `StepSupport.inOwnTransaction`. Let each step
+   name the steps right before it in `prerequisites()`, and only those.
 6. For every branch the test data can choose, write a step which completes the tasks of the
    branch if the test data chose it, and does nothing otherwise.
-7. Write `ProcessState` with one value per point a test needs, and the list of its steps. Keep
+7. Write `ProcessState` with one value per point a test needs, and the step which finishes it. Keep
    it short. A state nobody tests is not worth keeping.
 8. Write `TestData` with defaults which make sense for the business, and withers for what the
    scenarios change.

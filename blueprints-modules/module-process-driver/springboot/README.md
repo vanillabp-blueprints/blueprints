@@ -38,17 +38,18 @@ Two states name the same task of the model with another history. A state which e
 `_USER_TASK` means that the task is open. The driver does not complete it. The test does that,
 or a person in the dev shell.
 
-Each state lists its steps with `prerequisiteSteps()`. A step is a small class which does one
-thing: it prepares data in the simulator, triggers something, or waits. Then it waits until the
-application shows the result:
+Each state names the step which finishes it, with `finishingSteps()`. A step is a small class
+which does one thing: it prepares data in the simulator, triggers something, or waits. Then it
+waits until the application shows the result. Each step names only the steps right before it,
+with `prerequisites()`:
 
-|            Step            |                               What it does                                |
-|----------------------------|---------------------------------------------------------------------------|
-| `LoanRequestedStep`        | reserves a customer in the simulator, gives it a score, requests the loan |
-| `RiskAssessmentOpenedStep` | waits until "Assess risk" is open                                         |
-| `RiskAssessedOnTheWayStep` | completes "Assess risk", if the amount needs it, and nothing otherwise    |
-| `ContractCheckOpenedStep`  | waits until the contract went out and "Check contract" is open            |
-| `ContractSignedStep`       | makes the simulated e-signature service sign and call back                |
+|            Step            |                               What it does                                |          Comes right after          |
+|----------------------------|---------------------------------------------------------------------------|-------------------------------------|
+| `LoanRequestedStep`        | reserves a customer in the simulator, gives it a score, requests the loan | nothing, it starts the loan request |
+| `RiskAssessmentOpenedStep` | waits until "Assess risk" is open                                         | `LoanRequestedStep`                 |
+| `RiskAssessedOnTheWayStep` | completes "Assess risk", if the amount needs it, and nothing otherwise    | `LoanRequestedStep`                 |
+| `ContractCheckOpenedStep`  | waits until the contract went out and "Check contract" is open            | `RiskAssessedOnTheWayStep`          |
+| `ContractSignedStep`       | makes the simulated e-signature service sign and call back                | `ContractCheckOpenedStep`           |
 
 `TestData` holds what a scenario says about the case. Every value has a default which makes
 sense for the business: a customer with a good score asks for a small amount. A test changes
@@ -61,8 +62,15 @@ var scenario = driver.advanceTo(
 ```
 
 The test of a large amount does not know about "Assess risk". The test data chose the branch,
-and `RiskAssessedOnTheWayStep` completed the task on the way. When the model gets one more task
-before "Check contract", one step is added to the list of the state, and no test changes.
+and `RiskAssessedOnTheWayStep` completed the task on the way.
+
+The driver follows the prerequisites back to `LoanRequestedStep` and runs the steps in that
+order. A step which two others need runs only once. The driver does this for every state when it
+starts, so a step without a bean, or two steps which need each other, stop the application at
+once, with a message which names the steps. The whole way to a state is written down nowhere in
+one piece. When the model gets one more task before "Check contract", the new step names its
+predecessor, `ContractCheckOpenedStep` names the new step, and nothing else changes: no state
+and no test.
 
 ### No jump into the engine, no mock in the application
 

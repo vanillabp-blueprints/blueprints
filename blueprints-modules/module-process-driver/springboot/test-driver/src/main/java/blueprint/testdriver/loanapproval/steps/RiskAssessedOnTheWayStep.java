@@ -1,5 +1,7 @@
 package blueprint.testdriver.loanapproval.steps;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +22,16 @@ public class RiskAssessedOnTheWayStep implements Step {
 
   @Autowired
   private StepSupport support;
+
+  /**
+   * The amount of the loan request decides whether there is a risk to assess.
+   */
+  @Override
+  public List<Class<? extends Step>> prerequisites() {
+
+    return List.of(LoanRequestedStep.class);
+
+  }
 
   @Override
   public String description() {
