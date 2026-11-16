@@ -45,7 +45,7 @@ public class Aggregate {
    * The natural id of the use case. The contract handed to the e-signature service carries the
    * same id, so the callback finds its way back without a table which maps one id to the other.
    *
-   * @see <a href="https://github.com/vanillabp/spi-for-java#natural-ids">Natural ids</a>
+   * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/The-workflow-aggregate#natural-ids">Natural ids</a>
    */
   @Id
   private String loanRequestId;

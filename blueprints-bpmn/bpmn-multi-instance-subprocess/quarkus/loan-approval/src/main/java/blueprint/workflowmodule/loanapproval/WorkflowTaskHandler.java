@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
  * {@code TaskException} passes it.
  * </p>
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#multi-instance">Multi-instance</a>
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Multi-instance">Multi-instance</a>
  */
 @Slf4j
 @ApplicationScoped

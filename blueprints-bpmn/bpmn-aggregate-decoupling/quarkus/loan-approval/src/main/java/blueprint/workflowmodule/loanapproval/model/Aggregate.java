@@ -63,7 +63,7 @@ public class Aggregate {
    * workflow again.
    * </p>
    *
-   * @see <a href="https://github.com/vanillabp/spi-for-java#natural-ids">Natural ids</a>
+   * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/The-workflow-aggregate#natural-ids">Natural ids</a>
    */
   @Id
   private String loanRequestId;

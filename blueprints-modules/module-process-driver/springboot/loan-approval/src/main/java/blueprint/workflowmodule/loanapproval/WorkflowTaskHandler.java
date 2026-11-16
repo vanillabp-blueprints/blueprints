@@ -23,7 +23,7 @@ import io.vanillabp.spi.service.WorkflowTask;
  * line here, because the port is used in the business code, not in the handler.
  * </p>
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-task">Wire up a task</a>
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-task">Wire up a task</a>
  */
 @Component
 @WorkflowService(

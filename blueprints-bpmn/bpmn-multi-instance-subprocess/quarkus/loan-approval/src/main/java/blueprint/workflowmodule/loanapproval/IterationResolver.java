@@ -26,7 +26,7 @@ import jakarta.enterprise.context.ApplicationScoped;
  * way.
  * </p>
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#multi-instance">Multi-instance</a>
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Multi-instance">Multi-instance</a>
  */
 @ApplicationScoped
 public class IterationResolver implements MultiInstanceElementResolver<Aggregate, Iteration> {

@@ -214,7 +214,7 @@ an embedded engine and fail on a remote one.
 - [What happens when my handler throws?](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#what-happens-when-my-handler-throws): the three outcomes, as a contract that holds on every BPMS
 - [The execution contract](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#the-execution-contract): who loads, who saves and who owns the transaction
 - [Parameters](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#parameters): `@TaskParam` and everything else a handler may ask for
-- [Wire up a task](https://github.com/vanillabp/spi-for-java#wire-up-a-task): the annotations used in `WorkflowTaskHandler.java`
+- [Wire up a task](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-task): the annotations used in `WorkflowTaskHandler.java`
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how often a failed task is retried, and how long it waits
 
 This blueprint is developed in the monorepo

@@ -32,7 +32,7 @@ import io.vanillabp.spi.service.WorkflowTask;
  * joins it.
  * </p>
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-task">Wire up a task</a>
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-task">Wire up a task</a>
  * @see <a href=
  *      "https://github.com/vanillabp/business-cockpit/wiki/Reporting-workflows-and-user-tasks">Reporting
  *      workflows and user tasks</a>

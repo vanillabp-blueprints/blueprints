@@ -207,7 +207,7 @@ model of
 ## Documentation
 
 - [Viewing workflows](https://github.com/vanillabp/adapter-platform-integration/wiki/Viewing-workflows): the three methods, opaque ids, ended workflows and what differs per BPMS
-- [Viewing BPMN and execution history](https://github.com/vanillabp/spi-for-java#viewing-bpmn-and-execution-history-of-workflows): the record types and how a viewer is fed
+- [Viewing BPMN and execution history](https://github.com/vanillabp/spi-for-java/wiki/Showing-BPMN-and-history): the record types and how a viewer is fed
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why the aggregate is all VanillaBP needs to find the workflow again
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: what that engine records, and what it needs to record it
 

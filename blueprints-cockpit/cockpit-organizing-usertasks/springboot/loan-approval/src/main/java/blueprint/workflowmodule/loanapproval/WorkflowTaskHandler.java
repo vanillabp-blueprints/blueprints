@@ -48,7 +48,7 @@ import io.vanillabp.spi.service.WorkflowTask;
  * provider must not change the aggregate, because nobody saves it after the provider ran.
  * </p>
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#wire-up-a-task">Wire up a task</a>
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-task">Wire up a task</a>
  * @see <a href=
  *      "https://github.com/vanillabp/business-cockpit/wiki/Reporting-workflows-and-user-tasks#organizing-user-tasks">Organizing
  *      user tasks</a>

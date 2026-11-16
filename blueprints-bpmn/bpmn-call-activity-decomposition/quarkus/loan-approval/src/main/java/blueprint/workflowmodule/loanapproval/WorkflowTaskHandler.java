@@ -51,7 +51,7 @@ import jakarta.inject.Inject;
  * {@code TaskException} passes it.
  * </p>
  *
- * @see <a href="https://github.com/vanillabp/spi-for-java#call-activities">Call
+ * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Call-activities">Call
  *      activities</a>
  */
 @ApplicationScoped
