@@ -9,6 +9,10 @@ info:
 
     Each form has two endpoints. GET reads what the form shows. POST sends what the user
     entered and completes the user task. Nothing is stored in between.
+
+    The cockpit lets a user take a task over. POST refuses a task which somebody else took
+    over with 409, so a form which was open on two screens is completed only by the user who
+    has the task.
   version: 1.0.0
 servers:
   - url: /wm/loan-approval
@@ -51,6 +55,10 @@ paths:
           description: The input is missing or empty
         '404':
           description: No open user task "Assess risk" has this id
+        '409':
+          description: >
+            Somebody else took the user task over in the Business Cockpit. The task stays open
+            for that user
   /api/user-tasks/{userTaskId}/check-documents:
     parameters:
       - $ref: '#/components/parameters/UserTaskId'
@@ -86,6 +94,10 @@ paths:
           description: The input is missing or empty
         '404':
           description: No open user task "Check documents" has this id
+        '409':
+          description: >
+            Somebody else took the user task over in the Business Cockpit. The task stays open
+            for that user
 components:
   parameters:
     UserTaskId:

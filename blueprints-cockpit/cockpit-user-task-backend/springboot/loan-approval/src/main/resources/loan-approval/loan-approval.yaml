@@ -32,11 +32,18 @@ vanillabp:
         # in the details provider.
         initiator-source: system
 
-# The keys this module reads itself are below its id. There is one, and the module leaves it
-# unset:
+# The keys this module reads itself are below its id. There are two, and the module leaves
+# both unset:
 #
 #   loan-approval.user-interface.address
 #
 # It is the address of an nginx which serves the user interface. An application which sets it
 # and has the starter of Spring Cloud Gateway (server-webmvc) forwards the files of the user
 # interface there. An application which does not set it serves them from the UI jar.
+#
+#   loan-approval.cockpit.address
+#
+# It is the address of the Business Cockpit, for example http://localhost:8080. An application
+# which sets it lets the module ask the cockpit who took over a user task, before a form
+# completes it. A task which somebody else took over is refused with 409. Without the address,
+# a form completes the task whoever has it.

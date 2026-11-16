@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -64,6 +65,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
       final DynamicPropertyRegistry properties) {
 
     properties.add("vanillabp.cockpit.rest.base-url", () -> CockpitSimulator.start().baseUrl());
+    properties.add(Cockpit.ADDRESS, () -> CockpitGuiApi.start().address());
 
   }
 
@@ -163,6 +165,37 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
         .isEqualTo(404);
     assertThat(status(assessRiskTaskId, "assess-risk")).isEqualTo(404);
+
+  }
+
+  @Test
+  public void aTaskWhichSomebodyElseTookOverGets409() {
+
+    final var loanRequestId = UUID.randomUUID().toString();
+
+    loanApproval.request(loanRequestId, 5000);
+
+    final var assessRiskTaskId = awaitAggregate(
+        loanApprovals,
+        loanRequestId,
+        aggregate -> aggregate.getAssessRiskTaskId() != null)
+        .getAssessRiskTaskId();
+
+    // Nobody took the task over yet, so anybody's form may complete it. Here it is refused for
+    // the empty input only, which leaves the task open for the rest of the test.
+    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", " "), "anna"))
+        .isEqualTo(400);
+
+    // 'bob' takes the task over in the cockpit. The form of 'anna' is still on her screen.
+    CockpitGuiApi.start().assign(assessRiskTaskId, "bob");
+    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable"), "anna"))
+        .isEqualTo(409);
+
+    // Reading takes nothing away from 'bob', and the task is still open for him.
+    assertThat(status(assessRiskTaskId, "assess-risk")).isEqualTo(200);
+    assertThat(loanApprovals.findById(loanRequestId).orElseThrow().getRiskAssessment()).isNull();
+    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable"), "bob"))
+        .isEqualTo(204);
 
   }
 
@@ -270,15 +303,33 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   }
 
+  /** Sends a form without a login, like a person who follows a URL of the log. */
   private int send(
       final String userTaskId,
       final String form,
       final Map<String, Object> input) {
 
+    return send(userTaskId, form, input, null);
+
+  }
+
+  /** Sends a form as a user of the cockpit, with the cookie the browser sends. */
+  private int send(
+      final String userTaskId,
+      final String form,
+      final Map<String, Object> input,
+      final String user) {
+
     return forms
         .post()
         .uri("/{userTaskId}/{form}", userTaskId, form)
         .contentType(MediaType.APPLICATION_JSON)
+        .headers(headers -> {
+          if (user != null) {
+            headers.add(HttpHeaders.COOKIE, "bc="
+                + user);
+          }
+        })
         .body(input)
         .exchange((
             request,

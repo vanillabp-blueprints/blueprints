@@ -11,6 +11,7 @@ const TEXTS = {
     completed: 'Completed',
     loading: 'Loading…',
     notFound: 'This user task is not open any more.',
+    claimed: 'Somebody else has taken over this user task.',
     failed: 'The workflow module did not answer. Please try again.',
   },
   de: {
@@ -22,6 +23,7 @@ const TEXTS = {
     completed: 'Abgeschlossen',
     loading: 'Wird geladen…',
     notFound: 'Diese Aufgabe ist nicht mehr offen.',
+    claimed: 'Diese Aufgabe hat inzwischen jemand anderer übernommen.',
     failed: 'Das Workflow-Modul hat nicht geantwortet. Bitte versuchen Sie es noch einmal.',
   },
 };

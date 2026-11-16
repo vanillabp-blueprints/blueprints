@@ -196,8 +196,10 @@ The client uses the `fetch` of the browser. The generator copies the code for it
 generated files, so the forms need no library for it at runtime. When an answer is not a success,
 the generated client throws only its body, and the OpenAPI file gives errors no body. So
 `api.ts` adds an error interceptor, which throws a `ResponseError` instead. Its `response` has the
-status, and that is how a form tells 404 from other failures. A network error brings no answer,
-and the call throws what `fetch` threw.
+status, and that is how a form tells the answers apart. 404 means that the task is not open any
+more. 409 means that somebody else took the task over in the cockpit, so the form says so and
+completes nothing. Every other answer is a failure the user may try again. A network error brings
+no answer, and the call throws what `fetch` threw.
 
 The generator is a Node program and an exact dev dependency in `package.json`. It has no install
 scripts, and it downloads nothing when it runs. So the build needs Node and nothing else: no Java,
@@ -318,7 +320,8 @@ backend. The tests answer the module API inside the browser, at the network leve
 run unchanged. Every form is tested twice: in a host with the areas `body`, `information` and
 `actions`, and in a host which only knows `all`. The tests also check that the data entries load
 neither React nor a form, that opening one form does not load the other, and that the typed text
-stays when the cockpit sets a property such as the language.
+stays when the cockpit sets a property such as the language, and that a 404 and a 409 each show
+their own message.
 
 ### Three repositories, and the order of their releases
 

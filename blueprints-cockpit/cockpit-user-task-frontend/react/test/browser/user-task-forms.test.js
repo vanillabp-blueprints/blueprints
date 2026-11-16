@@ -51,17 +51,17 @@ after(async () => {
 
 /**
  * Answers the module API in the browser. GET returns the data of the form, or `status` if one
- * is given. POST answers 204 and keeps the body it got.
+ * is given. POST answers `completeStatus`, 204 if none is given, and keeps the body of each 204.
  */
-async function mockApi(page, { forms = {}, status } = {}) {
+async function mockApi(page, { forms = {}, status, completeStatus = 204 } = {}) {
   const completed = [];
   await page.route('**/wm/loan-approval/api/user-tasks/*/*', async (route) => {
     const request = route.request();
     const [, userTaskId, form] = new URL(request.url()).pathname.match(/\/user-tasks\/([^/]+)\/([^/]+)$/);
     if (status) return route.fulfill({ status });
     if (request.method() === 'POST') {
-      completed.push({ userTaskId, form, body: request.postDataJSON() });
-      return route.fulfill({ status: 204 });
+      if (completeStatus === 204) completed.push({ userTaskId, form, body: request.postDataJSON() });
+      return route.fulfill({ status: completeStatus });
     }
     return route.fulfill({ json: forms[form] });
   });
@@ -236,6 +236,26 @@ for (const cockpit of COCKPITS) {
       await page.evaluate((task) => window.bcTest.show(task), assessRisk);
       await assertText(page.getByTestId('assess-risk-error'), 'This user task is not open any more.');
       assert.equal(await page.getByTestId('assess-risk-input').count(), 0);
+      assert.deepEqual(pageErrors, []);
+      await page.close();
+    });
+
+    it('a user task somebody else took over in the meantime shows its own message, and nothing is completed', async () => {
+      const { page, pageErrors, completed } = await openPage(cockpit.query, {
+        forms: { 'assess-risk': { loanRequestId: 'LR-4711', amount: 25000 } },
+        completeStatus: 409,
+      });
+      await page.evaluate((task) => window.bcTest.show(task), assessRisk);
+      await page.getByTestId('assess-risk-input').fill('low, a steady income');
+      await page.getByTestId('assess-risk-complete').click({ timeout: 5000 });
+
+      await assertText(page.getByTestId('assess-risk-error'), 'Somebody else has taken over this user task.');
+      assert.equal(await page.getByTestId('assess-risk-done').count(), 0);
+      assert.deepEqual(completed, []);
+      await page.waitForFunction(() => window.bcTest.notifications.length > 0);
+      assert.deepEqual(await page.evaluate(() => window.bcTest.notifications), [
+        { level: 'error', text: 'Somebody else has taken over this user task.', sticky: false },
+      ]);
       assert.deepEqual(pageErrors, []);
       await page.close();
     });
