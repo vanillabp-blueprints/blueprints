@@ -1,6 +1,5 @@
 package blueprint.workflowmodule.loanapproval;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,15 +8,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import blueprint.workflowmodule.loanapproval.api.UserTaskFormsApi;
+import blueprint.workflowmodule.loanapproval.api.model.ApproveLoanForm;
+import blueprint.workflowmodule.loanapproval.api.model.ApproveLoanInput;
+import blueprint.workflowmodule.loanapproval.api.model.AssessRiskForm;
+import blueprint.workflowmodule.loanapproval.api.model.AssessRiskInput;
+import blueprint.workflowmodule.loanapproval.api.model.CallCustomerForm;
+import blueprint.workflowmodule.loanapproval.api.model.CallCustomerInput;
+import blueprint.workflowmodule.loanapproval.api.model.TaskState;
 import blueprint.workflowmodule.loanapproval.config.Permission;
 import blueprint.workflowmodule.loanapproval.model.usertask.ApproveLoanTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
@@ -54,11 +57,18 @@ import io.vanillabp.cockpit.support.usertask.BcUserTaskExceptionHandler;
  * brings both exceptions and {@link BcUserTaskExceptionHandler}, which answers them. Nothing
  * registers the handler on its own, so the controller imports it.
  * </p>
+ *
+ * <p>
+ * The paths and the records of the requests and answers come from {@link UserTaskFormsApi}, the
+ * interface the build generates from {@code src/main/resources/openapi/user-task-forms.yaml}.
+ * This class only implements it, and adds who may call each endpoint. The expressions of
+ * {@code @PreAuthorize} name the parameters of the methods below, {@code #loanRequestId} and
+ * {@code #taskId}.
+ * </p>
  */
 @RestController
 @Import(BcUserTaskExceptionHandler.class)
-@RequestMapping("/api/loan-approval/{loanRequestId}")
-public class UserTaskFormController {
+public class UserTaskFormController implements UserTaskFormsApi {
 
   @Autowired
   private Service loanApproval;
@@ -69,18 +79,17 @@ public class UserTaskFormController {
    *
    * @param loanRequestId The id of the loan request.
    * @param taskId        The id of the user task.
-   * @param user          The user logged in.
    * @return The customer, the attempts so far and whether the user may work on the task.
    */
-  @GetMapping("/call-customer/{taskId}")
+  @Override
   @PreAuthorize("hasAuthority('"
       + Permission.CALL_CUSTOMER
       + "') or @userTaskAccess.mayRead(#loanRequestId, #taskId, authentication.name)")
   public CallCustomerForm getCallCustomerForm(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId,
-      final Authentication user) {
+      final String loanRequestId,
+      final String taskId) {
 
+    final var user = whoIsLoggedIn();
     final var loanRequest = loanApproval.withTask(loanRequestId, taskId, CallCustomerTaskData.class);
     final var task = loanRequest
         .getTask(taskId)
@@ -93,7 +102,7 @@ public class UserTaskFormController {
 
     return new CallCustomerForm(
         loanRequest.getLoanRequestId(), loanRequest.getCustomer(), loanRequest.getPhone(), data.attempts(), data
-            .callAgainAt(), data.note(), editable, TaskState.of(task));
+            .callAgainAt(), data.note(), editable, stateOf(task));
 
   }
 
@@ -102,17 +111,14 @@ public class UserTaskFormController {
    *
    * @param loanRequestId The id of the loan request.
    * @param taskId        The id of the user task.
-   * @param user          The advisor logged in.
    */
-  @PostMapping("/call-customer/{taskId}/not-reached")
+  @Override
   @Secured(Permission.CALL_CUSTOMER)
-  @ResponseStatus(HttpStatus.NO_CONTENT)
   public void customerNotReached(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId,
-      final Authentication user) {
+      final String loanRequestId,
+      final String taskId) {
 
-    loanApproval.customerNotReached(loanRequestId, taskId, user.getName());
+    loanApproval.customerNotReached(loanRequestId, taskId, whoIsLoggedIn().getName());
 
   }
 
@@ -122,18 +128,15 @@ public class UserTaskFormController {
    * @param loanRequestId The id of the loan request.
    * @param taskId        The id of the user task.
    * @param input         What the advisor noted.
-   * @param user          The advisor logged in.
    */
-  @PostMapping("/call-customer/{taskId}")
+  @Override
   @Secured(Permission.CALL_CUSTOMER)
-  @ResponseStatus(HttpStatus.NO_CONTENT)
   public void completeCallCustomer(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId,
-      @RequestBody final CallCustomerInput input,
-      final Authentication user) {
+      final String loanRequestId,
+      final String taskId,
+      final CallCustomerInput input) {
 
-    loanApproval.customerCalled(loanRequestId, taskId, input.note(), user.getName());
+    loanApproval.customerCalled(loanRequestId, taskId, input.note(), whoIsLoggedIn().getName());
 
   }
 
@@ -142,18 +145,17 @@ public class UserTaskFormController {
    *
    * @param loanRequestId The id of the loan request.
    * @param taskId        The id of the user task.
-   * @param user          The user logged in.
    * @return The loan request, the values of the form and whether the user may work on it.
    */
-  @GetMapping("/assess-risk/{taskId}")
+  @Override
   @PreAuthorize("hasAuthority('"
       + Permission.ASSESS_RISK
       + "') or @userTaskAccess.mayRead(#loanRequestId, #taskId, authentication.name)")
   public AssessRiskForm getAssessRiskForm(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId,
-      final Authentication user) {
+      final String loanRequestId,
+      final String taskId) {
 
+    final var user = whoIsLoggedIn();
     final var loanRequest = loanApproval.withTask(loanRequestId, taskId, AssessRiskTaskData.class);
     final var task = loanRequest
         .getTask(taskId)
@@ -166,7 +168,7 @@ public class UserTaskFormController {
 
     return new AssessRiskForm(
         loanRequest.getLoanRequestId(), loanRequest.getCustomer(), loanRequest.getAmount(), loanRequest
-            .getCreditRating(), data.riskAcceptable(), data.comment(), editable, TaskState.of(task));
+            .getCreditRating(), data.riskAcceptable(), data.comment(), editable, stateOf(task));
 
   }
 
@@ -176,18 +178,15 @@ public class UserTaskFormController {
    * @param loanRequestId The id of the loan request.
    * @param taskId        The id of the user task.
    * @param input         What the user sent.
-   * @param user          The user logged in, who completes the task.
    */
-  @PostMapping("/assess-risk/{taskId}")
+  @Override
   @Secured(Permission.ASSESS_RISK)
-  @ResponseStatus(HttpStatus.NO_CONTENT)
   public void completeAssessRisk(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId,
-      @RequestBody final AssessRiskInput input,
-      final Authentication user) {
+      final String loanRequestId,
+      final String taskId,
+      final AssessRiskInput input) {
 
-    loanApproval.assessRisk(loanRequestId, taskId, input.riskAcceptable(), input.comment(), user.getName());
+    loanApproval.assessRisk(loanRequestId, taskId, input.riskAcceptable(), input.comment(), whoIsLoggedIn().getName());
 
   }
 
@@ -197,18 +196,17 @@ public class UserTaskFormController {
    *
    * @param loanRequestId The id of the loan request.
    * @param taskId        The id of the user task.
-   * @param user          The user logged in.
    * @return The loan request, the risk assessment, and whether the user may decide.
    */
-  @GetMapping("/approve-loan/{taskId}")
+  @Override
   @PreAuthorize("hasAuthority('"
       + Permission.APPROVE_LOAN
       + "') or @userTaskAccess.mayRead(#loanRequestId, #taskId, authentication.name)")
   public ApproveLoanForm getApproveLoanForm(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId,
-      final Authentication user) {
+      final String loanRequestId,
+      final String taskId) {
 
+    final var user = whoIsLoggedIn();
     final var loanRequest = loanApproval.withTask(loanRequestId, taskId, ApproveLoanTaskData.class);
     final var task = loanRequest
         .getTask(taskId)
@@ -223,7 +221,7 @@ public class UserTaskFormController {
     return new ApproveLoanForm(
         loanRequest.getLoanRequestId(), loanRequest.getCustomer(), loanRequest.getAmount(), loanRequest
             .getRiskAcceptable(), loanRequest.getRiskComment(), loanRequest.getRiskAssessedBy(), data
-                .approved(), data.comment(), editable, TaskState.of(task));
+                .approved(), data.comment(), editable, stateOf(task));
 
   }
 
@@ -233,18 +231,15 @@ public class UserTaskFormController {
    * @param loanRequestId The id of the loan request.
    * @param taskId        The id of the user task.
    * @param input         What the user decided.
-   * @param user          The user logged in, who completes the task.
    */
-  @PostMapping("/approve-loan/{taskId}")
+  @Override
   @Secured(Permission.APPROVE_LOAN)
-  @ResponseStatus(HttpStatus.NO_CONTENT)
   public void completeApproveLoan(
-      @PathVariable final String loanRequestId,
-      @PathVariable final String taskId,
-      @RequestBody final ApproveLoanInput input,
-      final Authentication user) {
+      final String loanRequestId,
+      final String taskId,
+      final ApproveLoanInput input) {
 
-    loanApproval.decide(loanRequestId, taskId, input.approved(), input.comment(), user.getName());
+    loanApproval.decide(loanRequestId, taskId, input.approved(), input.comment(), whoIsLoggedIn().getName());
 
   }
 
@@ -275,134 +270,33 @@ public class UserTaskFormController {
   }
 
   /**
+   * The user Spring Security logged in for this request. The generated interface knows nothing
+   * about security, so the user is taken from the security context and never from the request.
+   *
+   * @return The user, with the authorities.
+   */
+  private static Authentication whoIsLoggedIn() {
+
+    return SecurityContextHolder
+        .getContext()
+        .getAuthentication();
+
+  }
+
+  /**
    * The state of a user task, the same for every form.
    *
-   * @param createdAt   When the BPMS opened the task.
-   * @param completedAt When the task was completed or canceled.
-   * @param completedBy Who completed it, empty if the workflow canceled it.
-   * @param editors     Who worked on it so far.
-   * @param open        Whether somebody can still work on it.
+   * @param task The user task.
+   * @return When it was opened and completed, by whom, who worked on it, and whether it is
+   *         still open.
    */
-  public record TaskState(
-                          OffsetDateTime createdAt,
-                          OffsetDateTime completedAt,
-                          String completedBy,
-                          List<String> editors,
-                          boolean open) {
+  private static TaskState stateOf(
+      final Task task) {
 
-    static TaskState of(
-        final Task task) {
+    return new TaskState(
+        task.getCreatedAt(), task.getCompletedAt(), task.getCompletedBy(), List.copyOf(task.getEditors()), task
+            .isOpen());
 
-      return new TaskState(
-          task.getCreatedAt(), task.getCompletedAt(), task.getCompletedBy(), List.copyOf(task.getEditors()), task
-              .isOpen());
-
-    }
-
-  }
-
-  /**
-   * What the form "Call customer" shows.
-   *
-   * @param loanRequestId The id of the loan request.
-   * @param customer      The name of the customer.
-   * @param phone         The number to call.
-   * @param attempts      How often the customer was not reached.
-   * @param callAgainAt   When to call again, empty before the first failed call.
-   * @param note          What the customer said, once the task is completed.
-   * @param editable      Whether the user may work on the task, or only read it.
-   * @param task          The state of the task.
-   */
-  public record CallCustomerForm(
-                                 String loanRequestId,
-                                 String customer,
-                                 String phone,
-                                 int attempts,
-                                 OffsetDateTime callAgainAt,
-                                 String note,
-                                 boolean editable,
-                                 TaskState task) {
-  }
-
-  /**
-   * What the advisor noted in the form "Call customer".
-   *
-   * @param note What the customer said.
-   */
-  public record CallCustomerInput(
-                                  String note) {
-  }
-
-  /**
-   * What the form "Assess risk" shows.
-   *
-   * @param loanRequestId  The id of the loan request.
-   * @param customer       The name of the customer.
-   * @param amount         The amount requested.
-   * @param creditRating   The rating of the service task before.
-   * @param riskAcceptable The result, once the task is completed.
-   * @param comment        The result, once the task is completed.
-   * @param editable       Whether the user may work on the task, or only read it.
-   * @param task           The state of the task.
-   */
-  public record AssessRiskForm(
-                               String loanRequestId,
-                               String customer,
-                               Integer amount,
-                               Integer creditRating,
-                               Boolean riskAcceptable,
-                               String comment,
-                               boolean editable,
-                               TaskState task) {
-  }
-
-  /**
-   * What the user entered in the form "Assess risk".
-   *
-   * @param riskAcceptable Whether the risk is acceptable.
-   * @param comment        Why.
-   */
-  public record AssessRiskInput(
-                                Boolean riskAcceptable,
-                                String comment) {
-  }
-
-  /**
-   * What the form "Approve loan" shows.
-   *
-   * @param loanRequestId  The id of the loan request.
-   * @param customer       The name of the customer.
-   * @param amount         The amount requested.
-   * @param riskAcceptable The result of the risk assessment.
-   * @param riskComment    Why the risk was assessed as it was.
-   * @param riskAssessedBy Who assessed the risk, and so must not decide.
-   * @param approved       The decision, once the task is completed.
-   * @param comment        Why, once the task is completed.
-   * @param editable       Whether the user may decide, or only read.
-   * @param task           The state of the task.
-   */
-  public record ApproveLoanForm(
-                                String loanRequestId,
-                                String customer,
-                                Integer amount,
-                                Boolean riskAcceptable,
-                                String riskComment,
-                                String riskAssessedBy,
-                                Boolean approved,
-                                String comment,
-                                boolean editable,
-                                TaskState task) {
-  }
-
-  /**
-   * What the user decided in the form "Approve loan".
-   *
-   * @param approved Whether the loan is granted.
-   * @param comment  Why.
-   */
-  public record ApproveLoanInput(
-                                 Boolean approved,
-                                 String comment) {
   }
 
 }

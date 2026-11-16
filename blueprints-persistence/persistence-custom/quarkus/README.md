@@ -73,6 +73,29 @@ bean names what a durable store adds: retrying a failed dispatch with a backoff,
 entries again after a restart, keeping dispatched entries for a while instead of deleting them,
 blocking an entry which keeps failing, and dropping delivery records after a retention period.
 
+**Two methods of `TaskDeliveryLog` matter as soon as a store deletes records.** This blueprint
+deletes nothing, so it implements neither of them. Both have a default which does nothing, and
+a durable store adds them:
+
+- `stillOpen(deliveryKey)`. VanillaBP calls it when the BPMS hands out a task again and the
+  record says that the task is still open. The retention of that record then counts from this
+  call, not from the moment the handler ran. Without it, the record of a task which stays open
+  longer than `vanillabp.delivery.retention` is deleted while the task is still open. The next
+  repeated delivery finds no record and runs the handler a second time. The BPMS hands out an
+  open task each time it renews its lock. So do not write on every call. Remember the keys and
+  refresh their records together, for example from the timer which deletes the old ones.
+- `releaseRecordsOf(workflowModuleId, bpmnProcessId, workflowAggregateId, recordedBefore)`.
+  VanillaBP calls it when a workflow ended, and only if `vanillabp.delivery.release-on-workflow-end`
+  is switched on. It runs in the unit of work of that notification, so it enlists like every
+  other write here. Delete only records written before `recordedBefore`, because a second
+  workflow on the same aggregate may have written its own ones since. Keep the rows about the
+  start of a workflow (`recordKind` `WORKFLOW_START`). They have a retention of their own.
+  Without this method, the records stay until the retention has passed. If the switch is on,
+  the start then writes a warning which names this store and the property.
+
+[How long a delivery is remembered](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#how-long-a-delivery-is-remembered)
+explains the switch, the retention and what neither of them covers.
+
 **Camunda 7 is missing on purpose.** Its engine is embedded and needs a relational database,
 and this blueprint has none. So this is one of two blueprints with a single engine, and a
 cluster has to run for every build.
@@ -81,17 +104,21 @@ cluster has to run for every build.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                        File                        |                                     What is different                                      |
-|----------------------------------------------------|--------------------------------------------------------------------------------------------|
-| `.../loanapproval/model/Aggregate.java`            | a plain class: no entity, no column, nothing naming a database                             |
-| `.../loanapproval/model/AggregateRepository.java`  | deleted, together with the persistence dependency of the workflow module                   |
-| `.../loanapproval/persistence/UnitOfWork.java`     | new: the transaction VanillaBP runs its work in, and the hooks the stores enlist with      |
-| `.../loanapproval/persistence/AggregateStore.java` | new: how the aggregate is saved and loaded                                                 |
-| `.../loanapproval/persistence/PhaseTwoStore.java`  | new: the outbox for the second phase of a workflow start                                   |
-| `.../loanapproval/persistence/DeliveryLog.java`    | new: what was already delivered                                                            |
-| `.../loanapproval/Service.java`                    | opens the unit of work itself instead of carrying `@Transactional`                         |
-| `loan-approval/src/test/.../LoanApprovalIT.java`   | counts what VanillaBP did with the unit of work, and checks that a rollback leaves nothing |
-| `pom.xml`, `*/pom.xml`                             | no persistence dependency at all, and only the `camunda8` profile                          |
+|                                         File                                          |                                     What is different                                      |
+|---------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| `.../loanapproval/model/Aggregate.java`                                               | a plain class: no entity, no column, nothing naming a database                             |
+| `.../loanapproval/model/AggregateRepository.java`                                     | deleted, together with the persistence dependency of the workflow module                   |
+| `.../loanapproval/persistence/UnitOfWork.java`                                        | new: the transaction VanillaBP runs its work in, and the hooks the stores enlist with      |
+| `.../loanapproval/persistence/AggregateStore.java`                                    | new: how the aggregate is saved and loaded                                                 |
+| `.../loanapproval/persistence/PhaseTwoStore.java`                                     | new: the outbox for the second phase of a workflow start                                   |
+| `.../loanapproval/persistence/DeliveryLog.java`                                       | new: what was already delivered                                                            |
+| `.../loanapproval/Service.java`                                                       | opens the unit of work itself instead of carrying `@Transactional`                         |
+| `.../loanapproval/Workflow.java`                                                      | no `@Transactional`: the unit of work which counts is the one `Service` opens              |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                      | counts what VanillaBP did with the unit of work, and checks that a rollback leaves nothing |
+| `pom.xml`, `*/pom.xml`                                                                | no persistence dependency at all, and only the `camunda8` profile                          |
+| `application.yaml`                                                                    | no data source and no database settings, in the application and in the test                |
+| `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | deleted, in the application and in the test: the blueprint runs on Camunda 8 only          |
+| `processes/camunda7/`, `processes/operaton/`, `processes/cibseven/`                   | deleted, with the BPMN files of those engines                                              |
 
 Everything else is the base blueprint, file for file: the process, the wiring classes, the API,
 the module's own configuration, the test harness.
@@ -122,8 +149,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 `camunda8` is the only profile, and it is active by default, so there is no `-P` to remember.
 That profile also loads `application-camunda8.yaml`. The Maven profile makes the config profile

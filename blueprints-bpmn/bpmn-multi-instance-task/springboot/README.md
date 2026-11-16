@@ -64,15 +64,17 @@ the iterations left.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|            File            |                                                           What is different                                                           |
-|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a multi-instance service task iterating over an attribute of the aggregate, and a task after it                                       |
-| `Aggregate.java`           | `partnerIds`, which the model loops over and which is therefore shared with the BPMS, and `offers`, one row per iteration             |
-| `PartnerOffer.java`        | new: what one iteration found                                                                                                         |
-| `WorkflowTaskHandler.java` | `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`                                                              |
-| `Service.java`             | a method taking ONE partner, and a second one choosing between the results                                                            |
-| `loan-approval.yaml`       | the partners, which is what decides how many iterations there are, and that the iterations were reviewed for writing at the same time |
-| `LoanApprovalIT.java`      | asserts the rows of all iterations, without relying on the order they arrived in                                                      |
+|                                         File                                          |                                                                                What is different                                                                                |
+|---------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                                                  | a multi-instance service task iterating over an attribute of the aggregate, and a task after it                                                                                 |
+| `Aggregate.java`                                                                      | `partnerIds`, which the model loops over and which is therefore shared with the BPMS, and `offers`, one row per iteration                                                       |
+| `PartnerOffer.java`                                                                   | new: what one iteration found                                                                                                                                                   |
+| `WorkflowTaskHandler.java`                                                            | `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`                                                                                                        |
+| `Service.java`                                                                        | a method taking ONE partner, and a second one choosing between the results                                                                                                      |
+| `loan-approval.yaml`, `LoanApprovalProperties.java`                                   | the partners, which is what decides how many iterations there are, and that the iterations were reviewed for writing at the same time                                           |
+| `LoanApprovalIT.java`                                                                 | asserts the rows of all iterations, without relying on the order they arrived in                                                                                                |
+| `pom.xml`, `application/pom.xml`, `loan-approval/pom.xml`                             | the engine versions, and the SPIN plugin with its JSON format in each BPMS profile of the Camunda 7 family                                                                      |
+| `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | JSON as the serialization format and the SPIN plugin, in the application and in the test resources. Without them the web applications cannot show the list the model loops over |
 
 ## Running it
 
@@ -106,17 +108,21 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
 name. So you choose the engine once, on the Maven command line. The build, the tests and
 `spring-boot:run` all follow it.
 
-That engine has no loop cardinality. It reports neither the number of instances nor, to a
-nested task, the iteration around it. The adapter fills those gaps while deploying. So the same
-Java code and the same annotations work here. The
-[adapter's wiki](https://github.com/vanillabp/camunda8-adapter/wiki/Deviations)
+That engine always iterates over a collection. It reports neither the number of instances nor,
+to a nested task, the iteration around it. The adapter fills those gaps while deploying. So the
+same Java code and the same annotations work here, also for a task in a called process which
+asks for the iteration of its caller. A fixed number of rounds needs no loop cardinality either.
+Write the collection as `=for i in 1..5 return i` and fill in the input element. The item of
+each round is then its counter. This blueprint iterates over the partners, so it needs neither.
+The
+[adapter's wiki](https://github.com/vanillabp/camunda8-adapter/wiki/Deviations#multi-instance-has-no-loop-cardinality)
 says what it does.
 
 [Operaton](https://operaton.org), the open source successor of Camunda 7, is embedded as well

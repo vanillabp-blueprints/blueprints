@@ -143,6 +143,7 @@ Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user
 | `WorkflowTaskHandler.java`                 | a `@WorkflowTask` method per user task, and the `@UserTaskDetailsProvider` method                                                                     |
 | `UserTaskFormController.java`              | new: the endpoints of the forms, which implement the interface generated from the OpenAPI                                                             |
 | `ApiController.java`                       | only starts and shows a loan approval, below `/loan-approval/api/loan-requests`                                                                       |
+| `Workflow.java`                            | `documentsChecked` completes the second user task; no `loanRequestWithdrawn` and no BPMN error                                                        |
 | `openapi/loan-requests.yaml`               | new: the API of `ApiController`, from which the build generates `LoanRequestsApi`                                                                     |
 | `Service.java`                             | per user task: keep the id, give a form its data, complete the task with what the user entered                                                        |
 | `Aggregate.java`                           | per user task the id of the open task and what the user entered                                                                                       |
@@ -154,7 +155,13 @@ Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user
 | `UserInterfaceRouteAutoConfiguration.java` | new: forwards the user interface to an nginx, if the application names one                                                                            |
 | `...AutoConfiguration.imports`             | new: tells Spring Boot about both auto-configurations                                                                                                 |
 | `ModuleTestApplication.java`               | replaces `TestApplication`: scans nothing, the auto-configuration wires the module                                                                    |
+| `TestApplication.java`                     | deleted, `ModuleTestApplication.java` takes its place                                                                                                 |
+| `LoanApprovalProperties.java`              | deleted: the module reads no settings of its own                                                                                                      |
 | `loan-approval/pom.xml`                    | the cockpit adapter next to the BPMS adapter in every profile, the JAR of the dev shell simulator for the test, the gateway as an optional dependency |
+| `application.yaml` (test)                  | the outbox is polled every 0.2 seconds, and the reports go to the dev shell simulator                                                                 |
+| `dev-shell-simulator.yaml` (test)          | new: the one demo user of the dev shell simulator                                                                                                     |
+| `pom.xml`                                  | no `application` module; the versions of the cockpit and of its adapter for Camunda 8, instead of `blueprint.bpms`                                    |
+| `application/`                             | deleted: the application is a repository of its own, see below                                                                                        |
 
 There is no application module. The application is a repository of its own, see above. So the
 blueprint has no smoke test of an application either. The application repository brings it.

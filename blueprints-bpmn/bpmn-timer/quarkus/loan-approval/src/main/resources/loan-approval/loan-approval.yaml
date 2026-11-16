@@ -6,3 +6,7 @@
 # application.
 loan-approval:
   rating-scale: 100
+  # How long the partner may take to answer. This is the business value. The timer boundary
+  # event on the waiting task reads it from the aggregate, which copies it when the loan is
+  # requested. A test or a demo shortens it in its own configuration, which wins over this file.
+  partner-deadline: P3D

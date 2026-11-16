@@ -50,6 +50,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 |----------------------|------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn` | the start event carries a `bpmn:messageEventDefinition`, plus the `bpmn:message`         |
 | `Workflow.java`      | `startWorkflowByMessage` instead of `startWorkflow`, with the message name as a constant |
+| `Service.java`       | its log names the message which started the workflow                                     |
 
 Nothing else changes. The aggregate, the service, the task handler and the API are those of the
 base blueprint. That is the point to take away: a message start event is a decision of the
@@ -87,8 +88,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
 name. So you choose the engine once, on the Maven command line. The build, the tests and

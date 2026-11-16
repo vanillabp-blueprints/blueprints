@@ -1,0 +1,346 @@
+openapi: 3.0.3
+info:
+  title: Loan approval, user task forms
+  description: >
+    The endpoints the forms of the user tasks of the workflow module 'loan-approval' call. GET
+    reads what a form shows: the loan request, the values of the form, the state of the task, and
+    whether the user may work on it ('editable') or only read it. POST completes the task with
+    what the user sent. There are no drafts, so there is no PUT.
+
+    Reading a form lets in a user who holds the permission of the task, and a user who worked on
+    the task before. Completing a task always needs the permission. The user who completes a task
+    is the user logged in, never a value of the request.
+
+    The build generates the Java interface 'UserTaskFormsApi' and the records below from this
+    file, and 'UserTaskFormController' implements it.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: user-task-forms
+    description: The forms of the user tasks
+paths:
+  /api/loan-approval/{loanRequestId}/call-customer/{taskId}:
+    parameters:
+      - $ref: '#/components/parameters/LoanRequestId'
+      - $ref: '#/components/parameters/TaskId'
+    get:
+      tags:
+        - user-task-forms
+      operationId: getCallCustomerForm
+      summary: What the form "Call customer" shows
+      responses:
+        '200':
+          description: The customer, the attempts so far and whether the user may work on the task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CallCustomerForm'
+        '403':
+          $ref: '#/components/responses/NotAllowed'
+        '404':
+          $ref: '#/components/responses/UnknownTask'
+    post:
+      tags:
+        - user-task-forms
+      operationId: completeCallCustomer
+      summary: Completes the user task "Call customer"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CallCustomerInput'
+      responses:
+        '204':
+          description: The user task is completed
+        '403':
+          $ref: '#/components/responses/NotAllowed'
+        '404':
+          $ref: '#/components/responses/UnknownTask'
+        '409':
+          $ref: '#/components/responses/TaskNotOpen'
+  /api/loan-approval/{loanRequestId}/call-customer/{taskId}/not-reached:
+    parameters:
+      - $ref: '#/components/parameters/LoanRequestId'
+      - $ref: '#/components/parameters/TaskId'
+    post:
+      tags:
+        - user-task-forms
+      operationId: customerNotReached
+      summary: The advisor did not reach the customer. The task comes back the next morning
+      responses:
+        '204':
+          description: The task stays open and gets a follow-up date
+        '403':
+          $ref: '#/components/responses/NotAllowed'
+        '404':
+          $ref: '#/components/responses/UnknownTask'
+        '409':
+          $ref: '#/components/responses/TaskNotOpen'
+  /api/loan-approval/{loanRequestId}/assess-risk/{taskId}:
+    parameters:
+      - $ref: '#/components/parameters/LoanRequestId'
+      - $ref: '#/components/parameters/TaskId'
+    get:
+      tags:
+        - user-task-forms
+      operationId: getAssessRiskForm
+      summary: What the form "Assess risk" shows
+      responses:
+        '200':
+          description: The loan request, the values of the form and whether the user may work on it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessRiskForm'
+        '403':
+          $ref: '#/components/responses/NotAllowed'
+        '404':
+          $ref: '#/components/responses/UnknownTask'
+    post:
+      tags:
+        - user-task-forms
+      operationId: completeAssessRisk
+      summary: Completes the user task "Assess risk"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessRiskInput'
+      responses:
+        '204':
+          description: The user task is completed
+        '400':
+          $ref: '#/components/responses/Incomplete'
+        '403':
+          $ref: '#/components/responses/NotAllowed'
+        '404':
+          $ref: '#/components/responses/UnknownTask'
+        '409':
+          $ref: '#/components/responses/TaskNotOpen'
+  /api/loan-approval/{loanRequestId}/approve-loan/{taskId}:
+    parameters:
+      - $ref: '#/components/parameters/LoanRequestId'
+      - $ref: '#/components/parameters/TaskId'
+    get:
+      tags:
+        - user-task-forms
+      operationId: getApproveLoanForm
+      summary: What the form "Approve loan" shows
+      description: >
+        The user who assessed the risk may hold the permission and still gets the form to read
+        only, because of the four-eyes principle.
+      responses:
+        '200':
+          description: The loan request, the risk assessment, and whether the user may decide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApproveLoanForm'
+        '403':
+          $ref: '#/components/responses/NotAllowed'
+        '404':
+          $ref: '#/components/responses/UnknownTask'
+    post:
+      tags:
+        - user-task-forms
+      operationId: completeApproveLoan
+      summary: Completes the user task "Approve loan"
+      description: The user who assessed the risk is refused, because of the four-eyes principle.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveLoanInput'
+      responses:
+        '204':
+          description: The user task is completed
+        '400':
+          $ref: '#/components/responses/Incomplete'
+        '403':
+          $ref: '#/components/responses/NotAllowed'
+        '404':
+          $ref: '#/components/responses/UnknownTask'
+        '409':
+          $ref: '#/components/responses/TaskNotOpen'
+components:
+  parameters:
+    LoanRequestId:
+      name: loanRequestId
+      in: path
+      required: true
+      description: The id of the loan request
+      schema:
+        type: string
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      description: The id of the user task
+      schema:
+        type: string
+  responses:
+    Incomplete:
+      description: The value the task is about is missing. The answer says which one
+      content:
+        text/plain:
+          schema:
+            type: string
+    NotAllowed:
+      description: The user has not got the permission of this form and did not work on the task before
+    UnknownTask:
+      description: The loan request has no user task of this kind with this id
+    TaskNotOpen:
+      description: The user task is not open any more
+  schemas:
+    TaskState:
+      type: object
+      description: The state of a user task, the same for every form
+      required:
+        - editors
+        - open
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+          description: When the BPMS opened the task
+        completedAt:
+          type: string
+          format: date-time
+          description: When the task was completed or canceled
+        completedBy:
+          type: string
+          description: Who completed it. Empty if the workflow canceled it
+        editors:
+          type: array
+          description: Who worked on it so far
+          items:
+            type: string
+        open:
+          type: boolean
+          description: Whether somebody can still work on it
+    CallCustomerForm:
+      type: object
+      description: What the form "Call customer" shows
+      required:
+        - attempts
+        - editable
+      properties:
+        loanRequestId:
+          type: string
+          description: The id of the loan request
+        customer:
+          type: string
+          description: The name of the customer
+        phone:
+          type: string
+          description: The number to call
+        attempts:
+          type: integer
+          description: How often the customer was not reached
+        callAgainAt:
+          type: string
+          format: date-time
+          description: When to call again. Empty before the first failed call
+        note:
+          type: string
+          description: What the customer said, once the task is completed
+        editable:
+          type: boolean
+          description: Whether the user may work on the task, or only read it
+        task:
+          $ref: '#/components/schemas/TaskState'
+    CallCustomerInput:
+      type: object
+      description: What the advisor noted in the form "Call customer"
+      properties:
+        note:
+          type: string
+          description: What the customer said
+    AssessRiskForm:
+      type: object
+      description: What the form "Assess risk" shows
+      required:
+        - editable
+      properties:
+        loanRequestId:
+          type: string
+          description: The id of the loan request
+        customer:
+          type: string
+          description: The name of the customer
+        amount:
+          type: integer
+          description: The amount requested
+        creditRating:
+          type: integer
+          description: The rating of the service task before
+        riskAcceptable:
+          type: boolean
+          description: The result, once the task is completed
+        comment:
+          type: string
+          description: The result, once the task is completed
+        editable:
+          type: boolean
+          description: Whether the user may work on the task, or only read it
+        task:
+          $ref: '#/components/schemas/TaskState'
+    AssessRiskInput:
+      type: object
+      description: What the user entered in the form "Assess risk"
+      properties:
+        riskAcceptable:
+          type: boolean
+          description: Whether the risk is acceptable. Needed to complete the task
+        comment:
+          type: string
+          description: Why
+    ApproveLoanForm:
+      type: object
+      description: What the form "Approve loan" shows
+      required:
+        - editable
+      properties:
+        loanRequestId:
+          type: string
+          description: The id of the loan request
+        customer:
+          type: string
+          description: The name of the customer
+        amount:
+          type: integer
+          description: The amount requested
+        riskAcceptable:
+          type: boolean
+          description: The result of the risk assessment
+        riskComment:
+          type: string
+          description: Why the risk was assessed as it was
+        riskAssessedBy:
+          type: string
+          description: Who assessed the risk, and so must not decide
+        approved:
+          type: boolean
+          description: The decision, once the task is completed
+        comment:
+          type: string
+          description: Why, once the task is completed
+        editable:
+          type: boolean
+          description: Whether the user may decide, or only read
+        task:
+          $ref: '#/components/schemas/TaskState'
+    ApproveLoanInput:
+      type: object
+      description: What the user decided in the form "Approve loan"
+      properties:
+        approved:
+          type: boolean
+          description: Whether the loan is granted. Needed to complete the task
+        comment:
+          type: string
+          description: Why

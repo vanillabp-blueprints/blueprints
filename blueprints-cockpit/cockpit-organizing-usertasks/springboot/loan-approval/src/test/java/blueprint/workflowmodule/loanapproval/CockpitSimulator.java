@@ -44,7 +44,11 @@ public final class CockpitSimulator {
 
   private static final Duration STARTUP_TIMEOUT = Duration.ofSeconds(60);
 
-  private static final Duration TIMEOUT = Duration.ofSeconds(30);
+  /**
+   * As long as {@code WorkflowModuleTest.TIMEOUT}. A report follows the engine command it is
+   * about, and that command may come one retry of the outbox late.
+   */
+  private static final Duration TIMEOUT = Duration.ofMinutes(1);
 
   private static final Duration POLL_INTERVAL = Duration.ofMillis(200);
 

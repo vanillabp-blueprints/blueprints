@@ -33,6 +33,10 @@ jobs:
           "https://raw.githubusercontent.com/vanillabp-blueprints/.github/${INDEX_REF}/blueprints.yaml"
       - name: Compare the monorepo against the index
         run: python bin/check_index_consistency.py blueprints.yaml
+      # An agent picks blueprints by matching its BPMN against 'covers.bpmn'. A blueprint
+      # whose error boundary event the index did not name was never picked for one.
+      - name: Check that the index names every event the blueprints use
+        run: python bin/check_bpmn_covers.py blueprints.yaml
       - name: Check the documentation of every blueprint
         run: python bin/check_docs_structure.py blueprints.yaml
       # A file table is the first thing a reader of a blueprint looks at, and a file which
@@ -40,6 +44,15 @@ jobs:
       # hand). This reads the paths and asks the file system.
       - name: Check that the file tables name files which exist
         run: python bin/check_table_paths.py
+      # A decision number of another repository can change, and a copied blueprint keeps
+      # pointing at it. Texts and comments link the wiki page which describes the behaviour.
+      # A blueprint repository is a complete application, so the delta table of its README
+      # is the only place which says what differs from the base. An agent probe found
+      # files missing there and had to diff the repositories by hand.
+      - name: Check that the delta tables name every file which differs from the base
+        run: python bin/check_delta_tables.py blueprints.yaml
+      - name: Check that no decision of another repository is cited by number
+        run: python bin/check_foreign_decisions.py
       - name: Check the test harness copies against their reference
         run: python bin/sync_harness.py --check
       # A blueprint whose BPMS profiles scope identifiers differently describes a switch
@@ -48,6 +61,15 @@ jobs:
       # 704 measured it, and no test saw it, because a test boots ONE profile.
       - name: Check that the BPMS profiles agree on how identifiers are scoped
         run: python bin/check_scoping_modes.py
+      # A profile which switches itself on switches off the BPMS profile which is active by
+      # default, and a build without -P<bpms> then has no BPMS adapter. CI always names a
+      # BPMS, so no build here would see it. module-simulator and module-under-load did it.
+      - name: Check that no profile switches off the default BPMS profile
+        run: python bin/check_default_profiles.py
+      # Every blueprint carries its own copy of the rule which keeps adapters out of a
+      # workflow module. An old copy fails nothing, so it is not noticed otherwise.
+      - name: Check that every copy of the adapter rule is the same
+        run: python bin/check_enforcer_rule.py
       # Active since the first platform twin exists (2026-08-15). It keeps the two twins of
       # a blueprint saying the same thing: every difference between their Java sources is
       # either the platform, and then it is approved with a reason, or a mistake. The index

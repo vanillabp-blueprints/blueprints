@@ -58,6 +58,16 @@ So the model says nothing about identity on either engine, and that is what a bl
 show. The difference between the two engines is what the adapter does, not what you have to
 write.
 
+The same holds for an iteration. If the call activity stood inside a multi-instance element, a
+task in the called process would learn the iteration of its caller. It asks with
+`@MultiInstanceElement`, `@MultiInstanceIndex` or `@MultiInstanceTotal` and the ID of the
+caller's element, and nothing is modelled for it. That works as long as both processes work on
+the same workflow aggregate, as they do here. A called process with an aggregate of its own runs
+a business case of its own and learns nothing about its caller. The wikis of
+[Camunda 7](https://github.com/vanillabp/camunda7-adapter/wiki/Configuration#the-iteration-a-called-process-runs-in)
+and [Camunda 8](https://github.com/vanillabp/camunda8-adapter/wiki/Deviations#multi-instance-has-no-loop-cardinality)
+say what each adapter does for it.
+
 That ID is also the only part of the aggregate the BPMS gets to see. `Aggregate` carries
 `@NoSyncWithBPMS`, and not one attribute carries `@SyncWithBPMS`. No expression of either model
 reads an attribute. The call activity maps nothing in and nothing back, and none of the
@@ -75,15 +85,15 @@ situations side by side.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|            File            |                                                   What is different                                                    |
-|----------------------------|------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a call activity pointing at `risk_assessment`, and a task after it using the result                                    |
-| `risk_assessment.bpmn`     | new: the called process, two service tasks between a plain start and end event                                         |
-| `WorkflowTaskHandler.java` | `secondaryBpmnProcesses` names the called process; its tasks are methods like any other                                |
-| `Aggregate.java`           | what the called process writes, the decision made from it, and `@NoSyncWithBPMS` on the class                          |
-| `Service.java`             | the two checks of the risk assessment and the decision after it                                                        |
-| `loan-approval.yaml`       | the two numbers the checks and the decision use                                                                        |
-| `LoanApprovalIT.java`      | asserts across the call activity: the calling process is started, and the result of the called one is on the aggregate |
+|                        File                         |                                                   What is different                                                    |
+|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | a call activity pointing at `risk_assessment`, and a task after it using the result                                    |
+| `risk_assessment.bpmn`                              | new: the called process, two service tasks between a plain start and end event                                         |
+| `WorkflowTaskHandler.java`                          | `secondaryBpmnProcesses` names the called process; its tasks are methods like any other                                |
+| `Aggregate.java`                                    | what the called process writes, the decision made from it, and `@NoSyncWithBPMS` on the class                          |
+| `Service.java`                                      | the two checks of the risk assessment and the decision after it                                                        |
+| `loan-approval.yaml`, `LoanApprovalProperties.java` | the two numbers the checks and the decision use                                                                        |
+| `LoanApprovalIT.java`                               | asserts across the call activity: the calling process is started, and the result of the called one is on the aggregate |
 
 Both BPMN files are in the same directory of the workflow module and are deployed together. A
 called process belongs to the module which owns it. It is not a module of its own.
@@ -120,8 +130,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
 name. So you choose the engine once, on the Maven command line. The build, the tests and

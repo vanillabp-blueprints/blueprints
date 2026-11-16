@@ -55,17 +55,19 @@ same. `bpmn-user-task` shows them for a person instead of a system.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|               File                |                                        What is different                                         |
-|-----------------------------------|--------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`              | a send task the workflow waits at, an error boundary event on it, and a service task per way out |
-| `WorkflowTaskHandler.java`        | the `@WorkflowTask` method of that task, taking `@TaskId` and `@TaskEvent`                       |
-| `Workflow.java`                   | `completeTask` and `cancelTask` in addition to `startWorkflow`                                   |
-| `Service.java`                    | both halves of the task: sending the request, and answering it when the partner replies          |
-| `PartnerApprovalClient.java`      | new: the port to the surrounding system, so a test can replace it                                |
-| `LocalPartnerApprovalClient.java` | new: a stand-in partner, so the blueprint runs without one                                       |
-| `ApiController.java`              | the callback carrying the partner's answer                                                       |
-| `Aggregate.java`                  | `partnerApprovalTaskId` and what the process wrote on the way out                                |
-| `LoanApprovalIT.java`             | one test per way the task ends: still open, completed, canceled                                  |
+|                       File                        |                                             What is different                                             |
+|---------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                              | a send task the workflow waits at, an error boundary event on it, and a service task per way out          |
+| `WorkflowTaskHandler.java`                        | the `@WorkflowTask` method of that task, taking `@TaskId` and `@TaskEvent`                                |
+| `Workflow.java`                                   | `completeTask` and `cancelTask` in addition to `startWorkflow`                                            |
+| `Service.java`                                    | both halves of the task: sending the request, and answering it when the partner replies                   |
+| `PartnerApprovalClient.java`                      | new: the port to the surrounding system, so a test can replace it                                         |
+| `LocalPartnerApprovalClient.java`                 | new: a stand-in partner, so the blueprint runs without one                                                |
+| `ApiController.java`                              | the callback carrying the partner's answer                                                                |
+| `openapi/loan-approval.yaml`                      | the URL of that callback, `partner-decision/{taskId}`                                                     |
+| `Aggregate.java`                                  | `partnerApprovalTaskId` and what the process wrote on the way out                                         |
+| `LoanApprovalIT.java`                             | one test per way the task ends: still open, completed, canceled                                           |
+| `PartnerApprovalSimulator.java`, `Simulator.java` | new in the tests: the simulator which stands in for the partner, and its base class from the test harness |
 
 The one line worth looking at is `camunda:delegateExpression` in the Camunda 7 model. A task
 which stays open needs it there. Camunda 8 needs nothing like it. The wiki of each adapter says
@@ -104,8 +106,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
 name. So you choose the engine once, on the Maven command line. The build, the tests and

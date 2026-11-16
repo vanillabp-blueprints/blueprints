@@ -108,6 +108,41 @@ and a test which starts a container tests Docker, not this blueprint.
 Through all of it the engine stays a Maven profile. `-Pcamunda8` changes what is packaged, what
 the tests run against and what the image contains. Not one line of Java changes.
 
+### Watching it run
+
+Once the runtime runs, somebody has to tell a quiet system from a stalled one. VanillaBP gives
+the numbers and the log context for that, and neither needs a setting. And like everything
+else here, it needs no line about a module.
+
+**Every log line of a task names its workflow.** Around every task delivery and every dispatch
+from the outbox, VanillaBP sets six MDC keys. MDC (mapped diagnostic context) is a set of values
+which the logging library adds to every log line of the current thread. The ones to search by
+are `vanillabp.workflow.module`, `vanillabp.bpmn.process` and `vanillabp.workflow.aggregate.id`.
+So whatever a foreign module logs in its handler can be found by its workflow, although its team
+never passed an id around. Put the keys into the log pattern of the application.
+[The wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Observability#a-log-pattern-to-paste)
+has a pattern to paste.
+
+**Metrics and health appear as soon as the application brings the support of the platform.**
+VanillaBP publishes its meters through Micrometer, but it does not bring Micrometer itself. This
+blueprint adds none of it, so it reports no metrics and has no health endpoint. An application
+which adds `spring-boot-starter-actuator` gets both: the meters in its registry, and the health
+component `vanillabp` in `/actuator/health`. Which endpoint shows the meters is decided by the
+Actuator, not by VanillaBP.
+
+Two numbers to start with:
+
+- the rate of `vanillabp.task.deliveries` per `workflow.module`. If it is zero while workflows
+  normally run, then either nothing is started or nothing finishes.
+- `vanillabp.outbox.pending` together with `vanillabp.outbox.oldest.pending.age`: work which the
+  application committed and its BPMS did not accept yet.
+
+Where something happened is always a tag, never part of the name of a meter. That fits a project
+which assembles modules. A third module adds a value of the `workflow.module` tag, not a new
+meter. So a dashboard or an alert which groups by that tag covers it without a change.
+[Observability](https://github.com/vanillabp/adapter-platform-integration/wiki/Observability)
+lists every meter, its tags and the question it answers.
+
 ### What comes from `module-multi` unchanged
 
 Having two workflow modules is the subject of that blueprint, so it is not repeated here. Each
@@ -117,18 +152,27 @@ cannot collide inside the engine.
 
 ## Delta to the base blueprint
 
-Compared to [`module-multi`](https://github.com/vanillabp-blueprints/module-multi-springboot),
-whose modules this project collects:
+Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot).
+The modules are those of [`module-multi`](https://github.com/vanillabp-blueprints/module-multi-springboot),
+and the rows which say "as in `module-multi`" come from there:
 
-|                                     File                                     |                               What is different                               |
-|------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
-| `loan-approval/pom.xml`, `loan-repayment/pom.xml`, `banking-commons/pom.xml` | no parent, own group, own version, own build: JARs of another team            |
-| `com/acme/...`                                                               | the modules live in packages this application never heard of                  |
-| `application/pom.xml`                                                        | pins the module versions in `dependencyManagement` and names the image        |
-| `application/src/main/resources/application.yaml`                            | tries to override two module values, and the test reads which attempt arrives |
-| `application/src/test/.../ConfigurationLevelsIT.java`                        | new: which of the three configuration levels wins                             |
-| `application/src/test/.../ApplicationSmokeTest.java`                         | unchanged, but here it tests the discovery and is more than a formality       |
-| `ModuleConfigurationPerProfileIT`, `BeanNamesPerModuleIT`                    | gone: profiles and bean names are `module-multi`'s subject                    |
+|                                           File                                           |                                                           What is different                                                           |
+|------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-repayment/`, `banking-commons/`                                                    | new, as in `module-multi`: the second workflow module and the library both modules use                                                |
+| `loan-approval/pom.xml`, `loan-repayment/pom.xml`, `banking-commons/pom.xml`             | no parent, own group, own version, own build: JARs of another team                                                                    |
+| `com/acme/...`                                                                           | the modules live in packages this application never heard of                                                                          |
+| `loan-approval/src/main/java/blueprint/...`, `loan-approval/src/test/java/blueprint/...` | deleted: the classes of the base moved to `com/acme/...`                                                                              |
+| `META-INF/spring/...imports`                                                             | new, as in `module-multi`: each module and the library bring an auto-configuration                                                    |
+| `loan-approval/src/main/resources/loan-approval/*.yaml`                                  | as in `module-multi`: `rating-provider`, and a module file per environment                                                            |
+| `openapi/loan-approval.yaml`                                                             | as in `module-multi`: the start URL takes a `customerId`                                                                              |
+| `pom.xml`                                                                                | the modules `banking-commons` and `loan-repayment`, and no version of the OpenAPI generator, because each module brings its own build |
+| `application/pom.xml`                                                                    | pins the module versions in `dependencyManagement` and names the image                                                                |
+| `application/.../Application.java`                                                       | as in `module-multi`: moved to `blueprint.application`                                                                                |
+| `application-camunda8.yaml`                                                              | as in `module-multi`: `name-clash-avoidance: use-prefix`                                                                              |
+| `application/src/main/resources/application.yaml`                                        | tries to override two module values, and the test reads which attempt arrives                                                         |
+| `application/src/test/.../ConfigurationLevelsIT.java`                                    | new: which of the three configuration levels wins                                                                                     |
+| `application/src/test/.../ApplicationSmokeTest.java`                                     | unchanged, but here it tests the discovery and is more than a formality                                                               |
+| `ModuleConfigurationPerProfileIT`, `BeanNamesPerModuleIT`                                | gone: profiles and bean names are `module-multi`'s subject                                                                            |
 
 Everything inside the modules is `module-multi`, file for file. Only their coordinates, their
 packages and their build belong to somebody else's release.
@@ -238,6 +282,7 @@ lines. That is the whole promise of this blueprint, and the smoke test keeps it.
 - [How name clashes are avoided](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided): the three modes, and why changing the mode is a migration
 - [Configuration of a workflow module](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#configuration): the file names, the profiles and the priority order
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why there are no process variables
+- [Observability](https://github.com/vanillabp/adapter-platform-integration/wiki/Observability): every meter and its tags, the health endpoint, the MDC keys and a log pattern to paste
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how a BPMN task has to be modelled for that engine
 
 This blueprint is developed in the monorepo

@@ -69,18 +69,20 @@ whenever the model changes.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|            File            |                                                             What is different                                                             |
-|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a multi-instance subprocess, a multi-instance task inside it, and a plain task inside it as well                                          |
-| `Aggregate.java`           | a collection per level, and the rows the two loops write                                                                                  |
-| `PartnerOffer.java`        | new: one row per inner iteration, carrying the region it belongs to                                                                       |
-| `RegionResult.java`        | new: one row per outer iteration                                                                                                          |
-| `IterationResolver.java`   | new: builds one object out of both active iterations                                                                                      |
-| `Iteration.java`           | new: what that object is                                                                                                                  |
-| `WorkflowTaskHandler.java` | a task in both loops, a task in the outer one, a task after them                                                                          |
-| `Service.java`             | one method per step, none of them knowing about a loop                                                                                    |
-| `loan-approval.yaml`       | regions and partners, which is what decides how often each level runs, and that the iterations were reviewed for writing at the same time |
-| `LoanApprovalIT.java`      | asserts the rows of both levels, in no particular order                                                                                   |
+|                                         File                                          |                                                                                What is different                                                                                |
+|---------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                                                  | a multi-instance subprocess, a multi-instance task inside it, and a plain task inside it as well                                                                                |
+| `Aggregate.java`                                                                      | a collection per level, and the rows the two loops write                                                                                                                        |
+| `PartnerOffer.java`                                                                   | new: one row per inner iteration, carrying the region it belongs to                                                                                                             |
+| `RegionResult.java`                                                                   | new: one row per outer iteration                                                                                                                                                |
+| `IterationResolver.java`                                                              | new: builds one object out of both active iterations                                                                                                                            |
+| `Iteration.java`                                                                      | new: what that object is                                                                                                                                                        |
+| `WorkflowTaskHandler.java`                                                            | a task in both loops, a task in the outer one, a task after them                                                                                                                |
+| `Service.java`                                                                        | one method per step, none of them knowing about a loop                                                                                                                          |
+| `loan-approval.yaml`, `LoanApprovalProperties.java`                                   | regions and partners, which is what decides how often each level runs, and that the iterations were reviewed for writing at the same time                                       |
+| `LoanApprovalIT.java`                                                                 | asserts the rows of both levels, in no particular order                                                                                                                         |
+| `pom.xml`, `application/pom.xml`, `loan-approval/pom.xml`                             | the engine versions, and the SPIN plugin with its JSON format in each BPMS profile of the Camunda 7 family                                                                      |
+| `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | JSON as the serialization format and the SPIN plugin, in the application and in the test resources. Without them the web applications cannot show the list the model loops over |
 
 Compared to
 [`bpmn-multi-instance-task`](https://github.com/vanillabp-blueprints/bpmn-multi-instance-task-springboot),
@@ -120,8 +122,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
 name. So you choose the engine once, on the Maven command line. The build, the tests and

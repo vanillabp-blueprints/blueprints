@@ -97,7 +97,13 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `model/DocumentCheck.java`   | what the branch of the BPMS writes                                                        |
 | `Service.java`               | one method per branch. Each touches the entity of its own branch and nothing of the other |
 | `WorkflowTaskHandler.java`   | the branch methods, two of them keeping the id of an open task (`@TaskId`)                |
+| `Workflow.java`              | `partnerApproved` and `documentsDelivered` complete the open task of each branch          |
+| `ApiController.java`         | new endpoints: the partner approves, and the documents arrived                            |
+| `openapi/loan-approval.yaml` | the endpoints `approve` and `documentsReady`                                              |
+| `DocumentsClient.java`       | new: the port to the document service, so the test can put a simulator in its place       |
+| `LocalDocumentsClient.java`  | new: the stand-in for the document service, so the blueprint runs without one             |
 | `DocumentsSimulator.java`    | the surrounding system, and the delay which keeps a branch inside its transaction         |
+| `Simulator.java`             | new, in the tests: the base class of simulators, from the test harness                    |
 | `LoanApprovalIT.java`        | produces the overlap of the two transactions in every run                                 |
 | `loan-approval.yaml`         | `concurrent-branches-reviewed`, which ends the startup warning about a second token       |
 
@@ -133,8 +139,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 The file is loaded because the Maven profile `camunda8` makes the config profile of the same
 name the parent of the profile the application runs in. So you choose the engine once, on the

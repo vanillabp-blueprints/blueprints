@@ -12,7 +12,8 @@ first. It has the procedure, the reference structure and the list of things neve
 
 ## Placeholders
 
-Replace all of these consistently. They are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint, except the Maven
+coordinates, which carry the name of the blueprint.
 
 |     Placeholder     |                                                      Meaning                                                       |
 |---------------------|--------------------------------------------------------------------------------------------------------------------|

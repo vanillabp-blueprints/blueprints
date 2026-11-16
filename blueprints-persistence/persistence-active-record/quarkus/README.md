@@ -128,15 +128,18 @@ databases play no part in it.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                       File                        |                                                  What is different                                                  |
-|---------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| `.../loanapproval/model/AggregateRepository.java` | deleted. There is no repository, and nothing replaces it                                                            |
-| `.../loanapproval/model/Aggregate.java`           | extends `PanacheEntityBase` and carries the one finder the application needs, `byId`                                |
-| `.../loanapproval/Service.java`                   | injects no repository. The reading method calls `Aggregate.byId` inside its own transaction                         |
-| `.../credithistory/`                              | the second use case, the same four classes, with an aggregate extending `PanacheMongoEntityBase`                    |
-| `loan-approval/pom.xml`                           | both Panache flavours, because the module has an aggregate of each                                                  |
-| `application/src/main/resources/application.yaml` | a MongoDB database next to the data source, and no connection string, so the dev services run one                   |
-| `loan-approval/src/test/.../*IT.java`             | read through the aggregates' own finders, and assert that a workflow started on a remote engine keeps its aggregate |
+|                        File                         |                                                  What is different                                                  |
+|-----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| `.../loanapproval/model/AggregateRepository.java`   | deleted. There is no repository, and nothing replaces it                                                            |
+| `.../loanapproval/model/Aggregate.java`             | extends `PanacheEntityBase` and carries the one finder the application needs, `byId`                                |
+| `.../loanapproval/Service.java`                     | injects no repository. The reading method calls `Aggregate.byId` inside its own transaction                         |
+| `credithistory/`                                    | the second use case, the same four classes, with an aggregate extending `PanacheMongoEntityBase`                    |
+| `credit_history.bpmn`                               | new: the process of the second use case, one per BPMS                                                               |
+| `openapi/credit-history.yaml`                       | new: the API of the second use case, from which the build generates its interface                                   |
+| `loan-approval/pom.xml`                             | both Panache flavours, because the module has an aggregate of each                                                  |
+| `application/src/main/resources/application.yaml`   | a MongoDB database next to the data source, and no connection string, so the dev services run one                   |
+| `loan-approval/src/test/resources/application.yaml` | a MongoDB database for the test, next to the data source                                                            |
+| `loan-approval/src/test/.../*IT.java`               | read through the aggregates' own finders, and assert that a workflow started on a remote engine keeps its aggregate |
 
 Everything else is the base blueprint, file for file: the wiring classes, the API, the module's
 own configuration, the test harness.
@@ -175,8 +178,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 The file is loaded because the Maven profile `camunda8` makes the config profile of the same
 name the parent of the profile the application runs in. So you choose the engine once, on the

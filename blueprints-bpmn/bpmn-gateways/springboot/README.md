@@ -64,14 +64,14 @@ its data at home.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|            File            |                                            What is different                                            |
-|----------------------------|---------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | two exclusive gateways, each with a default flow: one asking the aggregate, one reading a raw attribute |
-| `Aggregate.java`           | `ratingBand`, the two getters the first gateway asks, and the annotations which name what is shared     |
-| `Service.java`             | turns the rating into a band, and one method per branch                                                 |
-| `WorkflowTaskHandler.java` | a `@WorkflowTask` method per branch                                                                     |
-| `loan-approval.yaml`       | the two thresholds the bands are derived from                                                           |
-| `LoanApprovalIT.java`      | one test per branch, steered by the amount                                                              |
+|                        File                         |                                            What is different                                            |
+|-----------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | two exclusive gateways, each with a default flow: one asking the aggregate, one reading a raw attribute |
+| `Aggregate.java`                                    | `ratingBand`, the two getters the first gateway asks, and the annotations which name what is shared     |
+| `Service.java`                                      | turns the rating into a band, and one method per branch                                                 |
+| `WorkflowTaskHandler.java`                          | a `@WorkflowTask` method per branch                                                                     |
+| `loan-approval.yaml`, `LoanApprovalProperties.java` | the two thresholds the bands are derived from                                                           |
+| `LoanApprovalIT.java`                               | one test per branch, steered by the amount                                                              |
 
 The conditions differ between the two BPMS, and this is the one place where they have to.
 Camunda 7 evaluates `${ratedAcceptable}`, Camunda 8 the FEEL expression `=ratedAcceptable`.
@@ -111,8 +111,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
 name. So you choose the engine once, on the Maven command line. The build, the tests and

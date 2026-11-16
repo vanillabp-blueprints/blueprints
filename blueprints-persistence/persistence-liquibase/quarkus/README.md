@@ -145,24 +145,41 @@ it instead of running the handler twice. Either
 The phase-two outbox table is checked the same way. To see either message, comment out the
 include in `db/changelog.xml` and start the application.
 
+### Keeping the delivery table small
+
+`VANILLABP_TASK_DELIVERY` gets one row for every task the BPMS hands over. By default only the
+retention deletes rows: seven days after the BPMS last handed a task out, which is the column
+`LAST_SEEN_AT`. A task which stays open keeps its row, because every new delivery of it moves
+that moment forward. Setting `vanillabp.delivery.release-on-workflow-end` to `true` deletes the
+rows of a workflow as soon as it ends. It works for the whole application, or for one workflow
+module under `vanillabp.workflow-modules.<id>.delivery`. It is `false` by default, because it
+costs something. VanillaBP then asks the BPMS to report the end of every process of the module,
+and the transaction of that report runs one more `DELETE`. That `DELETE` filters by workflow
+module, BPMN process and aggregate, and the schema has no index for it. So an application with a
+large table adds one of its own. What you get for it: the table does not grow with every workflow
+which ended. This blueprint leaves it off.
+[How long a delivery is remembered](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#how-long-a-delivery-is-remembered) has the details.
+
 ## Delta to the base blueprint
 
 Everything about the process, the aggregate and the wiring comes from `module-single`. What was
 added or changed:
 
-|                            File                            |                                          Change                                          |
-|------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| `loan-approval/.../loan-approval/db/changelog.xml`         | new: the module's own changelog, its aggregate table                                     |
-| `application/src/main/resources/db/changelog.xml`          | new: what the application owns, VanillaBP's changelog from the artifact                  |
-| `application/src/main/resources/db/changelog-camunda7.xml` | new: the same plus the engine's changelog                                                |
-| `application/src/main/resources/db/changelog-camunda8.xml` | new: the same alone, since a remote engine has no tables here                            |
-| `application/src/main/resources/application.yaml`          | the changelog to apply, `validate`, `create-schema: false`                               |
-| `application/src/main/resources/application-camunda7.yaml` | new: `database-schema-update: false` and the datasource the engine runs on               |
-| `loan-approval/.../model/Aggregate.java`                   | every column has an explicit name, so the entity and the migration cannot drift apart    |
-| `loan-approval/src/test/resources/application.yaml`        | the module's changelog and `validate`: its test builds its table from it                 |
-| `application/src/test/.../SchemaIT.java`                   | new: the tables the artifact's changelog describes are there, one history for all owners |
-| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | new: a workflow runs through on the migrated schema, across both datasources             |
-| both POMs                                                  | `quarkus-liquibase`; the application also `vanillabp-schema`                             |
+|                                 File                                  |                                          Change                                          |
+|-----------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `loan-approval/.../loan-approval/db/changelog.xml`                    | new: the module's own changelog, its aggregate table                                     |
+| `application/src/main/resources/db/changelog.xml`                     | new: what the application owns, VanillaBP's changelog from the artifact                  |
+| `application/src/main/resources/db/changelog-camunda7.xml`            | new: the same plus the engine's changelog                                                |
+| `application/.../db/changelog-operaton.xml`, `changelog-cibseven.xml` | new: the same for Operaton and for CIB seven                                             |
+| `application/src/main/resources/db/changelog-camunda8.xml`            | new: the same alone, since a remote engine has no tables here                            |
+| `application/src/main/resources/application.yaml`                     | the changelog to apply, `validate`, `create-schema: false`                               |
+| `application/src/main/resources/application-camunda7.yaml`            | new: `database-schema-update: false` and the datasource the engine runs on               |
+| `application-operaton.yaml`, `application-cibseven.yaml`              | `database-schema-update: false`                                                          |
+| `loan-approval/.../model/Aggregate.java`                              | every column has an explicit name, so the entity and the migration cannot drift apart    |
+| `loan-approval/src/test/resources/application.yaml`                   | the module's changelog and `validate`: its test builds its table from it                 |
+| `application/src/test/.../SchemaIT.java`                              | new: the tables the artifact's changelog describes are there, one history for all owners |
+| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`              | new: a workflow runs through on the migrated schema, across both datasources             |
+| both POMs, `loan-approval/pom.xml` and `application/pom.xml`          | `quarkus-liquibase`; the application also `vanillabp-schema`                             |
 
 Why the entity names its columns: as long as a runtime creates the tables, a naming strategy
 decides their names, and it is right by definition. Once a migration creates them, the two have

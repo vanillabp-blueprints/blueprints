@@ -11,14 +11,19 @@ first. It has the procedure, the reference structure and the list of things neve
 
 ## Placeholders
 
-Replace all of these consistently; they are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint, except the Maven
+coordinates, which carry the name of the blueprint.
 
-|        Placeholder         |                                                          Meaning                                                          |
-|----------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| `blueprint.workflowmodule` | base package                                                                                                              |
-| `loanapproval`             | use case identifier, Java package                                                                                         |
-| `loan-approval`            | use case identifier, kebab case: workflow module ID, resource directory, REST path, Maven module, configuration file name |
-| `loan_approval`            | BPMN process ID                                                                                                           |
+|                    Placeholder                     |                                                                                 Meaning                                                                                 |
+|----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `blueprint.workflowmodule`                         | base package                                                                                                                                                            |
+| `loanapproval`                                     | use case identifier, Java package                                                                                                                                       |
+| `loan-approval`                                    | use case identifier, kebab case: workflow module ID, resource directory, REST path, Maven module, configuration file name                                               |
+| `loan_approval`                                    | BPMN process ID                                                                                                                                                         |
+| `LoanApproval`                                     | use case identifier, CamelCase: the start of class names, for example `LoanApprovalProperties`, `LoanApprovalIT` or the interface `LoanApprovalApi` the build generates |
+| `LOAN_APPROVAL`                                    | use case identifier, upper snake case: table and collection names, and the start of other names in upper case                                                           |
+| `io.vanillabp.blueprint.module-under-load-quarkus` | Maven groupId of every POM of this blueprint                                                                                                                            |
+| `module-under-load`                                | Maven artifactId of the root POM                                                                                                                                        |
 
 Blueprint-specific names, each occurring in more than one place:
 
@@ -64,13 +69,14 @@ Blueprint-specific names, each occurring in more than one place:
 | `external-systems/credit-bureau/credit-bureau-api/pom.xml`          | the API module of the credit bureau with its `client` and `server`                                         |
 | `external-systems/credit-bureau/rest-adapter/pom.xml`               | the module, the generated client and the REST client of Quarkus                                            |
 | `simulator/pom.xml`                                                 | a parent of its own, the generated clients and interfaces, SnakeYAML, the load profile copied in           |
-| `application/pom.xml`                                               | the BPMS adapter, the REST adapter, the Prometheus registry, JMX for `quarkus:dev`, `start-stop-simulator` |
+| `application/pom.xml`                                               | the BPMS adapter, the REST adapter, the Prometheus registry, JMX for `quarkus:dev`, starting the simulator |
 | `simulator/src/main/java/.../SimulatorApplication.java`             | the simulator, an application of its own                                                                   |
 | `simulator/src/main/java/.../loadrun/LoadRunController.java`        | the two URLs of a run; `load-run-api/load-run.yaml` describes them                                         |
 | `simulator/src/main/java/.../config/LoadRunConfiguration.java`      | wires the driver and checks its settings at startup                                                        |
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java` | the shared `isApproved()` and `payoutRunAt`, and the documents which give the aggregate its size           |
 | `loan-approval/src/test/java/.../ScriptedCreditBureau.java`         | the credit bureau of the module test, which can stay silent                                                |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`               | each path of the process, one loan at a time                                                               |
+| `simulator/src/test/java/.../loadrun/StoppingTheRunTest.java`       | a call the end of a run cuts off is no failure of the application, a refused call is                       |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of the integration test: waits for workflow progress                                            |
 | `application/src/test/java/.../ApplicationSmokeTest.java`           | boots the application, which validates the BPMN-to-code wiring                                             |
 | `docs/loan_approval.png`                                            | the picture of the process the README shows                                                                |
@@ -104,8 +110,9 @@ unchanged.
    the options.
 8. If the project uses another connection pool, change `connections-waiting-meter` and
    `pool-setting` in the `application.yaml` of the simulator.
-9. Copy `LoadRunIT` and the profile `start-stop-simulator` of `application/pom.xml`, with a
-   tiny size. It proves that the driver starts and finishes. Never assert a number of a run in
+9. Copy `LoadRunIT` and the plugins of `application/pom.xml` which start the simulator, with a
+   tiny size. Put them into the plain `<build>`, not into a profile which switches itself on:
+   such a profile switches off the BPMS profile which is active by default. It proves that the driver starts and finishes. Never assert a number of a run in
    a test.
 
 ## Verifying

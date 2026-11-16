@@ -10,14 +10,19 @@ first. It has the procedure, the reference structure and the list of things neve
 
 ## Placeholders
 
-Replace all of these consistently; they are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint, except the Maven
+coordinates, which carry the name of the blueprint.
 
-|        Placeholder         |                                             Meaning                                              |
-|----------------------------|--------------------------------------------------------------------------------------------------|
-| `blueprint.workflowmodule` | base package of the workflow module                                                              |
-| `loanapproval`             | use case identifier, Java package                                                                |
-| `loan-approval`            | use case identifier, kebab case: workflow module ID, resource directory, REST path, Maven module |
-| `loan_approval`            | BPMN process ID                                                                                  |
+|                     Placeholder                      |                                                                                 Meaning                                                                                 |
+|------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `blueprint.workflowmodule`                           | base package of the workflow module                                                                                                                                     |
+| `loanapproval`                                       | use case identifier, Java package                                                                                                                                       |
+| `loan-approval`                                      | use case identifier, kebab case: workflow module ID, resource directory, REST path, Maven module                                                                        |
+| `loan_approval`                                      | BPMN process ID                                                                                                                                                         |
+| `LoanApproval`                                       | use case identifier, CamelCase: the start of class names, for example `LoanApprovalProperties`, `LoanApprovalIT` or the interface `LoanApprovalApi` the build generates |
+| `LOAN_APPROVAL`                                      | use case identifier, upper snake case: table and collection names, and the start of other names in upper case                                                           |
+| `io.vanillabp.blueprint.module-simulator-springboot` | Maven groupId of every POM of this blueprint                                                                                                                            |
+| `module-simulator`                                   | Maven artifactId of the root POM                                                                                                                                        |
 
 Names this blueprint adds:
 
@@ -84,7 +89,7 @@ Names this blueprint adds:
 | `simulator/src/main/java/blueprint/simulator/*/*ApiController.java`                          | the API of a system: implements the generated server interface, and adds what the system does                                  |
 | `simulator/src/main/java/blueprint/simulator/*/*TestApiController.java`                      | the test API, one controller per simulated system. Implements the interface generated from `simulator-test-api.yaml`           |
 | `simulator-test-api/simulator-test-api.yaml`                                                 | the test API as an OpenAPI file; `client` and `server` generate the Java code                                                  |
-| `loan-approval/pom.xml`                                                                      | the profile `start-stop-simulator`: free port, runnable JAR, start, log file                                                   |
+| `loan-approval/pom.xml`                                                                      | the start of the simulator: free port, runnable JAR, start, log file                                                           |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                        | the whole case against the simulator, with all three systems                                                                   |
 | `loan-approval/src/test/java/.../SimulatorExtension.java`                                    | skips without a simulator, fails when the build started one which does not answer, prints its log on a red test                |
 | `loan-approval/src/test/java/.../SimulatorTestApi.java`                                      | the client of the test API and of the cockpit API                                                                              |
@@ -143,9 +148,10 @@ Names this blueprint adds:
    `application.yaml`. The database and the JWT key come from the defaults of the dev shell
    simulator, which count less than the simulator's own file. Package it with the classifier
    `runnable`.
-8. Copy the profile `start-stop-simulator` into the POM of the module which has the
-   integration tests, and the test scope dependency on the simulator with `<type>pom</type>`,
-   which only orders the build. The order of `<modules>` is not enough, above all in a
+8. Copy the plugins which start the simulator into the plain `<build>` of the POM of the module
+   which has the integration tests, not into a profile which switches itself on: such a profile
+   switches off the BPMS profile which is active by default. Copy also the test scope dependency
+   on the simulator with `<type>pom</type>`, which only orders the build. The order of `<modules>` is not enough, above all in a
    parallel build (`-T`).
 9. Copy `SimulatorExtension` and `SimulatorTestApi`, and write the integration test against the
    simulator. Wait for the aggregate after every step.

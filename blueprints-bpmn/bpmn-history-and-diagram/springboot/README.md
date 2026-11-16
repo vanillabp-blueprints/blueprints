@@ -52,16 +52,18 @@ tells you what to do, instead of an empty answer.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|             File             |                                       What is different                                        |
-|------------------------------|------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`         | a task the workflow waits at, so a running workflow has something to show, and a task after it |
-| `Workflow.java`              | the three viewer methods next to `startWorkflow` and `completeTask`                            |
-| `Service.java`               | passes them through, and its log says where to look                                            |
-| `ApiController.java`         | `/definitions`, `/diagram` and `/history`                                                      |
-| `openapi/loan-approval.yaml` | the three endpoints, and the JSON of the VanillaBP types they return                           |
-| `Aggregate.java`             | the id of the task the workflow waits at, so the wait can be answered                          |
-| `WorkflowTaskHandler.java`   | the `@TaskId` handler of that task                                                             |
-| `LoanApprovalIT.java`        | asks what a viewer asks, while the workflow runs and after it ended                            |
+|                        File                         |                                       What is different                                        |
+|-----------------------------------------------------|------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | a task the workflow waits at, so a running workflow has something to show, and a task after it |
+| `Workflow.java`                                     | the three viewer methods next to `startWorkflow` and `completeTask`                            |
+| `Service.java`                                      | passes them through, and its log says where to look                                            |
+| `ApiController.java`                                | `/definitions`, `/diagram` and `/history`                                                      |
+| `openapi/loan-approval.yaml`                        | the three endpoints, and the JSON of the VanillaBP types they return                           |
+| `Aggregate.java`                                    | the id of the task the workflow waits at, so the wait can be answered                          |
+| `loan-approval.yaml`, `LoanApprovalProperties.java` | `minimum-rating`, from which a loan is approved once the waiting task is answered              |
+| `WorkflowTaskHandler.java`                          | the `@TaskId` handler of that task                                                             |
+| `LoanApprovalIT.java`                               | asks what a viewer asks, while the workflow runs and after it ended                            |
+| `loan-approval/pom.xml`                             | maps the VanillaBP types of the OpenAPI file to their classes instead of generating them       |
 
 The wait state is not the subject here. It exists because the history of a workflow which
 finished in twenty milliseconds shows nothing worth looking at.
@@ -104,8 +106,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
 name. So you choose the engine once, on the Maven command line. The build, the tests and

@@ -5,15 +5,12 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.annotation.Secured;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import blueprint.workflowmodule.loanapproval.api.LoanApprovalApi;
 import blueprint.workflowmodule.loanapproval.config.Permission;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,11 +23,16 @@ import lombok.extern.slf4j.Slf4j;
  * The user who logged in is passed on to {@link Service}, which writes it into the aggregate.
  * That is how a report to the Business Cockpit can later name who caused it.
  * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanApprovalApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-approval.yaml}. This class
+ * only implements it, and adds the permission of each endpoint.
+ * </p>
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/loan-approval")
-public class ApiController {
+public class ApiController implements LoanApprovalApi {
 
   @Autowired
   private Service loanApproval;
@@ -42,20 +44,18 @@ public class ApiController {
    * @param amount   The amount requested.
    * @param customer The name of the customer.
    * @param phone    The phone number of the customer.
-   * @param user     The advisor who logged in.
-   * @return The id of the loan request started.
+   * @return The id of the loan request started. The user logged in is the advisor.
    */
-  @GetMapping("/start")
+  @Override
   @Secured(Permission.REQUEST_LOAN)
   public String start(
-      @RequestParam(defaultValue = "5000") final int amount,
-      @RequestParam(defaultValue = "Jane Roe") final String customer,
-      @RequestParam(defaultValue = "+43 1 2345 678") final String phone,
-      final Authentication user) {
+      final Integer amount,
+      final String customer,
+      final String phone) {
 
     final var loanRequestId = UUID.randomUUID().toString();
 
-    loanApproval.request(loanRequestId, amount, customer, phone, user.getName());
+    loanApproval.request(loanRequestId, amount, customer, phone, whoIsLoggedIn());
 
     log.info(
         "Show the result -> http://localhost:8080/api/loan-approval/{}",
@@ -71,17 +71,15 @@ public class ApiController {
    *
    * @param loanRequestId The id of the loan request.
    * @param advisor       The user id of the new advisor.
-   * @param user          Who makes the change.
-   * @return What happened.
+   * @return What happened. The user logged in makes the change.
    */
-  @GetMapping("/{loanRequestId}/change-advisor")
+  @Override
   @Secured(Permission.CHANGE_ADVISOR)
   public String changeAdvisor(
-      @PathVariable final String loanRequestId,
-      @RequestParam final String advisor,
-      final Authentication user) {
+      final String loanRequestId,
+      final String advisor) {
 
-    loanApproval.changeAdvisor(loanRequestId, advisor, user.getName());
+    loanApproval.changeAdvisor(loanRequestId, advisor, whoIsLoggedIn());
 
     return "The customer of loan approval '"
         + loanRequestId
@@ -97,9 +95,9 @@ public class ApiController {
    * @param loanRequestId The id returned by starting the process.
    * @return The workflow aggregate as it is stored right now.
    */
-  @GetMapping("/{loanRequestId}")
+  @Override
   public String show(
-      @PathVariable final String loanRequestId) {
+      final String loanRequestId) {
 
     return loanApproval
         .describe(loanRequestId)
@@ -121,6 +119,21 @@ public class ApiController {
       final IllegalStateException e) {
 
     return e.getMessage();
+
+  }
+
+  /**
+   * The user Spring Security logged in for this request. The generated interface knows nothing
+   * about security, so the name is taken from the security context and never from the request.
+   *
+   * @return The name of the user.
+   */
+  static String whoIsLoggedIn() {
+
+    return SecurityContextHolder
+        .getContext()
+        .getAuthentication()
+        .getName();
 
   }
 

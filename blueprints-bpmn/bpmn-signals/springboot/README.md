@@ -56,18 +56,23 @@ Two things this blueprint leaves out on purpose, and where to find them:
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|         File          |                                        What is different                                        |
-|-----------------------|-------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`  | a signal catch event the workflow waits at, and a service task behind it                        |
-| `Workflow.java`       | `sendSignal`, plus the signal name as a constant                                                |
-| `Service.java`        | stores the published rate, then broadcasts. Reads the rate again when a workflow goes on        |
-| `ApiController.java`  | the endpoint which publishes the rate. It is the only one without a loan request id in its path |
-| `InterestRate.java`   | the published rate, application data belonging to no workflow                                   |
-| `Aggregate.java`      | `interestRate`, which is where the rate ends up per loan approval                               |
-| `LoanApprovalIT.java` | waiting, one broadcast continuing two workflows, and a signal nobody caught                     |
-| `ratewatch/`          | a second use case, whose process waits for the same signal                                      |
-| `rate_watch.bpmn`     | that process: start, catch the signal, record it                                                |
-| `RateWatchIT.java`    | the broadcast of one use case reaching the process of the other                                 |
+|             File              |                                        What is different                                        |
+|-------------------------------|-------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`          | a signal catch event the workflow waits at, and a service task behind it                        |
+| `Workflow.java`               | `sendSignal`, plus the signal name as a constant                                                |
+| `WorkflowTaskHandler.java`    | the `@WorkflowTask` method of the service task behind the signal                                |
+| `Service.java`                | stores the published rate, then broadcasts. Reads the rate again when a workflow goes on        |
+| `ApiController.java`          | the endpoint which publishes the rate. It is the only one without a loan request id in its path |
+| `openapi/loan-approval.yaml`  | the URL which publishes the rate, `publish-interest-rate`                                       |
+| `InterestRate.java`           | the published rate, application data belonging to no workflow                                   |
+| `InterestRateRepository.java` | new: the repository of the published rates, which finds the latest one                          |
+| `Aggregate.java`              | `interestRate`, which is where the rate ends up per loan approval                               |
+| `LoanApprovalIT.java`         | waiting, one broadcast continuing two workflows, and a signal nobody caught                     |
+| `ratewatch/`                  | a second use case, whose process waits for the same signal                                      |
+| `openapi/rate-watch.yaml`     | new: the OpenAPI file of the second use case                                                    |
+| `rate_watch.bpmn`             | that process: start, catch the signal, record it                                                |
+| `RateWatchIT.java`            | the broadcast of one use case reaching the process of the other                                 |
+| `loan-approval/pom.xml`       | generates the Java interface of `rate-watch.yaml` as well                                       |
 
 ## Running it
 
@@ -102,8 +107,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
 name. So you choose the engine once, on the Maven command line. The build, the tests and

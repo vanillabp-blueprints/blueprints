@@ -12,14 +12,19 @@ first. It has the procedure, the reference structure and the list of things neve
 
 ## Placeholders
 
-Replace all of these consistently; they are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint, except the Maven
+coordinates, which carry the name of the blueprint.
 
-|        Placeholder         |                                                          Meaning                                                          |
-|----------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| `blueprint.workflowmodule` | base package                                                                                                              |
-| `loanapproval`             | use case identifier, Java package                                                                                         |
-| `loan-approval`            | use case identifier, kebab case: workflow module ID, resource directory, REST path, Maven module, configuration file name |
-| `loan_approval`            | BPMN process ID                                                                                                           |
+|                          Placeholder                           |                                                                                 Meaning                                                                                 |
+|----------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `blueprint.workflowmodule`                                     | base package                                                                                                                                                            |
+| `loanapproval`                                                 | use case identifier, Java package                                                                                                                                       |
+| `loan-approval`                                                | use case identifier, kebab case: workflow module ID, resource directory, REST path, Maven module, configuration file name                                               |
+| `loan_approval`                                                | BPMN process ID                                                                                                                                                         |
+| `LoanApproval`                                                 | use case identifier, CamelCase: the start of class names, for example `LoanApprovalProperties`, `LoanApprovalIT` or the interface `LoanApprovalApi` the build generates |
+| `LOAN_APPROVAL`                                                | use case identifier, upper snake case: table and collection names, and the start of other names in upper case                                                           |
+| `io.vanillabp.blueprint.persistence-audited-aggregate-quarkus` | Maven groupId of every POM of this blueprint                                                                                                                            |
+| `persistence-audited-aggregate`                                | Maven artifactId of the root POM                                                                                                                                        |
 
 Blueprint-specific names, each occurring in more than one place:
 
@@ -122,7 +127,7 @@ trail names five changes and the author of each. If `ApplicationSmokeTest` passe
 application boots with the module on the classpath.
 
 The test relies on the outbox trying again quickly. `vanillabp.outbox.attempt-frequency` is two
-seconds in `src/test/resources/application.yaml`, and half a minute by default. A test which
-waits for a notice without setting it runs into its timeout.
+seconds in `src/test/resources/application.yaml`, and half a minute by default. Without it
+the test still passes, but it waits that half minute for the notice.
 
 Do not report success without having run this.

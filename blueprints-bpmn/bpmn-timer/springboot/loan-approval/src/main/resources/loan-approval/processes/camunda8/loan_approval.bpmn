@@ -45,7 +45,7 @@
     <bpmn:boundaryEvent id="BoundaryEvent_Deadline" name="No answer in time" attachedToRef="SendTask_RequestPartnerApproval">
       <bpmn:outgoing>Flow_ToNoteTimeout</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_Deadline">
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT3S</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">=partnerDeadline</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:boundaryEvent>
     <bpmn:sequenceFlow id="Flow_ToInformCustomer" sourceRef="SendTask_RequestPartnerApproval" targetRef="ServiceTask_InformCustomer" />

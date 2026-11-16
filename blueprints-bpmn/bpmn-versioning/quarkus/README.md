@@ -66,13 +66,14 @@ What is worth knowing beyond the annotation:
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                 What is different                                  |
-|----------------------------|------------------------------------------------------------------------------------|
-| `WorkflowTaskHandler.java` | two methods for one task definition, each with the versions it serves              |
-| `Service.java`             | one business method per version of the assessment, neither knowing about the other |
-| `model/Aggregate.java`     | `assessedBy` from version 1 next to `riskScore` of the versions after it           |
-| `loan_approval.bpmn`       | the task is named `assessRisk`, which is the definition both methods refer to      |
-| `LoanApprovalIT.java`      | asserts which of the two methods ran, which is what proves the dispatch            |
+|             File              |                                 What is different                                  |
+|-------------------------------|------------------------------------------------------------------------------------|
+| `WorkflowTaskHandler.java`    | two methods for one task definition, each with the versions it serves              |
+| `Service.java`                | one business method per version of the assessment, neither knowing about the other |
+| `model/Aggregate.java`        | `assessedBy` from version 1 next to `riskScore` of the versions after it           |
+| `LoanApprovalProperties.java` | `manualAssessor`, the name version 1 writes as the assessor                        |
+| `loan_approval.bpmn`          | the task is named `assessRisk`, which is the definition both methods refer to      |
+| `LoanApprovalIT.java`         | asserts which of the two methods ran, which is what proves the dispatch            |
 
 ## Running it
 
@@ -111,8 +112,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 The file is loaded because the Maven profile `camunda8` makes the config profile of the same
 name the parent of the profile the application runs in. So you choose the engine once, on the

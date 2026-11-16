@@ -109,17 +109,17 @@ forgot its null check.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|            File            |                                         What is different                                          |
-|----------------------------|----------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a call activity, an embedded subprocess, and the gateway which asks whether the second section ran |
-| `document_check.bpmn`      | new: the called process of the first section                                                       |
-| `Aggregate.java`           | one sub-object per section, and the four boolean getters the models read                           |
-| `DocumentCheck.java`       | new: the findings of the first section                                                             |
-| `RiskAssessment.java`      | new: the findings of the second section, absent for a small loan                                   |
-| `WorkflowTaskHandler.java` | the tasks of both sections, and `secondaryBpmnProcesses` for the called process                    |
-| `Service.java`             | the business code of both sections: the first task creates the object, the later ones fill it in   |
-| `loan-approval.yaml`       | the limit which makes the second section run, and the numbers the two sections use                 |
-| `LoanApprovalIT.java`      | runs a loan through each path and checks that the getters answer without the skipped section       |
+|                        File                         |                                         What is different                                          |
+|-----------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | a call activity, an embedded subprocess, and the gateway which asks whether the second section ran |
+| `document_check.bpmn`                               | new: the called process of the first section                                                       |
+| `Aggregate.java`                                    | one sub-object per section, and the four boolean getters the models read                           |
+| `DocumentCheck.java`                                | new: the findings of the first section                                                             |
+| `RiskAssessment.java`                               | new: the findings of the second section, absent for a small loan                                   |
+| `WorkflowTaskHandler.java`                          | the tasks of both sections, and `secondaryBpmnProcesses` for the called process                    |
+| `Service.java`                                      | the business code of both sections: the first task creates the object, the later ones fill it in   |
+| `loan-approval.yaml`, `LoanApprovalProperties.java` | the limit which makes the second section run, and the numbers the two sections use                 |
+| `LoanApprovalIT.java`                               | runs a loan through each path and checks that the getters answer without the skipped section       |
 
 Both BPMN files are in the same directory of the workflow module and are deployed together. A
 called process belongs to the module which owns it. It is not a module of its own.
@@ -156,8 +156,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 The file is loaded because the Maven profile `camunda8` sets the Spring profile of the same
 name. So you choose the engine once, on the Maven command line. The build, the tests and

@@ -33,6 +33,17 @@ property says it. So an application which stores its aggregate in MongoDB but ke
 source around for "the framework" has misunderstood something. There is nothing left to put in
 there.
 
+**The log of delivered tasks shrinks by age, unless you let it shrink earlier.** By default a
+record is deleted when the retention has passed, seven days after the BPMS last handed its task
+out (`lastSeenAt`). A task which stays open keeps its record, because every new delivery of it
+moves that moment forward. Setting `vanillabp.delivery.release-on-workflow-end` to `true`
+deletes the records of a workflow as soon as it ends. It works for the whole application, or for
+one workflow module under `vanillabp.workflow-modules.<id>.delivery`. It is `false` by default,
+because it costs something. VanillaBP then asks the BPMS to report the end of every process of
+the module, and the transaction of that report runs one more delete. What you get for it: the
+collection does not grow with every workflow which ended. This blueprint leaves it off.
+[How long a delivery is remembered](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#how-long-a-delivery-is-remembered) has the details.
+
 **And it costs no extra class.** The platform's transaction always exists here. MongoDB Panache
 binds a MongoDB transaction to it, and VanillaBP's own MongoDB stores write through that same
 session. The boot says which transaction each aggregate is processed in:
@@ -65,13 +76,16 @@ assertion failed.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                       File                        |                                   What is different                                    |
-|---------------------------------------------------|----------------------------------------------------------------------------------------|
-| `.../loanapproval/model/Aggregate.java`           | a document in a collection instead of an entity in a table, and no column declarations |
-| `.../loanapproval/model/AggregateRepository.java` | a MongoDB Panache repository; this is what attributes the other two stores as well     |
-| `application/src/main/resources/application.yaml` | a MongoDB database instead of a data source, and the address of the cluster            |
-| `loan-approval/src/test/.../LoanApprovalIT.java`  | the counter-check that a rolled-back start leaves nothing behind                       |
-| `pom.xml`, `*/pom.xml`                            | `quarkus-mongodb-panache` instead of Hibernate, no H2, and only the `camunda8` profile |
+|                                         File                                          |                                   What is different                                    |
+|---------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| `.../loanapproval/model/Aggregate.java`                                               | a document in a collection instead of an entity in a table, and no column declarations |
+| `.../loanapproval/model/AggregateRepository.java`                                     | a MongoDB Panache repository; this is what attributes the other two stores as well     |
+| `application/src/main/resources/application.yaml`                                     | a MongoDB database instead of a data source, and the address of the cluster            |
+| `loan-approval/src/test/resources/application.yaml`                                   | a MongoDB database instead of a data source; the dev services start it                 |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                      | the counter-check that a rolled-back start leaves nothing behind                       |
+| `pom.xml`, `*/pom.xml`                                                                | `quarkus-mongodb-panache` instead of Hibernate, no H2, and only the `camunda8` profile |
+| `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | deleted, in the application and in the test: the blueprint runs on Camunda 8 only      |
+| `processes/camunda7/`, `processes/operaton/`, `processes/cibseven/`                   | deleted, with the BPMN files of those engines                                          |
 
 Everything else is the base blueprint, file for file: the process, the wiring classes, the API,
 the module's own configuration, the test harness.
@@ -102,8 +116,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 `camunda8` is the only profile, and it is active by default, so there is no `-P` to remember.
 That profile also loads `application-camunda8.yaml`. The Maven profile makes the config profile
