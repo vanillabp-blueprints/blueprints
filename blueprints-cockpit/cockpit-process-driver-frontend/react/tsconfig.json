@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@loan-approval": ["./src/loan-approval.ts"],
+      "@gui-client": ["./src/gui-client/index.ts"],
+      "@process-driver-client": ["./src/gui-client/process-driver.ts"],
+      "@shared": ["./src/shared/index.ts"],
+      "@generated/*": ["./src/generated/*"]
+    }
+  },
+  "include": ["src", "dev-shell/src"]
+}
