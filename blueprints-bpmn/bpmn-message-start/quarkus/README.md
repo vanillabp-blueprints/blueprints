@@ -50,6 +50,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 |----------------------|------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn` | the start event carries a `bpmn:messageEventDefinition`, plus the `bpmn:message`         |
 | `Workflow.java`      | `startWorkflowByMessage` instead of `startWorkflow`, with the message name as a constant |
+| `Service.java`       | its log names the message which started the workflow                                     |
 
 Nothing else changes. The aggregate, the service, the task handler and the API are those of the
 base blueprint. That is the point to take away: a message start event is a decision of the

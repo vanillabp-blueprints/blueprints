@@ -109,6 +109,7 @@ Compared to [`cockpit-workflow-details-backend`](https://github.com/vanillabp-bl
 | `loan_approval.bpmn`                 | the one user task, without the event subprocess                                                                        |
 | `LoanApprovalModuleDetails.java`     | new: names the group `LOAN_OFFICERS`, the only users who see the module, and so the button                             |
 | `StartFormController.java`           | new, instead of `CasePageController.java`: starts a loan approval with what the user typed, below `/loan-approval/api` |
+| `CasePageController.java`            | deleted, `StartFormController.java` takes its place                                                                    |
 | `WorkflowTaskHandler.java`           | the `@WorkflowTask` method of the user task only, and no `@WorkflowDetailsProvider` method                             |
 | `Service.java`                       | picks the id of a new loan request and starts the process. No withdrawal                                               |
 | `Workflow.java`                      | `startWorkflow` and `completeUserTask`, no `correlateMessage`                                                          |
@@ -117,6 +118,7 @@ Compared to [`cockpit-workflow-details-backend`](https://github.com/vanillabp-bl
 | `LoanApprovalIT.java`                | starts a loan approval through the start form, finds the case in the case list, and checks who sees the module         |
 | `dev-shell-simulator.yaml` (test)    | two users: Jane is a loan officer, John is not                                                                         |
 | `LoanApprovalAutoConfiguration.java` | its Javadoc names `LoanApprovalModuleDetails`                                                                          |
+| `pom.xml`, `loan-approval/pom.xml`   | the generator builds the interface `StartFormApi` instead of `CasesApi`                                                |
 
 ## Running it
 

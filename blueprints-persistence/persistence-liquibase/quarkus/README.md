@@ -165,19 +165,21 @@ which ended. This blueprint leaves it off.
 Everything about the process, the aggregate and the wiring comes from `module-single`. What was
 added or changed:
 
-|                            File                            |                                          Change                                          |
-|------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| `loan-approval/.../loan-approval/db/changelog.xml`         | new: the module's own changelog, its aggregate table                                     |
-| `application/src/main/resources/db/changelog.xml`          | new: what the application owns, VanillaBP's changelog from the artifact                  |
-| `application/src/main/resources/db/changelog-camunda7.xml` | new: the same plus the engine's changelog                                                |
-| `application/src/main/resources/db/changelog-camunda8.xml` | new: the same alone, since a remote engine has no tables here                            |
-| `application/src/main/resources/application.yaml`          | the changelog to apply, `validate`, `create-schema: false`                               |
-| `application/src/main/resources/application-camunda7.yaml` | new: `database-schema-update: false` and the datasource the engine runs on               |
-| `loan-approval/.../model/Aggregate.java`                   | every column has an explicit name, so the entity and the migration cannot drift apart    |
-| `loan-approval/src/test/resources/application.yaml`        | the module's changelog and `validate`: its test builds its table from it                 |
-| `application/src/test/.../SchemaIT.java`                   | new: the tables the artifact's changelog describes are there, one history for all owners |
-| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | new: a workflow runs through on the migrated schema, across both datasources             |
-| both POMs                                                  | `quarkus-liquibase`; the application also `vanillabp-schema`                             |
+|                                 File                                  |                                          Change                                          |
+|-----------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `loan-approval/.../loan-approval/db/changelog.xml`                    | new: the module's own changelog, its aggregate table                                     |
+| `application/src/main/resources/db/changelog.xml`                     | new: what the application owns, VanillaBP's changelog from the artifact                  |
+| `application/src/main/resources/db/changelog-camunda7.xml`            | new: the same plus the engine's changelog                                                |
+| `application/.../db/changelog-operaton.xml`, `changelog-cibseven.xml` | new: the same for Operaton and for CIB seven                                             |
+| `application/src/main/resources/db/changelog-camunda8.xml`            | new: the same alone, since a remote engine has no tables here                            |
+| `application/src/main/resources/application.yaml`                     | the changelog to apply, `validate`, `create-schema: false`                               |
+| `application/src/main/resources/application-camunda7.yaml`            | new: `database-schema-update: false` and the datasource the engine runs on               |
+| `application-operaton.yaml`, `application-cibseven.yaml`              | `database-schema-update: false`                                                          |
+| `loan-approval/.../model/Aggregate.java`                              | every column has an explicit name, so the entity and the migration cannot drift apart    |
+| `loan-approval/src/test/resources/application.yaml`                   | the module's changelog and `validate`: its test builds its table from it                 |
+| `application/src/test/.../SchemaIT.java`                              | new: the tables the artifact's changelog describes are there, one history for all owners |
+| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`              | new: a workflow runs through on the migrated schema, across both datasources             |
+| both POMs, `loan-approval/pom.xml` and `application/pom.xml`          | `quarkus-liquibase`; the application also `vanillabp-schema`                             |
 
 Why the entity names its columns: as long as a runtime creates the tables, a naming strategy
 decides their names, and it is right by definition. Once a migration creates them, the two have

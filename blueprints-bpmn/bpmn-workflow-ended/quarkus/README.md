@@ -64,14 +64,14 @@ not, and that is what a task in front of the end event is for.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                   What is different                                   |
-|----------------------------|---------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | two end events, one with a task in front of it and one without                        |
-| `WorkflowTaskHandler.java` | the `@WorkflowEnded` method next to the `@WorkflowTask` methods                       |
-| `Service.java`             | closes the business case, and does the work of the task in front of the other end     |
-| `Aggregate.java`           | when the case was closed, how, and at which end event                                 |
-| `loan-approval.yaml`       | the threshold the gateway routes on                                                   |
-| `LoanApprovalIT.java`      | one test per end. The interesting one is the end with nothing modelled in front of it |
+|                        File                         |                                   What is different                                   |
+|-----------------------------------------------------|---------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | two end events, one with a task in front of it and one without                        |
+| `WorkflowTaskHandler.java`                          | the `@WorkflowEnded` method next to the `@WorkflowTask` methods                       |
+| `Service.java`                                      | closes the business case, and does the work of the task in front of the other end     |
+| `Aggregate.java`                                    | when the case was closed, how, and at which end event                                 |
+| `loan-approval.yaml`, `LoanApprovalProperties.java` | the threshold the gateway routes on                                                   |
+| `LoanApprovalIT.java`                               | one test per end. The interesting one is the end with nothing modelled in front of it |
 
 The gateway is not the subject here. It exists so that the process has two ends.
 [`bpmn-gateways`](https://github.com/vanillabp-blueprints/bpmn-gateways-quarkus) explains

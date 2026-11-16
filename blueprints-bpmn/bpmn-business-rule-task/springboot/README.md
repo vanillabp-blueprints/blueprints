@@ -80,6 +80,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `Aggregate.java`           | `approval`, what the decision decided, and the annotations which share what the table reads           |
 | `Service.java`             | keeps that result, and rates a request the other way round: the bigger the loan, the lower the rating |
 | `WorkflowTaskHandler.java` | a `@WorkflowTask` method reading the result through `@TaskParam`                                      |
+| `loan-approval.yaml`       | declares `amount` and `creditRating` as the aggregate values the decision table reads                 |
 | `LoanApprovalIT.java`      | one test per outcome of the table, steered by the amount                                              |
 
 The decision table differs between the two BPMS in the same way the BPMN does, and for the same

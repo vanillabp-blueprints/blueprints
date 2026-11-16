@@ -157,16 +157,25 @@ switch it on where somebody has to answer for the case later, and leave it off e
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                   File                   |                                            What is different                                             |
-|------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`                     | a decision by a person between the credit rating and the payout, so the aggregate is written three times |
-| `model/Aggregate.java`                   | carries `@Audited`, and the attributes the three steps write                                             |
-| `audit/AuditedChange.java`               | the revision entity, so a change knows who made it                                                       |
-| `audit/ChangeBeingMade.java`             | the id naming the change, the person making it, and how long each of them has to be there                |
-| `audit/AuditedAggregatePersistence.java` | how the aggregate is stored, and how a state it had before is read back                                  |
-| `audit/ComplianceNotices.java`           | the report about the decision, which carries the change it is about                                      |
-| `ComplianceArchive.java`                 | the port to the archive, so a test can put a simulator in its place                                      |
-| `LoanApprovalIT.java`                    | decides, waits for the payout, and asserts on what the archive was told                                  |
+|                        File                         |                                                              What is different                                                               |
+|-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | a decision by a person between the credit rating and the payout, so the aggregate is written three times                                     |
+| `model/Aggregate.java`                              | carries `@Audited`, and the attributes the three steps write                                                                                 |
+| `audit/AuditedChange.java`                          | the revision entity, so a change knows who made it                                                                                           |
+| `audit/ChangeBeingMade.java`                        | the id naming the change, the person making it, and how long each of them has to be there                                                    |
+| `audit/AuditedAggregatePersistence.java`            | how the aggregate is stored, and how a state it had before is read back                                                                      |
+| `audit/ComplianceNotices.java`                      | the report about the decision, which carries the change it is about                                                                          |
+| `Service.java`                                      | who requested and who decided; keeps the id of the risk assessment, answers it, reports it to the archive, pays out, and reads the trail     |
+| `Workflow.java`                                     | `riskAssessed` completes the user task                                                                                                       |
+| `WorkflowTaskHandler.java`                          | a `@WorkflowTask` method for the user task and one for the payout                                                                            |
+| `ApiController.java`                                | the start names who requested; new endpoints to assess the risk and to show the trail, each run with `ChangeBeingMade.attributeTo`           |
+| `openapi/loan-approval.yaml`                        | `requestedBy` at the start, and the endpoints `assessRisk` and `trail`                                                                       |
+| `ComplianceArchive.java`                            | the port to the archive, so a test can put a simulator in its place                                                                          |
+| `LocalComplianceArchive.java`                       | new: the stand-in for the archive, which writes the notice into the log and turns the first attempt down                                     |
+| `LoanApprovalIT.java`                               | decides, waits for the payout, and asserts on what the archive was told                                                                      |
+| `ComplianceArchiveSimulator.java`, `Simulator.java` | new, in the tests: the archive the test talks to, which is away at the first attempt, and the base class of simulators from the test harness |
+| `loan-approval/pom.xml`                             | `quarkus-hibernate-envers`                                                                                                                   |
+| `application.yaml`                                  | the outbox tries again after 5 seconds in the application and after 2 seconds in the test, so the late notice does not take half a minute    |
 
 ## Running it
 

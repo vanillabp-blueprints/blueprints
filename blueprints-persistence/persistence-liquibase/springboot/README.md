@@ -169,20 +169,23 @@ which ended. This blueprint leaves it off.
 Everything about the process, the aggregate and the wiring comes from `module-single`. What was
 added or changed:
 
-|                            File                            |                                          Change                                          |
-|------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| `loan-approval/.../loan-approval/db/changelog.xml`         | new: the module's own changelog, its aggregate table                                     |
-| `application/.../db/changelog.xml`                         | new: what the application applies, including VanillaBP's changelog from the artifact     |
-| `application/.../db/changelog-camunda7.xml`                | new: the same plus the engine's changelog, applied by the Camunda 7 build                |
-| `application/.../config/SchemaConfiguration.java`          | new: the application's Liquibase bean, the changelog named by the engine profile         |
-| `application/src/main/resources/application.yaml`          | `ddl-auto: validate`, `create-schema: false`, the changelog to apply                     |
-| `application/src/main/resources/application-camunda7.yaml` | `database-schema-update: false` and the changelog including the engine's                 |
-| `loan-approval/.../model/Aggregate.java`                   | every column has an explicit name, so the entity and the migration cannot drift apart    |
-| `loan-approval/src/test/resources/application.yaml`        | `ddl-auto: validate`: in the module's test its own changelog builds its table            |
-| `application/src/test/.../SchemaIT.java`                   | new: the tables the artifact's changelog describes are there, one history for all owners |
-| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`   | new: a workflow runs through on the migrated schema                                      |
-| `application/src/test/.../MissingTableIT.java`             | new: a forgotten migration ends the boot                                                 |
-| both POMs                                                  | `spring-boot-liquibase` and `liquibase-core`; the application also `vanillabp-schema`    |
+|                                 File                                  |                                          Change                                          |
+|-----------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `loan-approval/.../loan-approval/db/changelog.xml`                    | new: the module's own changelog, its aggregate table                                     |
+| `application/.../db/changelog.xml`                                    | new: what the application applies, including VanillaBP's changelog from the artifact     |
+| `application/.../db/changelog-camunda7.xml`                           | new: the same plus the engine's changelog, applied by the Camunda 7 build                |
+| `application/.../db/changelog-operaton.xml`, `changelog-cibseven.xml` | new: the same for the Operaton build and the CIB seven build                             |
+| `application/.../config/SchemaConfiguration.java`                     | new: the application's Liquibase bean, the changelog named by the engine profile         |
+| `application/src/main/resources/application.yaml`                     | `ddl-auto: validate`, `create-schema: false`, the changelog to apply                     |
+| `application/src/main/resources/application-camunda7.yaml`            | `database-schema-update: false` and the changelog including the engine's                 |
+| `application-operaton.yaml`, `application-cibseven.yaml`              | the same as for Camunda 7                                                                |
+| `loan-approval/.../model/Aggregate.java`                              | every column has an explicit name, so the entity and the migration cannot drift apart    |
+| `loan-approval/src/test/resources/application.yaml`                   | `ddl-auto: validate`: in the module's test its own changelog builds its table            |
+| `application/src/test/.../SchemaIT.java`                              | new: the tables the artifact's changelog describes are there, one history for all owners |
+| `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`              | new: a workflow runs through on the migrated schema                                      |
+| `application/src/test/.../MissingTableIT.java`                        | new: a forgotten migration ends the boot                                                 |
+| `application/src/test/.../db/changelog-without-vanillabp.xml`         | new: the changelog without VanillaBP's tables, which `MissingTableIT` applies            |
+| both POMs, `loan-approval/pom.xml` and `application/pom.xml`          | `spring-boot-liquibase` and `liquibase-core`; the application also `vanillabp-schema`    |
 
 Why the entity names its columns: as long as a runtime creates the tables, a naming strategy
 decides their names, and it is right by definition. Once a migration creates them, the two have

@@ -195,18 +195,25 @@ sets `name-clash-avoidance: use-prefix`, so the modules cannot collide inside th
 
 ## Delta to the base blueprint
 
-Compared to [`module-multi`](https://github.com/vanillabp-blueprints/module-multi-quarkus),
-whose modules this project collects:
+Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus).
+The modules are those of [`module-multi`](https://github.com/vanillabp-blueprints/module-multi-quarkus),
+and the rows which say "as in `module-multi`" come from there:
 
-|                                     File                                     |                                    What is different                                     |
-|------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| `loan-approval/pom.xml`, `loan-repayment/pom.xml`, `banking-commons/pom.xml` | no parent, own group, own version, own build including their index: JARs of another team |
-| `com/acme/...`                                                               | the modules live in packages this application never heard of                             |
-| `application/pom.xml`                                                        | pins the module versions in `dependencyManagement` and adds the image extension          |
-| `application/src/main/resources/application.yaml`                            | tries to override two module values, and the test reads which attempt arrives            |
-| `application/src/test/.../ConfigurationLevelsIT.java`                        | new: which of the three configuration levels wins                                        |
-| `application/src/test/.../ApplicationSmokeTest.java`                         | unchanged, but here it tests the discovery and is more than a formality                  |
-| `ModuleConfigurationPerProfileIT`, `BeanNamesPerModuleIT`                    | gone: profiles and bean names are `module-multi`'s subject                               |
+|                                           File                                           |                                                           What is different                                                           |
+|------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-repayment/`, `banking-commons/`                                                    | new, as in `module-multi`: the second workflow module and the library both modules use                                                |
+| `loan-approval/pom.xml`, `loan-repayment/pom.xml`, `banking-commons/pom.xml`             | no parent, own group, own version, own build including their index: JARs of another team                                              |
+| `com/acme/...`                                                                           | the modules live in packages this application never heard of                                                                          |
+| `loan-approval/src/main/java/blueprint/...`, `loan-approval/src/test/java/blueprint/...` | deleted: the classes of the base moved to `com/acme/...`                                                                              |
+| `loan-approval/src/main/resources/loan-approval/*.yaml`                                  | as in `module-multi`: `rating-provider`, and a module file per environment                                                            |
+| `openapi/loan-approval.yaml`                                                             | as in `module-multi`: the start URL takes a `customerId`                                                                              |
+| `pom.xml`                                                                                | the modules `banking-commons` and `loan-repayment`, and no version of the OpenAPI generator, because each module brings its own build |
+| `application/pom.xml`                                                                    | pins the module versions in `dependencyManagement` and adds the image extension                                                       |
+| `application-camunda8.yaml`                                                              | as in `module-multi`: `name-clash-avoidance: use-prefix`                                                                              |
+| `application/src/main/resources/application.yaml`                                        | tries to override two module values, and the test reads which attempt arrives                                                         |
+| `application/src/test/.../ConfigurationLevelsIT.java`                                    | new: which of the three configuration levels wins                                                                                     |
+| `application/src/test/.../ApplicationSmokeTest.java`                                     | unchanged, but here it tests the discovery and is more than a formality                                                               |
+| `ModuleConfigurationPerProfileIT`, `BeanNamesPerModuleIT`                                | gone: profiles and bean names are `module-multi`'s subject                                                                            |
 
 Everything inside the modules is `module-multi`, file for file. Only their coordinates, their
 packages and their build belong to somebody else's release.
