@@ -2,8 +2,10 @@ openapi: 3.0.3
 info:
   title: Loan approval
   description: >
-    The API of the use case 'loan-approval'. It has GET requests only, so a person can walk
-    through the process in a browser, without any tool and without a request body.
+    The API of the use case 'loan-approval'. A person walks through the process in a browser
+    with its GET requests, without any tool and without a request body. The forms of the user
+    tasks complete them with POST on the same paths. They send no body, because the user tasks
+    take no input.
 
     The build generates the Java interface 'LoanApprovalApi' and the classes of the schemas below
     from this file, and 'ApiController' implements it. So the paths, the parameters and the answers below
@@ -65,6 +67,21 @@ paths:
             text/plain:
               schema:
                 type: string
+    post:
+      tags:
+        - loan-approval
+      operationId: completeAssessRisk
+      summary: Completes the user task "Assess risk", called by its form
+      parameters:
+        - $ref: '#/components/parameters/LoanRequestId'
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: A confirmation
+          content:
+            text/plain:
+              schema:
+                type: string
   /api/loan-approval/{loanRequestId}/check-contract/{taskId}:
     get:
       tags:
@@ -85,6 +102,31 @@ paths:
           description: >
             The customer has not signed the contract yet. The task stays open, and the user may
             try again later.
+          content:
+            text/plain:
+              schema:
+                type: string
+    post:
+      tags:
+        - loan-approval
+      operationId: completeCheckContract
+      summary: >
+        Completes the user task "Check contract", once the customer signed the contract, called
+        by its form
+      parameters:
+        - $ref: '#/components/parameters/LoanRequestId'
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: A confirmation
+          content:
+            text/plain:
+              schema:
+                type: string
+        '409':
+          description: >
+            The customer has not signed the contract yet. The task stays open, and the form says
+            so.
           content:
             text/plain:
               schema:

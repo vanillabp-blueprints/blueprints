@@ -8,5 +8,5 @@ import { defineTaskForm } from '@shared';
 defineTaskForm(ASSESS_RISK_ELEMENTS, {
   testId: 'assess-risk',
   completeLabel: (texts) => texts.riskAssessed,
-  complete: (loanRequestId, taskId) => loanApproval.assessRisk({ loanRequestId, taskId }),
+  complete: (loanRequestId, taskId) => loanApproval.completeAssessRisk({ loanRequestId, taskId }),
 });

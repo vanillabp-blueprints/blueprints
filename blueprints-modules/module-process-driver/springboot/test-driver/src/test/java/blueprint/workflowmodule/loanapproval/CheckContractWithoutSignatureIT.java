@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 
 import blueprint.testdriver.loanapproval.ProcessState;
 import blueprint.testdriver.loanapproval.Scenario;
@@ -30,7 +31,7 @@ public class CheckContractWithoutSignatureIT extends ScenarioTest {
   @Test
   public void theTaskCannotBeCompletedBeforeTheCustomerSigned() {
 
-    assertThat(checkContract()).isEqualTo(409);
+    assertThat(checkContract(HttpMethod.GET)).isEqualTo(409);
 
     assertThat(loanApprovals.findById(scenario.getLoanRequestId()))
         .hasValueSatisfying(loanRequest -> {
@@ -43,11 +44,11 @@ public class CheckContractWithoutSignatureIT extends ScenarioTest {
   @Test
   public void theTaskCanBeCompletedOnceTheCustomerSigned() {
 
-    assertThat(checkContract()).isEqualTo(409);
+    assertThat(checkContract(HttpMethod.GET)).isEqualTo(409);
 
     assertThat(simulator().sign(scenario.getLoanRequestId())).startsWith("200").contains("204");
 
-    assertThat(checkContract()).isEqualTo(200);
+    assertThat(checkContract(HttpMethod.GET)).isEqualTo(200);
     awaitAggregate(
         loanApprovals,
         scenario.getLoanRequestId(),
@@ -55,10 +56,27 @@ public class CheckContractWithoutSignatureIT extends ScenarioTest {
 
   }
 
-  private int checkContract() {
+  @Test
+  public void theFormCompletesTheTaskWithPostOnceTheCustomerSigned() {
+
+    assertThat(checkContract(HttpMethod.POST)).isEqualTo(409);
+
+    assertThat(simulator().sign(scenario.getLoanRequestId())).startsWith("200").contains("204");
+
+    assertThat(checkContract(HttpMethod.POST)).isEqualTo(200);
+    awaitAggregate(
+        loanApprovals,
+        scenario.getLoanRequestId(),
+        loanRequest -> Boolean.TRUE.equals(loanRequest.getContractChecked()));
+
+  }
+
+  /** A person in the browser sends GET, the form of the user task sends POST. */
+  private int checkContract(
+      final HttpMethod method) {
 
     return api
-        .get()
+        .method(method)
         .uri("/{loanRequestId}/check-contract/{taskId}", scenario.getLoanRequestId(), taskId)
         .exchange((
             request,

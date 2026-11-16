@@ -9,5 +9,5 @@ import { defineTaskForm } from '@shared';
 defineTaskForm(CHECK_CONTRACT_ELEMENTS, {
   testId: 'check-contract',
   completeLabel: (texts) => texts.approve,
-  complete: (loanRequestId, taskId) => loanApproval.checkContract({ loanRequestId, taskId }),
+  complete: (loanRequestId, taskId) => loanApproval.completeCheckContract({ loanRequestId, taskId }),
 });

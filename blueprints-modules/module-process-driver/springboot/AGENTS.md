@@ -68,28 +68,30 @@ Names this blueprint adds:
 
 ## Core files
 
-|                                       File                                       |                                         Why it matters                                          |
-|----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `test-driver/src/main/java/.../ProcessState.java`                                | the states and the step which finishes each; with the steps, all the tests know of the process  |
-| `test-driver/src/main/java/.../ProcessDriver.java`                               | follows the prerequisites of the steps; `advanceTo` runs them and logs where the case is        |
-| `test-driver/src/main/java/.../TestData.java`                                    | the defaults of a scenario, and the withers a test changes them with                            |
-| `test-driver/src/main/java/.../steps/StepSupport.java`                           | waits for the aggregate in transactions of its own, turns a timeout into the reason             |
-| `test-driver/src/main/java/.../steps/RiskAssessedOnTheWayStep.java`              | the branch: completes "Assess risk" only if the amount needs it                                 |
-| `test-driver/src/main/java/.../steps/RiskAssessmentOpenedStep.java`              | refuses a small amount at once, before it waits                                                 |
-| `test-driver/src/main/java/.../steps/ContractCheckOpenedStep.java`               | the last wait of a state: for what the workflow writes after the engine moved on                |
-| `test-driver/src/main/java/.../ProcessDriverController.java`                     | the REST API of the driver, implements the interface generated from `process-driver.yaml`       |
-| `test-driver/src/main/java/.../config/ProcessDriverAutoConfiguration.java`       | wires the driver only if `process-driver.enabled` is `true`                                     |
-| `test-driver/src/main/resources/openapi/process-driver.yaml`                     | the REST API of the driver as an OpenAPI file                                                   |
-| `test-driver/src/main/java/blueprint/testdriver/simulator/SimulatorTestApi.java` | the client of the test API and of the cockpit API the simulator plays                           |
-| `test-driver/pom.xml`                                                            | the driver, the tests of the module, the start of the simulator, the BPMS profiles of the tests |
-| `test-driver/src/test/java/.../ScenarioTest.java`                                | base class of the tests: one application for all of them, pointed at the simulator              |
-| `test-driver/src/test/java/.../CheckContractIT.java`                             | one task, two scenarios: a small and a large amount                                             |
-| `test-driver/src/test/java/.../CheckContractWithoutSignatureIT.java`             | the same task in the other situation: 409 until the customer signed                             |
-| `test-driver/src/test/java/.../ProcessDriverIT.java`                             | the REST API of the driver, and the reason for a state the test data cannot reach               |
-| `loan-approval/src/main/java/.../Service.java`                                   | writes the id of each open task into the aggregate, refuses to check an unsigned contract       |
-| `loan-approval/src/main/java/.../model/Aggregate.java`                           | `riskAssessmentNeeded` as a plain `boolean` for the gateway, the ids of the open tasks          |
-| `loan-approval/src/main/resources/.../loan_approval.bpmn`                        | the gateway, "Assess risk", "Send contract for signing", "Check contract"                       |
-| `application/pom.xml`                                                            | the Maven profile `test-driver`, which a production build never names                           |
+|                                       File                                       |                                               Why it matters                                               |
+|----------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| `test-driver/src/main/java/.../ProcessState.java`                                | the states and the step which finishes each; with the steps, all the tests know of the process             |
+| `test-driver/src/main/java/.../ProcessDriver.java`                               | follows the prerequisites of the steps; `advanceTo` runs them and logs where the case is                   |
+| `test-driver/src/main/java/.../TestData.java`                                    | the defaults of a scenario, and the withers a test changes them with                                       |
+| `test-driver/src/main/java/.../steps/StepSupport.java`                           | waits for the aggregate in transactions of its own, turns a timeout into the reason                        |
+| `test-driver/src/main/java/.../steps/RiskAssessedOnTheWayStep.java`              | the branch: completes "Assess risk" only if the amount needs it                                            |
+| `test-driver/src/main/java/.../steps/RiskAssessmentOpenedStep.java`              | refuses a small amount at once, before it waits                                                            |
+| `test-driver/src/main/java/.../steps/ContractCheckOpenedStep.java`               | the last wait of a state: for what the workflow writes after the engine moved on                           |
+| `test-driver/src/main/java/.../ProcessDriverController.java`                     | the REST API of the driver, implements the interface generated from `process-driver.yaml`                  |
+| `test-driver/src/main/java/.../config/ProcessDriverAutoConfiguration.java`       | wires the driver only if `process-driver.enabled` is `true`                                                |
+| `test-driver/src/main/resources/openapi/process-driver.yaml`                     | the REST API of the driver as an OpenAPI file                                                              |
+| `test-driver/src/main/java/blueprint/testdriver/simulator/SimulatorTestApi.java` | the client of the test API and of the cockpit API the simulator plays                                      |
+| `test-driver/pom.xml`                                                            | the driver, the tests of the module, the start of the simulator, the BPMS profiles of the tests            |
+| `test-driver/src/test/java/.../ScenarioTest.java`                                | base class of the tests: one application for all of them, pointed at the simulator                         |
+| `test-driver/src/test/java/.../CheckContractIT.java`                             | one task, two scenarios: a small and a large amount                                                        |
+| `test-driver/src/test/java/.../CheckContractWithoutSignatureIT.java`             | the same task in the other situation: 409 until the customer signed, through GET and POST                  |
+| `loan-approval/src/main/java/.../ApiController.java`                             | completes each task with GET, for a person, and with POST, for its form; the 409                           |
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                    | the API of the use case; a form calls the POST operations `completeAssessRisk` and `completeCheckContract` |
+| `test-driver/src/test/java/.../ProcessDriverIT.java`                             | the REST API of the driver, and the reason for a state the test data cannot reach                          |
+| `loan-approval/src/main/java/.../Service.java`                                   | writes the id of each open task into the aggregate, refuses to check an unsigned contract                  |
+| `loan-approval/src/main/java/.../model/Aggregate.java`                           | `riskAssessmentNeeded` as a plain `boolean` for the gateway, the ids of the open tasks                     |
+| `loan-approval/src/main/resources/.../loan_approval.bpmn`                        | the gateway, "Assess risk", "Send contract for signing", "Check contract"                                  |
+| `application/pom.xml`                                                            | the Maven profile `test-driver`, which a production build never names                                      |
 
 ## Boilerplate files
 

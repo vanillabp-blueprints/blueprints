@@ -144,7 +144,7 @@ for (const cockpit of COCKPITS) {
       await complete.click();
       await page.getByTestId('assess-risk-done').waitFor();
 
-      assert.deepEqual(calls, ['GET /wm/loan-approval/api/loan-approval/LR-4711/assess-risk/task-1']);
+      assert.deepEqual(calls, ['POST /wm/loan-approval/api/loan-approval/LR-4711/assess-risk/task-1']);
       assert.equal(await complete.isDisabled(), true);
       assert.deepEqual(await page.evaluate(() => window.bcTest.notifications), [{ level: 'success', text: 'Completed', sticky: false }]);
       const loaded = await loadedFiles(page);
@@ -167,8 +167,8 @@ for (const cockpit of COCKPITS) {
       await page.getByTestId('check-contract-done').waitFor();
       assert.equal(await page.getByTestId('check-contract-error').count(), 0);
       assert.deepEqual(calls, [
-        'GET /wm/loan-approval/api/loan-approval/LR-4711/check-contract/task-2',
-        'GET /wm/loan-approval/api/loan-approval/LR-4711/check-contract/task-2',
+        'POST /wm/loan-approval/api/loan-approval/LR-4711/check-contract/task-2',
+        'POST /wm/loan-approval/api/loan-approval/LR-4711/check-contract/task-2',
       ]);
       assert.deepEqual(pageErrors, []);
       await page.close();

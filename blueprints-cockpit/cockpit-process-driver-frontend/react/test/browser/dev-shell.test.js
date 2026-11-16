@@ -131,7 +131,7 @@ describe('the page "Process driver"', () => {
     await assertText(page.getByTestId('assess-risk-amount'), '25,000');
     await page.getByTestId('assess-risk-complete').click();
     await page.getByTestId('assess-risk-done').waitFor();
-    assert.ok(calls.includes('GET /wm/loan-approval/api/loan-approval/LR-4711/assess-risk/task-1'), calls.join('\n'));
+    assert.ok(calls.includes('POST /wm/loan-approval/api/loan-approval/LR-4711/assess-risk/task-1'), calls.join('\n'));
     await assertText(page.getByTestId('notifications'), 'success: Completed');
     assert.deepEqual(pageErrors, []);
     await page.close();

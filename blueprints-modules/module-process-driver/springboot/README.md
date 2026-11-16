@@ -180,8 +180,8 @@ Compared to [`module-simulator`](https://github.com/vanillabp-blueprints/module-
 | `.../loanapproval/model/Aggregate.java`                             | the answer for the gateway, the ids of both open tasks, the signature as a fact                   |
 | `.../loanapproval/Service.java`                                     | assesses the risk, takes the signature, refuses to check a contract which is not signed           |
 | `.../loanapproval/ContractNotSignedException.java`                  | new: the reason "Check contract" cannot be completed yet                                          |
-| `.../loanapproval/ApiController.java`                               | completes both tasks, and answers 409 while the signature is missing                              |
-| `.../openapi/loan-approval.yaml`                                    | the two tasks instead of "Prepare contract", and the 409                                          |
+| `.../loanapproval/ApiController.java`                               | completes both tasks with GET for a person and with POST for a form, 409 while not signed         |
+| `.../openapi/loan-approval.yaml`                                    | the two tasks instead of "Prepare contract", each as GET and POST, and the 409                    |
 | `.../loanapproval/config/LoanApprovalProperties.java`               | the limit of the risk assessment                                                                  |
 | `.../loanapproval/Workflow.java`                                    | completes "Assess risk" and "Check contract" instead of correlating the message "Contract signed" |
 | `.../loanapproval/WorkflowTaskHandler.java`                         | opens "Assess risk" and "Check contract" instead of "Prepare contract"                            |
@@ -258,23 +258,30 @@ http://localhost:8079/simulator/test-api/e-signature/sign?contractId=0f7c…
 
 Without the profile `test-driver`, `/process-driver/states` answers 404.
 
+The forms of the user tasks do not use these URLs. A form completes its task with POST on the
+same path, as the
+[rules for blueprints](https://github.com/vanillabp-blueprints/blueprints/blob/main/CONTRIBUTING.md#endpoints-which-a-form-calls)
+ask: `completeAssessRisk` and `completeCheckContract` in `loan-approval.yaml`. They take no body,
+because neither task has input, and they answer like the GET requests, 409 included. The GET
+requests stay for a person in the browser and for the URLs the handler logs.
+
 ## How it works
 
-|                              File                               |                                       Role                                       |
-|-----------------------------------------------------------------|----------------------------------------------------------------------------------|
-| `ProcessState.java`                                             | the states, and the steps which lead to each of them                             |
-| `ProcessDriver.java`                                            | runs the steps of a state, one after the other, and logs where the case is       |
-| `TestData.java`                                                 | the amount and the credit score, with defaults which make sense for the business |
-| `steps/LoanRequestedStep.java`                                  | prepares the customer in the simulator and requests the loan through `Service`   |
-| `steps/RiskAssessedOnTheWayStep.java`                           | the branch of a large amount: waits for "Assess risk" and completes it           |
-| `steps/StepSupport.java`                                        | waits for the aggregate, and turns a timeout into the reason                     |
-| `ProcessDriverController.java`                                  | the REST API, generated from `process-driver.yaml`                               |
-| `config/ProcessDriverAutoConfiguration.java`                    | wires the driver only if `process-driver.enabled` is `true`                      |
-| `test-driver/src/test/.../ScenarioTest.java`                    | base class of the tests: the application, the simulator and the driver           |
-| `test-driver/src/test/.../CheckContractIT.java`                 | "Check contract" for a small and for a large amount                              |
-| `test-driver/src/test/.../CheckContractWithoutSignatureIT.java` | "Check contract" before the signature: 409, and the task stays open              |
-| `test-driver/src/test/.../AssessRiskIT.java`                    | "Assess risk": the cockpit shows it, and no contract goes out before it          |
-| `test-driver/src/test/.../ProcessDriverIT.java`                 | the REST API of the driver, and the reason it gives for an unreachable state     |
+|                              File                               |                                         Role                                          |
+|-----------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| `ProcessState.java`                                             | the states, and the steps which lead to each of them                                  |
+| `ProcessDriver.java`                                            | runs the steps of a state, one after the other, and logs where the case is            |
+| `TestData.java`                                                 | the amount and the credit score, with defaults which make sense for the business      |
+| `steps/LoanRequestedStep.java`                                  | prepares the customer in the simulator and requests the loan through `Service`        |
+| `steps/RiskAssessedOnTheWayStep.java`                           | the branch of a large amount: waits for "Assess risk" and completes it                |
+| `steps/StepSupport.java`                                        | waits for the aggregate, and turns a timeout into the reason                          |
+| `ProcessDriverController.java`                                  | the REST API, generated from `process-driver.yaml`                                    |
+| `config/ProcessDriverAutoConfiguration.java`                    | wires the driver only if `process-driver.enabled` is `true`                           |
+| `test-driver/src/test/.../ScenarioTest.java`                    | base class of the tests: the application, the simulator and the driver                |
+| `test-driver/src/test/.../CheckContractIT.java`                 | "Check contract" for a small and for a large amount                                   |
+| `test-driver/src/test/.../CheckContractWithoutSignatureIT.java` | "Check contract" before the signature: 409, and the task stays open, for GET and POST |
+| `test-driver/src/test/.../AssessRiskIT.java`                    | "Assess risk": the cockpit shows it, no contract goes out before it, GET and POST     |
+| `test-driver/src/test/.../ProcessDriverIT.java`                 | the REST API of the driver, and the reason it gives for an unreachable state          |
 
 The order of events in a test: `advanceTo` builds a `Scenario` and runs the steps of the state.
 `LoanRequestedStep` reserves a customer at the simulated credit rating and calls
