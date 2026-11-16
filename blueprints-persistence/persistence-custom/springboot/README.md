@@ -72,6 +72,29 @@ bean names what a durable store adds: retrying a failed dispatch with a backoff,
 entries again after a restart, keeping dispatched entries for a while instead of deleting them,
 blocking an entry which keeps failing, and dropping delivery records after a retention period.
 
+**Two methods of `TaskDeliveryLog` matter as soon as a store deletes records.** This blueprint
+deletes nothing, so it implements neither of them. Both have a default which does nothing, and
+a durable store adds them:
+
+- `stillOpen(deliveryKey)`. VanillaBP calls it when the BPMS hands out a task again and the
+  record says that the task is still open. The retention of that record then counts from this
+  call, not from the moment the handler ran. Without it, the record of a task which stays open
+  longer than `vanillabp.delivery.retention` is deleted while the task is still open. The next
+  repeated delivery finds no record and runs the handler a second time. The BPMS hands out an
+  open task each time it renews its lock. So do not write on every call. Remember the keys and
+  refresh their records together, for example from the timer which deletes the old ones.
+- `releaseRecordsOf(workflowModuleId, bpmnProcessId, workflowAggregateId, recordedBefore)`.
+  VanillaBP calls it when a workflow ended, and only if `vanillabp.delivery.release-on-workflow-end`
+  is switched on. It runs in the unit of work of that notification, so it enlists like every
+  other write here. Delete only records written before `recordedBefore`, because a second
+  workflow on the same aggregate may have written its own ones since. Keep the rows about the
+  start of a workflow (`recordKind` `WORKFLOW_START`). They have a retention of their own.
+  Without this method, the records stay until the retention has passed. If the switch is on,
+  the start then writes a warning which names this store and the property.
+
+[How long a delivery is remembered](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#how-long-a-delivery-is-remembered)
+explains the switch, the retention and what neither of them covers.
+
 **Camunda 7 is missing on purpose.** Its engine is embedded and needs a relational database,
 and this blueprint has none. So this is one of two blueprints with a single engine, and a
 cluster has to run for every build.
@@ -121,8 +144,8 @@ vanillabp:
 
 The blueprint does not lease its jobs. On 8.10 the gateway of the cluster can lose a leased
 job when a long poll ends, and the job then waits for a whole `job-timeout`. Until Camunda
-fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. Why is
-[decision 88 of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
+fixes that, the adapter advises `do-not-use`, and moving to `use` later costs nothing. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds) explains why.
 
 `camunda8` is the only profile, and it is active by default, so there is no `-P` to remember.
 That profile also loads `application-camunda8.yaml`. The Maven profile sets the Spring profile

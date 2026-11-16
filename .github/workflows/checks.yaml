@@ -40,6 +40,10 @@ jobs:
       # hand). This reads the paths and asks the file system.
       - name: Check that the file tables name files which exist
         run: python bin/check_table_paths.py
+      # A decision number of another repository can change, and a copied blueprint keeps
+      # pointing at it. Texts and comments link the wiki page which describes the behaviour.
+      - name: Check that no decision of another repository is cited by number
+        run: python bin/check_foreign_decisions.py
       - name: Check the test harness copies against their reference
         run: python bin/sync_harness.py --check
       # A blueprint whose BPMS profiles scope identifiers differently describes a switch

@@ -74,6 +74,7 @@ public class Service {
         .builder()
         .loanRequestId(loanRequestId)
         .amount(amount)
+        .partnerDeadline(properties.getPartnerDeadline())
         .build();
 
     workflow.loanRequested(loanApproval);
@@ -140,9 +141,10 @@ public class Service {
 
     log.info(
         "Loan approval '{}' waits for the partner, but not forever - the task carries a"
-            + " deadline of three seconds:"
+            + " deadline of {}:"
             + "\n  Approved -> http://localhost:8080/api/loan-approval/{}/partner-approved/{}",
         loanApproval.getLoanRequestId(),
+        loanApproval.getPartnerDeadline(),
         loanApproval.getLoanRequestId(), taskId);
 
   }

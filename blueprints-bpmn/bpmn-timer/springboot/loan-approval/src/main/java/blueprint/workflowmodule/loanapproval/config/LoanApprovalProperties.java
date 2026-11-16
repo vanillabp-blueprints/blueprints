@@ -20,4 +20,10 @@ public class LoanApprovalProperties {
   /** The highest credit rating the rating step may award. */
   private int ratingScale = 100;
 
+  /**
+   * How long the partner may take to answer, as an ISO-8601 duration. It is a business
+   * value, so it is configuration and not a literal in the model.
+   */
+  private String partnerDeadline = "P3D";
+
 }

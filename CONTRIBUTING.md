@@ -134,14 +134,19 @@ The OpenAPI file is the second file outside that directory. Its name is the use 
 not clash with the file of another module. The frontends of the cockpit blueprints read it from
 this path to generate their client.
 
-Placeholders are the same in every blueprint, so a tool can replace them:
+Placeholders are the same in every blueprint, so a tool can replace them. Only the Maven
+coordinates name the blueprint. Every `AGENTS.md` lists them in its table, with the values of
+that blueprint:
 
-|        Placeholder         |                                Meaning                                |
-|----------------------------|-----------------------------------------------------------------------|
-| `blueprint.workflowmodule` | base package                                                          |
-| `loanapproval`             | use case identifier, Java package                                     |
-| `loan-approval`            | use case identifier, kebab case (workflow module ID, resources, REST) |
-| `loan_approval`            | BPMN process ID                                                       |
+|                    Placeholder                     |                                Meaning                                |
+|----------------------------------------------------|-----------------------------------------------------------------------|
+| `blueprint.workflowmodule`                         | base package                                                          |
+| `loanapproval`                                     | use case identifier, Java package                                     |
+| `loan-approval`                                    | use case identifier, kebab case (workflow module ID, resources, REST) |
+| `loan_approval`                                    | BPMN process ID                                                       |
+| `LoanApproval`                                     | use case identifier, CamelCase (class names)                          |
+| `LOAN_APPROVAL`                                    | use case identifier, upper snake case (table and collection names)    |
+| `io.vanillabp.blueprint.<blueprint-id>-<platform>` | Maven groupId, and `<blueprint-id>` the artifactId of the root POM    |
 
 Inside the classes, an injected bean is named after the role it plays there, not after its
 type. A call then reads like a short sentence about the business case:
@@ -286,12 +291,10 @@ current activation. So a run whose lock ran out while it was working can no long
 what the newer run wrote. Still, the blueprints write `do-not-use`. On 8.10 the gateway of
 the cluster can lose a leased job when a long poll ends, and the job then waits for a whole
 `job-timeout`. Blueprint builds went red from it. Until Camunda fixes that, the adapter advises
-`do-not-use`, and a blueprint shows the advised way. Why is
-[decision 88 of the adapter](https://github.com/vanillabp/camunda8-adapter/blob/main/DECISIONS.md#88-until-camunda-fixes-its-gateway-the-adapter-advises-against-a-lease-and-its-own-tests-keep-one).
-Moving to `use` later costs nothing, because a job which was never leased can be leased at any
-time. The other way does not work, because the cluster never takes a lease off a job again.
-`do-not-use` is also what every release line before 8.10 did. What a lease costs is in the
-[wiki of the adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds).
+`do-not-use`, and a blueprint shows the advised way. Moving to `use` later costs nothing,
+because a job which was never leased can be leased at any time. The other way does not work, because the cluster never takes a lease off a job again.
+`do-not-use` is also what every release line before 8.10 did. Why the adapter advises it, and
+what a lease costs, is in the [wiki of the adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds).
 
 ### A build without a profile runs on the default BPMS
 
@@ -425,11 +428,33 @@ The two platforms have a set each. The sets differ where the platform does. A Qu
 module needs no application class to be booted. And every Quarkus test class carries
 `@QuarkusTest` itself, instead of inheriting it from the base class.
 
-`WorkflowModuleTest` knows two deadlines. `TIMEOUT`, thirty seconds, is for what VanillaBP and
-the blueprint do themselves. `SCHEDULER_TIMEOUT`, two minutes, is for a step which waits for a
+`WorkflowModuleTest` knows two deadlines. `TIMEOUT`, one minute, is for what VanillaBP and the
+blueprint do themselves. `SCHEDULER_TIMEOUT`, two minutes, is for a step which waits for a
 timer of the model. The scheduler of the engine fires the timer, and on a busy machine every
 build shares its threads. A test passes the longer deadline to `awaitAggregate` only for the
 steps which wait for a timer.
+
+`TIMEOUT` is one minute so that one retry of the outbox fits in. On Camunda 7 two engine
+commands for the same workflow may collide, for example a message correlation and the
+completion of a user task. The engine rejects one of them with an optimistic locking error,
+and the outbox tries it again after `vanillabp.outbox.attempt-frequency`, thirty seconds by
+default. With a deadline of thirty seconds this expected collision failed tests by a fraction
+of a second. The second retry comes another minute later, so a step which keeps failing still
+fails the test. The blueprints keep the default retry distance in their tests. A shorter one
+would let a step fail several times within the deadline, and the test would not see it. Only
+a blueprint whose aspect is a receiver which is away sets a shorter distance, and says so in
+its test configuration. `Simulator` waits as long as `TIMEOUT`.
+
+On Quarkus, both test classes also check that a test runs on the BPMS of the Maven build. A
+Quarkus test does not take its classpath from Maven. It reads the POM again and builds the
+application on its own, and the test JVM has other system properties than Maven. So a profile
+which switches itself on can be active in Maven and inactive in the test. Then the test runs on
+the default BPMS, which the build does not have. The blueprint POM hands the BPMS profile of
+the build to the tests as `quarkus.config.profile.parent`. The check compares it with the
+BPMS adapters the test loads. It finds them by their Quarkus capability
+`io.vanillabp.adapter.<bpms>`. A test started by the IDE has no BPMS profile, so the check
+skips there. `bin/check_default_profiles.py` forbids the kind of profile which caused this.
+The check also catches every other cause.
 
 They are copies and not a shared module. A blueprint has to build on its own after the split.
 And an agent has to be able to read the code which checks its work.
@@ -803,6 +828,15 @@ dashes. GitHub keeps it for thirty days, longer than the log of the job. The iss
 out the name of the first red job. So the failed test is one download away, and you do not have
 to scroll through a log which is thrown away sooner.
 
+A red job of this workflow or of `build.yaml` also attaches the logs of the simulators the tests
+started: `target/dev-shell-simulator.log` of the dev-shell simulator in the cockpit blueprints,
+and `target/simulator.log` of the simulator applications in `module-simulator` and
+`module-under-load`. The simulators write to these files and not to the console, so without the
+upload they are gone with the runner. The artifact is called
+`simulator-logs-<blueprint>-<bpms>-attempt-<n>`, because a re-run of a failed job uploads into
+the same run again. GitHub keeps it for seven days. A blueprint which starts no simulator
+uploads nothing.
+
 A red night becomes a GitHub issue under the label `nightly`, written by `nightly-issue.yaml`.
 There is one issue for the whole night. The first thing in it is the count of the blueprints
 which broke. Many at once means the platform, one alone means that blueprint. While the issue
@@ -885,7 +919,15 @@ citations into it.
 
 The framework's own repositories keep a `DECISIONS.md` next to their code. A blueprint does not
 cite it either. It belongs to that repository and speaks to whoever changes it. A blueprint
-speaks to somebody who writes an application.
+speaks to somebody who writes an application. Link the wiki page of the adapter or the
+platform which describes the behaviour instead. Where no page describes it, say in plain words
+what happens. A number in another repository can change, and a copied blueprint keeps pointing
+at it. `bin/check_foreign_decisions.py` rejects such a number and a link into the
+`DECISIONS.md` of another repository:
+
+```bash
+python3 bin/check_foreign_decisions.py
+```
 
 ## Formatting
 

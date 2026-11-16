@@ -20,4 +20,11 @@ public interface LoanApprovalProperties {
   @WithDefault("100")
   int ratingScale();
 
+  /**
+   * How long the partner may take to answer, as an ISO-8601 duration. It is a business
+   * value, so it is configuration and not a literal in the model.
+   */
+  @WithDefault("P3D")
+  String partnerDeadline();
+
 }

@@ -10,14 +10,19 @@ first. It has the procedure, the reference structure and the list of things neve
 
 ## Placeholders
 
-Replace all of these consistently. They are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint, except the Maven
+coordinates, which carry the name of the blueprint.
 
-|        Placeholder         |                                                          Meaning                                                          |
-|----------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| `blueprint.workflowmodule` | base package                                                                                                              |
-| `loanapproval`             | use case identifier, Java package                                                                                         |
-| `loan-approval`            | use case identifier, kebab case: workflow module ID, resource directory, REST path, Maven module, configuration file name |
-| `loan_approval`            | BPMN process ID                                                                                                           |
+|                    Placeholder                    |                                                                                 Meaning                                                                                 |
+|---------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `blueprint.workflowmodule`                        | base package                                                                                                                                                            |
+| `loanapproval`                                    | use case identifier, Java package                                                                                                                                       |
+| `loan-approval`                                   | use case identifier, kebab case: workflow module ID, resource directory, REST path, Maven module, configuration file name                                               |
+| `loan_approval`                                   | BPMN process ID                                                                                                                                                         |
+| `LoanApproval`                                    | use case identifier, CamelCase: the start of class names, for example `LoanApprovalProperties`, `LoanApprovalIT` or the interface `LoanApprovalApi` the build generates |
+| `LOAN_APPROVAL`                                   | use case identifier, upper snake case: table and collection names, and the start of other names in upper case                                                           |
+| `io.vanillabp.blueprint.module-single-springboot` | Maven groupId of every POM of this blueprint                                                                                                                            |
+| `module-single`                                   | Maven artifactId of the root POM                                                                                                                                        |
 
 `loan-approval` occurs in more places than any other placeholder, and all of them have to
 change together: the Maven module directory, the marker file `META-INF/workflow-module`, the

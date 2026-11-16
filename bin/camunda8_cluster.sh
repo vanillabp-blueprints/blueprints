@@ -91,9 +91,9 @@ start() {
 
 # The version of the Camunda client which the Camunda 8 adapter is built against. It is read
 # from the POM the adapter publishes. That POM names the client as a dependency with a plain
-# version, and the adapter has a test which keeps it that way (Camunda8PublishedPomTest, see
-# decision 39 of the adapter). The adapter version is the one the blueprint POMs name. They
-# all name the same one, and this function stops if they do not.
+# version, and the adapter has a test which keeps it that way (Camunda8PublishedPomTest). The
+# adapter version is the one the blueprint POMs name. They all name the same one, and this
+# function stops if they do not.
 #
 # Maven fetches the POM, so this works wherever the build itself can fetch the adapter. In CI
 # the settings of the CI build are used, which point at the snapshot repository of Maven

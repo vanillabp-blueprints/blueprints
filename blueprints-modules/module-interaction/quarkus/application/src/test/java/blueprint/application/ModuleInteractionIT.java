@@ -27,7 +27,11 @@ import jakarta.inject.Inject;
 @QuarkusTest
 public class ModuleInteractionIT {
 
-  private static final Duration TIMEOUT = Duration.ofSeconds(30);
+  /**
+   * As long as {@code WorkflowModuleTest.TIMEOUT} of the workflow modules: a step may come one
+   * retry of the outbox late, thirty seconds by default.
+   */
+  private static final Duration TIMEOUT = Duration.ofMinutes(1);
 
   @Inject
   blueprint.workflowmodule.loanapproval.Service loanApproval;

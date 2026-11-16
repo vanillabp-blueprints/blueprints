@@ -36,13 +36,17 @@ import org.awaitility.core.ConditionTimeoutException;
  * </pre>
  *
  * <p>
- * Part of the blueprint test harness: identical in every blueprint, kept in sync from
- * {@code templates/test-harness/springboot/} of the monorepo. Do not edit it here.
+ * Part of the test harness which every blueprint carries in the same form. In a project
+ * made from a blueprint it is a file of that project, so change it as the project needs.
  * </p>
  */
 public abstract class Simulator {
 
-  private static final Duration TIMEOUT = Duration.ofSeconds(30);
+  /**
+   * As long as the wait for an aggregate: a call to a surrounding system may also come one
+   * retry of the outbox late (see {@link WorkflowModuleTest#TIMEOUT}).
+   */
+  private static final Duration TIMEOUT = WorkflowModuleTest.TIMEOUT;
 
   private static final Duration POLL_INTERVAL = Duration.ofMillis(200);
 

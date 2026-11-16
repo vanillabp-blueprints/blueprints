@@ -11,14 +11,19 @@ first. It has the procedure, the reference structure and the list of things neve
 
 ## Placeholders
 
-Replace all of these consistently; they are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint, except the Maven
+coordinates, which carry the name of the blueprint.
 
-|        Placeholder         |                                                          Meaning                                                          |
-|----------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| `blueprint.workflowmodule` | base package of the workflow modules                                                                                      |
-| `loanapproval`             | use case identifier, Java package                                                                                         |
-| `loan-approval`            | use case identifier, kebab case: workflow module ID, resource directory, REST path, Maven module, configuration file name |
-| `loan_approval`            | BPMN process ID                                                                                                           |
+|                     Placeholder                      |                                                                                 Meaning                                                                                 |
+|------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `blueprint.workflowmodule`                           | base package of the workflow modules                                                                                                                                    |
+| `loanapproval`                                       | use case identifier, Java package                                                                                                                                       |
+| `loan-approval`                                      | use case identifier, kebab case: workflow module ID, resource directory, REST path, Maven module, configuration file name                                               |
+| `loan_approval`                                      | BPMN process ID                                                                                                                                                         |
+| `LoanApproval`                                       | use case identifier, CamelCase: the start of class names, for example `LoanApprovalProperties`, `LoanApprovalIT` or the interface `LoanApprovalApi` the build generates |
+| `LOAN_APPROVAL`                                      | use case identifier, upper snake case: table and collection names, and the start of other names in upper case                                                           |
+| `io.vanillabp.blueprint.module-packaging-springboot` | Maven groupId of every POM of this blueprint                                                                                                                            |
+| `module-packaging`                                   | Maven artifactId of the root POM                                                                                                                                        |
 
 Names this blueprint adds, because it has more than one of everything:
 
@@ -93,6 +98,10 @@ module's own package, the application's smoke test next to the application.
    and a test which starts a container tests the container runtime.
 7. Choose the BPMS (business process management system) with a Maven profile, as everywhere
    else. It decides what is packaged, what the tests run against and what the image contains.
+8. Add metrics and health to the assembling application, never to a module. VanillaBP needs
+   only `spring-boot-starter-actuator` for both, and a module which brings it decides for every
+   runtime it lands in. Put the MDC keys of VanillaBP into the log pattern. The README names the
+   ones to search by.
 
 ## Verifying
 
