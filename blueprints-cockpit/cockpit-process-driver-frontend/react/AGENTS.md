@@ -38,18 +38,18 @@ them. Do not write them into the dev shell.
 
 ## Core files
 
-|                  File                   |                                                    Why it matters                                                    |
-|-----------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| `dev-shell/src/process-driver-page.tsx` | the page "Process driver": loads the states, sends the test data to advance-to, links to the case and its user task  |
-| `dev-shell/src/cockpit.ts`              | the host of the module kit with the areas `body` and `actions`, and the three calls to the simulated cockpit         |
-| `dev-shell/src/user-task-page.tsx`      | reads the user task from the simulated cockpit and draws its form with `showUserTask`                                |
-| `scripts/start.mjs`                     | serves the dev shell and forwards `/wm/loan-approval/api/`, `/wm/loan-approval/process-driver/` and `/official-api/` |
-| `src/gui-client/process-driver.ts`      | `processDriver`, the generated client of the driver. Only the dev shell imports it, through `@process-driver-client` |
-| `src/gui-client/index.ts`               | `loanApproval`, the generated client of the module API, and `ResponseError`. The forms import it as `@gui-client`    |
-| `src/loan-approval.ts`                  | module id, process id, task definitions, keys of the details, entry names and web component names                    |
-| `src/data/user-task-form.ts`            | data entry `UserTaskForm`. Plain TypeScript, it must never import React or a form                                    |
-| `src/shared/task-form.tsx`              | the web components `all`, `body` and `actions` of a form with one button, and the 409 of "Check contract"            |
-| `test/browser/dev-shell.test.js`        | the browser tests of the dev shell, among them: choose a state, create the case, open its user task                  |
+|                  File                   |                                                                                           Why it matters                                                                                            |
+|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `dev-shell/src/process-driver-page.tsx` | the page "Process driver": loads the states, sends the test data to advance-to, links to the case and its user task                                                                                 |
+| `dev-shell/src/cockpit.ts`              | the host of the module kit with the areas `body` and `actions`, and the three calls to the simulated cockpit                                                                                        |
+| `dev-shell/src/user-task-page.tsx`      | reads the user task from the simulated cockpit and draws its form with `showUserTask`                                                                                                               |
+| `scripts/start.mjs`                     | serves the dev shell and forwards `/wm/loan-approval/api/`, `/wm/loan-approval/process-driver/` and `/official-api/`                                                                                |
+| `src/shared/process-driver-api.ts`      | `processDriver`, the generated client of the driver. Only the dev shell imports it, through `@process-driver-client`                                                                                |
+| `src/shared/api.ts`                     | `loanApproval`, the generated client of the module API, and `ResponseError`. The forms import it as `@gui-client` and complete their tasks with POST: `completeAssessRisk`, `completeCheckContract` |
+| `src/loan-approval.ts`                  | module id, process id, task definitions, keys of the details, entry names and web component names                                                                                                   |
+| `src/data/user-task-form.ts`            | data entry `UserTaskForm`. Plain TypeScript, it must never import React or a form                                                                                                                   |
+| `src/shared/task-form.tsx`              | the web components `all`, `body` and `actions` of a form with one button, and the 409 of "Check contract"                                                                                           |
+| `test/browser/dev-shell.test.js`        | the browser tests of the dev shell, among them: choose a state, create the case, open its user task                                                                                                 |
 
 ## Boilerplate files
 
@@ -70,7 +70,8 @@ them. Do not write them into the dev shell.
 | `src/data/user-task-list.ts`           | data entry `UserTaskList`, the columns `details.amount` and `details.creditScore`          |
 | `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`                                                              |
 | `src/forms/check-contract-form.tsx`    | visual entry `CheckContractForm`                                                           |
-| `src/gui-client/response-error.ts`     | `ResponseError`, which keeps the status of an answer                                       |
+| `src/shared/response-error.ts`         | `ResponseError`, which keeps the status of an answer                                       |
+| `scripts/check-imports.mjs`            | fails `npm run build` on an import with `../`; import through an alias instead             |
 | `src/shared/index.ts`                  | what the forms import as `@shared`                                                         |
 | `src/shared/react-element.tsx`         | a React component as a web component, with `defineBcElement` of the kit                    |
 | `src/shared/style.ts`                  | the styles, put into each shadow root                                                      |
@@ -82,9 +83,10 @@ them. Do not write them into the dev shell.
 | `test/browser/server.js`               | serves the test pages, the dev shell and `dist/micro-frontends` below `/wm/loan-approval/` |
 
 The imports go through path aliases, never through `../`. `tsconfig.json` declares them, and
-esbuild reads them from there: `@loan-approval`, `@gui-client`, `@process-driver-client`,
-`@shared` and `@generated/*` for the generated clients. Inside one directory a file imports its
-neighbour with `./`.
+esbuild reads them from there: `@loan-approval`, `@shared`, `@gui-client` (`src/shared/api.ts`),
+`@process-driver-client` (`src/shared/process-driver-api.ts`), and `@generated` and
+`@generated-process-driver` for the generated clients. Inside one directory a file imports its
+neighbour with `./`. `npm run check:imports`, the first step of `npm run build`, fails on `../`.
 
 ## Adding this blueprint to an existing project
 
@@ -93,7 +95,7 @@ neighbour with `./`.
    profile and a property. Without it, the page "Process driver" has nothing to call.
 2. If the workflow module has no frontend project yet, copy this one and replace the
    placeholders. If it has one, take `dev-shell/`, `scripts/start.mjs`,
-   `scripts/build-dev-shell.mjs`, `src/gui-client/process-driver.ts` and the second job in
+   `scripts/build-dev-shell.mjs`, `src/shared/process-driver-api.ts` and the second job in
    `openapi-ts.config.mjs`.
 3. Add the OpenAPI file of the driver to `config.openapi` in `package.json`, next to the one of
    the module API. Point the submodule in `.gitmodules` at your backend repository

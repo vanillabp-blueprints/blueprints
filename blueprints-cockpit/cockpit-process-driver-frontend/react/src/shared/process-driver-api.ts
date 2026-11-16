@@ -5,11 +5,10 @@
 // The backend has the driver only in a build with the Maven profile `test-driver`, and only while
 // the property `process-driver.enabled` is `true`. Without them every call answers 404.
 
-import { client } from '@generated/process-driver/client.gen.ts';
-import { ProcessDriverApi } from '@generated/process-driver/index.ts';
+import { client, ProcessDriverApi } from '@generated-process-driver';
 import { throwResponseErrors } from './response-error.ts';
 
-export type { Reached } from '@generated/process-driver/index.ts';
+export type { Reached } from '@generated-process-driver';
 export { ResponseError } from './response-error.ts';
 
 throwResponseErrors(client);

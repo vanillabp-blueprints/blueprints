@@ -13,7 +13,7 @@
 
 import { useState } from 'react';
 import type { BcElementProps, BcUserTask } from '@vanillabp/bc-module-kit';
-import { ResponseError } from '@gui-client';
+import { ResponseError } from './response-error.ts';
 import { AMOUNT, CREDIT_SCORE } from '@loan-approval';
 import { defineReactElement } from './react-element.tsx';
 import { STYLE } from './style.ts';

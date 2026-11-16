@@ -3,14 +3,17 @@
 // openapi-ts.config.mjs. A changed API breaks this build and not the running form. Its names come
 // from the OpenAPI file, as they do on the Java side: the tag `loan-approval` becomes the class
 // LoanApprovalApi, and each operation one of its methods. A method takes one object with all its
-// parameters: loanApproval.assessRisk({ loanRequestId, taskId }).
+// parameters: loanApproval.completeAssessRisk({ loanRequestId, taskId }).
+//
+// A form completes its user task with POST, completeAssessRisk and completeCheckContract. The
+// GET requests on the same paths are there for a person who walks through the process in a
+// browser, see CONTRIBUTING.md.
 //
 // Every call goes to /wm/loan-approval/. The cockpit forwards the path to the workflow module. So
 // the browser talks to one origin only. The module completes the user task itself, and that is
 // what tells the cockpit about it.
 
-import { client } from '@generated/loan-approval/client.gen.ts';
-import { LoanApprovalApi } from '@generated/loan-approval/index.ts';
+import { client, LoanApprovalApi } from '@generated';
 import { throwResponseErrors } from './response-error.ts';
 
 export { ResponseError } from './response-error.ts';

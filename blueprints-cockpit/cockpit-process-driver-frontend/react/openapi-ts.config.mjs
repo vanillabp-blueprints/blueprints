@@ -13,8 +13,12 @@ const client = (name) => ({
   plugins: [
     {
       name: '@hey-api/client-fetch',
-      // An answer which is not a success throws, see the error interceptor in src/gui-client.
+      // An answer which is not a success throws, see the error interceptor in src/shared/response-error.ts.
       throwOnError: true,
+      // The index of the generated files exports the client as well, so src/shared/api.ts imports
+      // all of it from '@generated', and src/shared/process-driver-api.ts from
+      // '@generated-process-driver'.
+      exportFromIndex: true,
       // Both files name the application as their server, http://localhost:8080. In the browser
       // the cockpit forwards /wm/loan-approval/ to the workflow module, and the dev shell does the
       // same. So the client calls that path, and the browser talks to one origin only.

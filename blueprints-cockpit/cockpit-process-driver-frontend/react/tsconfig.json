@@ -13,10 +13,11 @@
     "skipLibCheck": true,
     "paths": {
       "@loan-approval": ["./src/loan-approval.ts"],
-      "@gui-client": ["./src/gui-client/index.ts"],
-      "@process-driver-client": ["./src/gui-client/process-driver.ts"],
       "@shared": ["./src/shared/index.ts"],
-      "@generated/*": ["./src/generated/*"]
+      "@gui-client": ["./src/shared/api.ts"],
+      "@process-driver-client": ["./src/shared/process-driver-api.ts"],
+      "@generated": ["./src/generated/loan-approval/index.ts"],
+      "@generated-process-driver": ["./src/generated/process-driver/index.ts"]
     }
   },
   "include": ["src", "dev-shell/src"]

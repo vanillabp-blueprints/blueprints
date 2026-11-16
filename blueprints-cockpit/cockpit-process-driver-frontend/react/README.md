@@ -95,19 +95,20 @@ npm run build
 npm test
 ```
 
-|             Script              |                                            What it does                                            |
-|---------------------------------|----------------------------------------------------------------------------------------------------|
-| `npm run build`                 | all of the following, one after the other                                                          |
-| `npm run fetch:openapi`         | copies the two OpenAPI files of the backend into `build/openapi`                                   |
-| `npm run generate:client`       | generates the two API clients from them with `@hey-api/openapi-ts`                                 |
-| `npm run typecheck`             | checks the types of the whole project, the dev shell included                                      |
-| `npm run build:micro-frontends` | builds the entries and `bc-manifest.json` into `dist/micro-frontends`                              |
-| `npm run check:entries`         | runs `bc-check-entries` of the kit: no bare import, no framework in a data entry, every file there |
-| `npm run build:dev-shell`       | builds the dev shell into `dist/dev-shell`                                                         |
-| `npm run build:jar`             | builds the UI jar `io.vanillabp.blueprint:cockpit-process-driver-ui` and its pom into `dist`       |
-| `npm run build:image`           | builds the nginx image. `npm run build` skips it with a warning where Docker does not run          |
-| `npm test`                      | the browser tests, see [How it works](#how-it-works)                                               |
-| `npm run start`                 | the dev shell at `http://localhost:4200`                                                           |
+|             Script              |                                                What it does                                                |
+|---------------------------------|------------------------------------------------------------------------------------------------------------|
+| `npm run build`                 | all of the following, one after the other                                                                  |
+| `npm run check:imports`         | fails the build on an import with `../`, see [Imports through path aliases](#imports-through-path-aliases) |
+| `npm run fetch:openapi`         | copies the two OpenAPI files of the backend into `build/openapi`                                           |
+| `npm run generate:client`       | generates the two API clients from them with `@hey-api/openapi-ts`                                         |
+| `npm run typecheck`             | checks the types of the whole project, the dev shell included                                              |
+| `npm run build:micro-frontends` | builds the entries and `bc-manifest.json` into `dist/micro-frontends`                                      |
+| `npm run check:entries`         | runs `bc-check-entries` of the kit: no bare import, no framework in a data entry, every file there         |
+| `npm run build:dev-shell`       | builds the dev shell into `dist/dev-shell`                                                                 |
+| `npm run build:jar`             | builds the UI jar `io.vanillabp.blueprint:cockpit-process-driver-ui` and its pom into `dist`               |
+| `npm run build:image`           | builds the nginx image. `npm run build` skips it with a warning where Docker does not run                  |
+| `npm test`                      | the browser tests, see [How it works](#how-it-works)                                                       |
+| `npm run start`                 | the dev shell at `http://localhost:4200`                                                                   |
 
 ### The dev shell with the backend
 
@@ -138,8 +139,8 @@ simulated cockpit at `http://localhost:8079`. `APPLICATION_URL`, `COCKPIT_URL` a
 | `dev-shell/src/workflow-page.tsx`       | a case and its user tasks                                                                           |
 | `dev-shell/src/main.tsx`                | the three views of the dev shell, chosen by the part of the address after `#`                       |
 | `scripts/start.mjs`                     | serves the dev shell and the micro-frontends, and forwards the calls to the application and cockpit |
-| `src/gui-client/process-driver.ts`      | `processDriver`, the one instance of the generated `ProcessDriverApi`                               |
-| `src/gui-client/index.ts`               | `loanApproval`, the one instance of the generated `LoanApprovalApi`, and `ResponseError`            |
+| `src/shared/process-driver-api.ts`      | `processDriver`, the one instance of the generated `ProcessDriverApi`                               |
+| `src/shared/api.ts`                     | `loanApproval`, the one instance of the generated `LoanApprovalApi`, and `ResponseError`            |
 | `src/data/user-task-form.ts`            | data entry `UserTaskForm`: picks the form by process and task definition                            |
 | `src/shared/task-form.tsx`              | the three web components of a form: `all`, `body` and `actions`                                     |
 | `src/forms/check-contract-form.tsx`     | visual entry `CheckContractForm`                                                                    |
@@ -163,13 +164,37 @@ simulated cockpit at `http://localhost:8079`. `APPLICATION_URL`, `COCKPIT_URL` a
    it from the cockpit and calls `showUserTask` of the host. The host loads `bc-manifest.json` and
    the data entry `UserTaskForm` from `/wm/loan-approval/`, then the form, and draws its web
    components into the areas `body` and `actions`.
-5. The button of the form calls the module API, for example
-   `GET /wm/loan-approval/api/loan-approval/{loanRequestId}/check-contract/{taskId}`. The id of
+5. The button of the form calls the module API with POST, for example
+   `loanApproval.completeCheckContract(...)`, which is
+   `POST /wm/loan-approval/api/loan-approval/{loanRequestId}/check-contract/{taskId}`. A form
+   completes its task with POST, as the
+   [rules for blueprints](https://github.com/vanillabp-blueprints/blueprints/blob/main/CONTRIBUTING.md#endpoints-which-a-form-calls)
+   ask. The GET request on the same path stays for a person in the browser. The id of
    the loan request is the business id of the user task. The amount and the credit score come with
    the user task, from the details the module reported.
 
 The official API of the cockpit belongs to the cockpit, not to the module. So this project has
 no OpenAPI file of it, and `cockpit.ts` writes the three calls the dev shell needs by hand.
+
+### Imports through path aliases
+
+A file imports from another directory through a path alias, never with `../`. The aliases are
+the `paths` of `tsconfig.json`, the same as in the other frontends, and one more for each of the
+two parts of the process driver:
+
+|            Alias            |                Points to                |                           What it is                            |
+|-----------------------------|-----------------------------------------|-----------------------------------------------------------------|
+| `@loan-approval`            | `src/loan-approval.ts`                  | the names the module shares with its backend and the cockpit    |
+| `@shared`                   | `src/shared/index.ts`                   | what the forms take from `src/shared`                           |
+| `@gui-client`               | `src/shared/api.ts`                     | the client of the module API, and `ResponseError`               |
+| `@process-driver-client`    | `src/shared/process-driver-api.ts`      | the client of the process driver; only the dev shell imports it |
+| `@generated`                | `src/generated/loan-approval/index.ts`  | what the generator writes; only `src/shared/api.ts` imports it  |
+| `@generated-process-driver` | `src/generated/process-driver/index.ts` | likewise; only `src/shared/process-driver-api.ts` imports it    |
+
+The driver has an alias of its own so that a form, which imports `@gui-client`, never carries
+the client of the driver. esbuild reads the same `paths` from `tsconfig.json`. `npm run build`
+starts with `npm run check:imports`. `scripts/check-imports.mjs` fails the build if a file in
+`src` or `dev-shell/src` imports with `../`. The generated clients are left out.
 
 ### Test ids
 
