@@ -57,8 +57,8 @@ import jakarta.enterprise.util.TypeLiteral;
  * </p>
  *
  * <p>
- * Part of the blueprint test harness: identical in every blueprint, kept in sync from
- * {@code templates/test-harness/quarkus/} of the monorepo. Do not edit it here.
+ * Part of the test harness which every blueprint carries in the same form. In a project
+ * made from a blueprint it is a file of that project, so change it as the project needs.
  * </p>
  */
 @QuarkusTest
@@ -136,7 +136,8 @@ public class ApplicationSmokeTest {
    *
    * <p>
    * The blueprint POM hands the BPMS profile of the build to every test, as
-   * {@value #BPMS_OF_THE_BUILD}. It is {@code none} if no BPMS profile was active. A test
+   * {@value #BPMS_OF_THE_BUILD}, first in its list of profiles. It is {@code none} if no BPMS
+   * profile was active. A test
    * started by the IDE has no such property, and then there is nothing to compare.
    * </p>
    *
@@ -145,10 +146,13 @@ public class ApplicationSmokeTest {
   @Test
   public void theTestRunsOnTheBpmsOfTheMavenBuild() throws Exception {
 
-    final var bpms = System.getProperty(BPMS_OF_THE_BUILD);
+    final var profiles = System.getProperty(BPMS_OF_THE_BUILD);
     assumeTrue(
-        bpms != null,
+        profiles != null,
         "Not started by Maven, so there is no BPMS profile to compare the adapters with.");
+    // The property is a list of Quarkus profiles, e.g. "camunda7,local" where an application
+    // adds a profile of its own. The BPMS profile always comes first.
+    final var bpms = profiles.split(",")[0].trim();
 
     final var loaded = loadedBpmsAdapters();
     assertTrue(
@@ -161,7 +165,7 @@ public class ApplicationSmokeTest {
             + (bpms.equals("none")
                 ? " Most likely another profile of the POM switched itself on, so Maven"
                     + " switched off the default BPMS profile."
-                    + " bin/check_default_profiles.py finds such a profile."
+                    + " Look in the POM for a profile which has an <activation> of its own."
                 : " Name the BPMS profile with -P on the Maven command line. The test reads"
                     + " -P from there only, not from MAVEN_ARGS or settings.xml."));
 

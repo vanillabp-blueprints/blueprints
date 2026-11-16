@@ -134,14 +134,19 @@ The OpenAPI file is the second file outside that directory. Its name is the use 
 not clash with the file of another module. The frontends of the cockpit blueprints read it from
 this path to generate their client.
 
-Placeholders are the same in every blueprint, so a tool can replace them:
+Placeholders are the same in every blueprint, so a tool can replace them. Only the Maven
+coordinates name the blueprint. Every `AGENTS.md` lists them in its table, with the values of
+that blueprint:
 
-|        Placeholder         |                                Meaning                                |
-|----------------------------|-----------------------------------------------------------------------|
-| `blueprint.workflowmodule` | base package                                                          |
-| `loanapproval`             | use case identifier, Java package                                     |
-| `loan-approval`            | use case identifier, kebab case (workflow module ID, resources, REST) |
-| `loan_approval`            | BPMN process ID                                                       |
+|                    Placeholder                     |                                Meaning                                |
+|----------------------------------------------------|-----------------------------------------------------------------------|
+| `blueprint.workflowmodule`                         | base package                                                          |
+| `loanapproval`                                     | use case identifier, Java package                                     |
+| `loan-approval`                                    | use case identifier, kebab case (workflow module ID, resources, REST) |
+| `loan_approval`                                    | BPMN process ID                                                       |
+| `LoanApproval`                                     | use case identifier, CamelCase (class names)                          |
+| `LOAN_APPROVAL`                                    | use case identifier, upper snake case (table and collection names)    |
+| `io.vanillabp.blueprint.<blueprint-id>-<platform>` | Maven groupId, and `<blueprint-id>` the artifactId of the root POM    |
 
 Inside the classes, an injected bean is named after the role it plays there, not after its
 type. A call then reads like a short sentence about the business case:
@@ -822,6 +827,15 @@ called `test-reports-<blueprint>-<bpms>`, with the slashes of the blueprint path
 dashes. GitHub keeps it for thirty days, longer than the log of the job. The issue below spells
 out the name of the first red job. So the failed test is one download away, and you do not have
 to scroll through a log which is thrown away sooner.
+
+A red job of this workflow or of `build.yaml` also attaches the logs of the simulators the tests
+started: `target/dev-shell-simulator.log` of the dev-shell simulator in the cockpit blueprints,
+and `target/simulator.log` of the simulator applications in `module-simulator` and
+`module-under-load`. The simulators write to these files and not to the console, so without the
+upload they are gone with the runner. The artifact is called
+`simulator-logs-<blueprint>-<bpms>-attempt-<n>`, because a re-run of a failed job uploads into
+the same run again. GitHub keeps it for seven days. A blueprint which starts no simulator
+uploads nothing.
 
 A red night becomes a GitHub issue under the label `nightly`, written by `nightly-issue.yaml`.
 There is one issue for the whole night. The first thing in it is the count of the blueprints

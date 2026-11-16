@@ -43,6 +43,15 @@ when the BPMS gets to them. An engine which polls for due jobs may run two of th
 sweep. If a process is only correct when one of two events comes first, it will surprise
 somebody one day.
 
+Both events here are timers. A message boundary event works the same way, only the BPMS does
+not fire it by itself: your code correlates the message, as in
+[`bpmn-message-correlation`](https://github.com/vanillabp-blueprints/bpmn-message-correlation-quarkus).
+Put that message definition on the boundary event and choose `cancelActivity` exactly as for a
+timer. A non-interrupting message boundary event adds a token like the reminder does. So what
+"How it works" says about that token holds for it, too. The one blueprint with a message
+boundary event is `cockpit-organizing-usertasks`, a blueprint for the Business Cockpit. There it
+interrupts a user task and leads back into it.
+
 ## Delta to the base blueprint
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
@@ -56,6 +65,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `Aggregate.java`           | `partnerApprovalTaskId`, `remindersSent`, `timedOut`, and `@DynamicUpdate` for the side branch |
 | `LoanApprovalIT.java`      | a reminder leaving the task open, an answer in time, and the deadline ending the wait          |
 | `pom.xml`                  | hands the BPMS of the build to the tests, for the assertion about cancellations                |
+| `loan-approval.yaml`       | `concurrent-branches-reviewed`, which ends the startup warning about the second token          |
 
 ## Running it
 
@@ -178,6 +188,7 @@ that this request is not open any more. The application decides that on its own.
 | `.../loanapproval/Workflow.java`                                                       | `completeTask`, the only place `ProcessService` is used                                        |
 | `.../loanapproval/model/Aggregate.java`                                                | the task id, the answer and whether the deadline ran out                                       |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | answered in time, and not answered at all                                                      |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | `concurrent-branches-reviewed`: the branches were checked, and they write different attributes |
 
 What the two events have in common: the BPMS decides when they fire, and the application only
 receives the work. The token separates them. A non-interrupting event adds one, so the reminder
@@ -198,6 +209,26 @@ attribute are a different problem. That needs a `@Version` column, or a model wh
 it. This cost a red CI job before anybody understood it. The framework describes the second
 writer and the ways to deal with it under
 [Two writers on one aggregate](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#two-writers-on-one-aggregate).
+
+VanillaBP sees the second token in the model, but not the data model in the code. The aggregate
+has no version attribute, so at startup it warns that this process can hold more than one
+token. This blueprint has checked its branches: they write different columns, and
+`@DynamicUpdate` keeps them apart. So `loan-approval.yaml` says so for the workflow, and the
+warning is silent:
+
+```yaml
+vanillabp:
+  workflow-modules:
+    loan-approval:
+      workflows:
+        loan_approval:
+          concurrent-branches-reviewed: true
+```
+
+The key is read at the workflow and nowhere else, because a review is about one model. If you
+copy this blueprint, keep the key only as long as your branches write different attributes.
+If they write the same one, add a `@Version` attribute instead, and drop the key. Check it again
+whenever the model changes.
 
 The tests wait for the aggregate, not for a clock. A timer fires when the BPMS gets to it. So a
 test that sleeps for exactly three seconds fails on a slow machine.

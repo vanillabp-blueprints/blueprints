@@ -21,15 +21,19 @@ and the API fit. The README has the reasons.
 
 ## Placeholders
 
-Replace all of these consistently. They are the same in every blueprint.
+Replace all of these consistently. They are the same in every blueprint, except the Maven
+coordinates, which carry the name of the blueprint.
 
-|        Placeholder         |                                        Meaning                                        |
-|----------------------------|---------------------------------------------------------------------------------------|
-| `blueprint.workflowmodule` | base package of the workflow module                                                   |
-| `blueprint.application`    | package of the application, not above the workflow module                             |
-| `loanapproval`             | use case identifier, Java package                                                     |
-| `loan-approval`            | use case identifier, kebab case: workflow module ID, REST path, final name of the jar |
-| `loan_approval`            | BPMN process ID                                                                       |
+|                               Placeholder                               |                                                    Meaning                                                    |
+|-------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| `blueprint.workflowmodule`                                              | base package of the workflow module                                                                           |
+| `blueprint.application`                                                 | package of the application, not above the workflow module                                                     |
+| `loanapproval`                                                          | use case identifier, Java package                                                                             |
+| `loan-approval`                                                         | use case identifier, kebab case: workflow module ID, REST path, final name of the jar                         |
+| `loan_approval`                                                         | BPMN process ID                                                                                               |
+| `LOAN_APPROVAL`                                                         | use case identifier, upper snake case: table and collection names, and the start of other names in upper case |
+| `io.vanillabp.blueprint.cockpit-user-task-application-proxy-springboot` | Maven groupId of every POM of this blueprint                                                                  |
+| `cockpit-user-task-application-proxy`                                   | Maven artifactId of the root POM                                                                              |
 
 Blueprint-specific names, each occurring in more than one place:
 

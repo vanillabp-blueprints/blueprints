@@ -94,6 +94,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     assertThat(loanRequest.getCustomerInformed()).isNull();
 
+    // The module says three days. The test configuration shortened the deadline, and the
+    // aggregate copied that value when the loan was requested. The model read it from there.
+    assertThat(loanRequest.getPartnerDeadline()).isEqualTo("PT3S");
+
     if (System.getProperty("blueprint.bpms", "").matches("camunda7|operaton|cibseven")) {
       // The handler heard about it: an interrupting boundary event cancels the task, and
       // the stored id no longer leads anywhere. Not every BPMS reports that - Camunda 8

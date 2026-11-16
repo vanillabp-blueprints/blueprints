@@ -147,18 +147,42 @@ jobs:
       # first happened to need, and nobody ever adds to it (a key which exists is never
       # written again). That is why a hundred jobs went to Central despite a cache hit.
       - uses: actions/cache/restore@v6
+        id: maven-cache
         with:
           path: ~/.m2/repository
-          # the newest cache of this POM set, which the aggregator of this run wrote
+          # the cache which the aggregator of this run wrote
           key: maven-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
           restore-keys: |
             maven-${{ hashFiles('**/pom.xml') }}-
             maven-
+      # The aggregator of this run wrote the key above. When it is not found, GitHub has
+      # already removed that cache, and this job got an older one which lacks what the
+      # aggregator added in this run. The job still works, but it fetches the rest from
+      # Maven Central itself, and that is where downloads get refused. So it is said here,
+      # where a red job is read, and not only in the log of the cache step.
+      - name: Say when the cache of this run was gone
+        if: steps.maven-cache.outputs.cache-hit != 'true'
+        run: >-
+          echo "::warning::The Maven cache of this run is gone, this job got
+          '${{ steps.maven-cache.outputs.cache-matched-key }}' instead. What is missing in it
+          comes from Maven Central. See the step 'Leave the blueprints out of the cache' of
+          the aggregator."
       # What the cache just carried in is not what this job builds against: the Maven call
       # below refreshes the platform. The report at the end of the job reads what is newer
       # than this marker, so it names the refreshed one.
       - name: Mark the moment the build starts
         run: touch "${RUNNER_TEMP}/platform-snapshot-marker"
+      # Written before the build, so the upload at the end has the name whatever the build
+      # does. A blueprint is a path, and a slash is not allowed in an artifact name. The
+      # attempt is part of it because a re-run of a failed job uploads again into the same
+      # run, and a second artifact of the same name is refused.
+      - name: The name this job uploads the simulator logs under
+        env:
+          BLUEPRINT: "${{ matrix.blueprint }}"
+          BPMS: "${{ matrix.bpms }}"
+          ATTEMPT: "${{ github.run_attempt }}"
+        run: echo "SIMULATOR_LOGS_NAME=simulator-logs-${BLUEPRINT//\//-}-${BPMS}-attempt-${ATTEMPT}"
+          >> "$GITHUB_ENV"
       - name: Start a Camunda 8 cluster
         if: matrix.bpms == 'camunda8'
         # The address is published here rather than in the build step: a Camunda 7 build
@@ -212,6 +236,24 @@ jobs:
         if: always()
         run: $GITHUB_WORKSPACE/bin/platform_snapshot.sh
           "${RUNNER_TEMP}/platform-snapshot-marker" "${RUNNER_TEMP}/platform-snapshot.md"
+      # The simulators write their logs to a file and not to the console, so the build output
+      # stays readable. Without this upload a red job takes those logs with it, and nobody can
+      # tell any more which reports reached a simulator and in which order. The dev-shell
+      # simulator of the cockpit blueprints writes target/dev-shell-simulator.log, the
+      # simulator applications of module-simulator and module-under-load write
+      # target/simulator.log (and roll it over into simulator.log.* when it grows).
+      - name: Upload the simulator logs of a blueprint which failed
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: "${{ env.SIMULATOR_LOGS_NAME }}"
+          path: |
+            ${{ matrix.blueprint }}/**/target/dev-shell-simulator.log
+            ${{ matrix.blueprint }}/**/target/simulator.log*
+          # Read while the failure is looked into, and by nobody afterwards.
+          retention-days: 7
+          # Most blueprints start no simulator, and that is not an error.
+          if-no-files-found: ignore
       - name: The Camunda 8 cluster's log, if something went wrong
         if: failure() && matrix.bpms == 'camunda8'
         run: bin/camunda8_cluster.sh logs
@@ -416,6 +458,22 @@ jobs:
           path: "${{ runner.temp }}/platform-snapshot.md"
           retention-days: 30
           if-no-files-found: ignore
+      # The last step, because the cache is saved right after it. The build above installs
+      # every blueprint into the local repository, and about forty of them are Spring Boot
+      # applications of up to a hundred MB each. They made up most of a cache of about 4 GB.
+      # GitHub keeps 10 GB of caches for the repository and removes caches above that. With
+      # main and each pull request writing 4 GB, a cache lived for about half an hour.
+      # On the 15th of November 2026 three other runs saved their caches while the matrix of
+      # a pull request was still running, and its later jobs got the cache of main instead,
+      # which lacked what this job had just added for Quarkus. One of them failed in
+      # quarkus:go-offline for io.quarkus:quarkus-devui.
+      # Nothing reads the blueprints from the cache: each job of the matrix builds its
+      # blueprint itself, the cockpit workflows install the backends they need, and the
+      # nightly run deletes everything of VanillaBP before it builds. The directories are all
+      # groups this repository builds: io.vanillabp.blueprint*, the root POM in
+      # io.vanillabp.blueprints, and com.acme.* of the blueprints about versioned modules.
+      - name: Leave the blueprints out of the cache
+        run: rm -rf ~/.m2/repository/io/vanillabp/blueprint* ~/.m2/repository/com/acme
 
   # One name that never changes, so branch protection has something to require and
   # Renovate has something to wait for. The matrix above is generated from the

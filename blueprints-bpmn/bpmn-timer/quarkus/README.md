@@ -31,29 +31,37 @@ Answering a task that is gone does nothing either way.
 says which engines deliver cancellations. The test of this blueprint asserts the cleared id
 only where it is delivered.
 
-The durations are in the model (`PT1S` and `PT3S` here). That is a decision, not a detail. A
-timer belongs to the process. So changing it means a new process version, with instances still
-running on the old one. A deadline which belongs to a contract or a customer is better read
-from the aggregate. Both Camunda engines support an expression instead of a literal.
+The two timers get their durations in two different ways, and that is a decision, not a
+detail. The cool-off period is a literal in the model, `PT1S`. It belongs to the process, so
+changing it means a new process version, with instances still running on the old one. The
+deadline belongs to the business. The partner has three days to answer, so it is configuration
+of the module, `partner-deadline: P3D` in `loan-approval.yaml`. The aggregate copies it when
+the loan is requested, and the timer boundary event reads it with an expression:
+`${partnerDeadline}` on Camunda 7, `=partnerDeadline` on Camunda 8. The value a workflow
+started with stays its deadline, even if the configuration changes later.
 
-Both durations are literals, so no part of the aggregate has to travel. The class carries
-`@NoSyncWithBPMS`, and no attribute carries `@SyncWithBPMS`. So the engine holds the
-aggregate's ID and nothing else. If you read a deadline from an expression instead, the
-attribute that expression names has to be shared.
+An expression reads the aggregate, so the attribute it names has to travel to the BPMS. The
+class carries `@NoSyncWithBPMS`, and `partnerDeadline` alone carries `@SyncWithBPMS`. So the
+engine holds the aggregate's ID and that one value. It is a `String`, because a `Duration` of
+three days reaches the model as `PT72H`. The wiki page
+[Timers](https://github.com/vanillabp/adapter-platform-integration/wiki/Timers#a-deadline-out-of-the-workflow-aggregate)
+explains the expression and which Java types fit.
 
 ## Delta to the base blueprint
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|            File            |                                  What is different                                  |
-|----------------------------|-------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`       | a timer catch event, a task waiting for a partner, and a timer boundary event on it |
-| `WorkflowTaskHandler.java` | the `@WorkflowTask` method of the waiting task, taking `@TaskId` and `@TaskEvent`   |
-| `Workflow.java`            | `completeTask` in addition to `startWorkflow`                                       |
-| `Service.java`             | sends the request, keeps the task id, answers it, and notes a missed deadline       |
-| `Aggregate.java`           | `partnerApprovalTaskId`, `partnerApproved` and `timedOut`                           |
-| `LoanApprovalIT.java`      | one test per outcome: answered in time, and not answered at all                     |
-| `pom.xml`                  | hands the BPMS of the build to the tests, for the assertion about cancellations     |
+|            File            |                                          What is different                                          |
+|----------------------------|-----------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`       | a timer catch event, a task waiting for a partner, and a timer boundary event on it                 |
+| `WorkflowTaskHandler.java` | the `@WorkflowTask` method of the waiting task, taking `@TaskId` and `@TaskEvent`                   |
+| `Workflow.java`            | `completeTask` in addition to `startWorkflow`                                                       |
+| `Service.java`             | copies the deadline, sends the request, keeps the task id, answers it, and notes a missed deadline  |
+| `Aggregate.java`           | `partnerApprovalTaskId`, `partnerApproved`, `timedOut`, and `partnerDeadline`, which the BPMS reads |
+| `loan-approval.yaml`       | `partner-deadline: P3D`, the business value of the deadline                                         |
+| `application.yaml`         | `partner-deadline: PT3S` in the test and in the demo application, so nobody waits three days        |
+| `LoanApprovalIT.java`      | one test per outcome: answered in time, and not answered at all                                     |
+| `pom.xml`                  | hands the BPMS of the build to the tests, for the assertion about cancellations                     |
 
 ## Running it
 
@@ -131,13 +139,14 @@ http://localhost:8080/api/loan-approval/start?amount=5000
 ```
 
 The rating is done at once. The partner is asked a second later, and from then on the clock
-runs:
+runs. The module gives the partner three days, but the demo application shortens that to three
+seconds in its `application.yaml`:
 
 ```
 Loan approval '0f7c…' started
 Credit rating of loan approval '0f7c…' is 50
 Partner was asked to approve loan approval '0f7c…' (5000 at a rating of 50)
-Loan approval '0f7c…' waits for the partner, but not forever - the task carries a deadline of three seconds:
+Loan approval '0f7c…' waits for the partner, but not forever - the task carries a deadline of PT3S:
   Approved -> http://localhost:8080/api/loan-approval/0f7c…/partner-approved/1a2b…
 ```
 
@@ -167,7 +176,9 @@ that this request is not open any more. The application decides that on its own.
 | `.../loanapproval/WorkflowTaskHandler.java`                                            | the method of the waiting task: `@TaskId` to keep, `@TaskEvent` to hear about the cancellation  |
 | `.../loanapproval/Service.java`                                                        | asks the partner once, answers the task, and notes a missed deadline                            |
 | `.../loanapproval/Workflow.java`                                                       | `completeTask`, the only place `ProcessService` is used                                         |
-| `.../loanapproval/model/Aggregate.java`                                                | the task id, the answer and whether the deadline ran out                                        |
+| `.../loanapproval/model/Aggregate.java`                                                | the task id, the answer, whether the deadline ran out, and the deadline the model reads         |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | the deadline as the business wants it, three days                                               |
+| `loan-approval/src/test/resources/application.yaml`                                    | the same key, three seconds, so the test is fast                                                |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | answered in time, and not answered at all                                                       |
 
 Neither timer costs the application anything while it runs. The BPMS stores the due date, wakes
@@ -178,11 +189,21 @@ date.
 The tests wait for the aggregate, not for a clock. A timer fires when the BPMS gets to it. So a
 test that sleeps for exactly three seconds fails on a slow machine.
 
+A deadline of three days cannot be tested by waiting for it. Because it comes from
+configuration, the test does not need to. Its own `application.yaml` sets
+`loan-approval.partner-deadline: PT3S`, and that wins over the file of the module. The model,
+the code and the expression stay exactly what the application runs. Only the value the
+aggregate copies is shorter. The test also checks that the aggregate holds `PT3S`, so it fails
+if the shorter value does not arrive. A deadline as a literal in the model cannot be shortened
+like this. You would need a second model for the test, and then the test does not prove the
+model you deploy.
+
 ## Documentation
 
 - [Workflow tasks](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#parameters): `@TaskId` and `@TaskEvent`, the two parameters this blueprint needs
 - [Completing and canceling asynchronous tasks](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-tasks#completing-and-canceling-asynchronous-tasks): the rules the answer follows, and what happens to a task that is gone
 - [BPMS adapters](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters): which engine reports a cancellation to the application, and which does not
+- [Timers](https://github.com/vanillabp/adapter-platform-integration/wiki/Timers#a-deadline-out-of-the-workflow-aggregate): a deadline read from the workflow aggregate, and which Java types fit
 - the wiki of the BPMS adapter you use: how timers are executed, and what an expression instead of a literal duration may read
 
 This blueprint is developed in the monorepo
