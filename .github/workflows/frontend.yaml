@@ -1,9 +1,7 @@
 name: Build the cockpit frontends
 # The npm projects of the cockpit blueprints, blueprints-cockpit/*-frontend/<framework>. They
-# build with npm, apart from the Maven build in build.yaml: many companies give their build
-# agents Node or Maven, not both, and a cockpit frontend shows how to live with that. A frontend
-# needs a Java runtime next to Node, but no Maven: the OpenAPI Generator, which writes its API
-# client, is a Java program.
+# build with Node alone, apart from the Maven build in build.yaml: many companies give their
+# build agents Node or Java, not both, and a cockpit frontend shows how to live with that.
 #
 # A frontend needs one thing from its backend, the OpenAPI file. In a repository of its own it
 # reads the file from a git submodule. Here it reads it from the backend directory next to it,
@@ -61,11 +59,6 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 26
-      # For the OpenAPI Generator, which writes the API client of the frontend.
-      - uses: actions/setup-java@v6
-        with:
-          java-version: 25.0.5+8
-          distribution: temurin
       - name: Install
         run: npm ci
       - name: Install Chromium for the browser tests

@@ -136,11 +136,6 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 26
-      # For the OpenAPI Generator, which writes the API client of the frontend.
-      - uses: actions/setup-java@v6
-        with:
-          java-version: 25.0.5+8
-          distribution: temurin
       - name: Install
         run: npm ci
       - name: Build the UI jar
