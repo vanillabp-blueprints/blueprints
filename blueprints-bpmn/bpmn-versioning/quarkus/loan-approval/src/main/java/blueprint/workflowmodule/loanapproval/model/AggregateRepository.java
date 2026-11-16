@@ -2,7 +2,6 @@ package blueprint.workflowmodule.loanapproval.model;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.transaction.Transactional;
 
 /**
  * Loading and storing the workflow aggregate, for the application and for VanillaBP.
@@ -22,6 +21,5 @@ import jakarta.transaction.Transactional;
  *      aggregates</a>
  */
 @ApplicationScoped
-@Transactional
 public class AggregateRepository implements PanacheRepositoryBase<Aggregate, String> {
 }

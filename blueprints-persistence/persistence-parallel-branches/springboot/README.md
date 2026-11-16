@@ -97,7 +97,13 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `model/DocumentCheck.java`   | what the branch of the BPMS writes                                                        |
 | `Service.java`               | one method per branch. Each touches the entity of its own branch and nothing of the other |
 | `WorkflowTaskHandler.java`   | the branch methods, two of them keeping the id of an open task (`@TaskId`)                |
+| `Workflow.java`              | `partnerApproved` and `documentsDelivered` complete the open task of each branch          |
+| `ApiController.java`         | new endpoints: the partner approves, and the documents arrived                            |
+| `openapi/loan-approval.yaml` | the endpoints `approve` and `documentsReady`                                              |
+| `DocumentsClient.java`       | new: the port to the document service, so the test can put a simulator in its place       |
+| `LocalDocumentsClient.java`  | new: the stand-in for the document service, so the blueprint runs without one             |
 | `DocumentsSimulator.java`    | the surrounding system, and the delay which keeps a branch inside its transaction         |
+| `Simulator.java`             | new, in the tests: the base class of simulators, from the test harness                    |
 | `LoanApprovalIT.java`        | produces the overlap of the two transactions in every run                                 |
 | `loan-approval.yaml`         | `concurrent-branches-reviewed`, which ends the startup warning about a second token       |
 

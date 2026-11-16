@@ -76,13 +76,16 @@ assertion failed.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                       File                        |                                   What is different                                    |
-|---------------------------------------------------|----------------------------------------------------------------------------------------|
-| `.../loanapproval/model/Aggregate.java`           | a document in a collection instead of an entity in a table, and no column declarations |
-| `.../loanapproval/model/AggregateRepository.java` | a MongoDB Panache repository; this is what attributes the other two stores as well     |
-| `application/src/main/resources/application.yaml` | a MongoDB database instead of a data source, and the address of the cluster            |
-| `loan-approval/src/test/.../LoanApprovalIT.java`  | the counter-check that a rolled-back start leaves nothing behind                       |
-| `pom.xml`, `*/pom.xml`                            | `quarkus-mongodb-panache` instead of Hibernate, no H2, and only the `camunda8` profile |
+|                                         File                                          |                                   What is different                                    |
+|---------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| `.../loanapproval/model/Aggregate.java`                                               | a document in a collection instead of an entity in a table, and no column declarations |
+| `.../loanapproval/model/AggregateRepository.java`                                     | a MongoDB Panache repository; this is what attributes the other two stores as well     |
+| `application/src/main/resources/application.yaml`                                     | a MongoDB database instead of a data source, and the address of the cluster            |
+| `loan-approval/src/test/resources/application.yaml`                                   | a MongoDB database instead of a data source; the dev services start it                 |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                      | the counter-check that a rolled-back start leaves nothing behind                       |
+| `pom.xml`, `*/pom.xml`                                                                | `quarkus-mongodb-panache` instead of Hibernate, no H2, and only the `camunda8` profile |
+| `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | deleted, in the application and in the test: the blueprint runs on Camunda 8 only      |
+| `processes/camunda7/`, `processes/operaton/`, `processes/cibseven/`                   | deleted, with the BPMN files of those engines                                          |
 
 Everything else is the base blueprint, file for file: the process, the wiring classes, the API,
 the module's own configuration, the test harness.

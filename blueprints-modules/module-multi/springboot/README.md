@@ -175,21 +175,31 @@ with `ddl-auto`, and the topic gets blueprints of its own.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|                              File                               |                                              What is different                                               |
-|-----------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| `loan-repayment/`                                               | the second workflow module, same structure, other use case, no shared code with the first                    |
-| `banking-commons/`                                              | the library both modules use, plus the auto-configuration contributing its bean                              |
-| `.../loanapproval/config/LoanApprovalAutoConfiguration.java`    | new: the module contributes its beans, entities, repositories and properties itself                          |
-| `loan-approval/src/main/resources/META-INF/spring/...imports`   | new: the file which makes the auto-configuration one                                                         |
-| `.../loanapproval/*.java`                                       | every bean carries a name of its own, because the other module has classes of the same name                  |
-| `loan-approval/.../loan-approval-test.yaml`, `-prod.yaml`       | new: the module's configuration per environment                                                              |
-| `application/.../Application.java`                              | moved to `blueprint.application`: the application is no longer above the modules, and it does not need to be |
-| `application/src/main/resources/application-camunda7.yaml`      | `name-clash-avoidance: use-prefix`, because two modules can collide                                          |
-| `application/src/test/.../ApplicationSmokeTest.java`            | asserts one `ProcessService` per module instead of "at least one"                                            |
-| `application/src/test/.../ModuleConfigurationPerProfileIT.java` | new: proves that the module file of the active profile is the one that applies                               |
+|                                  File                                  |                                              What is different                                               |
+|------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| `loan-repayment/`                                                      | the second workflow module, same structure, other use case, no shared code with the first                    |
+| `banking-commons/`                                                     | the library both modules use, plus the auto-configuration contributing its bean                              |
+| `pom.xml`                                                              | the modules `banking-commons` and `loan-repayment`                                                           |
+| `application/pom.xml`                                                  | depends on `loan-repayment` as well, and the JAR is called `online-banking`                                  |
+| `loan-approval/pom.xml`                                                | depends on `banking-commons`                                                                                 |
+| `.../loanapproval/config/LoanApprovalAutoConfiguration.java`           | new: the module contributes its beans, entities, repositories and properties itself                          |
+| `loan-approval/src/main/resources/META-INF/spring/...imports`          | new: the file which makes the auto-configuration one                                                         |
+| `.../loanapproval/*.java`                                              | beans named after the module, and a loan request which names a customer                                      |
+| `openapi/loan-approval.yaml`                                           | the start URL takes a `customerId`                                                                           |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`    | `rating-provider`, which each environment sets to its own value                                              |
+| `loan-approval/.../loan-approval-test.yaml`, `loan-approval-prod.yaml` | new: the module's configuration per environment                                                              |
+| `application/.../Application.java`                                     | moved to `blueprint.application`: the application is no longer above the modules, and it does not need to be |
+| `application/src/main/resources/application-camunda7.yaml`             | `name-clash-avoidance: use-prefix`, because two modules can collide                                          |
+| `application/src/main/resources/application-camunda8.yaml`             | `name-clash-avoidance: use-prefix` as well                                                                   |
+| `application/src/main/resources/application.yaml`                      | logs everything below `blueprint` at INFO, because the application moved out of `blueprint.workflowmodule`   |
+| `application/src/test/.../ApplicationSmokeTest.java`                   | asserts one `ProcessService` per module instead of "at least one"                                            |
+| `application/src/test/.../ModuleConfigurationPerProfileIT.java`        | new: proves that the module file of the active profile is the one that applies                               |
+| `application/src/test/.../BeanNamesPerModuleIT.java`                   | new: fails if a bean of a module loses the name of its module                                                |
+| `loan-approval/src/test/.../ModuleTestApplication.java`                | new: boots the module through its auto-configuration and scans nothing                                       |
+| `loan-approval/src/test/.../TestApplication.java`                      | deleted: `ModuleTestApplication.java` takes its place                                                        |
 
-Everything else is the base blueprint: the wiring classes, the aggregates, the tests of the
-modules, the way the BPMS is chosen.
+Everything else is the base blueprint: the wiring classes, the tests of the modules, the way
+the BPMS is chosen.
 
 ## Running it
 

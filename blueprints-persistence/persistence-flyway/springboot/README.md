@@ -173,15 +173,18 @@ added or changed:
 |--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
 | `loan-approval/.../loan-approval/db/migration/V1.0.0__*.sql` | new: the module's own migration, its aggregate table                                                             |
 | `application/.../config/SchemaConfiguration.java`            | new: one Flyway instance and initializer per owner                                                               |
-| `application/pom.xml`                                        | the `camunda7` profile takes the engine's scripts out of the engine JAR                                          |
+| `application/pom.xml`                                        | the profiles `camunda7`, `operaton` and `cibseven` take the engine's scripts out of the engine JAR               |
 | `loan-approval/.../model/Aggregate.java`                     | every column has an explicit name, so entity and migration cannot drift apart                                    |
 | `application/src/main/resources/application.yaml`            | `ddl-auto: validate`, `create-schema: false`, the locations per owner                                            |
 | `application/src/main/resources/application-camunda7.yaml`   | `database-schema-update: false` and the engine's migrations                                                      |
+| `application/.../db/migration/README.txt`                    | new: keeps the empty directory of the application's own migrations in the JAR                                    |
+| `application-operaton.yaml`, `application-cibseven.yaml`     | the same as for Camunda 7                                                                                        |
 | `loan-approval/src/test/resources/application.yaml`          | `ddl-auto: validate` and the module's own migrations                                                             |
 | `application/src/test/.../SchemaIT.java`                     | new: the tables VanillaBP's migrations create are there, one history per owner                                   |
 | `application/src/test/.../WorkflowOnTheOwnSchemaIT.java`     | new: a workflow runs through on the migrated schema                                                              |
 | `application/src/test/.../MissingTableIT.java`               | new: a forgotten migration ends the boot                                                                         |
-| both POMs                                                    | `spring-boot-flyway` and `flyway-core`, in the module for its test only; the application also `vanillabp-schema` |
+| `application/src/test/.../db/no-migrations/README.txt`       | new: a location without migrations for `MissingTableIT`                                                          |
+| both POMs, `loan-approval/pom.xml` and `application/pom.xml` | `spring-boot-flyway` and `flyway-core`, in the module for its test only; the application also `vanillabp-schema` |
 
 Why the entity names its columns: as long as a runtime creates the tables, a naming strategy
 decides their names, and it is right by definition. Once a migration creates them, the two have

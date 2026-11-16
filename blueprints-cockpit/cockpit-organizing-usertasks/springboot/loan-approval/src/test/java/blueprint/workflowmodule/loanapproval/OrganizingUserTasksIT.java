@@ -18,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -27,9 +26,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
-import blueprint.workflowmodule.loanapproval.UserTaskFormController.ApproveLoanInput;
-import blueprint.workflowmodule.loanapproval.UserTaskFormController.AssessRiskInput;
-import blueprint.workflowmodule.loanapproval.UserTaskFormController.CallCustomerInput;
+import blueprint.workflowmodule.loanapproval.api.model.ApproveLoanInput;
+import blueprint.workflowmodule.loanapproval.api.model.AssessRiskInput;
+import blueprint.workflowmodule.loanapproval.api.model.CallCustomerInput;
 import blueprint.workflowmodule.loanapproval.config.Permission;
 import blueprint.workflowmodule.loanapproval.model.Aggregate;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
@@ -164,8 +163,8 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var loanRequestId = requestLoanAs("alice");
     final var call = openTask(loanRequestId, CallCustomerTaskData.class);
 
-    final var user = logIn("alice", Permission.CALL_CUSTOMER);
-    forms.customerNotReached(loanRequestId, call, user);
+    logIn("alice", Permission.CALL_CUSTOMER);
+    forms.customerNotReached(loanRequestId, call);
 
     final var report = cockpit().awaitUserTaskReport(call, found -> found.get("followUpDate") != null);
 
@@ -197,7 +196,8 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var loanRequestId = requestLoanAs("alice");
     final var firstCall = openTask(loanRequestId, CallCustomerTaskData.class);
 
-    api.changeAdvisor(loanRequestId, "erin", logIn("lea", Permission.CHANGE_ADVISOR));
+    logIn("lea", Permission.CHANGE_ADVISOR);
+    api.changeAdvisor(loanRequestId, "erin");
 
     final var loanRequest = awaitAggregate(
         stored::find,
@@ -256,9 +256,8 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var loanRequestId = requestLoanAs("alice");
     callTheCustomer(loanRequestId, openTask(loanRequestId, CallCustomerTaskData.class), "alice");
     final var riskAssessment = openTask(loanRequestId, AssessRiskTaskData.class);
-    forms.completeAssessRisk(
-        loanRequestId, riskAssessment, new AssessRiskInput(true, "stable income"), logIn(
-            "carol", Permission.ASSESS_RISK, Permission.APPROVE_LOAN));
+    logIn("carol", Permission.ASSESS_RISK, Permission.APPROVE_LOAN);
+    forms.completeAssessRisk(loanRequestId, riskAssessment, new AssessRiskInput(true, "stable income"));
     final var approval = openTask(loanRequestId, ApproveLoanTaskData.class);
 
     final var report = cockpit().awaitUserTaskReport(approval, found -> true);
@@ -274,15 +273,15 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
         .isCloseTo(aggregate(loanRequestId).getAnswerPromisedBy(), within(1, ChronoUnit.SECONDS));
 
     // carol holds the authority, so she may read the form, but not decide.
-    final var carol = logIn("carol", Permission.ASSESS_RISK, Permission.APPROVE_LOAN);
-    assertThat(forms.getApproveLoanForm(loanRequestId, approval, carol).editable()).isFalse();
+    logIn("carol", Permission.ASSESS_RISK, Permission.APPROVE_LOAN);
+    assertThat(forms.getApproveLoanForm(loanRequestId, approval).editable()).isFalse();
     assertThatThrownBy(() -> forms.completeApproveLoan(
-        loanRequestId, approval, new ApproveLoanInput(true, "fine"), carol))
+        loanRequestId, approval, new ApproveLoanInput(true, "fine")))
         .isInstanceOf(Service.FourEyesViolation.class);
 
-    final var dave = logIn("dave", Permission.APPROVE_LOAN);
-    assertThat(forms.getApproveLoanForm(loanRequestId, approval, dave).editable()).isTrue();
-    forms.completeApproveLoan(loanRequestId, approval, new ApproveLoanInput(true, "fine"), dave);
+    logIn("dave", Permission.APPROVE_LOAN);
+    assertThat(forms.getApproveLoanForm(loanRequestId, approval).editable()).isTrue();
+    forms.completeApproveLoan(loanRequestId, approval, new ApproveLoanInput(true, "fine"));
 
     assertThat(awaitAggregate(stored::find, loanRequestId, found -> found.getLoanApproved() != null))
         .extracting(Aggregate::getLoanApproved, Aggregate::getDecidedBy)
@@ -292,7 +291,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     // answers that the task is done with 409.
     final var refused = catchThrowableOfType(
         BcTaskNotOpenException.class,
-        () -> forms.completeApproveLoan(loanRequestId, approval, new ApproveLoanInput(true, "fine"), dave));
+        () -> forms.completeApproveLoan(loanRequestId, approval, new ApproveLoanInput(true, "fine")));
     assertThat(userTaskExceptionHandler
         .taskNotOpen(refused)
         .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
@@ -312,23 +311,23 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var riskAssessment = openTask(loanRequestId, AssessRiskTaskData.class);
 
     // bob is in the risk team and opens the form to work on it.
-    assertThat(forms.getAssessRiskForm(loanRequestId, riskAssessment, logIn("bob", Permission.ASSESS_RISK))
-        .editable()).isTrue();
+    logIn("bob", Permission.ASSESS_RISK);
+    assertThat(forms.getAssessRiskForm(loanRequestId, riskAssessment).editable()).isTrue();
     cockpit().awaitUserTaskReport(
         riskAssessment, report -> List.of("bob").equals(report.get("admittedUsers")));
 
     // bob moved to another team and has no authority of this module any more.
-    final var bobInAnotherTeam = logIn("bob");
-    final var form = forms.getAssessRiskForm(loanRequestId, riskAssessment, bobInAnotherTeam);
+    logIn("bob");
+    final var form = forms.getAssessRiskForm(loanRequestId, riskAssessment);
     assertThat(form.editable()).isFalse();
     assertThat(form.customer()).isEqualTo(CUSTOMER);
     assertThatThrownBy(() -> forms.completeAssessRisk(
-        loanRequestId, riskAssessment, new AssessRiskInput(true, ""), bobInAnotherTeam))
+        loanRequestId, riskAssessment, new AssessRiskInput(true, "")))
         .isInstanceOf(AccessDeniedException.class);
 
     // mallory never worked on it.
-    final var mallory = logIn("mallory");
-    assertThatThrownBy(() -> forms.getAssessRiskForm(loanRequestId, riskAssessment, mallory))
+    logIn("mallory");
+    assertThatThrownBy(() -> forms.getAssessRiskForm(loanRequestId, riskAssessment))
         .isInstanceOf(AccessDeniedException.class);
 
   }
@@ -373,8 +372,8 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
   private String requestLoanAs(
       final String advisor) {
 
-    final var loanRequestId = api.start(
-        AMOUNT, CUSTOMER, PHONE, logIn(advisor, Permission.REQUEST_LOAN, Permission.CALL_CUSTOMER));
+    logIn(advisor, Permission.REQUEST_LOAN, Permission.CALL_CUSTOMER);
+    final var loanRequestId = api.start(AMOUNT, CUSTOMER, PHONE);
     SecurityContextHolder.clearContext();
     return loanRequestId;
 
@@ -385,9 +384,9 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
       final String call,
       final String advisor) {
 
-    final var user = logIn(advisor, Permission.CALL_CUSTOMER);
-    forms.getCallCustomerForm(loanRequestId, call, user);
-    forms.completeCallCustomer(loanRequestId, call, new CallCustomerInput("wants it soon"), user);
+    logIn(advisor, Permission.CALL_CUSTOMER);
+    forms.getCallCustomerForm(loanRequestId, call);
+    forms.completeCallCustomer(loanRequestId, call, new CallCustomerInput("wants it soon"));
     SecurityContextHolder.clearContext();
 
   }
@@ -429,7 +428,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
   }
 
   /** Logs the user in for the calls which follow, the way the login of an application would. */
-  private static Authentication logIn(
+  private static void logIn(
       final String user,
       final String... authorities) {
 
@@ -438,7 +437,6 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     SecurityContextHolder
         .getContext()
         .setAuthentication(authentication);
-    return authentication;
 
   }
 

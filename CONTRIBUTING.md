@@ -67,6 +67,8 @@ each blueprint and not in the root POM, for the reason above. In a blueprint wit
 application module, the parent POM declares it and the application switches it off with
 `<phase>none</phase>`. A blueprint without an application declares it and keeps it on.
 `module-standalone` has no such rule, because its application is the workflow module.
+`bin/check_enforcer_rule.py` compares every copy with the one in the root POM of
+`module-single`. An old copy fails no build, so nothing else would notice it.
 
 ## Rule 2: a blueprint shows one aspect
 
@@ -557,6 +559,26 @@ decides. A table of beans, of BPMN element ids or of placeholders is headed `Bea
 `Placeholder`, and the script does not read it. A row which says the file is `deleted` or
 `gone` is read the other way round. It fails when the blueprint still has the file.
 
+### The delta table is complete
+
+A blueprint repository is a complete application. So the table "Delta to the base blueprint"
+is the only place which says what differs from the base. An agent which copies only what the
+table names misses every file it leaves out. `bin/check_delta_tables.py` diffs each blueprint
+with a `base` in the index against that base on the same platform. Every file which is new,
+gone or different has to be named in the table:
+
+```bash
+python3 bin/check_delta_tables.py blueprints.yaml
+```
+
+A file counts as different when its code differs. The id of the blueprint, the name of its H2
+database, comments, whitespace and the `name` and `description` of a POM do not count. A row
+may name several files: `Service.java` names every file of that name, `model/` every file
+below such a directory, and `.../loanapproval/*.java` every file the pattern matches. A file
+below `openapi/` is named with that directory, because the OpenAPI file and the configuration
+of a module have the same name. The README files, `AGENTS.md` and the pictures differ in every
+blueprint and are not compared. The script says why, in its list `ALLOWED`.
+
 ## The picture of the process
 
 Every blueprint README shows its process in the first section, before a word is said about it.
@@ -626,6 +648,16 @@ on every push. To check it locally:
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/blueprints.yaml
 python3 bin/check_index_consistency.py blueprints.yaml
+```
+
+An agent picks blueprints by matching the BPMN it has to implement against `covers.bpmn`. So
+each kind of event a blueprint's BPMN uses has to be there: `bpmn:BoundaryEvent`, the boundary
+event with its definition, as in `bpmn:BoundaryEvent/bpmn:ErrorEventDefinition`, and every
+`bpmn:<X>EventDefinition`. Other elements are not required, because nearly every process has
+them. The BPMN files of the tests are left out:
+
+```bash
+python3 bin/check_bpmn_covers.py blueprints.yaml
 ```
 
 ## Delivery: how a blueprint reaches its own repository

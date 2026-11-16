@@ -70,13 +70,18 @@ prevents that split later, and nothing here pays for it in advance.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                        File                        |                                        What is different                                        |
-|----------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `pom.xml`                                          | one POM instead of three, and no index plugin: the application's own classes are indexed anyway |
-| `src/main/resources/META-INF/workflow-module`      | the same file, now in the application's own resources                                           |
-| `src/main/resources/processes/<adapter-id>/*.bpmn` | the BPMN files at the classpath root instead of below a directory named after the module        |
-| `src/main/resources/loan-approval.yaml`            | the module's configuration next to `application.yaml` instead of inside a module JAR            |
-| `src/test/.../ApplicationSmokeTest.java`           | the same test, in the same artifact as the module's own integration test                        |
+|                                    File                                    |                                                    What is different                                                     |
+|----------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml`                                                                  | one POM instead of three, and no index plugin: the application's own classes are indexed anyway                          |
+| `application/`, `loan-approval/`                                           | deleted: the two Maven modules. Their files are now below `src/` of the one project                                      |
+| `src/main/java/...`                                                        | the classes of both modules, unchanged, in one source tree                                                               |
+| `src/main/resources/application*.yaml`                                     | the files of the application module, unchanged                                                                           |
+| `src/main/resources/META-INF/workflow-module`                              | the same file, now in the application's own resources                                                                    |
+| `src/main/resources/processes/<adapter-id>/*.bpmn`                         | the BPMN files at the classpath root instead of below a directory named after the module                                 |
+| `src/main/resources/loan-approval.yaml`                                    | the module's configuration next to `application.yaml` instead of inside a module JAR                                     |
+| `src/main/resources/openapi/loan-approval.yaml`                            | the API of the module, unchanged, in the application's own resources                                                     |
+| `src/test/.../ApplicationSmokeTest.java`                                   | the same test, in the same artifact as the module's own integration test                                                 |
+| `src/test/.../WorkflowModuleTest.java`, `src/test/.../LoanApprovalIT.java` | the module's own test, unchanged. The test resources of the module are gone: the test reads the files of the application |
 
 Everything else is the base blueprint, file for file: the process, the aggregate, the four
 wiring classes, the API and what the tests assert.
