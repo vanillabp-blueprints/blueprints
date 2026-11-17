@@ -116,8 +116,10 @@ request. Keep the server of the OpenAPI, the path of `workflow-module-uri` and t
    if so, which answers 409. The mappers of `business-cockpit-quarkus-support` give both answers
    on their own. Copy `Cockpit` for that, set `KEYS` to
    `<workflow-module-id>.cockpit`, add `official-gui-api-quarkus-client` and
-   `quarkus-rest-client-jackson` to the module, and set `<workflow-module-id>.cockpit.base-url` in
-   the application. Write no call of the cockpit by hand.
+   `quarkus-rest-client-jackson` to the module. `Cockpit` builds the clients only if the
+   application sets `<workflow-module-id>.cockpit.base-url`, and asks nothing without it. Write
+   no call of the cockpit by hand. Keep `WithoutTheCockpitAddressIT`, which starts the module
+   without the key.
 8. Copy `CockpitSimulator`, `CockpitGuiApi`, `dev-shell-simulator.yaml` and the dependency plugin
    execution of `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`,
    keeping the test which checks every OpenAPI operation against the endpoints.

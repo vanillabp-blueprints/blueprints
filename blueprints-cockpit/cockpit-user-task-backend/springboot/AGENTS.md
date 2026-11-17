@@ -119,8 +119,10 @@ module a second time, under another name.
    else took it over, and throw `BcTaskClaimedByAnotherUserException` if so, which answers 409.
    Put `@Import(BcUserTaskExceptionHandler.class)` on the controller, which gives both answers. Copy `Cockpit`
    and `CockpitClientAutoConfiguration` for that, add `official-gui-api-spring-boot-client` to
-   the module, and set `<workflow-module-id>.cockpit.base-url` in the application. Write no call
-   of the cockpit by hand.
+   the module. `@ConditionalOnHttpServiceGroupAddress` keeps the group away while the
+   application does not set `<workflow-module-id>.cockpit.base-url`, and `Cockpit` then asks
+   nothing. Write no call of the cockpit by hand. Keep `WithoutTheCockpitAddressIT`, which starts
+   the module without the key.
 8. Copy `LoanApprovalAutoConfiguration` and `UserInterfaceRouteAutoConfiguration` into the
    sub-package `config` of your module, and the imports file. Set `WORKFLOW_MODULE_ID` to your
    module id. The scans of `LoanApprovalAutoConfiguration` name the package of the module by its

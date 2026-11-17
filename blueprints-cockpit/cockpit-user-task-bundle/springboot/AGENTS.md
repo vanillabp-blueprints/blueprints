@@ -45,13 +45,13 @@ Names this blueprint adds:
 
 ## Boilerplate files
 
-|                      File                      |                                                 Purpose                                                 |
-|------------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| `src/test/java/.../Application.java`           | the test application, in `blueprint.application`                                                        |
-| `src/test/java/.../ApplicationSmokeTest.java`  | the context starts and every workflow module is wired                                                   |
-| `src/test/resources/application.yaml`          | the database, where the reports go and `loan-approval.cockpit.base-url`, as the application writes them |
-| `src/test/resources/application-camunda7.yaml` | the Camunda 7 settings of the test, and the same file per other BPMS                                    |
-| `docs/loan_approval.png`                       | the picture of the process the README shows, rendered from the BPMN model of the backend                |
+|                      File                      |                                         Purpose                                          |
+|------------------------------------------------|------------------------------------------------------------------------------------------|
+| `src/test/java/.../Application.java`           | the test application, in `blueprint.application`                                         |
+| `src/test/java/.../ApplicationSmokeTest.java`  | the context starts and every workflow module is wired                                    |
+| `src/test/resources/application.yaml`          | the database and where the reports go, as the application writes them                    |
+| `src/test/resources/application-camunda7.yaml` | the Camunda 7 settings of the test, and the same file per other BPMS                     |
+| `docs/loan_approval.png`                       | the picture of the process the README shows, rendered from the BPMN model of the backend |
 
 `ApplicationSmokeTest` is identical in every blueprint. Copy it unchanged.
 

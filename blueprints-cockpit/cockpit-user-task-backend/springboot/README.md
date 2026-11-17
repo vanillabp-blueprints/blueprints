@@ -103,7 +103,9 @@ loan-approval:
     base-url: http://localhost:9080/gui/api/v1
 ```
 
-Without `base-url` the application does not start, and the message names the key. The other keys
+The module asks only if the application sets `base-url`. Without it there is no client, the
+application starts, and a form completes its task as before. With it the support library checks
+the address and every other key at the start, and a message names the key. The other keys
 of the support library work there as well: timeouts, a proxy, retries, OAuth. They belong to the
 module and not to `vanillabp`, so a second module in the same application asks the cockpit with
 values of its own. A request without a cookie asks nothing, so the URLs of the log still work in
@@ -184,6 +186,7 @@ Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user
 | `Service.java`                             | per user task: keep the id, give a form its data, complete the task with what the user entered                                                                                    |
 | `Aggregate.java`                           | per user task the id of the open task and what the user entered                                                                                                                   |
 | `LoanApprovalIT.java`                      | reports to the dev shell simulator and completes both tasks through their endpoints                                                                                               |
+| `WithoutTheCockpitAddressIT.java`          | new: without `loan-approval.cockpit.base-url` the module starts and a form completes its task without asking the cockpit                                                          |
 | `CockpitSimulator.java`                    | new: starts the dev shell simulator for the test                                                                                                                                  |
 | `CockpitGuiApi.java`                       | new: answers for the cockpit who is logged in and whom a task is assigned to, for the test                                                                                        |
 | `LocalBackend.java`                        | new: runs the workflow module for the development of the user interface                                                                                                           |
@@ -287,6 +290,7 @@ does. The frontend's README shows how.
 | `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                                  |
 | `.../loanapproval/model/Aggregate.java`                                                | the id of each open task, and what the user entered in each form                                                 |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays both tasks through, and checks what the cockpit was told, through a client generated from the OpenAPI file |
+| `loan-approval/src/test/.../WithoutTheCockpitAddressIT.java`                           | without the address of the cockpit the module starts and asks nothing                                            |
 | `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test                                                         |
 | `loan-approval/src/test/.../CockpitGuiApi.java`                                        | stands in for the official GUI API of the cockpit which `Cockpit` asks                                           |
 | `.../loanapproval/config/LoanApprovalAutoConfiguration.java`                           | wires the module into any application which has it as a dependency                                               |

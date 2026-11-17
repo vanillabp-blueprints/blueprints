@@ -83,12 +83,12 @@ carries the one your Maven repository holds.
 
 Compared to [`cockpit-user-task-application`](https://github.com/vanillabp-blueprints/cockpit-user-task-application-springboot):
 
-|                 File                  |                                           What is different                                           |
-|---------------------------------------|-------------------------------------------------------------------------------------------------------|
-| `pom.xml`                             | a library, not an application. The adapters are only in the test, the application chooses them        |
-| `src/test/.../Application.java`       | the application of the test, in a package which does not reach the module                             |
-| `src/test/resources/application.yaml` | what the application writes: the database, where the reports go and where the module asks the cockpit |
-| `docker-compose.yaml`                 | gone: the application which takes the bundle runs the cockpit                                         |
+|                 File                  |                                       What is different                                        |
+|---------------------------------------|------------------------------------------------------------------------------------------------|
+| `pom.xml`                             | a library, not an application. The adapters are only in the test, the application chooses them |
+| `src/test/.../Application.java`       | the application of the test, in a package which does not reach the module                      |
+| `src/test/resources/application.yaml` | what the application writes: the database and where the reports go                             |
+| `docker-compose.yaml`                 | gone: the application which takes the bundle runs the cockpit                                  |
 
 ## Running it
 
@@ -141,9 +141,7 @@ the modules on the class path against the ones VanillaBP wired.
 
 `UserInterfaceSmokeTest` asks for what the cockpit asks for: the manifest and the form of an open
 task, both below `/loan-approval`. The workflow module tests the forms in detail. This test only
-checks that the bundle brings everything an application needs. It calls the API of the module
-through clients which the build generates from the OpenAPI files in the JAR of the module, so it
-writes no path and no field of the API by hand.
+checks that the bundle brings everything an application needs.
 
 ## Documentation
 

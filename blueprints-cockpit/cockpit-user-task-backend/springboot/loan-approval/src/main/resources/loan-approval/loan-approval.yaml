@@ -44,7 +44,7 @@ vanillabp:
 #
 # It is the address of the official GUI API of the Business Cockpit, for example
 # http://localhost:9080/gui/api/v1. The module asks the cockpit there who took over a user task,
-# before a form completes it. A task which somebody else took over is refused with 409. The
-# application has to set it, and the start says so if it is missing. The other keys of a client of
+# before a form completes it. A task which somebody else took over is refused with 409. Without
+# the address, a form completes the task whoever has it. The other keys of a client of
 # the support library of the cockpit work below 'loan-approval.cockpit' as well: timeouts, a
 # proxy, retries, OAuth.

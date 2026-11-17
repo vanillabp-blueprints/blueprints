@@ -2,6 +2,7 @@ package blueprint.workflowmodule.loanapproval;
 
 import java.util.Optional;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
@@ -32,8 +33,10 @@ import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
  *
  * <p>
  * The keys of the clients are below {@value CockpitClientAutoConfiguration#KEYS}, for example
- * {@code loan-approval.cockpit.base-url}. A request without a cookie asks nothing, so the URLs in
- * the log still work in a browser alone. Every answer which is not clear is read the same way:
+ * {@code loan-approval.cockpit.base-url}. The module asks only if the application sets that
+ * address. Without it, and without a cookie, a form completes the task as before. So the URLs in
+ * the log still work in a browser alone, and so does the dev shell, which does not know who is
+ * logged in. Every answer which is not clear is read the same way:
  * nobody else took the task. A form which is refused for no reason is worse than a form which is
  * not refused.
  * </p>
@@ -52,19 +55,20 @@ public class Cockpit {
   public interface CurrentUser extends OfficialCurrentUserApi {
   }
 
-  private final Tasklist tasklist;
+  private final ObjectProvider<Tasklist> tasklist;
 
-  private final CurrentUser currentUser;
+  private final ObjectProvider<CurrentUser> currentUser;
 
   /**
-   * Takes the clients of the official GUI API.
+   * Takes the clients of the official GUI API. They are there only if the application sets the
+   * address of the cockpit.
    *
    * @param tasklist    Whom a user task is assigned to.
    * @param currentUser Who sent the request.
    */
   public Cockpit(
-      final Tasklist tasklist,
-      final CurrentUser currentUser) {
+      final ObjectProvider<Tasklist> tasklist,
+      final ObjectProvider<CurrentUser> currentUser) {
 
     this.tasklist = tasklist;
     this.currentUser = currentUser;
@@ -83,14 +87,16 @@ public class Cockpit {
       final String userTaskId,
       final String cookie) {
 
-    if (cookie == null) {
+    final var tasks = tasklist.getIfAvailable();
+    final var users = currentUser.getIfAvailable();
+    if ((tasks == null) || (users == null) || (cookie == null)) {
       return false;
     }
 
     try {
 
       final var assignee = Optional
-          .ofNullable(tasklist.getUserTask(userTaskId, null).getBody())
+          .ofNullable(tasks.getUserTask(userTaskId, null).getBody())
           .map(UserTask::getAssignee)
           .map(Person::getId);
       if (assignee.isEmpty()) {
@@ -98,7 +104,7 @@ public class Cockpit {
       }
 
       final var user = Optional
-          .ofNullable(currentUser.currentUser(null).getBody())
+          .ofNullable(users.currentUser(null).getBody())
           .map(User::getId);
       return user.isPresent() && !assignee.get().equals(user.get());
 

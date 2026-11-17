@@ -93,7 +93,8 @@ and the cockpit adapter of the same BPMS, which reports the user tasks.
 The workflow module asks the cockpit who took over a user task before a form completes it. It
 asks the official GUI API of the cockpit, and the application names its address in
 `loan-approval.cockpit.base-url`. The key belongs to the module, so it is below the id of the
-module and not below `vanillabp`. Without it the application does not start.
+module and not below `vanillabp`. Without it the module does not ask, and a form completes the
+task whoever has it.
 
 ## Delta to the base blueprint
 

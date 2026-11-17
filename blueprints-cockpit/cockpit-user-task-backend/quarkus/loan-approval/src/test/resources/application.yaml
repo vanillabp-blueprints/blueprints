@@ -27,13 +27,6 @@ vanillabp:
     # starts a simulator of its own on a free port and overrides this address.
     rest:
       base-url: http://localhost:8079
-# The official GUI API of the cockpit, which the module asks who took over a user task. The dev
-# shell simulator on its default port serves the user tasks below this path. It does not know who
-# is logged in, so a form is never refused there. The integration test sets the address of a
-# stand-in which knows both answers.
-loan-approval:
-  cockpit:
-    base-url: http://localhost:8079/official-api/v1
 # The module reads no login token of the Business Cockpit. It only hands the cookie on, and the
 # cockpit checks it. The support library of the cockpit checks such a token unless it is told
 # not to, and then the start asks for the secret of the cockpit. So the test leaves the check

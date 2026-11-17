@@ -9,6 +9,7 @@ import org.springframework.web.service.registry.ImportHttpServices;
 
 import blueprint.workflowmodule.loanapproval.Cockpit;
 import io.vanillabp.cockpit.gui.api.v1.client.autoconfigure.OfficialGuiApiClientAutoConfiguration;
+import io.vanillabp.cockpit.support.rest.httpservice.ConditionalOnHttpServiceGroupAddress;
 import io.vanillabp.cockpit.support.rest.httpservice.HttpServiceGroupPrefix;
 
 /**
@@ -18,9 +19,14 @@ import io.vanillabp.cockpit.support.rest.httpservice.HttpServiceGroupPrefix;
  * The interfaces come from {@code official-gui-api-spring-boot-client}. Spring turns them into
  * clients of the HTTP service group {@value #GROUP}, and the support library of the cockpit
  * configures the group from the keys below {@value #KEYS}: {@code base-url}, the timeouts, a
- * proxy, retries and the rest. The start stops with a message if {@code base-url} is missing.
- * The keys belong to this module and not to {@code vanillabp}. So a second module in the same
+ * proxy, retries and the rest. The keys belong to this module and not to {@code vanillabp}. So a second module in the same
  * application asks the cockpit with values of its own.
+ * </p>
+ *
+ * <p>
+ * The group is there only if the application sets {@code loan-approval.cockpit.base-url}. Without
+ * it there is no client, the start goes on, and the module does not ask the cockpit. With it the
+ * support library checks the address and the other keys at the start.
  * </p>
  *
  * <p>
@@ -38,6 +44,7 @@ import io.vanillabp.cockpit.support.rest.httpservice.HttpServiceGroupPrefix;
 @AutoConfiguration(before = {
     OfficialGuiApiClientAutoConfiguration.class, HttpServiceClientAutoConfiguration.class
 })
+@ConditionalOnHttpServiceGroupAddress(prefix = CockpitClientAutoConfiguration.KEYS)
 @ImportHttpServices(group = CockpitClientAutoConfiguration.GROUP, types = {
     Cockpit.Tasklist.class, Cockpit.CurrentUser.class
 })
