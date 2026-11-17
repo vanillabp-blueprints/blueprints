@@ -13,6 +13,11 @@ loan-approval:
 vanillabp:
   workflow-modules:
     loan-approval:
+      # How long a correlated message waits for the workflow. The customer may decline a moment
+      # after the contract went out, before the workflow waits in "Check contract". The key names
+      # no adapter, because it means the same on every BPMS.
+      # https://github.com/vanillabp/adapter-platform-integration/wiki/Message-correlation#a-message-which-comes-before-the-workflow-waits-for-it
+      message-time-to-live: 1m
       # What the Business Cockpit has to know about this module. Where the cockpit server is,
       # is not a matter of the module. The application writes it, below 'vanillabp.cockpit'.
       # https://github.com/vanillabp/business-cockpit/wiki/Configuration#what-a-workflow-module-tells-the-cockpit

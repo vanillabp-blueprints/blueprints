@@ -12,7 +12,8 @@ import io.vanillabp.spi.process.ProcessService;
  *
  * <p>
  * {@link Service} calls in, naming what happened in business terms, and this class translates
- * that into what the process needs: starting a workflow and completing a user task. {@link ProcessService} is injected here and nowhere else.
+ * that into what the process needs: starting a workflow, completing a user task and correlating
+ * a message. {@link ProcessService} is injected here and nowhere else.
  * </p>
  *
  * @see <a href="https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process">Wire up a
@@ -21,6 +22,12 @@ import io.vanillabp.spi.process.ProcessService;
 @Component
 @Transactional
 public class Workflow {
+
+  /**
+   * The name of the BPMN message which tells the workflow that the customer declined to sign.
+   * The same string is the name of the {@code bpmn:message} in the model.
+   */
+  public static final String CONTRACT_DECLINED = "ContractDeclined";
 
   @Autowired
   private ProcessService<Aggregate> bpms;
@@ -63,6 +70,26 @@ public class Workflow {
       final String taskId) {
 
     bpms.completeUserTask(loanApproval, taskId);
+
+  }
+
+  /**
+   * The customer declined to sign the contract. The workflow takes the task "Check contract"
+   * away and ends.
+   *
+   * <p>
+   * Only the name of the message reaches the BPMS. That the contract was declined is written to
+   * the aggregate, in the same transaction. The decline may come before the workflow waits in
+   * "Check contract", so the module gives its messages a time-to-live, see
+   * {@code loan-approval.yaml}.
+   * </p>
+   *
+   * @param loanApproval The workflow's aggregate.
+   */
+  public void contractDeclined(
+      final Aggregate loanApproval) {
+
+    bpms.correlateMessage(loanApproval, CONTRACT_DECLINED);
 
   }
 

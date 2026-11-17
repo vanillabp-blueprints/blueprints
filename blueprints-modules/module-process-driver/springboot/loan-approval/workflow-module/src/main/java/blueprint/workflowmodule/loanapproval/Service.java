@@ -168,8 +168,8 @@ public class Service {
   }
 
   /**
-   * Hands the contract to the e-signature service. The signature comes later, through
-   * {@link #contractSigned(String)}.
+   * Hands the contract to the e-signature service. The answer of the customer comes later,
+   * through {@link #contractSigned(String)} or {@link #contractDeclined(String)}.
    *
    * <p>
    * The contract carries the id of the loan request. So the callback finds the loan approval,
@@ -249,6 +249,70 @@ public class Service {
     log.info("The customer signed the contract of loan approval '{}'", loanRequestId);
 
     return true;
+
+  }
+
+  /**
+   * The customer declined to sign the contract. There is nothing left to check, so the workflow
+   * takes the task "Check contract" away, and the loan is declined. A report which arrives twice
+   * is taken once.
+   *
+   * <p>
+   * Unlike the signature, the decline is a message to the process, because it changes the way
+   * the workflow goes. The fact is written to the aggregate first, and then the message is
+   * correlated, in the same transaction.
+   * </p>
+   *
+   * @param loanRequestId The natural id of the loan request, which is the id of the contract.
+   * @return {@code false} if there is no loan approval of this id.
+   */
+  public boolean contractDeclined(
+      final String loanRequestId) {
+
+    final var found = loanApprovals.findById(loanRequestId);
+    if (found.isEmpty()) {
+      log.warn("A decline arrived for loan approval '{}', which does not exist", loanRequestId);
+      return false;
+    }
+
+    final var loanApproval = found.get();
+    if (Boolean.TRUE.equals(loanApproval.getContractDeclined())) {
+      log.info("The decline of loan approval '{}' arrived again", loanRequestId);
+      return true;
+    }
+
+    loanApproval.setContractDeclined(true);
+    workflow.contractDeclined(loanApproval);
+
+    log.info("The customer declined to sign the contract of loan approval '{}'", loanRequestId);
+
+    return true;
+
+  }
+
+  /**
+   * The workflow took the user task "Check contract" away. The model does this when the customer
+   * declined to sign, and then the loan is declined and the workflow ends. An operator who stops
+   * the workflow in the BPMS takes the task away as well, but declines no loan.
+   *
+   * @param loanApproval The workflow's aggregate.
+   */
+  public void contractCheckClosed(
+      final Aggregate loanApproval) {
+
+    // The task is gone, so the id does not lead to an open task any more.
+    loanApproval.setCheckContractTaskId(null);
+    if (!Boolean.TRUE.equals(loanApproval.getContractDeclined())) {
+      return;
+    }
+
+    loanApproval.setLoanDeclined(true);
+
+    log.info(
+        "Loan approval '{}' declined, because the customer declined to sign. Show it ->"
+            + " http://localhost:8080/api/loan-approval/{}",
+        loanApproval.getLoanRequestId(),
+        loanApproval.getLoanRequestId());
 
   }
 

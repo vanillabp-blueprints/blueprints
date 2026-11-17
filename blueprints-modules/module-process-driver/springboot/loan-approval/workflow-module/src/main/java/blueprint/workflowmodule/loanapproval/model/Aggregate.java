@@ -20,8 +20,8 @@ import lombok.NoArgsConstructor;
  *
  * <p>
  * It is also what the process driver waits for. Each step of the process leaves a trace here:
- * the id of an open user task, the contract sent for signing, the signature. So the driver asks
- * the application how far a loan approval came, and never the BPMS.
+ * the id of an open user task, the contract sent for signing, the signature or the decline. So
+ * the driver asks the application how far a loan approval came, and never the BPMS.
  * </p>
  *
  * <p>
@@ -118,5 +118,19 @@ public class Aggregate {
   /** Set when somebody checked the signed contract, which completes the workflow. */
   @Column
   private Boolean contractChecked;
+
+  /**
+   * Set when the e-signature service reported that the customer declined to sign. Unlike the
+   * signature, this is also a message to the process, which takes the task "Check contract" away.
+   */
+  @Column
+  private Boolean contractDeclined;
+
+  /**
+   * Set when the workflow took the task "Check contract" away because of the decline, which ends
+   * the workflow. It is written after the engine moved on, so the process driver waits for it.
+   */
+  @Column
+  private Boolean loanDeclined;
 
 }

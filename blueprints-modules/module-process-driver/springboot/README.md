@@ -18,11 +18,14 @@ and the real answers of the simulator, and the test starts there. A delta on top
 A loan approval with two user tasks. From an amount of 10000 on, somebody has to assess the risk
 first. Then the contract goes to the e-signature service, and somebody checks the signed
 contract. The task "Check contract" opens while the signature may still be on its way. The
-business code refuses to complete it before the customer signed.
+business code refuses to complete it before the customer signed. If the customer declines to
+sign, the message "Contract declined" takes the task away, and the workflow ends with "Loan
+declined".
 
 So "Check contract" alone has four situations worth a test: a small amount, a large amount whose
-risk somebody assessed, with the signature, and without it. Each of them has a history. The
-process driver knows these histories, and the tests do not.
+risk somebody assessed, with the signature, and without it. A fifth one ends it: the customer
+declines. Each of them has a history. The process driver knows these histories, and the tests do
+not.
 
 ### The simulator plays the environment, the driver plays the users
 
@@ -86,8 +89,8 @@ exactly that, one per row of the table. They show what the module does today, an
 
 - a failing service stops the contract from going out. The service task fails, and the BPMS
   handles it like every failing task: it may try again, and then it shows an incident,
-- a declined contract stays unsigned, because the port knows only signatures, and the clerk
-  cannot approve the loan,
+- a declined contract ends the loan request. The application correlates the message "Contract
+  declined", the workflow takes the task "Check contract" away and ends with "Loan declined",
 - a customer who never answers leaves the task "Check contract" open, because the model has no
   deadline for the signature.
 
@@ -100,23 +103,26 @@ exactly that, one per row of the table. They show what the module does today, an
 | `ASSESS_RISK_USER_TASK`                      | the task "Assess risk" is open. Only a large amount gets there             |
 | `CHECK_CONTRACT_USER_TASK_WITHOUT_SIGNATURE` | the task "Check contract" is open, and the signature has not come back yet |
 | `CHECK_CONTRACT_USER_TASK`                   | the task "Check contract" is open, and the customer signed                 |
+| `CONTRACT_DECLINED`                          | the customer declined to sign, and the workflow ended with "Loan declined" |
 
 Two states name the same task of the model with another history. A state which ends in
 `_USER_TASK` means that the task is open. The driver does not complete it. The test does that,
-or a person in the dev shell.
+or a person in the dev shell. A state without this ending is one where the workflow ended, so no
+task is open.
 
 Each state names the step which finishes it, with `finishingSteps()`. A step is a small class
 which does one thing: it acts like a user, prepares data in the simulator, or waits. Then it
 waits until the application shows the result. Each step names only the steps right before it,
 with `prerequisites()`:
 
-|            Step            |                               What it does                                |          Comes right after          |
-|----------------------------|---------------------------------------------------------------------------|-------------------------------------|
-| `LoanRequestedStep`        | reserves a customer in the simulator, gives it a score, requests the loan | nothing, it starts the loan request |
-| `RiskAssessmentOpenedStep` | waits until "Assess risk" is open                                         | `LoanRequestedStep`                 |
-| `RiskAssessedOnTheWayStep` | completes "Assess risk", if the amount needs it, and nothing otherwise    | `LoanRequestedStep`                 |
-| `ContractCheckOpenedStep`  | waits until the contract went out and "Check contract" is open            | `RiskAssessedOnTheWayStep`          |
-| `ContractSignedStep`       | chooses `John Signing` as the customer, and waits for his signature       | `ContractCheckOpenedStep`           |
+|            Step            |                                What it does                                 |          Comes right after          |
+|----------------------------|-----------------------------------------------------------------------------|-------------------------------------|
+| `LoanRequestedStep`        | reserves a customer in the simulator, gives it a score, requests the loan   | nothing, it starts the loan request |
+| `RiskAssessmentOpenedStep` | waits until "Assess risk" is open                                           | `LoanRequestedStep`                 |
+| `RiskAssessedOnTheWayStep` | completes "Assess risk", if the amount needs it, and nothing otherwise      | `LoanRequestedStep`                 |
+| `ContractCheckOpenedStep`  | waits until the contract went out and "Check contract" is open              | `RiskAssessedOnTheWayStep`          |
+| `ContractSignedStep`       | chooses `John Signing` as the customer, and waits for his signature         | `ContractCheckOpenedStep`           |
+| `ContractDeclinedStep`     | chooses `Jack Nosign` as the customer, and waits until the loan is declined | `RiskAssessedOnTheWayStep`          |
 
 `TestData` holds what a scenario says about the case. Every value has a default which makes
 sense for the business: a customer with a good score asks for a small amount, and signs when the
@@ -133,9 +139,9 @@ and `RiskAssessedOnTheWayStep` completed the task on the way.
 
 A step may also change the test data before the first step runs, with `prepare()`.
 `ContractSignedStep` needs a signed contract, so it chooses `John Signing` as the customer. The
-simulator signs his contract by itself, and the step only waits for the signature. A test of
-another signer names the customer, for example
-`TestData.defaults().withCustomerName(TestData.JACK_NOSIGN)`.
+simulator signs his contract by itself, and the step only waits for the signature.
+`ContractDeclinedStep` chooses `Jack Nosign` in the same way. A test of another signer names the
+customer, for example `TestData.defaults().withCustomerName(TestData.JIM_AVOIDANCE)`.
 
 The driver follows the prerequisites back to `LoanRequestedStep` and runs the steps in that
 order. A step which two others need runs only once. The driver does this for every state when it
@@ -184,15 +190,20 @@ VanillaBP behaves:
   cluster for the same time. Then you do not need this rule for messages.
 
 The [wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Message-correlation#a-message-which-comes-before-the-workflow-waits-for-it)
-has the details. This blueprint correlates no message. The signature is written into the
-aggregate, and "Check contract" waits for it. So the rule shows here only as "wait for the id
-before you complete a task".
+has the details. This blueprint correlates one message, "Contract declined". The customer may
+decline a moment after the contract went out, before the workflow waits in "Check contract". So
+`loan-approval.yaml` sets `message-time-to-live: 1m`, and the message waits for the workflow. The
+signature is no message. It is written into the aggregate, and "Check contract" waits for it.
+
+The decline is also why `ContractDeclinedStep` does not come after `ContractCheckOpenedStep`.
+That step waits until the API shows the open task, but the decline may take the task away before
+the driver looks. So the driver would wait for a task which is already gone.
 
 **Wait until your own state is stable before you return.** Completing a task returns before the
 engine moved on. A caller which acts at once races the engine. So the last step of every state
 waits for something the code of the workflow writes after the engine moved on: the id of the
-next task, the contract sent. When `advanceTo` returns, nothing of the steps before is still on
-its way.
+next task, the contract sent, or `loanDeclined`, which the module writes when the workflow took
+"Check contract" away. When `advanceTo` returns, nothing of the steps before is still on its way.
 
 **A timeout says why.** Each step passes a diagnosis to the wait. When the time runs out, the
 driver takes the loan request as the API showed it last and says what is missing, in words of
@@ -241,10 +252,10 @@ which fails says which promise to the business is broken, not which method chang
 The dev shell of the cockpit and the tests of a user interface need the driver too, but in a
 running application. For them the driver has a REST API:
 
-|                              URL                               |                      What it does                       |
-|----------------------------------------------------------------|---------------------------------------------------------|
-| `/process-driver/states`                                       | lists the states                                        |
-| `/process-driver/advance-to?state=...&amount=...&creditScore=` | brings a new loan request there and names its open task |
+|                              URL                               |                               What it does                               |
+|----------------------------------------------------------------|--------------------------------------------------------------------------|
+| `/process-driver/states`                                       | lists the states                                                         |
+| `/process-driver/advance-to?state=...&amount=...&creditScore=` | brings a new loan request there and names its open task, if there is one |
 
 Two locks keep it out of production. The application takes `test-driver` only with the Maven
 profile `test-driver`, which a production build never names. And the driver adds no bean and no
@@ -267,31 +278,34 @@ project has used them.
 
 Compared to [`module-simulator`](https://github.com/vanillabp-blueprints/module-simulator-springboot):
 
-|                                        File                                         |                                                                 What is different                                                                 |
-|-------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/`                                                                | gone: the workflow module moved to `loan-approval/workflow-module/`                                                                               |
-| `loan-approval/pom.xml`                                                             | an aggregator of the two modules `workflow-module` and `test-driver`                                                                              |
-| `loan-approval/workflow-module/`                                                    | the workflow module, moved from `loan-approval/`, with all its tests, the start of the simulator, the BPMS profiles of the tests and the coverage |
-| `loan-approval/workflow-module/src/main/resources/.../loan_approval.bpmn`           | a gateway and the task "Assess risk", the task "Check contract" instead of the message                                                            |
-| `.../loanapproval/model/Aggregate.java`                                             | the answer for the gateway, the ids of both open tasks, the signature as a fact, the name of the customer, `@DynamicUpdate`                       |
-| `.../loanapproval/Service.java`                                                     | assesses the risk, takes the signature, refuses to check a contract which is not signed, the customer signs                                       |
-| `.../loanapproval/ContractNotSignedException.java`                                  | new: the reason "Check contract" cannot be completed yet                                                                                          |
-| `.../loanapproval/ApiController.java`                                               | completes both tasks with GET for a person and with POST for a form, 409 while not signed, shows the loan request as JSON                         |
-| `.../openapi/loan-approval.yaml`                                                    | the two tasks instead of "Prepare contract", each as GET and POST, the 409, the name of the customer, the loan request as JSON                    |
-| `.../loanapproval/config/LoanApprovalProperties.java`                               | the limit of the risk assessment                                                                                                                  |
-| `.../loanapproval/Workflow.java`                                                    | completes "Assess risk" and "Check contract" instead of correlating the message "Contract signed"                                                 |
-| `.../loanapproval/WorkflowTaskHandler.java`                                         | opens "Assess risk" and "Check contract" instead of "Prepare contract"                                                                            |
-| `loan-approval/workflow-module/src/main/resources/loan-approval/loan-approval.yaml` | the limit from which "Assess risk" comes first                                                                                                    |
-| `loan-approval/test-driver/`                                                        | new: the process driver, its REST API and its unit tests                                                                                          |
-| `simulator-test-api/`                                                               | gone: moved to `simulator/api/`                                                                                                                   |
-| `simulator/`                                                                        | an aggregator of `api`, the test API moved from `simulator-test-api/`, and `application`, the simulator moved from `simulator/`                   |
-| `simulator/application/.../esignature/`                                             | the e-signature service acts on the name of the signer; it notes its refusals and its reports                                                     |
-| `simulator/api/simulator-test-api.yaml`                                             | signing answers with the report; a report of any contract, the reports sent and the refusals                                                      |
-| `simulator/application/src/main/resources/application.yaml`                         | errors as problem details                                                                                                                         |
-| `e-signature.yaml`                                                                  | the error the service answers with                                                                                                                |
-| `e-signature-callback.yaml`                                                         | the status `DECLINED`                                                                                                                             |
-| `pom.xml`                                                                           | its own coordinates and description, the modules `simulator` and `loan-approval` as aggregators, the version of JaCoCo                            |
-| `application/pom.xml`                                                               | the workflow module under its new artifact id, and the Maven profile `test-driver`                                                                |
+|                                        File                                         |                                                                             What is different                                                                              |
+|-------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/`                                                                | gone: the workflow module moved to `loan-approval/workflow-module/`                                                                                                        |
+| `loan-approval/pom.xml`                                                             | an aggregator of the two modules `workflow-module` and `test-driver`                                                                                                       |
+| `loan-approval/workflow-module/`                                                    | the workflow module, moved from `loan-approval/`, with all its tests, the start of the simulator, the BPMS profiles of the tests and the coverage                          |
+| `loan-approval/workflow-module/src/main/resources/.../loan_approval.bpmn`           | a gateway and the task "Assess risk", the task "Check contract" instead of the message, the message "Contract declined" on that task and the end "Loan declined"           |
+| `.../loanapproval/model/Aggregate.java`                                             | the answer for the gateway, the ids of both open tasks, the signature as a fact, the decline and the declined loan, the name of the customer, `@DynamicUpdate`             |
+| `.../loanapproval/Service.java`                                                     | assesses the risk, takes the signature and the decline, refuses to check a contract which is not signed, declines the loan when the task is taken away, the customer signs |
+| `.../loanapproval/ContractNotSignedException.java`                                  | new: the reason "Check contract" cannot be completed yet                                                                                                                   |
+| `.../loanapproval/ApiController.java`                                               | completes both tasks with GET for a person and with POST for a form, 409 while not signed, shows the loan request as JSON, the decline included                            |
+| `.../openapi/loan-approval.yaml`                                                    | the two tasks instead of "Prepare contract", each as GET and POST, the 409, the name of the customer, the loan request as JSON with the decline                            |
+| `.../loanapproval/config/LoanApprovalProperties.java`                               | the limit of the risk assessment                                                                                                                                           |
+| `.../loanapproval/Workflow.java`                                                    | completes "Assess risk" and "Check contract" instead of correlating the message "Contract signed", correlates the message "Contract declined"                              |
+| `.../loanapproval/WorkflowTaskHandler.java`                                         | opens "Assess risk" and "Check contract" instead of "Prepare contract", hears when "Check contract" is taken away                                                          |
+| `loan-approval/workflow-module/src/main/resources/loan-approval/loan-approval.yaml` | the limit from which "Assess risk" comes first, the time-to-live of messages                                                                                               |
+| `loan-approval/test-driver/`                                                        | new: the process driver, its REST API and its unit tests                                                                                                                   |
+| `simulator-test-api/`                                                               | gone: moved to `simulator/api/`                                                                                                                                            |
+| `simulator/`                                                                        | an aggregator of `api`, the test API moved from `simulator-test-api/`, and `application`, the simulator moved from `simulator/`                                            |
+| `simulator/application/.../esignature/`                                             | the e-signature service acts on the name of the signer; it notes its refusals and its reports                                                                              |
+| `simulator/api/simulator-test-api.yaml`                                             | signing answers with the report; a report of any contract, the reports sent and the refusals                                                                               |
+| `simulator/application/src/main/resources/application.yaml`                         | errors as problem details                                                                                                                                                  |
+| `e-signature.yaml`                                                                  | the error the service answers with                                                                                                                                         |
+| `SignedContracts.java`                                                              | the port also takes a contract the signer declined                                                                                                                         |
+| `CallbackController.java`                                                           | hands a report with `DECLINED` to the port, instead of refusing it                                                                                                         |
+| `.../loanapproval/SignedContractsHandler.java`                                      | takes the decline                                                                                                                                                          |
+| `e-signature-callback.yaml`                                                         | the status `DECLINED`, and 400 only for a report without a known status                                                                                                    |
+| `pom.xml`                                                                           | its own coordinates and description, the modules `simulator` and `loan-approval` as aggregators, the version of JaCoCo                                                     |
+| `application/pom.xml`                                                               | the workflow module under its new artifact id, and the Maven profile `test-driver`                                                                                         |
 
 ## Running it
 
@@ -357,10 +371,14 @@ check answers 409 until you sign through the simulator:
 http://localhost:8079/simulator/test-api/e-signature/sign?contractId=0f7c…
 ```
 
+With `state=CONTRACT_DECLINED` the customer is `Jack Nosign`, who declines by himself. The
+answer names no task, because the workflow ended. The loan request shows `"loanDeclined": true`.
+
 Without the profile `test-driver`, `/process-driver/states` answers 404.
 
 Without the driver, you choose the customer yourself. A loan for `John Signing` is signed a
-moment after the contract went out, one for `Jim Avoidance` never:
+moment after the contract went out, and one for `Jack Nosign` is declined. One for `Jim Avoidance`
+never gets an answer:
 
 ```
 http://localhost:8080/api/loan-approval/request?customerId=C-1001&customerName=John%20Signing
@@ -385,6 +403,7 @@ both, and each test says which one it means: `aClerkAssessesTheRiskInTheBrowser`
 | `steps/LoanRequestedStep.java`                                                    | prepares the customer in the simulator and requests the loan through the API                            |
 | `steps/RiskAssessedOnTheWayStep.java`                                             | the branch of a large amount: waits for "Assess risk" and submits its form                              |
 | `steps/ContractSignedStep.java`                                                   | chooses `John Signing`, who signs by himself, and waits for the signature                               |
+| `steps/ContractDeclinedStep.java`                                                 | chooses `Jack Nosign`, who declines by himself, and waits until the loan is declined                    |
 | `steps/StepSupport.java`                                                          | waits until the API shows the loan request in a state, turns a timeout into the reason                  |
 | `GeneratedClients.java`                                                           | turns an interface generated from an OpenAPI file into a client                                         |
 | `simulator/SimulatorTestApi.java`                                                 | the client of the test API of the simulator, and of the cockpit API it plays                            |

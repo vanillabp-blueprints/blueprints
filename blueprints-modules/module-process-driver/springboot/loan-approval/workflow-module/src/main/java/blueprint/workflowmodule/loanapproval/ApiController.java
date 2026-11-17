@@ -162,7 +162,8 @@ public class ApiController implements LoanApprovalApi {
                 .getAmount(), loanRequest.getCreditScore(), loanRequest.isRiskAssessmentNeeded(), loanRequest
                     .getAssessRiskTaskId(), loanRequest.getRiskAssessed(), loanRequest
                         .getContractSentForSigning(), loanRequest.getCheckContractTaskId(), loanRequest
-                            .getContractSigned(), loanRequest.getContractChecked()))
+                            .getContractSigned(), loanRequest.getContractChecked(), loanRequest
+                                .getContractDeclined(), loanRequest.getLoanDeclined()))
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown loan request '"
             + loanRequestId
             + "'"));

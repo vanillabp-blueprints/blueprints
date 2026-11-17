@@ -10,7 +10,8 @@ package blueprint.testdriver.loanapproval;
  * The name of the customer also decides what the simulated e-signature service does with the
  * contract, because the customer signs it. The names below are the ones the simulator acts on.
  * Every other name, like the default, waits until a test signs through the test API. A step which
- * needs a signed contract chooses {@link #JOHN_SIGNING} by itself.
+ * needs a signed contract chooses {@link #JOHN_SIGNING} by itself, and a step which needs a
+ * declined one chooses {@link #JACK_NOSIGN}.
  * </p>
  *
  * @param amount       The amount the customer asks for.

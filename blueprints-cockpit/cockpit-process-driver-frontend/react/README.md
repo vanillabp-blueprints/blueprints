@@ -155,11 +155,13 @@ simulated cockpit at `http://localhost:8079`. `APPLICATION_URL`, `COCKPIT_URL` a
 2. "Create the case" calls `processDriver.advanceTo({ state, amount, creditScore })`. The driver
    requests a loan, assesses the risk on the way if the amount needs it, waits for the contract and
    signs it, depending on the state. It answers with the id of the loan request and of the open
-   user task.
+   user task. In a state where the workflow ended, like `CONTRACT_DECLINED`, no task is open, and
+   the answer names none.
 3. The workflow module reports the workflow and the user task to the simulated cockpit after its
    transaction committed. So the page asks the cockpit again, every quarter of a second, until it
    knows both: `POST /official-api/v1/workflow` with the id of the loan request as business id, and
-   `GET /official-api/v1/usertask/{id}`.
+   `GET /official-api/v1/usertask/{id}`. Without an open task, the page asks only for the workflow
+   and says that no user task is open.
 4. The page links to `#/user-task/{id}` and to `#/workflow/{id}`. The view of the user task reads
    it from the cockpit and calls `showUserTask` of the host. The host loads `bc-manifest.json` and
    the data entry `UserTaskForm` from `/wm/loan-approval/`, then the form, and draws its web
@@ -207,6 +209,7 @@ starts with `npm run check:imports`. `scripts/check-imports.mjs` fails the build
 | `process-driver-loan-request`   | the id of the loan request the driver created                            |
 | `process-driver-open-user-task` | the link to the open user task                                           |
 | `process-driver-open-workflow`  | the link to the case                                                     |
+| `process-driver-no-user-task`   | the text shown when the workflow ended in the state, so no task is open  |
 | `process-driver-not-in-cockpit` | the text shown when the simulated cockpit does not know the case in time |
 | `process-driver-error`          | the message when the driver does not answer or the case misses the state |
 | `user-task-title`               | the title of the user task in the dev shell                              |

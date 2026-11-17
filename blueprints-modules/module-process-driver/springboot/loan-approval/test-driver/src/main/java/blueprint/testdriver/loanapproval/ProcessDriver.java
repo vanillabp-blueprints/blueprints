@@ -190,7 +190,7 @@ public class ProcessDriver {
    * The id of the user task which is open in the state the scenario reached.
    *
    * @param scenario A loan request which reached its state.
-   * @return The id of the open user task.
+   * @return The id of the open user task, or {@code null} in a state where the workflow ended.
    */
   public String openUserTaskId(
       final Scenario scenario) {

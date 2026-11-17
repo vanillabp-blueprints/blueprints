@@ -31,7 +31,8 @@ public class ProcessDriverIT extends ScenarioTest {
         .containsExactly(
             "ASSESS_RISK_USER_TASK",
             "CHECK_CONTRACT_USER_TASK_WITHOUT_SIGNATURE",
-            "CHECK_CONTRACT_USER_TASK");
+            "CHECK_CONTRACT_USER_TASK",
+            "CONTRACT_DECLINED");
 
   }
 
@@ -51,6 +52,25 @@ public class ProcessDriverIT extends ScenarioTest {
           assertThat(loanRequest.getCustomerId()).isEqualTo(reached.customerId());
           assertThat(loanRequest.getRiskAssessed()).isTrue();
           assertThat(loanRequest.getContractSigned()).isTrue();
+        });
+
+  }
+
+  /**
+   * What the dev shell does when a person wants to see a case whose customer declined to sign.
+   * The workflow ended, so the driver names no open task.
+   */
+  @Test
+  public void itBringsALoanToItsEndWhenTheCustomerDeclinesTheContract() {
+
+    final var reached = processDriver.advanceTo("CONTRACT_DECLINED", null, null);
+
+    assertThat(reached.state()).isEqualTo("CONTRACT_DECLINED");
+    assertThat(reached.userTaskId()).as("no task is open").isNull();
+    assertThat(loanApproval.show(reached.loanRequestId()))
+        .satisfies(loanRequest -> {
+          assertThat(loanRequest.customerName()).isEqualTo(TestData.JACK_NOSIGN);
+          assertThat(loanRequest.loanDeclined()).isTrue();
         });
 
   }
