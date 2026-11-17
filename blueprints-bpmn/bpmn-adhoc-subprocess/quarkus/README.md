@@ -138,7 +138,7 @@ them.
 Start a loan approval nobody has to look at. This is the only URL you need:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The decision table picks, the two checks it picked run, and the process ends:
@@ -154,7 +154,7 @@ The customer of loan approval '0f7c…' was informed
 Ask for more than ten thousand and a case worker has to pick instead:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=20000
+http://localhost:8080/loan-approval/api/start?amount=20000
 ```
 
 The process stops at the user task. It logs one URL per combination somebody can pick, each one
@@ -162,13 +162,13 @@ filled in and ready to click:
 
 ```
 Loan approval '3b1e…' waits for somebody to pick the additional checks. Continue with one of:
-  income                    -> http://localhost:8080/api/loan-approval/3b1e…/select-checks/1a2b…?checks=income
-  fraud                     -> http://localhost:8080/api/loan-approval/3b1e…/select-checks/1a2b…?checks=fraud
-  collateral                -> http://localhost:8080/api/loan-approval/3b1e…/select-checks/1a2b…?checks=collateral
-  income,fraud              -> http://localhost:8080/api/loan-approval/3b1e…/select-checks/1a2b…?checks=income,fraud
-  income,collateral         -> http://localhost:8080/api/loan-approval/3b1e…/select-checks/1a2b…?checks=income,collateral
-  fraud,collateral          -> http://localhost:8080/api/loan-approval/3b1e…/select-checks/1a2b…?checks=fraud,collateral
-  income,fraud,collateral   -> http://localhost:8080/api/loan-approval/3b1e…/select-checks/1a2b…?checks=income,fraud,collateral
+  income                    -> http://localhost:8080/loan-approval/api/3b1e…/select-checks/1a2b…?checks=income
+  fraud                     -> http://localhost:8080/loan-approval/api/3b1e…/select-checks/1a2b…?checks=fraud
+  collateral                -> http://localhost:8080/loan-approval/api/3b1e…/select-checks/1a2b…?checks=collateral
+  income,fraud              -> http://localhost:8080/loan-approval/api/3b1e…/select-checks/1a2b…?checks=income,fraud
+  income,collateral         -> http://localhost:8080/loan-approval/api/3b1e…/select-checks/1a2b…?checks=income,collateral
+  fraud,collateral          -> http://localhost:8080/loan-approval/api/3b1e…/select-checks/1a2b…?checks=fraud,collateral
+  income,fraud,collateral   -> http://localhost:8080/loan-approval/api/3b1e…/select-checks/1a2b…?checks=income,fraud,collateral
 ```
 
 Opening one of them completes the user task, and the picked checks run. The ones nobody picked

@@ -140,7 +140,7 @@ explains the modes and what each of them costs.
 Start a loan approval. This is the only URL you need:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The rating is done at once. The partner is asked a second later, and from then on the clock
@@ -152,7 +152,7 @@ Loan approval '0f7c…' started
 Credit rating of loan approval '0f7c…' is 50
 Partner was asked to approve loan approval '0f7c…' (5000 at a rating of 50)
 Loan approval '0f7c…' waits for the partner, but not forever - the task carries a deadline of PT3S:
-  Approved -> http://localhost:8080/api/loan-approval/0f7c…/partner-approved/1a2b…
+  Approved -> http://localhost:8080/loan-approval/api/0f7c…/partner-approved/1a2b…
 ```
 
 Open that URL quickly, and the answer is accepted:

@@ -56,7 +56,7 @@ public class ExternalSystemUnavailableIT {
         .create("http://localhost:"
             + port)
         .get()
-        .uri("/api/loan-approval/request?customerId=C-1001&amount=5000")
+        .uri("/loan-approval/api/request?customerId=C-1001&amount=5000")
         .exchange((
             request,
             response) -> Map.of(

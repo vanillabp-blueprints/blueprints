@@ -261,8 +261,8 @@ mvn -pl application quarkus:dev
 Two URLs start something, one per workflow module:
 
 ```
-http://localhost:8080/api/loan-approval/start?customerId=C-1001&amount=5000
-http://localhost:8080/api/loan-repayment/start?customerId=C-1002&amount=6000
+http://localhost:8080/loan-approval/api/start?customerId=C-1001&amount=5000
+http://localhost:8080/loan-repayment/api/start?customerId=C-1002&amount=6000
 ```
 
 Each answers with the ID of the case it started and logs the URL which shows the result:
@@ -270,7 +270,7 @@ Each answers with the ID of the case it started and logs the URL which shows the
 ```
 Loan approval '0f7c…' started: Ada Lovelace asks for 5,000 EUR
 Credit rating of loan approval '0f7c…' is 50
-Show the result -> http://localhost:8080/api/loan-approval/0f7c…
+Show the result -> http://localhost:8080/loan-approval/api/0f7c…
 ```
 
 Both URLs belong to a module, which publishes them. This project neither knows nor declares

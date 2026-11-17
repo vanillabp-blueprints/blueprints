@@ -195,7 +195,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
    */
   private static RequestSpecification api() {
 
-    return given().basePath("/api/loan-approval");
+    return given().basePath("/loan-approval/api");
 
   }
 

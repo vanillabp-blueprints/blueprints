@@ -149,7 +149,7 @@ explains the modes and what each of them costs.
 The amount decides which end the workflow reaches. So this is the URL to play with:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 An amount of 5000 gives a rating of 50, above the configured minimum of 30. So the customer is
@@ -175,7 +175,7 @@ end event. Everything else is the same, and no Java differs.
 The result of a run is at
 
 ```
-http://localhost:8080/api/loan-approval/{loanRequestId}
+http://localhost:8080/loan-approval/api/{loanRequestId}
 ```
 
 Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint

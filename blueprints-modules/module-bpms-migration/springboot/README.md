@@ -68,8 +68,8 @@ workflow. The most specific list which is not empty wins. The repayment above us
 level. This lets you migrate one workflow at a time instead of all at once.
 
 Nothing in the Java code of this blueprint names an adapter, with one exception.
-`/api/loan-approval/{id}/bpms` answers which BPMS runs a workflow, because this blueprint is
-about showing the routing. It reads the id of the process definition the workflow runs on,
+`/loan-approval/api/loan-requests/{id}/bpms` answers which BPMS runs a workflow, because this
+blueprint is about showing the routing. It reads the id of the process definition the workflow runs on,
 which is `<adapter-id>#<id of the BPMS>`, and returns the first part. An application normally
 has no reason to ask.
 
@@ -187,7 +187,7 @@ mvn -pl application spring-boot:run
 Start a loan approval and take it past its user task:
 
 ```
-http://localhost:8080/api/loan-approval/start
+http://localhost:8080/loan-approval/api/loan-requests/start
 ```
 
 The log names the URL to answer the risk assessment, and after that the URL to report the
@@ -195,7 +195,7 @@ signed contract. Answer the assessment and leave the workflow waiting for the me
 second loan approval and leave that one at its user task. Both are in the old BPMS:
 
 ```
-http://localhost:8080/api/loan-approval/<id>/bpms
+http://localhost:8080/loan-approval/api/loan-requests/<id>/bpms
 camunda7
 ```
 
@@ -209,7 +209,7 @@ Start two more loan approvals and take one of them past its user task. They star
 new BPMS, which the same URL shows:
 
 ```
-http://localhost:8080/api/loan-approval/<id>/bpms
+http://localhost:8080/loan-approval/api/loan-requests/<id>/bpms
 camunda8
 ```
 
@@ -222,8 +222,8 @@ A repayment shows the finest level of the priority list. It starts in the old BP
 loan approvals already start in the new one:
 
 ```
-http://localhost:8080/api/loan-repayment/start
-http://localhost:8080/api/loan-repayment/<id>/bpms
+http://localhost:8080/loan-approval/api/loan-repayments/start
+http://localhost:8080/loan-approval/api/loan-repayments/<id>/bpms
 camunda7
 ```
 

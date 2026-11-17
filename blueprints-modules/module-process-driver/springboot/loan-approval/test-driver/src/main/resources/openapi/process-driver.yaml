@@ -16,7 +16,7 @@ tags:
   - name: process-driver
     description: Bringing a loan approval to a state of its process
 paths:
-  /process-driver/states:
+  /loan-approval/api/process-driver/states:
     get:
       tags:
         - process-driver
@@ -31,7 +31,7 @@ paths:
                 type: array
                 items:
                   type: string
-  /process-driver/advance-to:
+  /loan-approval/api/process-driver/advance-to:
     get:
       tags:
         - process-driver

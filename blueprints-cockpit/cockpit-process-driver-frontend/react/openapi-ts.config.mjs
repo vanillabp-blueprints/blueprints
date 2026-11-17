@@ -19,10 +19,12 @@ const client = (name) => ({
       // all of it from '@generated', and src/shared/process-driver-api.ts from
       // '@generated-process-driver'.
       exportFromIndex: true,
-      // Both files name the application as their server, http://localhost:8080. In the browser
-      // the cockpit forwards /wm/loan-approval/ to the workflow module, and the dev shell does the
-      // same. So the client calls that path, and the browser talks to one origin only.
-      baseUrl: '/wm/loan-approval',
+      // Both files name the application as their server, http://localhost:8080, and every path
+      // starts with /loan-approval/api/. In the browser the cockpit forwards /wm/loan-approval/ to
+      // the workflow-module-uri of the module, which ends with /loan-approval. The dev shell does
+      // the same. So the client puts /wm in front of each path and calls /wm/loan-approval/api/...
+      // The browser talks to one origin only.
+      baseUrl: '/wm',
     },
     '@hey-api/typescript',
     {

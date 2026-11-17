@@ -5,13 +5,13 @@
 // The browser talks to this server only. It answers from the build, and it forwards the rest:
 //
 //   /                                    dist/dev-shell
-//   /wm/loan-approval/api/...            the application, without /wm/loan-approval
-//   /wm/loan-approval/process-driver/... the application, without /wm/loan-approval
-//   /wm/loan-approval/...                dist/micro-frontends, as the UI jar would serve them
-//   /official-api/...                    the simulated cockpit
+//   /wm/loan-approval/api/...  the application, as /loan-approval/api/...
+//   /wm/loan-approval/...      dist/micro-frontends, as the UI jar would serve them
+//   /official-api/...          the simulated cockpit
 //
-// A real cockpit forwards /wm/loan-approval/ to the workflow module in the same way. So the forms
-// call the same paths here as in production.
+// A real cockpit forwards /wm/loan-approval/ to the workflow-module-uri of the module, which ends
+// with /loan-approval. So the forms call the same paths here as in production, and the process
+// driver is below /loan-approval/api/ as well.
 //
 //   DEV_SHELL_PORT     the port of the dev shell, 4200 by default
 //   APPLICATION_URL    the application, http://localhost:8080 by default
@@ -33,8 +33,7 @@ const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'applic
 
 /** The paths which go to the application or to the cockpit, and how each is rewritten. */
 const FORWARDS = [
-  { prefix: `${modulePath}api/`, to: applicationUrl, strip: modulePath.length - 1 },
-  { prefix: `${modulePath}process-driver/`, to: applicationUrl, strip: modulePath.length - 1 },
+  { prefix: `${modulePath}api/`, to: applicationUrl, strip: '/wm'.length },
   { prefix: '/official-api/', to: cockpitUrl, strip: 0 },
 ];
 

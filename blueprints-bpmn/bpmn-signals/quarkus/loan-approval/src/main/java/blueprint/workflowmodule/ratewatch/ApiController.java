@@ -41,7 +41,7 @@ public class ApiController implements RateWatchApi {
     rateWatch.startWatching(watchId);
 
     log.info(
-        "Show the result -> http://localhost:8080/api/rate-watch/{}",
+        "Show the result -> http://localhost:8080/loan-approval/api/rate-watches/{}",
         watchId);
 
     return watchId;

@@ -121,7 +121,7 @@ public class Service {
 
     log.info(
         "Loan approval '{}' waits for a risk assessment. Its form reads"
-            + "\n  http://localhost:8080/api/loan-approval/{}/assess-risk/{}",
+            + "\n  http://localhost:8080/loan-approval/api/{}/assess-risk/{}",
         loanRequest.getLoanRequestId(),
         loanRequest.getLoanRequestId(),
         taskId);
@@ -145,7 +145,7 @@ public class Service {
 
     log.info(
         "Loan approval '{}' waits for a check of the document '{}'. Its form reads"
-            + "\n  http://localhost:8080/api/loan-approval/{}/check-document/{}",
+            + "\n  http://localhost:8080/loan-approval/api/{}/check-document/{}",
         loanRequest.getLoanRequestId(),
         documentId,
         loanRequest.getLoanRequestId(),

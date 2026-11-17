@@ -272,15 +272,15 @@ To walk one loan approval through by hand, set the log level of
 well, because the application asks it for the credit score. Then start a loan:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The log names the URLs to go on with as soon as the assessment is open:
 
 ```
 Loan approval '0f7c…' waits for a clerk. Continue with one of:
-  Approve -> http://localhost:8080/api/loan-approval/0f7c…/assess/42?approved=true
-  Reject  -> http://localhost:8080/api/loan-approval/0f7c…/assess/42?approved=false
+  Approve -> http://localhost:8080/loan-approval/api/0f7c…/assess/42?approved=true
+  Reject  -> http://localhost:8080/loan-approval/api/0f7c…/assess/42?approved=false
 ```
 
 ## How it works

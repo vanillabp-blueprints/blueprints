@@ -276,7 +276,7 @@ only says so, and the browser tests are the way to see the forms.
    components. A cockpit without areas draws the one of `all`. Each web component draws into its
    own shadow DOM.
 6. The form loads its data from
-   `/wm/loan-approval/api/loan-approval/{loanRequestId}/assess-risk/{taskId}`. The loan request
+   `/wm/loan-approval/api/loan-requests/{loanRequestId}/assess-risk/{taskId}`. The loan request
    is the business id of the user task, and the module checks that the task belongs to it. The
    cockpit forwards the call to the workflow module. It never sees the data of the form.
 7. In a cockpit with areas, `body` sends every change of the field to `actions` with

@@ -142,7 +142,7 @@ explains the modes and what each of them costs.
 Start a loan approval. This is the only URL you need:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The stand-in provider refuses the first request for every loan request. So the first thing in
@@ -152,7 +152,7 @@ the log is the retry:
 Loan approval '0f7c…' started
 Rating provider 'acme-rating' is not answering for loan approval '0f7c…'. The BPMS will retry the task.
 Credit rating of loan approval '0f7c…' is 50, awarded by 'acme-rating'
-Show the result -> http://localhost:8080/api/loan-approval/0f7c…
+Show the result -> http://localhost:8080/loan-approval/api/0f7c…
 ```
 
 On Camunda 8 the model has to ask for that retry. Its `zeebe:taskDefinition` writes
@@ -163,7 +163,7 @@ Ask for a small amount to see the other outcome. A rating of 5 is below the conf
 of 10. So the loan is rejected, and the workflow ends through the error boundary event:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=500
+http://localhost:8080/loan-approval/api/start?amount=500
 ```
 
 ```

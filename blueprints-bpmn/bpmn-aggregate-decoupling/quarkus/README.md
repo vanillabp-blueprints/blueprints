@@ -160,7 +160,7 @@ explains the modes and what each of them costs.
 The amount decides the risk class, and with it the branch. So this is the URL to play with:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 An amount of 5000 gives a rating of 50. That is at or above the configured low-risk rating of
@@ -190,10 +190,10 @@ Loan approval 'dea6…' was rejected
 You can pass the customer's name as well. The point is that nothing changes when you do:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000&customerName=Alex%20Customer
+http://localhost:8080/loan-approval/api/start?amount=5000&customerName=Alex%20Customer
 ```
 
-It is stored with the aggregate and shown by `http://localhost:8080/api/loan-approval/<id>`. It
+It is stored with the aggregate and shown by `http://localhost:8080/loan-approval/api/<id>`. It
 never leaves the application.
 
 Both thresholds are in the module's own configuration

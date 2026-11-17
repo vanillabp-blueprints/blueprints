@@ -134,7 +134,7 @@ public class Service {
 
     log.info(
         "Loan approval '{}' waits for its contract. Continue with:"
-            + "\n  Prepare the contract -> http://localhost:8080/api/loan-approval/{}/prepare-contract/{}?interestRate=3.5",
+            + "\n  Prepare the contract -> http://localhost:8080/loan-approval/api/{}/prepare-contract/{}?interestRate=3.5",
         loanApproval.getLoanRequestId(),
         loanApproval.getLoanRequestId(),
         taskId);
@@ -233,7 +233,7 @@ public class Service {
     workflow.contractSigned(loanApproval);
 
     log.info(
-        "Loan approval '{}' approved, the customer signed. Show it -> http://localhost:8080/api/loan-approval/{}",
+        "Loan approval '{}' approved, the customer signed. Show it -> http://localhost:8080/loan-approval/api/{}",
         loanRequestId,
         loanRequestId);
 

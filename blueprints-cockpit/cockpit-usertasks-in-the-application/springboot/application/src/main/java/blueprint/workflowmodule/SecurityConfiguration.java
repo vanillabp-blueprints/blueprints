@@ -28,9 +28,9 @@ import blueprint.workflowmodule.loanapproval.config.Permission;
 public class SecurityConfiguration {
 
   /**
-   * Every request below {@code /api} needs a user who logged in. Everything else is not
-   * touched, for example the web applications of an embedded BPMS, which bring their own
-   * login.
+   * Every request below {@code /loan-approval/api}, the API of the workflow module, needs a
+   * user who logged in. Everything else is not touched, for example the web applications of
+   * an embedded BPMS, which bring their own login.
    *
    * <p>
    * CSRF protection is off, because the API takes no cookies: every request carries its
@@ -47,7 +47,7 @@ public class SecurityConfiguration {
       final HttpSecurity http) throws Exception {
 
     return http
-        .securityMatcher("/api/**")
+        .securityMatcher("/loan-approval/api/**")
         .authorizeHttpRequests(requests -> requests
             .anyRequest()
             .authenticated())

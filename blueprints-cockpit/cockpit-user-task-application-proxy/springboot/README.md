@@ -43,7 +43,7 @@ unchanged:
 |-----------------------------------------------------------------|--------------------------------------|------------------------------------|
 | `/wm/loan-approval/bc-manifest.json`                            | `/loan-approval/bc-manifest.json`    | the nginx, through the application |
 | `/wm/loan-approval/entries/UserTaskForm-….js`                   | `/loan-approval/entries/…`           | the nginx, through the application |
-| `/wm/loan-approval/api/loan-approval/{id}/assess-risk/{taskId}` | `/loan-approval/api/loan-approval/…` | the application                    |
+| `/wm/loan-approval/api/loan-requests/{id}/assess-risk/{taskId}` | `/loan-approval/api/loan-requests/…` | the application                    |
 
 The browser sees one origin, the cockpit's. It never talks to the application or to the nginx
 directly. And every file of the user interface passes through the application, so the security

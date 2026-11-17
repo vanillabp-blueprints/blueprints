@@ -20,7 +20,7 @@ tags:
   - name: user-task-forms
     description: The forms of the user tasks
 paths:
-  /api/loan-approval/{loanRequestId}/call-customer/{taskId}:
+  /loan-approval/api/{loanRequestId}/call-customer/{taskId}:
     parameters:
       - $ref: '#/components/parameters/LoanRequestId'
       - $ref: '#/components/parameters/TaskId'
@@ -58,7 +58,7 @@ paths:
           $ref: '#/components/responses/NotAllowed'
         '404':
           $ref: '#/components/responses/UnknownTask'
-  /api/loan-approval/{loanRequestId}/call-customer/{taskId}/not-reached:
+  /loan-approval/api/{loanRequestId}/call-customer/{taskId}/not-reached:
     parameters:
       - $ref: '#/components/parameters/LoanRequestId'
       - $ref: '#/components/parameters/TaskId'
@@ -74,7 +74,7 @@ paths:
           $ref: '#/components/responses/NotAllowed'
         '404':
           $ref: '#/components/responses/UnknownTask'
-  /api/loan-approval/{loanRequestId}/assess-risk/{taskId}:
+  /loan-approval/api/{loanRequestId}/assess-risk/{taskId}:
     parameters:
       - $ref: '#/components/parameters/LoanRequestId'
       - $ref: '#/components/parameters/TaskId'
@@ -114,7 +114,7 @@ paths:
           $ref: '#/components/responses/NotAllowed'
         '404':
           $ref: '#/components/responses/UnknownTask'
-  /api/loan-approval/{loanRequestId}/approve-loan/{taskId}:
+  /loan-approval/api/{loanRequestId}/approve-loan/{taskId}:
     parameters:
       - $ref: '#/components/parameters/LoanRequestId'
       - $ref: '#/components/parameters/TaskId'

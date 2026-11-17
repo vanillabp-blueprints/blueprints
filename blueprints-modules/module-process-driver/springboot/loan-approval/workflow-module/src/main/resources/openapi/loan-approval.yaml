@@ -17,7 +17,7 @@ tags:
   - name: loan-approval
     description: Operating the use case 'loan-approval'
 paths:
-  /api/loan-approval/request:
+  /loan-approval/api/request:
     get:
       tags:
         - loan-approval
@@ -59,7 +59,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Unavailable'
-  /api/loan-approval/{loanRequestId}/assess-risk/{taskId}:
+  /loan-approval/api/{loanRequestId}/assess-risk/{taskId}:
     get:
       tags:
         - loan-approval
@@ -90,7 +90,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/{loanRequestId}/check-contract/{taskId}:
+  /loan-approval/api/{loanRequestId}/check-contract/{taskId}:
     get:
       tags:
         - loan-approval
@@ -139,7 +139,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/{loanRequestId}:
+  /loan-approval/api/{loanRequestId}:
     get:
       tags:
         - loan-approval

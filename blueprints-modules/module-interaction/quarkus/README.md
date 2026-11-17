@@ -149,7 +149,7 @@ mvn -pl application quarkus:dev
 One URL starts something, and it is the only one:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=6000
+http://localhost:8080/loan-approval/api/start?amount=6000
 ```
 
 The risk assessment has no start endpoint, on purpose. The other module asks it, and a second
@@ -157,7 +157,7 @@ way in would invite exactly the shortcut this blueprint argues against. You can 
 did, under the same id:
 
 ```
-http://localhost:8080/api/risk-assessment/{id}
+http://localhost:8080/risk-assessment/api/{id}
 ```
 
 The log shows the whole interaction. The order is worth reading:

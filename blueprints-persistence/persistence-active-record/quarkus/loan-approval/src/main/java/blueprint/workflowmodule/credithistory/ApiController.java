@@ -39,7 +39,7 @@ public class ApiController implements CreditHistoryApi {
     creditHistory.request(creditHistoryId, years);
 
     log.info(
-        "Show the result -> http://localhost:8080/api/credit-history/{}",
+        "Show the result -> http://localhost:8080/loan-approval/api/credit-histories/{}",
         creditHistoryId);
 
     return creditHistoryId;

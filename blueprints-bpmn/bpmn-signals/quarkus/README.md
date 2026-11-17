@@ -63,7 +63,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `WorkflowTaskHandler.java`    | the `@WorkflowTask` method of the service task behind the signal                                |
 | `Service.java`                | stores the published rate, then broadcasts. Reads the rate again when a workflow goes on        |
 | `ApiController.java`          | the endpoint which publishes the rate. It is the only one without a loan request id in its path |
-| `openapi/loan-approval.yaml`  | the URL which publishes the rate, `publish-interest-rate`                                       |
+| `openapi/loan-approval.yaml`  | the URL which publishes the rate, `interest-rates/publish`                                      |
 | `InterestRate.java`           | the published rate, application data belonging to no workflow                                   |
 | `InterestRateRepository.java` | new: the repository of the published rates, which finds the latest one                          |
 | `Aggregate.java`              | `interestRate`, which is where the rate ends up per loan approval                               |
@@ -147,7 +147,7 @@ explains the modes and what each of them costs.
 Start a loan approval. This is the only URL you need:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/loan-requests/start?amount=5000
 ```
 
 The process rates the request and then waits. It logs the URL which publishes the rate:
@@ -155,7 +155,7 @@ The process rates the request and then waits. It logs the URL which publishes th
 ```
 Loan approval '0f7c…' started
 Credit rating of loan approval '0f7c…' is 50. The workflow now waits for today's interest rate, and so does every other loan approval which got this far:
-  Publish -> http://localhost:8080/api/loan-approval/publish-interest-rate?rate=3.5
+  Publish -> http://localhost:8080/loan-approval/api/interest-rates/publish?rate=3.5
 ```
 
 Start a second and a third loan approval before you open that URL. One broadcast continues all
@@ -175,7 +175,7 @@ signal over a message.
 The rate watch starts at a URL of its own and waits for the same signal:
 
 ```
-http://localhost:8080/api/rate-watch/start
+http://localhost:8080/loan-approval/api/rate-watches/start
 ```
 
 Publish a rate while both a loan approval and a rate watch wait, and one call continues both:

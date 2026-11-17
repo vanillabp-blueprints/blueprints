@@ -103,7 +103,7 @@ public class Service {
     log.info(
         "Credit rating of loan approval '{}' is {}. The workflow now waits for today's interest rate,"
             + " and so does every other loan approval which got this far:"
-            + "\n  Publish -> http://localhost:8080/api/loan-approval/publish-interest-rate?rate=3.5",
+            + "\n  Publish -> http://localhost:8080/loan-approval/api/interest-rates/publish?rate=3.5",
         loanApproval.getLoanRequestId(),
         rating);
 

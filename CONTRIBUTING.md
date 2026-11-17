@@ -209,7 +209,7 @@ calls are the one exception to the list above:
 - The start and every view stay GET requests, and the handler logs their URLs.
 - A form saves a draft with PUT and completes its task with POST. Both send JSON.
 - A form endpoint names the business id of the case and the task id, for example
-  `/api/loan-approval/{loanRequestId}/assess-risk/{taskId}`. The module checks that they belong
+  `/loan-approval/api/{loanRequestId}/assess-risk/{taskId}`. The module checks that they belong
   together, and answers 404 if they do not. So a form never completes the task of another case
   by mistake.
 - If the blueprint has no form of its own, its `README.md` shows the `curl` commands which stand
@@ -442,6 +442,31 @@ The sources of a frontend import from another directory through the path aliases
 `api.ts`) and `@generated`. A directory which others import from has an `index.ts`. The build
 reads the same aliases, and `scripts/check-imports.mjs`, the first step of `npm run build`, fails
 on an import with `../`. The README of each frontend has the table of its aliases.
+
+### Every path starts with the module
+
+Every endpoint of a workflow module is below `/<workflow-module-id>/api/`. The id of the module
+comes first, then `api`, then the rest, for example
+`/loan-approval/api/{loanRequestId}/assess-risk/{taskId}`. No path of a module starts with
+`/api/`. This holds for the endpoints of the forms, of the views and of a test driver alike.
+
+If a module has one resource, its id follows `api` directly, as in the example. If a module
+has more than one resource, a resource name follows `api`, in the plural:
+`/loan-approval/api/loan-requests/{loanRequestId}` and `/loan-approval/api/nightly-reviews`.
+Each blueprint does it one way for all its paths.
+
+The reason is the Business Cockpit. The cockpit serves a module below `/wm/<workflow-module-id>/`
+and forwards such a request to the `workflow-module-uri` of the module. That address ends with
+`/<workflow-module-id>`, for example `http://localhost:8080/loan-approval`. So
+`/wm/loan-approval/api/...` in the browser reaches `/loan-approval/api/...` of the application,
+and no segment comes twice. Outside the cockpit, a person types the same path. The application
+also sees from the first segment which module a request is for, for example when it secures the
+API of one module.
+
+An OpenAPI file which only the frontend in the cockpit reads may name the server
+`/wm/<workflow-module-id>`, so its paths start with `/api/`. Then the controller puts
+`/<workflow-module-id>` in front, on Spring Boot with `@RequestMapping`, on Quarkus with the
+`@Path` of the class. `cockpit-user-task-backend` shows it.
 
 ## The test harness
 

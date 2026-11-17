@@ -164,7 +164,7 @@ explains the modes and what each of them costs.
 Start a loan approval. This is the only URL you need:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=2000
+http://localhost:8080/loan-approval/api/start?amount=2000
 ```
 
 It answers with the ID of the loan request and logs the URL which shows the result:
@@ -173,7 +173,7 @@ It answers with the ID of the loan request and logs the URL which shows the resu
 Loan approval '0f7c…' started
 Credit rating of loan approval '0f7c…' is 8
 Loan approval '0f7c…' was decided: APPROVED
-Show the result -> http://localhost:8080/api/loan-approval/0f7c…
+Show the result -> http://localhost:8080/loan-approval/api/0f7c…
 ```
 
 Opening that URL shows the aggregate, including what the decision table decided.
@@ -182,7 +182,7 @@ Ask for more money, and the same table declines it. The log does not report that
 declined branch of the gateway ends the process without calling the application:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=9000
+http://localhost:8080/loan-approval/api/start?amount=9000
 ```
 
 Camunda 7 serves its own web applications, and the `camunda7` profile of this blueprint

@@ -138,7 +138,7 @@ public class Service {
 
     log.info(
         "Loan approval '{}' asks for {}, which needs a risk assessment. Continue with:"
-            + "\n  Assess the risk -> http://localhost:8080/api/loan-approval/{}/assess-risk/{}",
+            + "\n  Assess the risk -> http://localhost:8080/loan-approval/api/{}/assess-risk/{}",
         loanApproval.getLoanRequestId(),
         loanApproval.getAmount(),
         loanApproval.getLoanRequestId(),
@@ -210,7 +210,7 @@ public class Service {
 
     log.info(
         "Loan approval '{}' waits for the check of its signed contract. Continue with:"
-            + "\n  Check the contract -> http://localhost:8080/api/loan-approval/{}/check-contract/{}",
+            + "\n  Check the contract -> http://localhost:8080/loan-approval/api/{}/check-contract/{}",
         loanApproval.getLoanRequestId(),
         loanApproval.getLoanRequestId(),
         taskId);
@@ -310,7 +310,7 @@ public class Service {
 
     log.info(
         "Loan approval '{}' declined, because the customer declined to sign. Show it ->"
-            + " http://localhost:8080/api/loan-approval/{}",
+            + " http://localhost:8080/loan-approval/api/{}",
         loanApproval.getLoanRequestId(),
         loanApproval.getLoanRequestId());
 
@@ -338,7 +338,7 @@ public class Service {
     loanApproval.setCheckContractTaskId(null);
 
     log.info(
-        "Loan approval '{}' approved. Show it -> http://localhost:8080/api/loan-approval/{}",
+        "Loan approval '{}' approved. Show it -> http://localhost:8080/loan-approval/api/{}",
         loanRequestId,
         loanRequestId);
 

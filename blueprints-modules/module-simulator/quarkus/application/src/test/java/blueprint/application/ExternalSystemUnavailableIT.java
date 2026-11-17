@@ -59,7 +59,7 @@ public class ExternalSystemUnavailableIT {
   @SuppressWarnings("unchecked")
   public void aMissingCreditRatingIsA503WhichNamesItsRole() {
 
-    final var response = given().get("/api/loan-approval/request?customerId=C-1001&amount=5000");
+    final var response = given().get("/loan-approval/api/request?customerId=C-1001&amount=5000");
 
     assertThat(response.statusCode()).isEqualTo(503);
     assertThat((Map<String, Object>) response.as(Map.class))

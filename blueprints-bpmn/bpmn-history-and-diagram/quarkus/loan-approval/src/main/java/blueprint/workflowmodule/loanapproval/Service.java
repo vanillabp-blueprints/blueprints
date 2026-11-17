@@ -110,11 +110,11 @@ public class Service {
 
     log.info(
         "Loan approval '{}' waits for the partner. Look at it while it waits:"
-            + " http://localhost:8080/api/loan-approval/{}/history",
+            + " http://localhost:8080/loan-approval/api/{}/history",
         loanApproval.getLoanRequestId(),
         loanApproval.getLoanRequestId());
     log.info(
-        "Approve -> http://localhost:8080/api/loan-approval/{}/approve",
+        "Approve -> http://localhost:8080/loan-approval/api/{}/approve",
         loanApproval.getLoanRequestId());
 
   }
@@ -154,7 +154,7 @@ public class Service {
 
     log.info(
         "Loan approval '{}' was {}. Look at what it did:"
-            + " http://localhost:8080/api/loan-approval/{}/history",
+            + " http://localhost:8080/loan-approval/api/{}/history",
         loanApproval.getLoanRequestId(),
         loanApproval.getDecision(),
         loanApproval.getLoanRequestId());

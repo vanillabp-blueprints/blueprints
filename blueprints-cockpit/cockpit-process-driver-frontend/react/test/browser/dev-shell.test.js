@@ -64,7 +64,13 @@ async function playBackend(page, { driver = 'on', advance = { status: 200 }, coc
     calls.push(`${route.request().method()} ${url.pathname}${url.search}`);
     return url;
   };
-  await page.route('**/wm/loan-approval/process-driver/**', async (route) => {
+  // Playwright asks the route registered last first. So the module API comes before the driver,
+  // whose paths are below it.
+  await page.route('**/wm/loan-approval/api/**', async (route) => {
+    record(route);
+    return route.fulfill({ contentType: 'text/plain', body: 'done' });
+  });
+  await page.route('**/wm/loan-approval/api/process-driver/**', async (route) => {
     const url = record(route);
     if (driver !== 'on') return route.fulfill({ status: driver, body: '' });
     if (url.pathname.endsWith('/states')) return route.fulfill({ json: STATES });
@@ -85,10 +91,6 @@ async function playBackend(page, { driver = 'on', advance = { status: 200 }, coc
     if (url.pathname === '/official-api/v1/workflow/wf-1/usertasks') return route.fulfill({ json: [assessRisk] });
     if (url.pathname === '/official-api/v1/usertask/task-1') return route.fulfill({ json: assessRisk });
     return route.fulfill({ status: 404 });
-  });
-  await page.route('**/wm/loan-approval/api/**', async (route) => {
-    record(route);
-    return route.fulfill({ contentType: 'text/plain', body: 'done' });
   });
   return { calls, bodies };
 }
@@ -122,7 +124,7 @@ describe('the page "Process driver"', () => {
     await page.getByTestId('process-driver-advance').click();
 
     await assertText(page.getByTestId('process-driver-loan-request'), 'LR-4711');
-    assert.ok(calls.includes('GET /wm/loan-approval/process-driver/advance-to?state=ASSESS_RISK_USER_TASK&amount=30000&creditScore=720'), calls.join('\n'));
+    assert.ok(calls.includes('GET /wm/loan-approval/api/process-driver/advance-to?state=ASSESS_RISK_USER_TASK&amount=30000&creditScore=720'), calls.join('\n'));
     // The cockpit learns about the case a moment later, so the dev shell asks again.
     assert.deepEqual(bodies[0], { businessIds: ['LR-4711'], mode: 'All', pageNumber: 0, pageSize: 1 });
     assert.equal(await page.getByTestId('process-driver-open-workflow').getAttribute('href'), '#/workflow/wf-1');
@@ -135,7 +137,7 @@ describe('the page "Process driver"', () => {
     await assertText(page.getByTestId('assess-risk-amount'), '25,000');
     await page.getByTestId('assess-risk-complete').click();
     await page.getByTestId('assess-risk-done').waitFor();
-    assert.ok(calls.includes('POST /wm/loan-approval/api/loan-approval/LR-4711/assess-risk/task-1'), calls.join('\n'));
+    assert.ok(calls.includes('POST /wm/loan-approval/api/LR-4711/assess-risk/task-1'), calls.join('\n'));
     await assertText(page.getByTestId('notifications'), 'success: Completed');
     assert.deepEqual(pageErrors, []);
     await page.close();

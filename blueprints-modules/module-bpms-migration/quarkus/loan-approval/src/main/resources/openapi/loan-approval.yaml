@@ -15,7 +15,7 @@ tags:
   - name: loan-approval
     description: Operating the use case 'loan-approval'
 paths:
-  /api/loan-approval/start:
+  /loan-approval/api/loan-requests/start:
     get:
       tags:
         - loan-approval
@@ -35,7 +35,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/{loanRequestId}/assess-risk/{taskId}:
+  /loan-approval/api/loan-requests/{loanRequestId}/assess-risk/{taskId}:
     get:
       tags:
         - loan-approval
@@ -61,7 +61,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/{loanRequestId}/contract-signed:
+  /loan-approval/api/loan-requests/{loanRequestId}/contract-signed:
     get:
       tags:
         - loan-approval
@@ -87,7 +87,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/{loanRequestId}/bpms:
+  /loan-approval/api/loan-requests/{loanRequestId}/bpms:
     get:
       tags:
         - loan-approval
@@ -107,7 +107,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/{loanRequestId}:
+  /loan-approval/api/loan-requests/{loanRequestId}:
     get:
       tags:
         - loan-approval

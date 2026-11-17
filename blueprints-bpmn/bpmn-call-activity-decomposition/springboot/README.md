@@ -170,7 +170,7 @@ explains the modes and what each of them costs.
 This is the URL that starts a loan approval:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The log shows the calling and the called process working on one loan approval. Nothing marks
@@ -194,7 +194,7 @@ Loan approval '92a5…' was rejected (rating 100, debt ratio 60%, collateral 180
 The result of a run is at
 
 ```
-http://localhost:8080/api/loan-approval/{loanRequestId}
+http://localhost:8080/loan-approval/api/{loanRequestId}
 ```
 
 Both numbers the checks use are in the module's own configuration

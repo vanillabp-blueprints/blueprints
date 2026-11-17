@@ -183,7 +183,7 @@ explains the modes and what each of them costs.
 Start a loan approval. This is the only URL you need:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 It answers with the ID of the loan request, and the log shows both branches running:
@@ -191,11 +191,11 @@ It answers with the ID of the loan request, and the log shows both branches runn
 ```
 Loan approval '0f7c…' started
 Credit rating of loan approval '0f7c…' is 50
-Show the result -> http://localhost:8080/api/loan-approval/0f7c…
+Show the result -> http://localhost:8080/loan-approval/api/0f7c…
 Collecting the documents of loan approval '0f7c…'
 Loan approval '0f7c…' collected 3 document(s)
 Loan approval '0f7c…' waits for the partner. Approve it with:
-  http://localhost:8080/api/loan-approval/0f7c…/approve?approvedBy=partner
+  http://localhost:8080/loan-approval/api/0f7c…/approve?approvedBy=partner
 ```
 
 Opening the approval URL answers the waiting branch. The join lets the process go on, and the
