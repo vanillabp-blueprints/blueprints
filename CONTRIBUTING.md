@@ -404,6 +404,13 @@ resource class only carries its bean annotation. The paths in the file are compl
 server is `http://localhost:8080`. So the file names the URL a person types into the browser
 (Rule 3), and the interface needs no path of its own.
 
+A test which calls the module's own API generates a client from the same file, in the test scope:
+an execution in the phase `generate-test-sources` writes it to `target/generated-test-sources`.
+On Spring Boot it uses the library `spring-http-interface`, on Quarkus `jaxrs-spec`, whose
+interface the REST client of Quarkus implements. The test then sends and reads the classes of the
+file, and writes no path and no field as a string. A refused call throws, and the test asserts on
+the status of that exception.
+
 The settings are in the POM of the module which generates. Where several modules generate, the
 blueprint POM shares them in `pluginManagement`. The version is the property
 `openapi-generator.version` of the blueprint POM. There is no shared parent (Rule 1).
