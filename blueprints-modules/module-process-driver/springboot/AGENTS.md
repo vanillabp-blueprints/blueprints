@@ -75,7 +75,9 @@ Names this blueprint adds:
    `process-driver.enabled` is `true`.
 10. The tests of the workflow module are in the workflow module, which depends on the driver in
     the test scope. The driver does not depend on the module, so there is no cycle. JaCoCo
-    measures the module from these tests.
+    measures the module from these tests. The coverage is there to show that tests which use
+    the software like in production reach most of its code; write a test for an acceptance
+    criterion of the story, not for a line the report shows as missed.
 11. Tests and helpers say what happens in the business: `aClerkAssessesTheRiskInTheBrowser`,
     `theFormOfTheTaskSubmitsTheAssessment`. Every HTTP call goes through a generated client.
 

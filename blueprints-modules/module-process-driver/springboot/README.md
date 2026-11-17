@@ -231,6 +231,13 @@ and JaCoCo measures which code of the workflow module they run. `mvn verify` wri
 to `loan-approval/workflow-module/target/site/jacoco-it/`, and fails when less than 85 percent
 of the instructions of the module ran.
 
+The number is not the point. It shows that tests which use the software the way it is used in
+production reach most of its code: the simulator answers like the real systems, and the driver
+acts like the users through the same API the user interface calls. Today they run more than 90
+percent of the module. What such a test checks is mostly what the acceptance criteria of a
+story ask for, like "a clerk cannot approve the loan before the customer signed". So a test
+which fails says which promise to the business is broken, not which method changed.
+
 The dev shell of the cockpit and the tests of a user interface need the driver too, but in a
 running application. For them the driver has a REST API:
 
