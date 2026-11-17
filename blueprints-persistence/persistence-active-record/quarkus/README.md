@@ -136,13 +136,15 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `credithistory/`                                    | the second use case, the same four classes, with an aggregate extending `PanacheMongoEntityBase`                    |
 | `credit_history.bpmn`                               | new: the process of the second use case, one per BPMS                                                               |
 | `openapi/credit-history.yaml`                       | new: the API of the second use case, from which the build generates its interface                                   |
+| `openapi/loan-approval.yaml`                        | the paths name the resource, `/loan-approval/api/loan-requests/...`, because the module has two                     |
+| `.../loanapproval/ApiController.java`               | logs the URL with the resource name `loan-requests`                                                                 |
 | `loan-approval/pom.xml`                             | both Panache flavours, because the module has an aggregate of each                                                  |
 | `application/src/main/resources/application.yaml`   | a MongoDB database next to the data source, and no connection string, so the dev services run one                   |
 | `loan-approval/src/test/resources/application.yaml` | a MongoDB database for the test, next to the data source                                                            |
 | `loan-approval/src/test/.../*IT.java`               | read through the aggregates' own finders, and assert that a workflow started on a remote engine keeps its aggregate |
 
-Everything else is the base blueprint, file for file: the wiring classes, the API, the module's
-own configuration, the test harness.
+Everything else is the base blueprint, file for file: the wiring classes, the module's own
+configuration, the test harness.
 
 ## Running it
 
@@ -221,8 +223,8 @@ that command as well as in `mvn install`.
 Start a loan approval and a credit history. These are the only URLs you need:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
-http://localhost:8080/api/credit-history/start?years=3
+http://localhost:8080/loan-approval/api/loan-requests/start?amount=5000
+http://localhost:8080/loan-approval/api/credit-histories/start?years=3
 ```
 
 Each answers with the ID of the case it started and logs the URL which shows the result:
@@ -230,7 +232,7 @@ Each answers with the ID of the case it started and logs the URL which shows the
 ```
 Loan approval '0f7c…' started
 Credit rating of loan approval '0f7c…' is 50
-Show the result -> http://localhost:8080/api/loan-approval/0f7c…
+Show the result -> http://localhost:8080/loan-approval/api/loan-requests/0f7c…
 ```
 
 Opening that URL reads the aggregate through its own finder and shows what the service task

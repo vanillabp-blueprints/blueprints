@@ -125,7 +125,7 @@ explains the modes and what each of them costs.
 Start a loan approval. This is the only URL you need:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The documents are complete, the subprocess runs, and next to it the escalation informs the
@@ -142,7 +142,7 @@ Ask for less than the configured amount, and the documents count as incomplete. 
 path is taken, and the workflow never enters the subprocess:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=500
+http://localhost:8080/loan-approval/api/start?amount=500
 ```
 
 ```

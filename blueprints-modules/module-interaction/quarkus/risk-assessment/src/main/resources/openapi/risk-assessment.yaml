@@ -15,7 +15,7 @@ tags:
   - name: risk-assessment
     description: Operating the use case 'risk-assessment'
 paths:
-  /api/risk-assessment/{caseId}:
+  /risk-assessment/api/{caseId}:
     get:
       tags:
         - risk-assessment

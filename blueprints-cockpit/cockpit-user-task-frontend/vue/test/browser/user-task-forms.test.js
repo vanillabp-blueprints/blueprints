@@ -56,9 +56,9 @@ after(async () => {
  */
 async function mockApi(page, { forms = {}, status, completeStatus = 204 } = {}) {
   const completed = [];
-  await page.route('**/wm/loan-approval/api/loan-approval/*/*/*', async (route) => {
+  await page.route('**/wm/loan-approval/api/loan-requests/*/*/*', async (route) => {
     const request = route.request();
-    const [, loanRequestId, form, taskId] = new URL(request.url()).pathname.match(/\/api\/loan-approval\/([^/]+)\/([^/]+)\/([^/]+)$/);
+    const [, loanRequestId, form, taskId] = new URL(request.url()).pathname.match(/\/api\/loan-requests\/([^/]+)\/([^/]+)\/([^/]+)$/);
     if (status) return route.fulfill({ status });
     if (request.method() === 'POST') {
       if (completeStatus === 204) completed.push({ loanRequestId, taskId, form, body: request.postDataJSON() });

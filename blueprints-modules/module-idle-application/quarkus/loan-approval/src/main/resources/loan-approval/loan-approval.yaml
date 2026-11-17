@@ -7,7 +7,7 @@
 loan-approval:
   rating-scale: 100
   # Where H2 writes down the statements it executes, which the endpoint
-  # /api/loan-approval/statements counts. It is next to the database file, so it follows
+  # /loan-approval/api/statements counts. It is next to the database file, so it follows
   # whatever the JDBC URL of this application says. Measuring equipment, not something a
   # workflow module needs.
   database-trace: target/loan-approval.trace.db

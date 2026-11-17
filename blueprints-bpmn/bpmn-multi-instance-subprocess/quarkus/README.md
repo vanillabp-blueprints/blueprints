@@ -162,7 +162,7 @@ explains the modes and what each of them costs.
 This is the URL that starts a loan approval:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The log shows both loops, and the position of every call in them:
@@ -182,7 +182,7 @@ Loan approval '764f…' takes 'northern-bank' in region 'north' at 70 basis poin
 The result of a run is at
 
 ```
-http://localhost:8080/api/loan-approval/{loanRequestId}
+http://localhost:8080/loan-approval/api/{loanRequestId}
 ```
 
 Add a region to `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`, and the

@@ -22,15 +22,15 @@ quarkus:
   hibernate-orm:
     schema-management:
       strategy: drop-and-create
-  # How users log in is the application's decision. Every call below /api/ needs a login with
-  # HTTP basic authentication. Which user may call which endpoint, the workflow module decides
-  # with the roles it names.
+  # How users log in is the application's decision. Every call below /loan-approval/api/, the
+  # API of the workflow module, needs a login with HTTP basic authentication. Which user may call
+  # which endpoint, the workflow module decides with the roles it names.
   http:
     auth:
       basic: true
       permission:
         api:
-          paths: /api/*
+          paths: /loan-approval/api/*
           policy: authenticated
   # The demo users, each with the role of the workflow module it holds. The password of each
   # is 'demo'. A real application connects its identity provider here instead.

@@ -16,9 +16,9 @@ The loan approval of the base blueprint with one wait state added. So there is s
 look at while the workflow still runs. Three endpoints answer what a viewer needs:
 
 ```
-GET /api/loan-approval/{id}/definitions   which process definitions this workflow uses
-GET /api/loan-approval/{id}/diagram       the BPMN XML of one of them
-GET /api/loan-approval/{id}/history       what this workflow has done, element by element
+GET /loan-approval/api/{id}/definitions   which process definitions this workflow uses
+GET /loan-approval/api/{id}/diagram       the BPMN XML of one of them
+GET /loan-approval/api/{id}/history       what this workflow has done, element by element
 ```
 
 They map one to one onto `ProcessService#getProcessDefinitions`, `#getBpmnXml` and
@@ -147,15 +147,15 @@ explains the modes and what each of them costs.
 This is the URL that starts a loan approval:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The workflow then waits, and the log says where to look:
 
 ```
 Loan approval '4d0e…' waits for the partner. Look at it while it waits:
-  http://localhost:8080/api/loan-approval/4d0e…/history
-Approve -> http://localhost:8080/api/loan-approval/4d0e…/approve
+  http://localhost:8080/loan-approval/api/4d0e…/history
+Approve -> http://localhost:8080/loan-approval/api/4d0e…/approve
 ```
 
 The history of the waiting workflow names the element where it stands, without an end time:
@@ -175,7 +175,7 @@ The history of the waiting workflow names the element where it stands, without a
 The diagram behind it is the BPMN the BPMS holds. That is the model VanillaBP deployed:
 
 ```
-http://localhost:8080/api/loan-approval/{loanRequestId}/diagram
+http://localhost:8080/loan-approval/api/{loanRequestId}/diagram
 ```
 
 Answer the wait with the `approve` URL and ask again. The last element has an end time, the

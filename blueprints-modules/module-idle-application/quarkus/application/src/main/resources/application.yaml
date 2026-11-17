@@ -21,7 +21,7 @@ quarkus:
     jdbc:
       # A file database rather than one in memory, and a trace: H2 writes every statement it
       # executes into 'target/loan-approval.trace.db', one line each. That file is what the
-      # endpoint /api/loan-approval/statements counts, and opening it shows what your
+      # endpoint /loan-approval/api/statements counts, and opening it shows what your
       # database was actually asked. Measuring equipment of this blueprint, not something an
       # application needs.
       url: jdbc:h2:./target/loan-approval;TRACE_LEVEL_FILE=2

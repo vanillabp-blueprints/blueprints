@@ -303,7 +303,7 @@ mvn -pl application spring-boot:run
 Start a loan approval. The browser asks you to log in. Take `alice` with the password `demo`:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000&customer=Jane%20Roe
+http://localhost:8080/loan-approval/api/start?amount=5000&customer=Jane%20Roe
 ```
 
 The log shows the address of each form when its task opens. Open it as a user who may work on
@@ -311,20 +311,20 @@ the task, and the form says `editable: true`. Completing a task is a POST, and t
 of a form. This blueprint has no forms, so `curl` stands in for one:
 
 ```bash
-curl -u alice:demo -X POST http://localhost:8080/api/loan-approval/0f7c…/call-customer/1a2b…/not-reached
+curl -u alice:demo -X POST http://localhost:8080/loan-approval/api/0f7c…/call-customer/1a2b…/not-reached
 curl -u alice:demo -X POST -H 'Content-Type: application/json' -d '{"note":"wants it soon"}' \
-  http://localhost:8080/api/loan-approval/0f7c…/call-customer/1a2b…
+  http://localhost:8080/loan-approval/api/0f7c…/call-customer/1a2b…
 curl -u carol:demo -X POST -H 'Content-Type: application/json' -d '{"riskAcceptable":true}' \
-  http://localhost:8080/api/loan-approval/0f7c…/assess-risk/3c4d…
+  http://localhost:8080/loan-approval/api/0f7c…/assess-risk/3c4d…
 curl -u carol:demo -X POST -H 'Content-Type: application/json' -d '{"approved":true}' \
-  http://localhost:8080/api/loan-approval/0f7c…/approve-loan/5e6f…
+  http://localhost:8080/loan-approval/api/0f7c…/approve-loan/5e6f…
 ```
 
 The last one answers 403, because `carol` assessed the risk. `dave` may approve. To hand the
 customer to `erin` while the call is open, log in as `lea`:
 
 ```
-http://localhost:8080/api/loan-approval/0f7c…/change-advisor?advisor=erin
+http://localhost:8080/loan-approval/api/0f7c…/change-advisor?advisor=erin
 ```
 
 What the cockpit got is in the log of the simulator, and in its API at

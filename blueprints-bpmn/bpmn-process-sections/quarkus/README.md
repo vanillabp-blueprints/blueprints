@@ -188,7 +188,7 @@ mvn -pl application quarkus:dev
 This is the URL that starts a loan approval:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 5000 is below the configured limit, so the risk assessment is skipped and the log shows a
@@ -216,7 +216,7 @@ Loan approval '92a5…' was rejected (collateral 12000, debt ratio 60%)
 The result of a run is at
 
 ```
-http://localhost:8080/api/loan-approval/{loanRequestId}
+http://localhost:8080/loan-approval/api/{loanRequestId}
 ```
 
 For a small loan the risk assessment is missing from that answer. The whole blueprint is about

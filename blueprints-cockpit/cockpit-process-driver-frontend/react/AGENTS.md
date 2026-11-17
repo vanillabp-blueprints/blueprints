@@ -46,7 +46,7 @@ name.
 | `dev-shell/src/process-driver-page.tsx` | the page "Process driver": loads the states, sends the test data to advance-to, links to the case and its user task                                                                                 |
 | `dev-shell/src/cockpit.ts`              | the host of the module kit with the areas `body` and `actions`, and the three calls to the simulated cockpit                                                                                        |
 | `dev-shell/src/user-task-page.tsx`      | reads the user task from the simulated cockpit and draws its form with `showUserTask`                                                                                                               |
-| `scripts/start.mjs`                     | serves the dev shell and forwards `/wm/loan-approval/api/`, `/wm/loan-approval/process-driver/` and `/official-api/`                                                                                |
+| `scripts/start.mjs`                     | serves the dev shell and forwards `/wm/loan-approval/api/` and `/official-api/`                                                                                                                     |
 | `src/shared/process-driver-api.ts`      | `processDriver`, the generated client of the driver. Only the dev shell imports it, through `@process-driver-client`                                                                                |
 | `src/shared/api.ts`                     | `loanApproval`, the generated client of the module API, and `ResponseError`. The forms import it as `@gui-client` and complete their tasks with POST: `completeAssessRisk`, `completeCheckContract` |
 | `src/loan-approval.ts`                  | module id, process id, task definitions, keys of the details, entry names and web component names                                                                                                   |
@@ -94,8 +94,9 @@ neighbour with `./`. `npm run check:imports`, the first step of `npm run build`,
 ## Adding this blueprint to an existing project
 
 1. The backend needs a process driver with a REST API, as `module-process-driver` shows it:
-   `GET /process-driver/states` and `GET /process-driver/advance-to`, switched on by a Maven
-   profile and a property. Without it, the page "Process driver" has nothing to call.
+   `GET /loan-approval/api/process-driver/states` and
+   `GET /loan-approval/api/process-driver/advance-to`, switched on by a Maven profile and a
+   property. Without it, the page "Process driver" has nothing to call.
 2. If the workflow module has no frontend project yet, copy this one and replace the
    placeholders. If it has one, take `dev-shell/`, `scripts/start.mjs`,
    `scripts/build-dev-shell.mjs`, `src/shared/process-driver-api.ts` and the second job in

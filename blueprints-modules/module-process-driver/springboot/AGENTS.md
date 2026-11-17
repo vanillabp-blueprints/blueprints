@@ -27,20 +27,20 @@ Replace all of these consistently; they are the same in every blueprint.
 
 Names this blueprint adds:
 
-|                    Name                    |                                             What it is                                              |
-|--------------------------------------------|-----------------------------------------------------------------------------------------------------|
-| `loan-approval/workflow-module`            | the workflow module, artifact `loan-approval-workflow-module`, with all its tests                   |
-| `loan-approval/test-driver`                | the process driver, artifact `loan-approval-test-driver`                                            |
-| `simulator/api`, `simulator/application`   | the test API (`simulator-api-client`, `simulator-api-server`) and the simulator itself              |
-| `blueprint.testdriver.loanapproval`        | the package of the driver, deliberately NOT below the package of the workflow module                |
-| `blueprint.testdriver.loanapproval.gui`    | the client of the API of the user interface, generated from `openapi/loan-approval.yaml`            |
-| `blueprint.testdriver.simulator`           | `SimulatorTestApi`, the client of the test API of the simulator                                     |
-| `ProcessState`                             | the states a scenario can reach, each with the step which finishes it                               |
-| `*Step`                                    | one step, named after what is true when it is done, with its direct predecessors                    |
-| `TestData`                                 | what a scenario says about the case, with defaults which make sense for the business                |
-| `John Signing`, `Jack Nosign`, ...         | signers the simulated e-signature service acts on, see the table in the README                      |
-| `process-driver.*`                         | the configuration of the driver: `enabled`, `simulator-base-url`, `application-base-url`, `timeout` |
-| `/process-driver/states`, `.../advance-to` | the REST API of the driver, for the dev shell and the tests of a user interface                     |
+|                             Name                             |                                             What it is                                              |
+|--------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| `loan-approval/workflow-module`                              | the workflow module, artifact `loan-approval-workflow-module`, with all its tests                   |
+| `loan-approval/test-driver`                                  | the process driver, artifact `loan-approval-test-driver`                                            |
+| `simulator/api`, `simulator/application`                     | the test API (`simulator-api-client`, `simulator-api-server`) and the simulator itself              |
+| `blueprint.testdriver.loanapproval`                          | the package of the driver, deliberately NOT below the package of the workflow module                |
+| `blueprint.testdriver.loanapproval.gui`                      | the client of the API of the user interface, generated from `openapi/loan-approval.yaml`            |
+| `blueprint.testdriver.simulator`                             | `SimulatorTestApi`, the client of the test API of the simulator                                     |
+| `ProcessState`                                               | the states a scenario can reach, each with the step which finishes it                               |
+| `*Step`                                                      | one step, named after what is true when it is done, with its direct predecessors                    |
+| `TestData`                                                   | what a scenario says about the case, with defaults which make sense for the business                |
+| `John Signing`, `Jack Nosign`, ...                           | signers the simulated e-signature service acts on, see the table in the README                      |
+| `process-driver.*`                                           | the configuration of the driver: `enabled`, `simulator-base-url`, `application-base-url`, `timeout` |
+| `/loan-approval/api/process-driver/states`, `.../advance-to` | the REST API of the driver, for the dev shell and the tests of a user interface                     |
 
 **The rules this blueprint is built on:**
 

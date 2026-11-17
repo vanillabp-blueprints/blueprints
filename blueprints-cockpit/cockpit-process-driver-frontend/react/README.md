@@ -150,8 +150,9 @@ simulated cockpit at `http://localhost:8079`. `APPLICATION_URL`, `COCKPIT_URL` a
 ### From a state to an open form
 
 1. The page "Process driver" calls `processDriver.states()`, which is
-   `GET /wm/loan-approval/process-driver/states`. `npm run start` forwards it to
-   `/process-driver/states` of the application. The answer fills the list of states.
+   `GET /wm/loan-approval/api/process-driver/states`. `npm run start` forwards it to
+   `/loan-approval/api/process-driver/states` of the application, the way the cockpit would. The
+   answer fills the list of states.
 2. "Create the case" calls `processDriver.advanceTo({ state, amount, creditScore })`. The driver
    requests a loan, assesses the risk on the way if the amount needs it, waits for the contract and
    signs it, depending on the state. It answers with the id of the loan request and of the open
@@ -168,7 +169,7 @@ simulated cockpit at `http://localhost:8079`. `APPLICATION_URL`, `COCKPIT_URL` a
    components into the areas `body` and `actions`.
 5. The button of the form calls the module API with POST, for example
    `loanApproval.completeCheckContract(...)`, which is
-   `POST /wm/loan-approval/api/loan-approval/{loanRequestId}/check-contract/{taskId}`. A form
+   `POST /wm/loan-approval/api/{loanRequestId}/check-contract/{taskId}`. A form
    completes its task with POST, as the
    [rules for blueprints](https://github.com/vanillabp-blueprints/blueprints/blob/main/CONTRIBUTING.md#endpoints-which-a-form-calls)
    ask. The GET request on the same path stays for a person in the browser. The id of

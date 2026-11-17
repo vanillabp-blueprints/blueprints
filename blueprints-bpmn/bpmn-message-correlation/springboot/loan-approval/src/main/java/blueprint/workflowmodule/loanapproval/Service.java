@@ -96,7 +96,7 @@ public class Service {
 
     log.info(
         "Credit rating of loan approval '{}' is {}. The workflow now waits for the signed contract:"
-            + "\n  Signed -> http://localhost:8080/api/loan-approval/{}/contract-signed?signedBy=Jane%20Doe",
+            + "\n  Signed -> http://localhost:8080/loan-approval/api/{}/contract-signed?signedBy=Jane%20Doe",
         loanApproval.getLoanRequestId(),
         rating,
         loanApproval.getLoanRequestId());

@@ -138,7 +138,7 @@ Start a loan approval. The browser asks you to log in. Take `risk-officer` with 
 `demo`:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The process opens three user tasks and logs the address of each form:
@@ -147,11 +147,11 @@ The process opens three user tasks and logs the address of each form:
 Loan approval '0f7c…' started
 Credit rating of loan approval '0f7c…' is 50
 Loan approval '0f7c…' waits for a risk assessment. Its form reads
-  http://localhost:8080/api/loan-approval/0f7c…/assess-risk/1a2b…
+  http://localhost:8080/loan-approval/api/0f7c…/assess-risk/1a2b…
 Loan approval '0f7c…' waits for a check of the document 'id-card'. Its form reads
-  http://localhost:8080/api/loan-approval/0f7c…/check-document/3c4d…
+  http://localhost:8080/loan-approval/api/0f7c…/check-document/3c4d…
 Loan approval '0f7c…' waits for a check of the document 'income-statement'. Its form reads
-  http://localhost:8080/api/loan-approval/0f7c…/check-document/5e6f…
+  http://localhost:8080/loan-approval/api/0f7c…/check-document/5e6f…
 ```
 
 Open the risk assessment in the browser, and you see what its form shows. Open a document
@@ -166,13 +166,13 @@ say for every endpoint of a form. This blueprint has no forms, so `curl` stands 
 ```bash
 curl -u risk-officer:demo -X PUT -H 'Content-Type: application/json' \
   -d '{"riskAcceptable":false,"comment":"first impression"}' \
-  http://localhost:8080/api/loan-approval/0f7c…/assess-risk/1a2b…
+  http://localhost:8080/loan-approval/api/0f7c…/assess-risk/1a2b…
 ```
 
 Look at the loan approval now:
 
 ```
-http://localhost:8080/api/loan-approval/0f7c…
+http://localhost:8080/loan-approval/api/0f7c…
 ```
 
 The task holds the draft, and `riskAcceptable` of the aggregate is still empty. The forms of the
@@ -181,7 +181,7 @@ document checks show no risk assessment either. Complete the task:
 ```bash
 curl -u risk-officer:demo -X POST -H 'Content-Type: application/json' \
   -d '{"riskAcceptable":true,"comment":"stable income"}' \
-  http://localhost:8080/api/loan-approval/0f7c…/assess-risk/1a2b…
+  http://localhost:8080/loan-approval/api/0f7c…/assess-risk/1a2b…
 ```
 
 Now the result is in the aggregate, and the task says who completed it and when. Send the same

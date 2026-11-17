@@ -138,8 +138,8 @@ public class Service {
 
     log.info(
         "Loan approval '{}' waits for the partner. Their answer arrives at one of:"
-            + "\n  Approved -> http://localhost:8080/api/loan-approval/{}/partner-decision/{}?approved=true"
-            + "\n  Rejected -> http://localhost:8080/api/loan-approval/{}/partner-decision/{}?approved=false",
+            + "\n  Approved -> http://localhost:8080/loan-approval/api/{}/partner-decision/{}?approved=true"
+            + "\n  Rejected -> http://localhost:8080/loan-approval/api/{}/partner-decision/{}?approved=false",
         loanApproval.getLoanRequestId(),
         loanApproval.getLoanRequestId(), taskId,
         loanApproval.getLoanRequestId(), taskId);

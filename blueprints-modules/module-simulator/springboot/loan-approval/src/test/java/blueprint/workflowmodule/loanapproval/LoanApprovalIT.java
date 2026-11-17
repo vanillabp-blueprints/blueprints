@@ -55,7 +55,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   private final RestClient api = RestClient.create("http://localhost:"
       + PORT
-      + "/api/loan-approval");
+      + "/loan-approval/api");
 
   /**
    * Points every adapter at the simulator, before the application starts. The application does

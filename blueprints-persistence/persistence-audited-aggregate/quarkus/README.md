@@ -241,7 +241,7 @@ mvn -pl application quarkus:dev
 Start a loan approval. This is the only URL you need:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000&requestedBy=the%20customer
+http://localhost:8080/loan-approval/api/start?amount=5000&requestedBy=the%20customer
 ```
 
 It answers with the id of the loan request. The log shows where the process stops:
@@ -250,8 +250,8 @@ It answers with the id of the loan request. The log shows where the process stop
 Loan approval '0f7c…' was requested by the customer
 Credit rating of loan approval '0f7c…' is 50
 Loan approval '0f7c…' waits for a risk assessment. Continue with one of:
-  Acceptable -> http://localhost:8080/api/loan-approval/0f7c…/assess-risk/1f2e…?riskIsAcceptable=true&decidedBy=paula
-  Too risky  -> http://localhost:8080/api/loan-approval/0f7c…/assess-risk/1f2e…?riskIsAcceptable=false&decidedBy=paula
+  Acceptable -> http://localhost:8080/loan-approval/api/0f7c…/assess-risk/1f2e…?riskIsAcceptable=true&decidedBy=paula
+  Too risky  -> http://localhost:8080/loan-approval/api/0f7c…/assess-risk/1f2e…?riskIsAcceptable=false&decidedBy=paula
 ```
 
 Open one of them, and the log shows the point of the whole blueprint:
@@ -271,8 +271,8 @@ Two URLs show the two answers side by side: the case as it is, and the trail of 
 was:
 
 ```
-http://localhost:8080/api/loan-approval/0f7c…
-http://localhost:8080/api/loan-approval/0f7c…/trail
+http://localhost:8080/loan-approval/api/0f7c…
+http://localhost:8080/loan-approval/api/0f7c…/trail
 ```
 
 ## How it works

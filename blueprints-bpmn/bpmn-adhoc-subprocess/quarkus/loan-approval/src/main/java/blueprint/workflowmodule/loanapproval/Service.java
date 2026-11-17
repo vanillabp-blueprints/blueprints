@@ -138,7 +138,7 @@ public class Service {
         .forEach(combination -> urls
             .append("\n  ")
             .append(padded(combination))
-            .append(" -> http://localhost:8080/api/loan-approval/")
+            .append(" -> http://localhost:8080/loan-approval/api/")
             .append(loanApproval.getLoanRequestId())
             .append("/select-checks/")
             .append(taskId)

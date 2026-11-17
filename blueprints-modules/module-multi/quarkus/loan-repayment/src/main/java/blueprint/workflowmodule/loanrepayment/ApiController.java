@@ -47,7 +47,7 @@ public class ApiController implements LoanRepaymentApi {
     loanRepayment.initiate(repaymentId, customerId, amount);
 
     log.info(
-        "Show the result -> http://localhost:8080/api/loan-repayment/{}",
+        "Show the result -> http://localhost:8080/loan-repayment/api/{}",
         repaymentId);
 
     return repaymentId;

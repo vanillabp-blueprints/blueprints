@@ -177,7 +177,7 @@ public class ProcessDriver {
     }
 
     log.info(
-        "Loan approval '{}' reached {}. Show it -> http://localhost:8080/api/loan-approval/{}",
+        "Loan approval '{}' reached {}. Show it -> http://localhost:8080/loan-approval/api/{}",
         scenario.getLoanRequestId(),
         state,
         scenario.getLoanRequestId());

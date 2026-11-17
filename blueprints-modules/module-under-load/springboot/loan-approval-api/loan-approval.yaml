@@ -11,7 +11,7 @@ tags:
   - name: loan-approval
     description: Operating the use case 'loan-approval'
 paths:
-  /api/loan-approval/start:
+  /loan-approval/api/start:
     get:
       tags:
         - loan-approval
@@ -49,7 +49,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/open-assessments:
+  /loan-approval/api/open-assessments:
     get:
       tags:
         - loan-approval
@@ -64,7 +64,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/OpenAssessment"
-  /api/loan-approval/unfinished:
+  /loan-approval/api/unfinished:
     get:
       tags:
         - loan-approval
@@ -78,7 +78,7 @@ paths:
               schema:
                 type: integer
                 format: int64
-  /api/loan-approval/{loanRequestId}/assess/{taskId}:
+  /loan-approval/api/{loanRequestId}/assess/{taskId}:
     get:
       tags:
         - loan-approval
@@ -110,7 +110,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/{loanRequestId}:
+  /loan-approval/api/{loanRequestId}:
     get:
       tags:
         - loan-approval

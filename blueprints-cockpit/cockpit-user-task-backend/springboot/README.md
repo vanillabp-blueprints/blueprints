@@ -62,7 +62,7 @@ module reports `http://localhost:8080/loan-approval`, so:
 
 |                            The browser asks for                            |                             The module gets                             |
 |----------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| `/wm/loan-approval/api/loan-approval/{loanRequestId}/assess-risk/{taskId}` | `/loan-approval/api/loan-approval/{loanRequestId}/assess-risk/{taskId}` |
+| `/wm/loan-approval/api/loan-requests/{loanRequestId}/assess-risk/{taskId}` | `/loan-approval/api/loan-requests/{loanRequestId}/assess-risk/{taskId}` |
 | `/wm/loan-approval/bc-manifest.json`                                       | `/loan-approval/bc-manifest.json`                                       |
 
 That is why the OpenAPI names `/wm/loan-approval` as its server, and why every endpoint of the
@@ -247,7 +247,7 @@ which gives the form its data:
 ```
 Loan approval '0f7c…' started
 Loan approval '0f7c…' waits for a risk assessment. Its form reads
-  http://localhost:8080/loan-approval/api/loan-approval/0f7c…/assess-risk/1a2b…
+  http://localhost:8080/loan-approval/api/loan-requests/0f7c…/assess-risk/1a2b…
 ```
 
 Open it in a browser, and you see what the form shows. Completing the task is a POST with what
@@ -281,7 +281,7 @@ the cockpit adapter reports the task to the cockpit, with the details of
 down loses nothing.
 
 A user opens the task in the cockpit. The cockpit loads the form of the module, and the form
-calls `GET .../api/loan-approval/{loanRequestId}/assess-risk/{taskId}` with the business id of the
+calls `GET .../api/loan-requests/{loanRequestId}/assess-risk/{taskId}` with the business id of the
 task and its id. The cockpit knows the task by the same id the handler got, and its business id is
 the id of the loan request. `Service` finds the loan request by its id and accepts it only if that
 task is open on it. A task which is not open on that loan request answers 404: the id is unknown,

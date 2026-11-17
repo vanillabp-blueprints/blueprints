@@ -48,18 +48,20 @@ shows them.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                      File                      |                                 What is different                                 |
-|------------------------------------------------|-----------------------------------------------------------------------------------|
-| `nightly_review.bpmn`                          | a second process with a timer start event and a signal start event                |
-| `nightlyreview/WorkflowTaskHandler.java`       | `@WorkflowStartedByBpms` next to the ordinary `@WorkflowTask`                     |
-| `nightlyreview/Service.java`                   | builds the aggregate of a start nobody asked for, and names it                    |
-| `nightlyreview/Workflow.java`                  | `sendSignal` and, deliberately, no `startWorkflow`                                |
-| `nightlyreview/model/Aggregate.java`           | the aggregate of a workflow nobody started, built by the application all the same |
-| `nightlyreview/model/AggregateRepository.java` | new: the repository of the reviews, with a query for the kind of start            |
-| `nightlyreview/ApiController.java`             | new: asks for a review by broadcasting the signal, and lists the reviews          |
-| `openapi/nightly-review.yaml`                  | new: the OpenAPI file of that controller                                          |
-| `NightlyReviewIT.java`                         | a test which cannot start anything and waits for an aggregate to appear           |
-| `loan-approval/pom.xml`                        | generates the Java interface of `nightly-review.yaml` as well                     |
+|                      File                      |                                        What is different                                        |
+|------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `nightly_review.bpmn`                          | a second process with a timer start event and a signal start event                              |
+| `nightlyreview/WorkflowTaskHandler.java`       | `@WorkflowStartedByBpms` next to the ordinary `@WorkflowTask`                                   |
+| `nightlyreview/Service.java`                   | builds the aggregate of a start nobody asked for, and names it                                  |
+| `nightlyreview/Workflow.java`                  | `sendSignal` and, deliberately, no `startWorkflow`                                              |
+| `nightlyreview/model/Aggregate.java`           | the aggregate of a workflow nobody started, built by the application all the same               |
+| `nightlyreview/model/AggregateRepository.java` | new: the repository of the reviews, with a query for the kind of start                          |
+| `nightlyreview/ApiController.java`             | new: asks for a review by broadcasting the signal, and lists the reviews                        |
+| `openapi/nightly-review.yaml`                  | new: the OpenAPI file of that controller                                                        |
+| `openapi/loan-approval.yaml`                   | the paths name the resource, `/loan-approval/api/loan-requests/...`, because the module has two |
+| `loanapproval/ApiController.java`              | logs the URL with the resource name `loan-requests`                                             |
+| `NightlyReviewIT.java`                         | a test which cannot start anything and waits for an aggregate to appear                         |
+| `loan-approval/pom.xml`                        | generates the Java interface of `nightly-review.yaml` as well                                   |
 
 ## Running it
 
@@ -145,13 +147,13 @@ The nightly review 'a41f…' looked at 0 loan approval(s) at 2026-08-14T09:12:31
 The reviews are listed at
 
 ```
-http://localhost:8080/api/nightly-review
+http://localhost:8080/loan-approval/api/nightly-reviews
 ```
 
 To ask for one instead of waiting, broadcast the signal:
 
 ```
-http://localhost:8080/api/nightly-review/request
+http://localhost:8080/loan-approval/api/nightly-reviews/request
 ```
 
 ```
@@ -163,7 +165,7 @@ The loan approval of the base blueprint is still there, started the ordinary way
 review something to count:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/loan-requests/start?amount=5000
 ```
 
 ## How it works

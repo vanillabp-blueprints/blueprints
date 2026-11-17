@@ -39,7 +39,7 @@ public class RepaymentApiController implements LoanRepaymentApi {
     loanRepayment.initiate(repaymentId, amount);
 
     log.info(
-        "Which BPMS runs it -> http://localhost:8080/api/loan-repayment/{}/bpms",
+        "Which BPMS runs it -> http://localhost:8080/loan-approval/api/loan-repayments/{}/bpms",
         repaymentId);
 
     return repaymentId;

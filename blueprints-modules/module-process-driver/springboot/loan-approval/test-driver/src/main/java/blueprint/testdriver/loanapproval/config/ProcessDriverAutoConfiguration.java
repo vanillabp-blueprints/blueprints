@@ -51,7 +51,7 @@ public class ProcessDriverAutoConfiguration {
 
     log.warn(
         "The process driver is on and uses the simulator at {}. It creates loan approvals on request."
-            + " Never switch it on in production. Its states -> http://localhost:8080/process-driver/states",
+            + " Never switch it on in production. Its states -> http://localhost:8080/loan-approval/api/process-driver/states",
         properties.getSimulatorBaseUrl());
 
     return SimulatorTestApi.at(properties.getSimulatorBaseUrl());

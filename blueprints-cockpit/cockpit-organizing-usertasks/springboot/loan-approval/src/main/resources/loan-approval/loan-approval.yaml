@@ -29,9 +29,10 @@ vanillabp:
       # https://github.com/vanillabp/business-cockpit/wiki/Configuration#what-a-workflow-module-tells-the-cockpit
       cockpit:
         # Where the cockpit reaches this module. The cockpit forwards a request of a form below
-        # '/wm/loan-approval/' to this address, so '/wm/loan-approval/api/loan-approval/...'
-        # reaches the endpoints of the forms. The application sets the address it runs at.
-        workflow-module-uri: http://localhost:8080
+        # '/wm/loan-approval/' to this address. The address ends with the module id, so
+        # '/wm/loan-approval/api/...' reaches '/loan-approval/api/...', the endpoints of the
+        # forms. The application sets the host it runs at.
+        workflow-module-uri: http://localhost:8080/loan-approval
         # The forms of a module are usually ES modules which the cockpit loads, listed in a
         # manifest. That is the default of every user task of this module. A details provider
         # may name another address for one task: "Call customer" opens the CRM.

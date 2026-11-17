@@ -252,10 +252,10 @@ which fails says which promise to the business is broken, not which method chang
 The dev shell of the cockpit and the tests of a user interface need the driver too, but in a
 running application. For them the driver has a REST API:
 
-|                              URL                               |                               What it does                               |
-|----------------------------------------------------------------|--------------------------------------------------------------------------|
-| `/process-driver/states`                                       | lists the states                                                         |
-| `/process-driver/advance-to?state=...&amount=...&creditScore=` | brings a new loan request there and names its open task, if there is one |
+|                                       URL                                        |                               What it does                               |
+|----------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| `/loan-approval/api/process-driver/states`                                       | lists the states                                                         |
+| `/loan-approval/api/process-driver/advance-to?state=...&amount=...&creditScore=` | brings a new loan request there and names its open task, if there is one |
 
 Two locks keep it out of production. The application takes `test-driver` only with the Maven
 profile `test-driver`, which a production build never names. And the driver adds no bean and no
@@ -266,9 +266,9 @@ module. Its integration test generates a client of its own.
 The blueprint
 [`cockpit-process-driver-frontend`](https://github.com/vanillabp-blueprints/cockpit-process-driver-frontend-react)
 shows the dev shell side. It has the forms of both user tasks and a dev shell with a page
-"Process driver". The page lists the states from `/process-driver/states`, creates a case with
-one click and opens its user task. Somebody who works on a form gets a case in the state they need
-in a few seconds.
+"Process driver". The page lists the states from `/loan-approval/api/process-driver/states`,
+creates a case with one click and opens its user task. Somebody who works on a form gets a case
+in the state they need in a few seconds.
 
 What this blueprint leaves out: a library for drivers. Steps, states and waiting are project
 code here, small enough to copy. Whether they belong into a framework is decided after a second
@@ -350,7 +350,7 @@ The application warns at startup that the driver is on. Ask it for a loan approv
 contract waits for its check:
 
 ```
-http://localhost:8080/process-driver/advance-to?state=CHECK_CONTRACT_USER_TASK&amount=25000
+http://localhost:8080/loan-approval/api/process-driver/advance-to?state=CHECK_CONTRACT_USER_TASK&amount=25000
 ```
 
 The answer names the loan request and the open task. The driver assessed the risk on the way,
@@ -358,8 +358,8 @@ and the application logged each step, ending with:
 
 ```
 Loan approval '0f7c…' waits for the check of its signed contract. Continue with:
-  Check the contract -> http://localhost:8080/api/loan-approval/0f7c…/check-contract/4711
-Loan approval '0f7c…' reached CHECK_CONTRACT_USER_TASK. Show it -> http://localhost:8080/api/loan-approval/0f7c…
+  Check the contract -> http://localhost:8080/loan-approval/api/0f7c…/check-contract/4711
+Loan approval '0f7c…' reached CHECK_CONTRACT_USER_TASK. Show it -> http://localhost:8080/loan-approval/api/0f7c…
 ```
 
 The driver chose `John Signing` as the customer, so the simulator signed by itself. Open the URL
@@ -374,14 +374,14 @@ http://localhost:8079/simulator/test-api/e-signature/sign?contractId=0f7c…
 With `state=CONTRACT_DECLINED` the customer is `Jack Nosign`, who declines by himself. The
 answer names no task, because the workflow ended. The loan request shows `"loanDeclined": true`.
 
-Without the profile `test-driver`, `/process-driver/states` answers 404.
+Without the profile `test-driver`, `/loan-approval/api/process-driver/states` answers 404.
 
 Without the driver, you choose the customer yourself. A loan for `John Signing` is signed a
 moment after the contract went out, and one for `Jack Nosign` is declined. One for `Jim Avoidance`
 never gets an answer:
 
 ```
-http://localhost:8080/api/loan-approval/request?customerId=C-1001&customerName=John%20Signing
+http://localhost:8080/loan-approval/api/request?customerId=C-1001&customerName=John%20Signing
 ```
 
 The forms of the user tasks do not use these URLs. A form completes its task with POST on the

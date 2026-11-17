@@ -24,7 +24,7 @@ tags:
   - name: user-tasks
     description: The forms of the user tasks
 paths:
-  /api/loan-approval/{loanRequestId}/assess-risk/{taskId}:
+  /api/loan-requests/{loanRequestId}/assess-risk/{taskId}:
     parameters:
       - $ref: '#/components/parameters/LoanRequestId'
       - $ref: '#/components/parameters/TaskId'
@@ -64,7 +64,7 @@ paths:
           description: >
             Somebody else took the user task over in the Business Cockpit. The task stays open
             for that user
-  /api/loan-approval/{loanRequestId}/check-documents/{taskId}:
+  /api/loan-requests/{loanRequestId}/check-documents/{taskId}:
     parameters:
       - $ref: '#/components/parameters/LoanRequestId'
       - $ref: '#/components/parameters/TaskId'

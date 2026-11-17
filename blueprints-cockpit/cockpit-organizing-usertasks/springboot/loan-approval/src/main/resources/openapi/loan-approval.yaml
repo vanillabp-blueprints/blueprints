@@ -17,7 +17,7 @@ tags:
   - name: loan-approval
     description: Operating the use case 'loan-approval'
 paths:
-  /api/loan-approval/start:
+  /loan-approval/api/start:
     get:
       tags:
         - loan-approval
@@ -51,7 +51,7 @@ paths:
                 type: string
         '403':
           description: The user may not request loans
-  /api/loan-approval/{loanRequestId}/change-advisor:
+  /loan-approval/api/{loanRequestId}/change-advisor:
     get:
       tags:
         - loan-approval
@@ -82,7 +82,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/{loanRequestId}:
+  /loan-approval/api/{loanRequestId}:
     get:
       tags:
         - loan-approval

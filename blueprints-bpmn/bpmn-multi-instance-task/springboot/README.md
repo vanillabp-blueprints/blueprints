@@ -158,7 +158,7 @@ explains the modes and what each of them costs.
 This is the URL that starts a loan approval:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The log shows one line per iteration, and the choice made afterwards:
@@ -178,7 +178,7 @@ Loan approval '383f…' takes the offer of 'harbour-credit' at 70 basis points, 
 The result of a run is at
 
 ```
-http://localhost:8080/api/loan-approval/{loanRequestId}
+http://localhost:8080/loan-approval/api/{loanRequestId}
 ```
 
 Add a partner to `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`, and the

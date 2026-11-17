@@ -13,7 +13,7 @@ vanillabp:
         # Where the cockpit reaches this module. The cockpit serves the module to the browser
         # below '/wm/loan-approval/' and forwards each request to this address. It replaces
         # '/wm/loan-approval' by the path of this address. So the form which asks for
-        # '/wm/loan-approval/api/loan-approval/...' reaches '/loan-approval/api/loan-approval/...'
+        # '/wm/loan-approval/api/loan-requests/...' reaches '/loan-approval/api/loan-requests/...'
         # here, and '/wm/loan-approval/bc-manifest.json' reaches the user interface below
         # '/loan-approval/'. Everything of this module is below its own path, like its
         # resources are below their own directory. The application sets the address it runs at.

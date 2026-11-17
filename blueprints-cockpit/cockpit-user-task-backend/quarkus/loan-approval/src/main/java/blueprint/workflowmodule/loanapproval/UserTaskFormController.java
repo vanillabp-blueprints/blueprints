@@ -21,19 +21,19 @@ import jakarta.ws.rs.core.Response.Status;
  *
  * <p>
  * A form runs in the browser, inside the Business Cockpit. It calls
- * {@code /wm/loan-approval/api/loan-approval/...}, a path of the cockpit, which is the server the
+ * {@code /wm/loan-approval/api/loan-requests/...}, a path of the cockpit, which is the server the
  * OpenAPI names. The cockpit forwards the request to the {@code workflow-module-uri} of this
  * module and puts the path of that address in place of {@code /wm/loan-approval}. The address
  * ends with {@code /loan-approval}, so the request arrives here as
- * {@code /loan-approval/api/loan-approval/...}.
+ * {@code /loan-approval/api/loan-requests/...}.
  * </p>
  *
  * <p>
  * The paths, the parameters and the classes of the requests and answers come from
  * {@link UserTasksApi}, the interface the build generates from the same OpenAPI file. This class
  * only implements it. The OpenAPI names its paths below the server {@code /wm/loan-approval}, so
- * the interface maps {@code /api/loan-approval/{loanRequestId}}. The {@code @Path} of this class puts
- * {@code /loan-approval} in front, which is where the request arrives. Jakarta REST takes the
+ * the interface maps {@code /api/loan-requests/{loanRequestId}}. The {@code @Path} of this class
+ * puts {@code /loan-approval} in front, which is where the request arrives. Jakarta REST takes the
  * {@code @Path} of a class instead of the one of its interface, not in addition to it. So the
  * class repeats the path of the interface after {@code /loan-approval}. The methods keep the
  * paths, the parameters and the media types of the interface.
@@ -62,7 +62,7 @@ import jakarta.ws.rs.core.Response.Status;
  * </p>
  */
 @ApplicationScoped
-@Path("/loan-approval/api/loan-approval/{loanRequestId}")
+@Path("/loan-approval/api/loan-requests/{loanRequestId}")
 public class UserTaskFormController implements UserTasksApi {
 
   @Inject

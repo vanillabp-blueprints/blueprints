@@ -128,8 +128,8 @@ public class Service {
 
     log.info(
         "Loan approval '{}' waits for a risk assessment. Continue with one of:"
-            + "\n  Acceptable -> http://localhost:8080/api/loan-approval/{}/assess-risk/{}?riskIsAcceptable=true&decidedBy=paula"
-            + "\n  Too risky  -> http://localhost:8080/api/loan-approval/{}/assess-risk/{}?riskIsAcceptable=false&decidedBy=paula",
+            + "\n  Acceptable -> http://localhost:8080/loan-approval/api/{}/assess-risk/{}?riskIsAcceptable=true&decidedBy=paula"
+            + "\n  Too risky  -> http://localhost:8080/loan-approval/api/{}/assess-risk/{}?riskIsAcceptable=false&decidedBy=paula",
         loanApproval.getLoanRequestId(),
         loanApproval.getLoanRequestId(), taskId,
         loanApproval.getLoanRequestId(), taskId);
