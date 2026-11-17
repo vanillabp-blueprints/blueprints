@@ -27,6 +27,12 @@ paths:
       responses:
         "202":
           description: The document waits for its signature
+        "500":
+          description: The service failed and did not take the document
+          content:
+            application/problem+json:
+              schema:
+                type: object
 components:
   schemas:
     Envelope:

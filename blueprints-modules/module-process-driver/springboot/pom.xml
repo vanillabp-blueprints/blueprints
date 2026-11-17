@@ -18,8 +18,13 @@
 
   <!--
     Maven sorts these modules by their dependencies. The order below only shows how they
-    belong together. That the simulator is built before the test driver, whose integration
-    tests run against it, comes from a dependency in test-driver/pom.xml.
+    belong together. Two of them are aggregators with modules of their own:
+
+      simulator      the API of its test API (with client and server) and the application
+      loan-approval  the workflow module and the process driver, which its tests use
+
+    That the simulator is built before the integration tests of the workflow module run against
+    it comes from a dependency in loan-approval/workflow-module/pom.xml.
   -->
   <modules>
     <module>external-systems/credit-rating/credit-rating-api</module>
@@ -28,10 +33,8 @@
     <module>external-systems/e-signature/e-signature-api</module>
     <module>external-systems/e-signature/port</module>
     <module>external-systems/e-signature/rest-adapter</module>
-    <module>simulator-test-api</module>
     <module>simulator</module>
     <module>loan-approval</module>
-    <module>test-driver</module>
     <module>application</module>
   </modules>
 
@@ -60,8 +63,10 @@
     -->
     <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
     <businesscockpit-camunda8.version>0.9.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
-    <!-- Generates the Java code of the APIs below 'external-systems' from their OpenAPI files. -->
+    <!-- Generates the Java code of every API from its OpenAPI file. -->
     <openapi-generator.version>7.27.0</openapi-generator.version>
+    <!-- Measures which code of the workflow module its integration tests run. -->
+    <jacoco.version>0.8.16</jacoco.version>
   </properties>
 
   <dependencyManagement>

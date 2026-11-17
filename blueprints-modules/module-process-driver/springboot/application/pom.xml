@@ -16,7 +16,7 @@
     <!-- The workflow module. It wires itself. -->
     <dependency>
       <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
-      <artifactId>loan-approval</artifactId>
+      <artifactId>loan-approval-workflow-module</artifactId>
       <version>${project.version}</version>
     </dependency>
     <!--
@@ -231,7 +231,7 @@
       <dependencies>
         <dependency>
           <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
-          <artifactId>test-driver</artifactId>
+          <artifactId>loan-approval-test-driver</artifactId>
           <version>${project.version}</version>
         </dependency>
       </dependencies>

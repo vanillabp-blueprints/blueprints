@@ -42,14 +42,16 @@ public class CallbackController implements SignatureCallbackApi {
    *
    * @param callback The report.
    * @return 204 if the application took it, 404 if it does not know the contract, 400 for a
-   *         report without a status.
+   *         report without a status or with a status the port does not know.
    */
   @Override
   public ResponseEntity<Void> reportSignature(
       final Callback callback) {
 
     // A status the API does not know is refused while the JSON is read. One which is missing
-    // arrives here as null.
+    // arrives here as null. The port knows only signatures, so a contract the signer declined
+    // is refused as well: the workflow module has no way to handle it, and the service learns
+    // that its report was not taken.
     if (callback.status() != Callback.StatusEnum.SIGNED) {
       return ResponseEntity
           .badRequest()
