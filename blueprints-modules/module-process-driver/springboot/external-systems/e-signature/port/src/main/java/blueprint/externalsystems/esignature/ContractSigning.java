@@ -2,7 +2,7 @@ package blueprint.externalsystems.esignature;
 
 /**
  * Having a contract signed, as the application sees it: the application hands over a contract,
- * and the signature comes back later, when the customer signed.
+ * and the answer comes back later, when the customer signed or declined to sign.
  *
  * <p>
  * The interface is named after the role the system plays, not after the product which plays it

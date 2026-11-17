@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 import blueprint.testdriver.loanapproval.steps.ContractCheckOpenedStep;
+import blueprint.testdriver.loanapproval.steps.ContractDeclinedStep;
 import blueprint.testdriver.loanapproval.steps.ContractSignedStep;
 import blueprint.testdriver.loanapproval.steps.LoanRequestedStep;
 import blueprint.testdriver.loanapproval.steps.RiskAssessedOnTheWayStep;
@@ -30,6 +31,7 @@ public class StepOrderTest {
     final var driver = new ProcessDriver(
         List.of(
             new ContractSignedStep(),
+            new ContractDeclinedStep(),
             new ContractCheckOpenedStep(),
             new RiskAssessedOnTheWayStep(),
             new RiskAssessmentOpenedStep(),
@@ -45,6 +47,8 @@ public class StepOrderTest {
             RiskAssessedOnTheWayStep.class,
             ContractCheckOpenedStep.class,
             ContractSignedStep.class);
+    assertThat(classesOf(driver.stepsOf(ProcessState.CONTRACT_DECLINED)))
+        .containsExactly(LoanRequestedStep.class, RiskAssessedOnTheWayStep.class, ContractDeclinedStep.class);
 
   }
 

@@ -39,30 +39,54 @@ public class ContractSigningIT extends ScenarioTest {
   }
 
   /**
-   * The module knows no declined contract. Its port of the e-signature service knows only
-   * signatures. So the application does not take the report, the contract stays unsigned, and
-   * the clerk cannot approve the loan.
+   * A customer who declines to sign ends the loan request. There is nothing left for the clerk to
+   * check, so the workflow takes the task "Check contract" away, and the loan is declined.
    */
   @Test
-  public void aContractTheCustomerDeclinedStaysUnsigned() {
+  public void aCustomerWhoDeclinesToSignEndsTheLoanRequestDeclined() {
 
-    final var scenario = driver.advanceTo(
-        ProcessState.CHECK_CONTRACT_USER_TASK_WITHOUT_SIGNATURE,
-        TestData
-            .defaults()
-            .withCustomerName(TestData.JACK_NOSIGN));
+    // The driver chooses Jack Nosign for this state, and waits until the loan is declined.
+    final var scenario = driver.advanceTo(ProcessState.CONTRACT_DECLINED);
+
+    assertThat(scenario.getTestData().customerName()).isEqualTo(TestData.JACK_NOSIGN);
+    assertThat(simulator().callbacks(scenario.getLoanRequestId()))
+        .containsExactly(new SentCallback(scenario.getLoanRequestId(), SignatureStatus.DECLINED, REPORT_TAKEN));
+    assertThat(loanApproval.show(scenario.getLoanRequestId()))
+        .satisfies(loanRequest -> {
+          assertThat(loanRequest.contractDeclined()).isTrue();
+          assertThat(loanRequest.loanDeclined()).isTrue();
+          assertThat(loanRequest.contractSigned()).as("signed").isNull();
+          assertThat(loanRequest.contractChecked()).as("approved").isNull();
+          assertThat(loanRequest.checkContractTaskId()).as("the task of the clerk").isNull();
+        });
+
+  }
+
+  /**
+   * The customer declines while the clerk's task is open. The clerk loses the task: the cockpit
+   * takes it off the list, because the workflow ended. A second report of the same decline, which
+   * a service may send after it lost the first answer, changes nothing.
+   */
+  @Test
+  public void aDeclineTakesTheTaskAwayFromTheClerkOnce() {
+
+    final var scenario = driver.advanceTo(ProcessState.CHECK_CONTRACT_USER_TASK_WITHOUT_SIGNATURE);
     final var taskId = driver.openUserTaskId(scenario);
 
-    await()
-        .atMost(TIMEOUT)
-        .until(() -> simulator().callbacks(scenario.getLoanRequestId()), callbacks -> !callbacks.isEmpty());
-    assertThat(simulator().callbacks(scenario.getLoanRequestId()))
-        .containsExactly(new SentCallback(scenario.getLoanRequestId(), SignatureStatus.DECLINED, REPORT_NOT_TAKEN));
+    assertThat(theCustomerDeclines(scenario.getLoanRequestId())).isEqualTo(REPORT_TAKEN);
 
-    assertThat(loanApprovals.findById(scenario.getLoanRequestId()))
-        .hasValueSatisfying(loanRequest -> assertThat(loanRequest.getContractSigned()).isNull());
-    assertThat(reasonOfTheRefusal(() -> loanApproval.completeCheckContract(scenario.getLoanRequestId(), taskId)))
-        .contains("not signed yet");
+    simulator().awaitUserTask(taskId, task -> task.get("endedAt") != null);
+    awaitAggregate(
+        loanApprovals,
+        scenario.getLoanRequestId(),
+        loanRequest -> Boolean.TRUE.equals(loanRequest.getLoanDeclined()));
+    assertThat(theCustomerDeclines(scenario.getLoanRequestId())).as("the application took the second report")
+        .isEqualTo(REPORT_TAKEN);
+    assertThat(loanApproval.show(scenario.getLoanRequestId()))
+        .satisfies(loanRequest -> {
+          assertThat(loanRequest.loanDeclined()).isTrue();
+          assertThat(loanRequest.checkContractTaskId()).isNull();
+        });
 
   }
 
@@ -91,6 +115,15 @@ public class ContractSigningIT extends ScenarioTest {
         });
     assertThat(reasonOfTheRefusal(() -> loanApproval.completeCheckContract(scenario.getLoanRequestId(), taskId)))
         .contains("not signed yet");
+
+  }
+
+  private static int theCustomerDeclines(
+      final String contractId) {
+
+    return simulator()
+        .sendCallback(contractId, SignatureStatus.DECLINED, CALLBACK_URL)
+        .answer();
 
   }
 

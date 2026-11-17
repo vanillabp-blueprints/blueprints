@@ -10,6 +10,7 @@ import io.vanillabp.spi.cockpit.usertask.PrefilledUserTaskDetails;
 import io.vanillabp.spi.cockpit.usertask.UserTaskDetails;
 import io.vanillabp.spi.cockpit.usertask.UserTaskDetailsProvider;
 import io.vanillabp.spi.service.BpmnProcess;
+import io.vanillabp.spi.service.TaskEvent;
 import io.vanillabp.spi.service.TaskId;
 import io.vanillabp.spi.service.WorkflowService;
 import io.vanillabp.spi.service.WorkflowTask;
@@ -70,17 +71,28 @@ public class WorkflowTaskHandler {
   }
 
   /**
-   * Called by VanillaBP when the user task "Check contract" is created.
+   * Called by VanillaBP when the user task "Check contract" is created, and again when the
+   * workflow takes it away. {@code @TaskEvent} tells the two apart: {@code CREATED} when the task
+   * opens, {@code CANCELED} when the message "Contract declined" ends it. Without the
+   * {@code CANCELED} call the aggregate would keep the id of a task nobody can complete any more.
    *
    * @param loanRequest The workflow's aggregate.
    * @param taskId      The id of the user task.
+   * @param event       Whether the task was created or taken away.
    */
   @WorkflowTask
   public void checkContract(
       final Aggregate loanRequest,
-      @TaskId final String taskId) {
+      @TaskId final String taskId,
+      @TaskEvent final TaskEvent.Event event) {
 
-    loanApproval.contractCheckOpened(loanRequest, taskId);
+    switch (event) {
+      case CREATED -> loanApproval.contractCheckOpened(loanRequest, taskId);
+      case CANCELED -> loanApproval.contractCheckClosed(loanRequest);
+      default -> throw new IllegalStateException("Unexpected task event '"
+          + event
+          + "'");
+    }
 
   }
 

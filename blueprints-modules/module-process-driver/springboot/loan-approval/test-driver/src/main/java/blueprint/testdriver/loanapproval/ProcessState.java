@@ -5,6 +5,7 @@ import java.util.function.Function;
 
 import blueprint.testdriver.loanapproval.gui.model.LoanRequest;
 import blueprint.testdriver.loanapproval.steps.ContractCheckOpenedStep;
+import blueprint.testdriver.loanapproval.steps.ContractDeclinedStep;
 import blueprint.testdriver.loanapproval.steps.ContractSignedStep;
 import blueprint.testdriver.loanapproval.steps.RiskAssessmentOpenedStep;
 import blueprint.testdriver.loanapproval.steps.Step;
@@ -17,7 +18,8 @@ import blueprint.testdriver.loanapproval.steps.Step;
  *
  * <p>
  * A state ending in {@code _USER_TASK} means that the task is open. The driver does not complete
- * it. That is what the test does, or a person in the dev shell.
+ * it. That is what the test does, or a person in the dev shell. A state without this ending is
+ * one where the workflow ended, and no task is open.
  * </p>
  *
  * <p>
@@ -47,7 +49,14 @@ public enum ProcessState {
    * driver assessed the risk on the way. The customer is always {@link TestData#JOHN_SIGNING},
    * who signs by himself.
    */
-  CHECK_CONTRACT_USER_TASK(LoanRequest::checkContractTaskId);
+  CHECK_CONTRACT_USER_TASK(LoanRequest::checkContractTaskId),
+
+  /**
+   * The customer declined to sign the contract, and the workflow ended with "Loan declined". The
+   * task "Check contract" was taken away, so no task is open. The customer is always
+   * {@link TestData#JACK_NOSIGN}, who declines by himself.
+   */
+  CONTRACT_DECLINED(loanRequest -> null);
 
   private final Function<LoanRequest, String> openUserTaskId;
 
@@ -70,6 +79,7 @@ public enum ProcessState {
       case ASSESS_RISK_USER_TASK -> List.of(RiskAssessmentOpenedStep.class);
       case CHECK_CONTRACT_USER_TASK_WITHOUT_SIGNATURE -> List.of(ContractCheckOpenedStep.class);
       case CHECK_CONTRACT_USER_TASK -> List.of(ContractSignedStep.class);
+      case CONTRACT_DECLINED -> List.of(ContractDeclinedStep.class);
     };
 
   }
@@ -78,7 +88,7 @@ public enum ProcessState {
    * The id of the user task which is open in this state.
    *
    * @param loanRequest A loan request in this state, as the API of the module shows it.
-   * @return The id of the open user task.
+   * @return The id of the open user task, or {@code null} in a state where the workflow ended.
    */
   public String openUserTaskId(
       final LoanRequest loanRequest) {

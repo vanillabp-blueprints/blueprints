@@ -24,7 +24,7 @@ paths:
         "204":
           description: The receiver took the report
         "400":
-          description: The receiver does not take reports with this status
+          description: "The report has no status, or one the receiver does not know"
         "404":
           description: The receiver does not know the contract
 components:

@@ -34,7 +34,7 @@
       <bpmn:outgoing>Flow_ToSendContractForSigning</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="Flow_ToSendContractForSigning" sourceRef="Gateway_RiskAssessed" targetRef="ServiceTask_SendContractForSigning" />
-    <!-- Hands the contract to the e-signature service. The signature comes later, as a callback. -->
+    <!-- Hands the contract to the e-signature service. The signature or the decline comes later, as a callback. -->
     <bpmn:serviceTask id="ServiceTask_SendContractForSigning" name="Send contract for signing" camunda:expression="${sendContractForSigning}">
       <bpmn:incoming>Flow_ToSendContractForSigning</bpmn:incoming>
       <bpmn:outgoing>Flow_ToCheckContract</bpmn:outgoing>
@@ -48,11 +48,27 @@
       <bpmn:incoming>Flow_ToCheckContract</bpmn:incoming>
       <bpmn:outgoing>Flow_ToLoanApproved</bpmn:outgoing>
     </bpmn:userTask>
+    <!--
+      The customer declined to sign. The e-signature service reports it, and the application
+      correlates the message. There is nothing left to check, so the task "Check contract" ends
+      here, and the loan is declined. Nothing about the correlation is modelled: the adapter adds
+      the subscription by the id of the workflow aggregate itself.
+    -->
+    <bpmn:boundaryEvent id="BoundaryEvent_ContractDeclined" name="Contract declined" attachedToRef="UserTask_CheckContract">
+      <bpmn:outgoing>Flow_ToLoanDeclined</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_ContractDeclined" messageRef="Message_ContractDeclined" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_ToLoanDeclined" sourceRef="BoundaryEvent_ContractDeclined" targetRef="EndEvent_LoanDeclined" />
+    <bpmn:endEvent id="EndEvent_LoanDeclined" name="Loan declined">
+      <bpmn:incoming>Flow_ToLoanDeclined</bpmn:incoming>
+    </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_ToLoanApproved" sourceRef="UserTask_CheckContract" targetRef="EndEvent_LoanApproved" />
     <bpmn:endEvent id="EndEvent_LoanApproved" name="Loan approved">
       <bpmn:incoming>Flow_ToLoanApproved</bpmn:incoming>
     </bpmn:endEvent>
   </bpmn:process>
+  <!-- The message name is the string the business code passes to 'correlateMessage'. -->
+  <bpmn:message id="Message_ContractDeclined" name="ContractDeclined" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
       <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
@@ -83,6 +99,18 @@
         <dc:Bounds x="892" y="102" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="875" y="145" width="72" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_ContractDeclined_di" bpmnElement="BoundaryEvent_ContractDeclined">
+        <dc:Bounds x="762" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="790" y="185" width="88" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanDeclined_di" bpmnElement="EndEvent_LoanDeclined">
+        <dc:Bounds x="892" y="212" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="876" y="255" width="68" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_ToRiskDecision_di" bpmnElement="Flow_ToRiskDecision">
@@ -120,6 +148,11 @@
       <bpmndi:BPMNEdge id="Flow_ToLoanApproved_di" bpmnElement="Flow_ToLoanApproved">
         <di:waypoint x="830" y="120" />
         <di:waypoint x="892" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanDeclined_di" bpmnElement="Flow_ToLoanDeclined">
+        <di:waypoint x="780" y="178" />
+        <di:waypoint x="780" y="230" />
+        <di:waypoint x="892" y="230" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

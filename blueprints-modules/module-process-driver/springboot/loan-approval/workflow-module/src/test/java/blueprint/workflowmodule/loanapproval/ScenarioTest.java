@@ -49,9 +49,6 @@ public abstract class ScenarioTest extends WorkflowModuleTest {
    */
   protected static final int REPORT_TAKEN = 204;
 
-  /** How the application answers a report it does not take, for example a declined contract. */
-  protected static final int REPORT_NOT_TAKEN = 400;
-
   /** How the application answers a report about a contract it does not know. */
   protected static final int REPORT_OF_AN_UNKNOWN_CONTRACT = 404;
 

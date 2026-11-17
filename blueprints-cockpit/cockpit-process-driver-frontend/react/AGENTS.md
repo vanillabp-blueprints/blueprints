@@ -35,6 +35,9 @@ task has no form.
 
 The states of the driver are not in this project. The page "Process driver" asks the backend for
 them. Do not write them into the dev shell.
+A state may end the workflow, like `CONTRACT_DECLINED`. Then `advance-to` names no user task,
+and the page links only to the case. Tell such a state by the missing `userTaskId`, not by its
+name.
 
 ## Core files
 

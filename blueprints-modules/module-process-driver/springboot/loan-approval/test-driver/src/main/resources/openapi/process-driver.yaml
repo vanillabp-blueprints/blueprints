@@ -37,6 +37,9 @@ paths:
         - process-driver
       operationId: advanceTo
       summary: Brings a new loan request to a state
+      description: >
+        The answer names the open user task. A state where the workflow ended, like
+        CONTRACT_DECLINED, has none.
       parameters:
         - name: state
           in: query
@@ -82,7 +85,6 @@ components:
         - state
         - loanRequestId
         - customerId
-        - userTaskId
       properties:
         state:
           type: string
@@ -95,4 +97,6 @@ components:
           description: The customer the driver reserved at the simulated credit rating
         userTaskId:
           type: string
-          description: The id of the user task which is open in this state
+          description: >
+            The id of the user task which is open in this state. It is missing in a state where
+            the workflow ended, like CONTRACT_DECLINED.

@@ -238,6 +238,14 @@ components:
         contractChecked:
           type: boolean
           description: Set when somebody checked the signed contract, which approves the loan
+        contractDeclined:
+          type: boolean
+          description: Set when the e-signature service reported that the customer declined to sign
+        loanDeclined:
+          type: boolean
+          description: >
+            Set when the workflow took the user task "Check contract" away because the customer
+            declined to sign. The loan is declined, and the workflow ended.
     Unavailable:
       type: object
       description: >

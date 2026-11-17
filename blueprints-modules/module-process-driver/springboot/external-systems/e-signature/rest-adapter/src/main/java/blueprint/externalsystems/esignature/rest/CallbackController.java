@@ -8,9 +8,9 @@ import blueprint.externalsystems.esignature.callback.server.SignatureCallbackApi
 import blueprint.externalsystems.esignature.callback.server.model.Callback;
 
 /**
- * Where the e-signature service reports a signature. It is the second half of the adapter: the
- * service calls this endpoint, and the endpoint hands the news to {@link SignedContracts}, which
- * the application implements.
+ * Where the e-signature service reports what the signer did: signed the contract, or declined to
+ * sign it. It is the second half of the adapter: the service calls this endpoint, and the endpoint
+ * hands the news to {@link SignedContracts}, which the application implements.
  *
  * <p>
  * The path, the method and the JSON come from {@link SignatureCallbackApi}, the interface
@@ -42,23 +42,26 @@ public class CallbackController implements SignatureCallbackApi {
    *
    * @param callback The report.
    * @return 204 if the application took it, 404 if it does not know the contract, 400 for a
-   *         report without a status or with a status the port does not know.
+   *         report without a status.
    */
   @Override
   public ResponseEntity<Void> reportSignature(
       final Callback callback) {
 
     // A status the API does not know is refused while the JSON is read. One which is missing
-    // arrives here as null. The port knows only signatures, so a contract the signer declined
-    // is refused as well: the workflow module has no way to handle it, and the service learns
-    // that its report was not taken.
-    if (callback.status() != Callback.StatusEnum.SIGNED) {
+    // arrives here as null.
+    if (callback.status() == null) {
       return ResponseEntity
           .badRequest()
           .build();
     }
 
-    return signedContracts.signed(callback.contractId())
+    final var known = switch (callback.status()) {
+      case SIGNED -> signedContracts.signed(callback.contractId());
+      case DECLINED -> signedContracts.declined(callback.contractId());
+    };
+
+    return known
         ? ResponseEntity
             .noContent()
             .build()

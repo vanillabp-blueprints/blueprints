@@ -6,9 +6,10 @@
 //    driver shows up here without a change of the dev shell.
 // 2. The form sends the state and the test data to advance-to. The backend brings a real loan
 //    request there, through the business code and the simulator, and answers with the id of the
-//    loan request and of the open user task.
-// 3. The page waits until the simulated cockpit knows the workflow and the user task, and links
-//    to both pages of the dev shell.
+//    loan request and of the open user task. A state where the workflow ended, like a contract
+//    the customer declined, has no open user task.
+// 3. The page waits until the simulated cockpit knows the workflow and the user task, if there is
+//    one, and links to both pages of the dev shell.
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { processDriver, ResponseError, type Reached } from '@process-driver-client';
@@ -70,7 +71,8 @@ export function ProcessDriverPage() {
     try {
       const reached = await processDriver.advanceTo({ state, amount: Number(amount), creditScore: Number(creditScore) });
       const workflow = await waitFor(() => cockpit.workflowOf(reached.loanRequestId));
-      const userTask = await waitFor(() => cockpit.userTask(reached.userTaskId));
+      const { userTaskId } = reached;
+      const userTask = userTaskId ? await waitFor(() => cockpit.userTask(userTaskId)) : undefined;
       setResult({ reached, workflow, userTask });
     } catch (error) {
       setProblem(problemOf(error));
@@ -123,7 +125,10 @@ function ReachedCase({ result: { reached, workflow, userTask } }: { result: Resu
           <li><a data-testid="process-driver-open-workflow" href={`#/workflow/${encodeURIComponent(workflow.id)}`}>Open the case "{titleOf(workflow, workflow.id)}"</a></li>
         ) : null}
       </ul>
-      {userTask && workflow ? null : (
+      {reached.userTaskId ? null : (
+        <p className="hint" data-testid="process-driver-no-user-task">The workflow ended in this state, so no user task is open.</p>
+      )}
+      {workflow && (userTask || !reached.userTaskId) ? null : (
         <p className="problem" data-testid="process-driver-not-in-cockpit">
           The simulated cockpit does not know the case yet. Is the simulator of the backend running, and does the application report to it?
         </p>

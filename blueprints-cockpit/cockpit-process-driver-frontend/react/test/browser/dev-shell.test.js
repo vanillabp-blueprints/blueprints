@@ -16,7 +16,9 @@ const projectDir = resolve(import.meta.dirname, '..', '..');
 const devShell = join(projectDir, 'dist', 'dev-shell');
 const microFrontends = join(projectDir, 'dist', 'micro-frontends');
 
-const STATES = ['ASSESS_RISK_USER_TASK', 'CHECK_CONTRACT_USER_TASK_WITHOUT_SIGNATURE', 'CHECK_CONTRACT_USER_TASK'];
+const STATES = ['ASSESS_RISK_USER_TASK', 'CHECK_CONTRACT_USER_TASK_WITHOUT_SIGNATURE', 'CHECK_CONTRACT_USER_TASK', 'CONTRACT_DECLINED'];
+/** The state where the customer declined the contract. The workflow ended, so no user task is open. */
+const ENDED = 'CONTRACT_DECLINED';
 const details = { amount: 25000, creditScore: 720 };
 
 /** What the simulated cockpit knows once the driver brought a loan request to "Assess risk". */
@@ -67,7 +69,9 @@ async function playBackend(page, { driver = 'on', advance = { status: 200 }, coc
     if (driver !== 'on') return route.fulfill({ status: driver, body: '' });
     if (url.pathname.endsWith('/states')) return route.fulfill({ json: STATES });
     if (advance.status !== 200) return route.fulfill({ status: advance.status, contentType: 'text/plain', body: advance.body });
-    return route.fulfill({ json: { state: url.searchParams.get('state'), loanRequestId: 'LR-4711', customerId: 'C-1', userTaskId: 'task-1' } });
+    const state = url.searchParams.get('state');
+    const reached = { state, loanRequestId: 'LR-4711', customerId: 'C-1' };
+    return route.fulfill({ json: state === ENDED ? reached : { ...reached, userTaskId: 'task-1' } });
   });
   await page.route('**/official-api/v1/**', async (route) => {
     const url = record(route);
@@ -133,6 +137,22 @@ describe('the page "Process driver"', () => {
     await page.getByTestId('assess-risk-done').waitFor();
     assert.ok(calls.includes('POST /wm/loan-approval/api/loan-approval/LR-4711/assess-risk/task-1'), calls.join('\n'));
     await assertText(page.getByTestId('notifications'), 'success: Completed');
+    assert.deepEqual(pageErrors, []);
+    await page.close();
+  });
+
+  it('a state where the workflow ended links to the case and says that no user task is open', async () => {
+    const { page, pageErrors, calls } = await openDevShell();
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="process-driver-state"] option').length > 0);
+    await page.getByTestId('process-driver-state').selectOption(ENDED);
+    await page.getByTestId('process-driver-advance').click();
+
+    await assertText(page.getByTestId('process-driver-loan-request'), 'LR-4711');
+    await assertText(page.getByTestId('process-driver-no-user-task'), 'The workflow ended in this state, so no user task is open.');
+    assert.equal(await page.getByTestId('process-driver-open-workflow').getAttribute('href'), '#/workflow/wf-1');
+    assert.equal(await page.getByTestId('process-driver-open-user-task').count(), 0);
+    assert.equal(await page.getByTestId('process-driver-not-in-cockpit').count(), 0);
+    assert.ok(!calls.some((call) => call.includes('/usertask/')), calls.join('\n'));
     assert.deepEqual(pageErrors, []);
     await page.close();
   });

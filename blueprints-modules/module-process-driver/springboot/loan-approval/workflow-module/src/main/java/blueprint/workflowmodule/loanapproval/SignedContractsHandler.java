@@ -29,4 +29,12 @@ public class SignedContractsHandler implements SignedContracts {
 
   }
 
+  @Override
+  public boolean declined(
+      final String contractId) {
+
+    return loanApproval.contractDeclined(contractId);
+
+  }
+
 }
