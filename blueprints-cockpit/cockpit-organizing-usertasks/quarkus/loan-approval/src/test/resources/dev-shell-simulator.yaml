@@ -1,0 +1,34 @@
+# The users the dev shell simulator knows. It refuses to start without any. Their groups are
+# the authorities of the module, because the module reports these as candidate groups.
+dev-shell-simulator:
+  users:
+    - id: alice
+      email: alice@example.com
+      first-name: Alice
+      last-name: Advisor
+      groups: LOAN_APPROVAL_REQUEST_LOAN,LOAN_APPROVAL_CALL_CUSTOMER
+    - id: erin
+      email: erin@example.com
+      first-name: Erin
+      last-name: Advisor
+      groups: LOAN_APPROVAL_REQUEST_LOAN,LOAN_APPROVAL_CALL_CUSTOMER
+    - id: lea
+      email: lea@example.com
+      first-name: Lea
+      last-name: Lead
+      groups: LOAN_APPROVAL_CHANGE_ADVISOR
+    - id: bob
+      email: bob@example.com
+      first-name: Bob
+      last-name: Risk
+      groups: LOAN_APPROVAL_ASSESS_RISK
+    - id: carol
+      email: carol@example.com
+      first-name: Carol
+      last-name: Risk
+      groups: LOAN_APPROVAL_ASSESS_RISK,LOAN_APPROVAL_APPROVE_LOAN
+    - id: dave
+      email: dave@example.com
+      first-name: Dave
+      last-name: Approver
+      groups: LOAN_APPROVAL_APPROVE_LOAN

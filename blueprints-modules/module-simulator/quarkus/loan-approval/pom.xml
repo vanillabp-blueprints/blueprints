@@ -30,11 +30,12 @@
     <!--
       The same for the Business Cockpit: its annotations, such as @UserTaskDetailsProvider. It
       knows no BPMS either. The cockpit adapter of the BPMS is chosen by the application, next
-      to the BPMS adapter.
+      to the BPMS adapter. The BOM of the cockpit is not imported, because it imports the BOM of
+      another platform. So the version is named here.
     -->
     <dependency>
       <groupId>io.vanillabp.businesscockpit</groupId>
-      <artifactId>spi-for-java</artifactId>
+      <artifactId>business-cockpit-quarkus-support</artifactId>
       <version>${businesscockpit.version}</version>
     </dependency>
     <!--

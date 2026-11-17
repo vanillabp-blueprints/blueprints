@@ -59,8 +59,8 @@ checks. Without a second check, the clerk could send the id of a risk assessment
 endpoint of a document check and complete it there. So `Service` also checks the kind of the
 task, and answers 404 when the id belongs to a task of another kind.
 
-Two exceptions say what is wrong with a task id: `BcUnknownTaskException` (404) and
-`BcTaskNotOpenException` (409). Every module with forms needs them, so they come from
+Two exceptions say what is wrong with a task id: `BcUnknownTaskException` and
+`BcTaskNotOpenException`. Both answer 404: for the form the task is gone either way. Every module with forms needs them, so they come from
 `io.vanillabp.businesscockpit:business-cockpit-spring-boot-support`, together with
 `BcUserTaskExceptionHandler`, which turns them into the answer. The handler sends the message as
 plain text, for the form to show. `UserTaskFormController` imports the handler with
@@ -185,7 +185,7 @@ curl -u risk-officer:demo -X POST -H 'Content-Type: application/json' \
 ```
 
 Now the result is in the aggregate, and the task says who completed it and when. Send the same
-request again, and you get 409, because the task is not open any more. Complete both document
+request again, and you get 404, because the task is not open any more. Complete both document
 checks as `clerk` with `{"valid":true}`, and the loan is approved. If you complete the risk
 assessment with `false` instead, the loan is rejected. The document checks which are still open
 are then marked as canceled, and their drafts stay where they were.
@@ -201,7 +201,7 @@ are then marked as canceled, and their drafts stay where they were.
 | `.../loanapproval/model/usertask/TaskDataConverter.java`                               | the JSON column                                                                                                                      |
 | `.../loanapproval/WorkflowTaskHandler.java`                                            | `CREATED` adds a task, `CANCELED` marks it                                                                                           |
 | `.../loanapproval/Service.java`                                                        | drafts into the task, results into the aggregate, and the check that a task is open and of the expected kind                         |
-| `.../loanapproval/UserTaskFormController.java`                                         | GET, PUT and POST per form, each with `@Secured`; imports `BcUserTaskExceptionHandler`, which answers 404 and 409                    |
+| `.../loanapproval/UserTaskFormController.java`                                         | GET, PUT and POST per form, each with `@Secured`; imports `BcUserTaskExceptionHandler`, which answers 404                            |
 | `.../openapi/user-task-forms.yaml`                                                     | the API as an OpenAPI file. The build generates the interface `UserTaskFormsApi` from it, and `UserTaskFormController` implements it |
 | `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                                                      |
 | `.../loanapproval/config/Permission.java`                                              | the authorities of the module                                                                                                        |

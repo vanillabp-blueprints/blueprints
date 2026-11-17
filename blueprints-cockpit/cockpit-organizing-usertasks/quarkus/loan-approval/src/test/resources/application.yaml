@@ -1,0 +1,39 @@
+# The configuration of the module's own test: its database, how fast the cockpit hears about a
+# user task, and where the reports go. Where the BPMN files are is a convention VanillaBP knows.
+#
+# Quarkus keeps no database session open while a response is written. The tasks of a loan
+# approval and their data are loaded only when read, so every read happens inside a
+# transaction of the service.
+quarkus:
+  # A free port for the application under test, so it runs next to anything else on 8081.
+  http:
+    test-port: 0
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO
+vanillabp:
+  # Every report to the cockpit goes through the outbox first. A short poll interval lets the
+  # test see the reports a moment after they were written. An application keeps the default.
+  outbox:
+    poll-interval: PT0.2S
+  cockpit:
+    # Where the reports go. The integration test starts the dev shell simulator on a free port
+    # and sets this address to it.
+    rest:
+      base-url: http://localhost:8079
+# The users of the test log in with HTTP basic authentication, not with the login token of the Business
+# Cockpit. The support library of the cockpit checks such a token unless it is told not to,
+# and then the start asks for the secret of the cockpit. So the test leaves the check out. It is a
+# build property: Quarkus reads it while it builds the application.
+business-cockpit:
+  jwt:
+    enabled: false

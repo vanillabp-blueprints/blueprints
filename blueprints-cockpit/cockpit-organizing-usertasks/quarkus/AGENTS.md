@@ -1,0 +1,160 @@
+# cockpit-organizing-usertasks
+
+Describes each user task to the Business Cockpit so that the right people see it: the
+initiator, candidate groups which are the authorities of the forms, an assignee where the case
+belongs to one person, excluded candidates for the four-eyes principle, the kind of
+notification, the due date and the follow-up date, titles and search texts from templates, and
+the admitted users who may still read a task later. A delta on top of
+`cockpit-usertasks-in-the-application`.
+
+Read
+[the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
+first. It has the procedure, the reference structure and the list of things never to do.
+
+Use this blueprint when a workflow module reports its user tasks to the Business Cockpit and has
+to say more about them than the BPMN file does. The workflow module depends on
+`io.vanillabp.businesscockpit:support`, never on a cockpit adapter. The application brings the
+cockpit adapter, next to the BPMS adapter.
+
+## Placeholders
+
+Replace all of these consistently. They are the same in every blueprint, except the Maven
+coordinates, which carry the name of the blueprint.
+
+|                          Placeholder                          |                                                                                 Meaning                                                                                 |
+|---------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `blueprint.workflowmodule`                                    | base package                                                                                                                                                            |
+| `loanapproval`                                                | use case identifier, Java package                                                                                                                                       |
+| `loan-approval`                                               | use case identifier, kebab case: workflow module ID, resource directory, template directory, REST path, Maven module, configuration file                                |
+| `loan_approval`                                               | BPMN process ID, and the directory of the templates of this process                                                                                                     |
+| `LoanApproval`                                                | use case identifier, CamelCase: the start of class names, for example `LoanApprovalProperties`, `LoanApprovalIT` or the interface `LoanApprovalApi` the build generates |
+| `LOAN_APPROVAL`                                               | use case identifier, upper snake case: table and collection names, and the start of other names in upper case                                                           |
+| `io.vanillabp.blueprint.cockpit-organizing-usertasks-quarkus` | Maven groupId of every POM of this blueprint                                                                                                                            |
+| `cockpit-organizing-usertasks`                                | Maven artifactId of the root POM                                                                                                                                        |
+
+Blueprint-specific names, each occurring in more than one place:
+
+|                    Name                     |                                                                       Where it occurs                                                                       |
+|---------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `callCustomer`, `assessRisk`, `approveLoan` | the `@WorkflowTask` methods, the task definitions in the models, `taskDefinition` of the details providers, the template directories, `@JsonSubTypes` names |
+| `AdvisorChanged`                            | the message of the boundary event in the models and the constant `ADVISOR_CHANGED` of `Workflow`                                                            |
+| `loan-approval-read-*`                      | the permissions of `UserTaskAccess`, which `@PermissionsAllowed` of the controller names and its `@PermissionChecker` methods check                         |
+| `LOAN_APPROVAL_*`                           | the constants of `Permission`, used by `@RolesAllowed`, by the permission checkers, as candidate groups and by the demo users                               |
+| `call-again.ftl`                            | the template next to `task-title.ftl` of `callCustomer`, and the constant `CALL_AGAIN_TEMPLATE` of `WorkflowTaskHandler`                                    |
+
+The names in `@JsonSubTypes` are written into the database with every task. Never rename one
+after tasks were stored, or they can no longer be read.
+
+## Core files
+
+|                                            File                                            |                                                                                                                                                   Why it matters                                                                                                                                                   |
+|--------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | one `@UserTaskDetailsProvider` per task definition, and the `@WorkflowDetailsProvider`; every value is read from the aggregate; a provider never changes the aggregate                                                                                                                                             |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `lastActionBy` (the initiator), `advisor` (the assignee), `riskAssessedBy` (the excluded candidate), `requestedAt` and `answerPromisedBy` (the due dates)                                                                                                                                                          |
+| `loan-approval/src/main/java/.../loanapproval/model/usertask/Task.java`                    | `editors`: who worked on the task; the admitted users and the read access come from this one list                                                                                                                                                                                                                  |
+| `loan-approval/src/main/java/.../loanapproval/model/usertask/CallCustomerTaskData.java`    | `callAgainAt`, the follow-up date                                                                                                                                                                                                                                                                                  |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | `@Transactional` on the class; writes the user who acted with every action; refuses the approval by the user who assessed the risk; the change of the advisor                                                                                                                                                      |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                               | `correlateMessage` for the change of the advisor; `BusinessCockpitService#aggregateChanged(loanRequest, taskId)` for changes the BPMS does not notice                                                                                                                                                              |
+| `loan-approval/src/main/java/.../loanapproval/UserTaskFormController.java`                 | implements `UserTaskFormsApi`, generated from `openapi/user-task-forms.yaml`; GET with `@PermissionsAllowed(UserTaskAccess.READ_...)`, POST with `@RolesAllowed`; `editable` tells which way let the user in; an editor is written when the form is delivered for work                                             |
+| `loan-approval/src/main/java/.../loanapproval/UserTaskAccess.java`                         | one `@PermissionChecker` per form: the role of the task, or an earlier editor; reads only the editors of one task                                                                                                                                                                                                  |
+| `loan-approval/src/main/java/.../loanapproval/config/Permission.java`                      | one role per kind of task; the same constant is the candidate group                                                                                                                                                                                                                                                |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the rules about time; `i18n-languages`, `initiator-source: by-application` and the other keys of the cockpit                                                                                                                                                                                                       |
+| `loan-approval/src/main/resources/loan-approval/business-cockpit-templates/**/*.ftl`       | the templates, all in the default directory of the module: per task definition in `loan_approval/<task-definition>/`, for the whole module directly in `business-cockpit-templates/`, one file per language with `_de` in its name                                                                                 |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | three user tasks with task definitions; a message boundary event on "Call customer" which leads back into it                                                                                                                                                                                                       |
+| `loan-approval/src/test/java/.../OrganizingUserTasksIT.java`                               | one test per pattern; asserts on what was reported to the cockpit; proves that tasks and their data are loaded only when read                                                                                                                                                                                      |
+| `loan-approval/src/test/java/.../CockpitSimulator.java`                                    | starts the dev shell simulator of the cockpit for the test, and reads the reports from it: the last report about a user task at `/simulator-api/usertask/{id}/report`, with the excluded candidates, the admitted users and the kind of notification, and the end of a task and the workflow from the official API |
+
+## Boilerplate files
+
+|                            File                             |                                                                                                    Purpose                                                                                                     |
+|-------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                  | the Quarkus BOM and the VanillaBP BOM import, the versions of the cockpit and of Freemarker, and the rule which keeps adapters out of the workflow module                                                      |
+| `loan-approval/pom.xml`                                     | `vanillabp-quarkus-support`, `business-cockpit-quarkus-support`, Freemarker and `quarkus-security`, never an adapter; the OpenAPI generator; the index of the module's classes; both adapters for the test     |
+| `application/pom.xml`                                       | the BPMS adapter and the cockpit adapter of the same BPMS, the only place a BPMS is named                                                                                                                      |
+| `application/src/main/resources/application-camunda7.yaml`  | the Camunda 7 settings of the application, and the same file per other BPMS                                                                                                                                    |
+| `application/src/main/resources/application.yaml`           | the datasource, where the reports go, the profile the Maven build filters in, and how users log in: HTTP basic authentication for `/api/*` and six demo users; replace them with the login of your application |
+| `loan-approval/src/test/java/.../StoredLoanApprovals.java`  | reads a loan approval for a test inside a transaction, with all tasks and their data                                                                                                                           |
+| `loan-approval/src/test/resources/dev-shell-simulator.yaml` | the users of the simulator                                                                                                                                                                                     |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`   | base class of the integration tests: waits for workflow progress                                                                                                                                               |
+| `application/src/test/java/.../ApplicationSmokeTest.java`   | boots the application, which validates the BPMN-to-code wiring                                                                                                                                                 |
+| `docs/loan_approval.png`                                    | the picture of the process the README shows, rendered from the BPMN model                                                                                                                                      |
+
+`WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint. Copy them
+unchanged. Every test class carries `@QuarkusTest` itself. Inheriting it from the base class
+does not make the test a bean.
+
+## Adding this blueprint to an existing project
+
+Apply `cockpit-usertasks-in-the-application` first. The tasks and their data loaded lazily,
+`@Transactional` on `Service` and the exceptions about a task id come from there.
+
+1. Add `io.vanillabp.businesscockpit:business-cockpit-quarkus-support`, `org.freemarker:freemarker` and `io.quarkus:quarkus-security` to the workflow
+   module. Add the cockpit adapter of your BPMS to the application, and to the module only in
+   the test scope.
+2. Write the keys of the cockpit into the configuration file of the module, below
+   `vanillabp.workflow-modules.<module-id>.cockpit`: `i18n-languages`,
+   `bpmn-description-language` and `initiator-source: by-application`. Write no
+   `template-loader-path`: the templates go into the default directory of the module (step 6).
+3. Write into the aggregate what the reports need and no BPMS records: the user who acted last,
+   the person a task belongs to, the user who did a step the next one must be kept from, and
+   the dates the due dates are counted from. Set them in `Service`, from the user who logged
+   in.
+4. Add one `@UserTaskDetailsProvider(taskDefinition = ...)` per task definition to the class
+   with `@WorkflowService`. Set the initiator, the candidate group (the authority of the form),
+   the assignee where the aggregate names one, the excluded candidates, the due date, the
+   notification delivery and the details. Only read the aggregate. A provider runs inside the
+   transaction of VanillaBP, so it may read the tasks and their data.
+5. Add a `@WorkflowDetailsProvider` which sets the initiator as well.
+6. Put every template of the module into its default directory
+   `src/main/resources/<module-id>/business-cockpit-templates/`. The title templates go into
+   `<bpmn-process-id>/<task-definition>/task-title.ftl` below it, one file per language with
+   `_<language>` before `.ftl`. Pass a small record to `setTemplateContext`. Put the search text
+   directly into that directory as `task-fulltext-search.ftl`, with the data no column shows.
+7. Add `editors` to the task, write the user into it when the form is delivered for work, and
+   report them with `setAdmittedUsers`. Copy `UserTaskAccess`, with one `@PermissionChecker`
+   method per form, and name its permission in `@PermissionsAllowed` of every endpoint which
+   reads a form. Return whether the user may work on the form, and keep `@RolesAllowed` on every
+   endpoint which changes something.
+8. Call `BusinessCockpitService#aggregateChanged(aggregate, taskId)` whenever something the
+   provider reads changes and the BPMS does not notice: a follow-up date, a new editor.
+9. To give a task to other people, end it with a boundary event which leads back into it.
+   Never expect a later report to change the assignee or the candidates.
+10. Copy `OrganizingUserTasksIT` and `CockpitSimulator`, and adapt the test to your user
+    tasks.
+
+Never let a details provider change the aggregate, and never keep a second list of readers next
+to the editors of a task.
+
+## Verifying
+
+```bash
+mvn install verify
+```
+
+That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamunda8` needs a
+running cluster and a configured `vanillabp.adapters.camunda8.rest-address`. Check both before
+you report a failure of that profile as a defect of the generated code.
+
+`OrganizingUserTasksIT` proves the aspect and has to pass:
+
+- the initiator of each report is the user who caused it, for a task and for the case,
+- "Call customer" has the advisor as assignee, `USER_CONFIG`, the address of the CRM and a
+  title from a template in two languages,
+- a customer not reached gives the task a follow-up date on the next morning and another title,
+- a new advisor gets the call as a new task, and the old task is canceled,
+- "Assess risk" has a candidate group, no assignee, `SUPPRESS`, a title from a template, the
+  details and a search text with the phone number,
+- "Approve loan" excludes the user who assessed the risk, the module refuses that user, and
+  another approver completes it,
+- a user who opened a form for work is an admitted user and may still read the form without
+  the authority, while a stranger is refused,
+- loading the aggregate loads no task, and reading a task does not load its data.
+
+If a title arrives as the name of the BPMN task, the template was not found: check the
+directory names against the module id, the process id and the task definition. Every template
+has to be below `<module-id>/business-cockpit-templates/`, and no `template-loader-path` may be
+set, because a key moves the cockpit away from that directory. If a report fails because it names no initiator, a provider does not set
+one. If a task never shows up in `tasks`, the wiring between BPMN and code is wrong, and the
+startup log names it.
+
+Do not report success without having run this.

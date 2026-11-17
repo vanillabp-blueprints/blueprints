@@ -1,0 +1,76 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is
+# in its own configuration file (loan-approval/loan-approval.yaml inside the module JAR).
+#
+# Nothing about a BPMS is here either. That lives in a profile file per engine,
+# 'application-camunda7.yaml' and 'application-camunda8.yaml', so switching engines is a
+# profile and not an edit. One adapter dependency and one workflow module are enough for
+# VanillaBP to derive the adapter, the workflow module and where its BPMN files are read
+# from.
+quarkus:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, and the profile
+  # file of that engine applies from then on - whichever profile the application itself runs
+  # in, because the BPMS profile is its PARENT. Nobody has to name the profile twice.
+  config:
+    profile:
+      parent: "@bpms@"
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:loan-approval;DB_CLOSE_DELAY=-1
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  # How users log in is the application's decision. Every call below /api/ needs a login with
+  # HTTP basic authentication. Which user may call which endpoint, the workflow module decides
+  # with the roles it names.
+  http:
+    auth:
+      basic: true
+      permission:
+        api:
+          paths: /api/*
+          policy: authenticated
+  # The demo users, each with the roles of the workflow module it holds. The password of each
+  # is 'demo'. A real application connects its identity provider here instead.
+  security:
+    users:
+      embedded:
+        enabled: true
+        plain-text: true
+        users:
+          alice: demo
+          erin: demo
+          lea: demo
+          bob: demo
+          carol: demo
+          dave: demo
+        roles:
+          alice: LOAN_APPROVAL_REQUEST_LOAN,LOAN_APPROVAL_CALL_CUSTOMER
+          erin: LOAN_APPROVAL_REQUEST_LOAN,LOAN_APPROVAL_CALL_CUSTOMER
+          lea: LOAN_APPROVAL_CHANGE_ADVISOR
+          bob: LOAN_APPROVAL_ASSESS_RISK
+          carol: LOAN_APPROVAL_ASSESS_RISK,LOAN_APPROVAL_APPROVE_LOAN
+          dave: LOAN_APPROVAL_APPROVE_LOAN
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO
+vanillabp:
+  # Where the reports about workflows and user tasks go. Which cockpit an application reports
+  # to is a matter of the application, not of the workflow module. This is the dev shell
+  # simulator of the cockpit on its default port, see the README. Every report goes through
+  # the outbox first, so a cockpit which is not running loses nothing. The reports wait until
+  # it is there.
+  # https://github.com/vanillabp/business-cockpit/wiki/Connecting-a-workflow-module#rest-kafka-or-a-way-of-your-own
+  cockpit:
+    rest:
+      base-url: http://localhost:8079
+# The users log in with HTTP basic authentication, not with the login token of the Business
+# Cockpit. The support library of the cockpit checks such a token unless it is told not to,
+# and then the start asks for the secret of the cockpit. So the check is left out. It is a
+# build property: Quarkus reads it while it builds the application.
+business-cockpit:
+  jwt:
+    enabled: false

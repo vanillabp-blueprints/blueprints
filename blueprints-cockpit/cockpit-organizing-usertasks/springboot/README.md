@@ -262,8 +262,7 @@ The rest is the same as in the base blueprint. The tasks and their data are load
 `Service` carries `@Transactional` on the class, and the application sets
 `open-in-view: false`. `BcUnknownTaskException` and `BcTaskNotOpenException` of the cockpit's
 `business-cockpit-spring-boot-support` say what is wrong with a task id, and
-`BcUserTaskExceptionHandler`, which `UserTaskFormController` imports, answers them with 404 and
-409. The details providers run inside the transaction of VanillaBP, so they
+`BcUserTaskExceptionHandler`, which `UserTaskFormController` imports, answers both with 404. The details providers run inside the transaction of VanillaBP, so they
 may read the tasks.
 
 ## Running it

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToRetrieveCreditRating</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRetrieveCreditRating" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_RetrieveCreditRating" />
+    <bpmn:serviceTask id="ServiceTask_RetrieveCreditRating" name="Retrieve credit rating" camunda:expression="${retrieveCreditRating}">
+      <bpmn:incoming>Flow_ToRetrieveCreditRating</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToCallCustomer</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToCallCustomer" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="UserTask_CallCustomer" />
+    <!--
+      The advisor of the customer calls back. The task is assigned to the advisor. Its task
+      definition names the directory of its title templates and the details provider which
+      describes it to the cockpit.
+    -->
+    <bpmn:userTask id="UserTask_CallCustomer" name="Call customer" camunda:formKey="callCustomer">
+      <bpmn:incoming>Flow_ToCallCustomer</bpmn:incoming>
+      <bpmn:incoming>Flow_BackToCallCustomer</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToAssessRisk</bpmn:outgoing>
+    </bpmn:userTask>
+    <!--
+      The customer gets another advisor. The cockpit reads the assignee of a task only once, so
+      the open task is ended here and entered again. The new task belongs to the new advisor.
+    -->
+    <bpmn:boundaryEvent id="BoundaryEvent_AdvisorChanged" name="Advisor changed" attachedToRef="UserTask_CallCustomer">
+      <bpmn:outgoing>Flow_BackToCallCustomer</bpmn:outgoing>
+      <!--
+        The application correlates the message when the customer gets another advisor. Nothing
+        about the correlation is modelled: VanillaBP correlates by the id of the workflow
+        aggregate, which the engine knows as the business key of the instance.
+      -->
+      <bpmn:messageEventDefinition id="MessageEventDefinition_AdvisorChanged" messageRef="Message_AdvisorChanged" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_BackToCallCustomer" sourceRef="BoundaryEvent_AdvisorChanged" targetRef="UserTask_CallCustomer" />
+    <bpmn:sequenceFlow id="Flow_ToAssessRisk" sourceRef="UserTask_CallCustomer" targetRef="UserTask_AssessRisk" />
+    <!-- Any member of the risk team may take it. -->
+    <bpmn:userTask id="UserTask_AssessRisk" name="Assess risk" camunda:formKey="assessRisk">
+      <bpmn:incoming>Flow_ToAssessRisk</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToApproveLoan</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_ToApproveLoan" sourceRef="UserTask_AssessRisk" targetRef="UserTask_ApproveLoan" />
+    <!--
+      Right after "Assess risk", so the four-eyes principle has two steps to keep apart: who
+      assessed the risk must not approve the loan.
+    -->
+    <bpmn:userTask id="UserTask_ApproveLoan" name="Approve loan" camunda:formKey="approveLoan">
+      <bpmn:incoming>Flow_ToApproveLoan</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanDecided</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanDecided" sourceRef="UserTask_ApproveLoan" targetRef="EndEvent_LoanDecided" />
+    <bpmn:endEvent id="EndEvent_LoanDecided" name="Loan decided">
+      <bpmn:incoming>Flow_ToLoanDecided</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <!-- The message name is the string the business code passes to 'correlateMessage'. -->
+  <bpmn:message id="Message_AdvisorChanged" name="AdvisorChanged" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="134" y="225" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RetrieveCreditRating_di" bpmnElement="ServiceTask_RetrieveCreditRating">
+        <dc:Bounds x="240" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_CallCustomer_di" bpmnElement="UserTask_CallCustomer">
+        <dc:Bounds x="400" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_AssessRisk_di" bpmnElement="UserTask_AssessRisk">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_ApproveLoan_di" bpmnElement="UserTask_ApproveLoan">
+        <dc:Bounds x="720" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanDecided_di" bpmnElement="EndEvent_LoanDecided">
+        <dc:Bounds x="882" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="866" y="225" width="69" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_AdvisorChanged_di" bpmnElement="BoundaryEvent_AdvisorChanged">
+        <dc:Bounds x="432" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="476" y="265" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
+        <di:waypoint x="188" y="200" />
+        <di:waypoint x="240" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToCallCustomer_di" bpmnElement="Flow_ToCallCustomer">
+        <di:waypoint x="340" y="200" />
+        <di:waypoint x="400" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToAssessRisk_di" bpmnElement="Flow_ToAssessRisk">
+        <di:waypoint x="500" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToApproveLoan_di" bpmnElement="Flow_ToApproveLoan">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="720" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanDecided_di" bpmnElement="Flow_ToLoanDecided">
+        <di:waypoint x="820" y="200" />
+        <di:waypoint x="882" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_BackToCallCustomer_di" bpmnElement="Flow_BackToCallCustomer">
+        <di:waypoint x="450" y="258" />
+        <di:waypoint x="450" y="300" />
+        <di:waypoint x="370" y="300" />
+        <di:waypoint x="370" y="220" />
+        <di:waypoint x="400" y="220" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

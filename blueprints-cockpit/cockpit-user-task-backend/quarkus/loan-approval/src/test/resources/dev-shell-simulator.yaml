@@ -1,0 +1,10 @@
+# The users the dev shell simulator knows. It refuses to start without any. A dev shell lets
+# you switch between them, to see a form as somebody of another group sees it. This blueprint
+# shows no rights, so one user is enough.
+dev-shell-simulator:
+  users:
+    - id: jane
+      email: jane@doe.com
+      first-name: Jane
+      last-name: Doe
+      groups: RISK_ASSESSMENT

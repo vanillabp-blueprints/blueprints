@@ -1,0 +1,106 @@
+package blueprint.workflowmodule.loanapproval;
+
+import java.util.UUID;
+
+import blueprint.workflowmodule.loanapproval.api.LoanRequestsApi;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * The API for a human with a browser: it starts a loan approval, approves it and shows it. It
+ * consists of GET requests only, so it works in a browser. The case page has an API of its own,
+ * in {@link CasePageController}.
+ *
+ * <p>
+ * Every path of this module starts with {@code /loan-approval}, the workflow module ID. The
+ * Business Cockpit forwards requests for this module to that path, and an application which
+ * holds several workflow modules keeps their paths apart this way.
+ * </p>
+ *
+ * <p>
+ * The paths, the parameters and the answers come from {@link LoanRequestsApi}, the interface
+ * the build generates from {@code src/main/resources/openapi/loan-requests.yaml}. This class
+ * only implements it.
+ * </p>
+ */
+@Slf4j
+@ApplicationScoped
+public class ApiController implements LoanRequestsApi {
+
+  @Inject
+  Service loanApproval;
+
+  /**
+   * Starts a loan approval. This is the one URL to remember. The case then shows up in the
+   * case list of the Business Cockpit.
+   *
+   * @param applicant Who asks for the loan.
+   * @param amount    The amount requested.
+   * @return The id of the loan request started.
+   */
+  @Override
+  public String start(
+      final String applicant,
+      final Integer amount) {
+
+    final var loanRequestId = UUID.randomUUID().toString();
+
+    loanApproval.request(loanRequestId, applicant, amount);
+
+    log.info(
+        "Show the result -> http://localhost:8080/loan-approval/api/loan-requests/{}",
+        loanRequestId);
+
+    return loanRequestId;
+
+  }
+
+  /**
+   * Approves the loan request, which completes the user task. The case ends the regular way.
+   *
+   * <p>
+   * In a real application, the form of the user task does this. Forms are the subject of the
+   * blueprint {@code cockpit-user-task}, so this blueprint has none. This URL stands in for it,
+   * so you can see an approved loan request next to a withdrawn one.
+   * </p>
+   *
+   * @param loanRequestId The id returned by starting the process.
+   * @return What happened.
+   */
+  @Override
+  public String approve(
+      final String loanRequestId) {
+
+    return switch (loanApproval.approve(loanRequestId)) {
+      case DONE -> "approved";
+      case NOT_FOUND -> "unknown loan request '"
+          + loanRequestId
+          + "'";
+      case NOT_POSSIBLE -> "the loan request '"
+          + loanRequestId
+          + "' is not waiting for a review";
+    };
+
+  }
+
+  /**
+   * Shows what the process did.
+   *
+   * @param loanRequestId The id returned by starting the process.
+   * @return The workflow aggregate as it is stored right now.
+   */
+  @Override
+  public String show(
+      final String loanRequestId) {
+
+    return loanApproval
+        .get(loanRequestId)
+        .map(Object::toString)
+        .orElse("unknown loan request '"
+            + loanRequestId
+            + "'");
+
+  }
+
+}

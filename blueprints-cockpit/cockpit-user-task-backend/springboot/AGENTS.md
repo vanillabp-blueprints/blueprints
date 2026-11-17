@@ -111,9 +111,11 @@ module a second time, under another name.
    with the settings of `loan-approval/pom.xml`. Implement the interface in a controller with
    `@RequestMapping("/<workflow-module-id>")`, because the paths of the file are relative to the
    server of the cockpit. Write no path and no record by hand. GET returns what the form shows,
-   POST writes the input to the aggregate and completes the task. Answer 404 for a task id which
-   is not open. Write the input to the aggregate only on completion. Before POST completes a
-   task, ask `Cockpit` whether somebody else took it over, and answer 409 if so. Copy `Cockpit`
+   POST writes the input to the aggregate and completes the task. Throw
+   `BcTaskNotOpenException` for a task id which is not open, which answers 404. Write the input to
+   the aggregate only on completion. Before POST completes a task, ask `Cockpit` whether somebody
+   else took it over, and throw `BcTaskClaimedByAnotherUserException` if so, which answers 409.
+   Put `@Import(BcUserTaskExceptionHandler.class)` on the controller, which gives both answers. Copy `Cockpit`
    for that, and set `<workflow-module-id>.cockpit.address` in the application.
 8. Copy `LoanApprovalAutoConfiguration` and `UserInterfaceRouteAutoConfiguration` into the
    sub-package `config` of your module, and the imports file. Set `WORKFLOW_MODULE_ID` to your

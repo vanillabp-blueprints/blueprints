@@ -1,0 +1,108 @@
+openapi: 3.0.3
+info:
+  title: Loan approval
+  description: >
+    The API of the use case 'loan-approval'. It has GET requests only, so a person can walk through
+    the process in a browser, without any tool and without a request body. The user who logged in
+    is the advisor who requests a loan, or the user who hands a customer to another advisor. It is
+    never a value of the request.
+
+    The build generates the Java interface 'LoanApprovalApi' from this file, and 'ApiController'
+    implements it. So the paths, the parameters and the answers below are the contract, and nobody
+    writes them by hand.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: loan-approval
+    description: Operating the use case 'loan-approval'
+paths:
+  /api/loan-approval/start:
+    get:
+      tags:
+        - loan-approval
+      operationId: start
+      summary: Starts a loan approval, with the user logged in as the advisor
+      parameters:
+        - name: amount
+          in: query
+          description: The amount requested
+          schema:
+            type: integer
+            default: 5000
+        - name: customer
+          in: query
+          description: The name of the customer
+          schema:
+            type: string
+            default: Jane Roe
+        - name: phone
+          in: query
+          description: The phone number of the customer
+          schema:
+            type: string
+            default: "+43 1 2345 678"
+      responses:
+        '200':
+          description: The id of the loan request started
+          content:
+            text/plain:
+              schema:
+                type: string
+        '403':
+          description: The user may not request loans
+  /api/loan-approval/{loanRequestId}/change-advisor:
+    get:
+      tags:
+        - loan-approval
+      operationId: changeAdvisor
+      summary: Hands the customer of a loan approval to another advisor
+      description: >
+        If the old advisor still has to call the customer, that task moves to the new one.
+      parameters:
+        - $ref: '#/components/parameters/LoanRequestId'
+        - name: advisor
+          in: query
+          required: true
+          description: The user id of the new advisor
+          schema:
+            type: string
+      responses:
+        '200':
+          description: What happened
+          content:
+            text/plain:
+              schema:
+                type: string
+        '403':
+          description: The user may not hand a customer to another advisor
+        '409':
+          description: The change does not fit the loan approval as it is now. The answer says why
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/loan-approval/{loanRequestId}:
+    get:
+      tags:
+        - loan-approval
+      operationId: show
+      summary: "Shows what the process did: the aggregate, with every user task and its data"
+      parameters:
+        - $ref: '#/components/parameters/LoanRequestId'
+      responses:
+        '200':
+          description: The workflow aggregate as it is stored right now
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  parameters:
+    LoanRequestId:
+      name: loanRequestId
+      in: path
+      required: true
+      description: The id returned by starting the process
+      schema:
+        type: string

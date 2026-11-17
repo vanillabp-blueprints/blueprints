@@ -56,8 +56,6 @@ paths:
           $ref: '#/components/responses/NotAllowed'
         '404':
           $ref: '#/components/responses/UnknownTask'
-        '409':
-          $ref: '#/components/responses/TaskNotOpen'
     post:
       tags:
         - user-task-forms
@@ -79,8 +77,6 @@ paths:
           $ref: '#/components/responses/NotAllowed'
         '404':
           $ref: '#/components/responses/UnknownTask'
-        '409':
-          $ref: '#/components/responses/TaskNotOpen'
   /api/loan-approval/{loanRequestId}/check-document/{taskId}:
     parameters:
       - $ref: '#/components/parameters/LoanRequestId'
@@ -122,8 +118,6 @@ paths:
           $ref: '#/components/responses/NotAllowed'
         '404':
           $ref: '#/components/responses/UnknownTask'
-        '409':
-          $ref: '#/components/responses/TaskNotOpen'
     post:
       tags:
         - user-task-forms
@@ -145,8 +139,6 @@ paths:
           $ref: '#/components/responses/NotAllowed'
         '404':
           $ref: '#/components/responses/UnknownTask'
-        '409':
-          $ref: '#/components/responses/TaskNotOpen'
 components:
   parameters:
     LoanRequestId:
@@ -173,9 +165,9 @@ components:
     NotAllowed:
       description: The user has not got the permission of this form
     UnknownTask:
-      description: The loan request has no user task of this kind with this id
-    TaskNotOpen:
-      description: The user task is not open any more
+      description: >
+        The loan request has no user task of this kind with this id, or the task is not open any
+        more
   schemas:
     TaskState:
       type: object

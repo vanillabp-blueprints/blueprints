@@ -1,6 +1,9 @@
 package blueprint.workflowmodule.loanapproval;
 
+import static blueprint.workflowmodule.loanapproval.config.LoanApprovalAutoConfiguration.WORKFLOW_MODULE_ID;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,6 +15,9 @@ import blueprint.workflowmodule.loanapproval.api.model.AssessRiskForm;
 import blueprint.workflowmodule.loanapproval.api.model.AssessRiskInput;
 import blueprint.workflowmodule.loanapproval.api.model.CheckDocumentsForm;
 import blueprint.workflowmodule.loanapproval.api.model.CheckDocumentsInput;
+import io.vanillabp.cockpit.support.usertask.BcTaskClaimedByAnotherUserException;
+import io.vanillabp.cockpit.support.usertask.BcTaskNotOpenException;
+import io.vanillabp.cockpit.support.usertask.BcUserTaskExceptionHandler;
 import jakarta.servlet.http.HttpServletRequest;
 
 
@@ -40,7 +46,14 @@ import jakarta.servlet.http.HttpServletRequest;
  * <p>
  * Each form has two endpoints. GET reads what the form shows. POST takes what the user entered
  * and completes the user task. A task which is not open answers 404: the id is unknown, or the
- * task was completed already.
+ * task was completed already. The form knows nothing but the id of the task, so the exception
+ * names the workflow module where it would name the loan request.
+ * </p>
+ *
+ * <p>
+ * The exceptions of both answers come from the support library of the Business Cockpit, and
+ * {@link BcUserTaskExceptionHandler} answers them. Nothing registers the handler on its own, so
+ * the controller imports it.
  * </p>
  *
  * <p>
@@ -53,6 +66,7 @@ import jakarta.servlet.http.HttpServletRequest;
  */
 @RestController
 @RequestMapping("/loan-approval")
+@Import(BcUserTaskExceptionHandler.class)
 public class UserTaskFormController implements UserTasksApi {
 
   @Autowired
@@ -158,21 +172,15 @@ public class UserTaskFormController implements UserTasksApi {
       final String userTaskId) {
 
     if (cockpit.saysSomebodyElseTookOver(userTaskId, request.getHeader(HttpHeaders.COOKIE))) {
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "Somebody else took over the user task '"
-              + userTaskId
-              + "'");
+      throw new BcTaskClaimedByAnotherUserException(WORKFLOW_MODULE_ID, userTaskId);
     }
 
   }
 
-  private static ResponseStatusException notOpen(
+  private static BcTaskNotOpenException notOpen(
       final String userTaskId) {
 
-    return new ResponseStatusException(
-        HttpStatus.NOT_FOUND, "No open user task '"
-            + userTaskId
-            + "'");
+    return new BcTaskNotOpenException(WORKFLOW_MODULE_ID, userTaskId);
 
   }
 

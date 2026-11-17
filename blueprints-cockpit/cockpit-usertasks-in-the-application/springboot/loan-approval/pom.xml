@@ -23,7 +23,7 @@
       <artifactId>vanillabp-spring-boot-support</artifactId>
     </dependency>
     <!--
-      The exceptions about a task id, and the handler which answers them with 404 and 409, are
+      The exceptions about a task id, and the handler which answers them with 404, are
       the same in every module with forms. So the Business Cockpit ships them, and the module
       takes them from there. Like the line above, this knows no BPMS.
     -->

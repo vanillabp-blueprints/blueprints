@@ -288,13 +288,13 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
         .containsExactly(true, "dave");
 
     // The same form sent a second time. The module imports the handler of the cockpit, which
-    // answers that the task is done with 409.
+    // answers that the task is done with 404.
     final var refused = catchThrowableOfType(
         BcTaskNotOpenException.class,
         () -> forms.completeApproveLoan(loanRequestId, approval, new ApproveLoanInput(true, "fine")));
     assertThat(userTaskExceptionHandler
         .taskNotOpen(refused)
-        .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 
   }
 
