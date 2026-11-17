@@ -80,6 +80,16 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    <!--
+      The clients of the official GUI API of the cockpit, generated from its OpenAPI file. The
+      tests read with them what the cockpit the simulator plays was told.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>official-gui-api-spring-boot-client</artifactId>
+      <version>${businesscockpit.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
       <artifactId>credit-rating-rest-adapter</artifactId>

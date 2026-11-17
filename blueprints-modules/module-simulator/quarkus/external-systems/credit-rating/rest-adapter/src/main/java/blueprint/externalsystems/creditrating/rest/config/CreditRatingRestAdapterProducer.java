@@ -1,13 +1,10 @@
 package blueprint.externalsystems.creditrating.rest.config;
 
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
-
 import blueprint.externalsystems.creditrating.CreditRating;
 import blueprint.externalsystems.creditrating.api.client.CreditRatingApi;
 import blueprint.externalsystems.creditrating.rest.CreditRatingRestAdapter;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.runtime.Startup;
+import io.vanillabp.cockpit.support.rest.restclient.RestClients;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
@@ -23,36 +20,26 @@ import jakarta.inject.Singleton;
 @ApplicationScoped
 public class CreditRatingRestAdapterProducer {
 
+  /** Where the keys of the client are, for example {@code credit-rating.client.base-url}. */
+  public static final String KEYS = "credit-rating.client";
+
   /**
-   * The credit rating, over REST. Created while the application starts, so a missing address
-   * stops the start with a message instead of failing the first loan request.
+   * The credit rating, over REST. The support library of the Business Cockpit builds the
+   * generated client from the keys below {@value #KEYS}: {@code base-url}, the timeouts, a
+   * proxy, retries and the rest. It is created while the application starts, so a missing
+   * address stops the start with a message which names the key, instead of failing the first
+   * loan request.
    *
-   * @param properties Where the credit rating is.
+   * @param restClients The builder of the support library.
    * @return The adapter.
    */
   @Produces
   @Singleton
   @Startup
   public CreditRating creditRating(
-      final CreditRatingProperties properties) {
+      final RestClients restClients) {
 
-    final var baseUrl = properties
-        .baseUrl()
-        .filter(address -> !address.isBlank())
-        .orElseThrow(() -> new IllegalStateException("""
-            The credit rating has no address. Set 'credit-rating.base-url' to where it answers. \
-            For the simulator of this blueprint that is http://localhost:8079/credit-rating, and \
-            the profile 'local' of the application sets it."""));
-
-    // The generated client is an interface. The REST client of Quarkus implements it.
-    final var client = QuarkusRestClientBuilder
-        .newBuilder()
-        .baseUri(URI.create(baseUrl))
-        .connectTimeout(properties.timeout().toMillis(), TimeUnit.MILLISECONDS)
-        .readTimeout(properties.timeout().toMillis(), TimeUnit.MILLISECONDS)
-        .build(CreditRatingApi.class);
-
-    return new CreditRatingRestAdapter(client, baseUrl);
+    return new CreditRatingRestAdapter(restClients.build(CreditRatingApi.class, KEYS));
 
   }
 

@@ -35,6 +35,15 @@
       <version>${project.version}</version>
     </dependency>
     <!-- The REST client of Quarkus, and JSON. -->
+    <!--
+      The support library of the Business Cockpit, which builds the client from keys with
+      RestClients, on the REST client of Quarkus below.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>business-cockpit-quarkus-support</artifactId>
+      <version>${businesscockpit.version}</version>
+    </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-rest-client-jackson</artifactId>

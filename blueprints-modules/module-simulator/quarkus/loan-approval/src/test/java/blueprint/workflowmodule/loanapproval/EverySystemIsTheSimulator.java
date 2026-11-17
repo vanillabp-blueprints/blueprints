@@ -28,9 +28,9 @@ public class EverySystemIsTheSimulator implements QuarkusTestResourceLifecycleMa
 
     return Map.of(
         "quarkus.http.test-port", Integer.toString(port),
-        "credit-rating.base-url", simulator
+        "credit-rating.client.base-url", simulator
             + "/credit-rating",
-        "e-signature.base-url", simulator
+        "e-signature.client.base-url", simulator
             + "/e-signature",
         "e-signature.callback-url", "http://localhost:"
             + port

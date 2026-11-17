@@ -78,7 +78,12 @@ after its API, for example `credit-rating-api`. It holds the OpenAPI file and tw
 which generate Java code from it with the `openapi-generator-maven-plugin`:
 
 - `client` is for the side which calls the API. Here that is the application: the REST adapter
-  depends on it.
+  depends on it. The module brings an auto-configuration, which turns the generated interface
+  into a client with the support library of the Business Cockpit. The application only sets the
+  keys of the client below `<system>.client`, for example `credit-rating.client.base-url` and
+  `credit-rating.client.read-timeout`. A missing address stops the start, and the message names
+  the key. Proxy, retries, TLS and OAuth are keys there as well, see
+  [REST clients](https://github.com/vanillabp/business-cockpit/blob/main/support/README.md#rest-clients).
 - `server` is for the side which answers. Here that is the simulator: its controllers implement
   the generated interfaces.
 

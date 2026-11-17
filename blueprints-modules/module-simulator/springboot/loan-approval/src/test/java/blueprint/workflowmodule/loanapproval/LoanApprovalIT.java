@@ -22,6 +22,7 @@ import org.springframework.web.client.RestClient;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.api.model.Answer;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
 
 /**
  * The integration test of this workflow module. It runs the module with its real adapters, and
@@ -54,6 +55,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @Autowired
   private AggregateRepository loanApprovals;
 
+  /** The task list of the cockpit the simulator plays. */
+  @Autowired
+  private OfficialTasklistApi tasklist;
+
   private final RestClient api = RestClient.create("http://localhost:"
       + PORT
       + "/loan-approval/api");
@@ -70,14 +75,17 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var simulator = simulator().baseUrl();
     properties.add("server.port", () -> PORT);
-    properties.add("credit-rating.base-url", () -> simulator
+    properties.add("credit-rating.client.base-url", () -> simulator
         + "/credit-rating");
-    properties.add("e-signature.base-url", () -> simulator
+    properties.add("e-signature.client.base-url", () -> simulator
         + "/e-signature");
     properties.add("e-signature.callback-url", () -> "http://localhost:"
         + PORT
         + "/e-signature/callback");
     properties.add("vanillabp.cockpit.rest.base-url", () -> simulator);
+    // The client of the cockpit's library, with the keys where Spring Boot looks for them.
+    properties.add("spring.http.serviceclient.official-gui-api.base-url", () -> simulator
+        + "/official-api/v1");
 
   }
 
@@ -100,10 +108,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(awaitAggregate(loanApprovals, loanRequestId).getCreditScore()).isEqualTo(720);
 
     // The cockpit shows the user task, with the details the module reported.
-    final var userTask = simulator().awaitUserTask(prepareContractTaskId, task -> true);
-    assertThat(userTask.get("workflowModuleId")).isEqualTo("loan-approval");
-    assertThat(userTask.get("taskDefinition")).isEqualTo("prepareContract");
-    assertThat(userTask.get("details"))
+    final var userTask = simulator().awaitUserTask(tasklist, prepareContractTaskId, task -> true);
+    assertThat(userTask.getWorkflowModuleId()).isEqualTo("loan-approval");
+    assertThat(userTask.getTaskDefinition()).isEqualTo("prepareContract");
+    assertThat(userTask.getDetails())
         .isEqualTo(Map.of(
             WorkflowTaskHandler.AMOUNT, 5000,
             WorkflowTaskHandler.CREDIT_SCORE, 720));
@@ -136,7 +144,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .isNotNull();
 
     // The cockpit took the user task off the list.
-    simulator().awaitUserTask(prepareContractTaskId, task -> task.get("endedAt") != null);
+    simulator().awaitUserTask(tasklist, prepareContractTaskId, task -> task.getEndedAt() != null);
 
   }
 

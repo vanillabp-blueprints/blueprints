@@ -13,13 +13,15 @@
   <description>The client of the credit rating, generated from credit-rating.yaml. The application uses it.</description>
 
   <!--
-    Only what the generated sources import: the annotations of Spring Web, of Jackson and of
-    Jakarta. No Spring Boot starter, so the module stays a small library.
+    What the generated sources import, the annotations of Jackson and of Jakarta, and the
+    support library of the Business Cockpit, which brings the HTTP service clients of Spring and
+    builds the client of this module from keys.
   -->
   <dependencies>
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-web</artifactId>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>business-cockpit-spring-boot-support</artifactId>
+      <version>${businesscockpit.version}</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>

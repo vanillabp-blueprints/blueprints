@@ -79,7 +79,7 @@ Names this blueprint adds:
 | `external-systems/e-signature/e-signature-api/server/pom.xml`                                | generates the interface of the API and the client of the callback: what the simulator needs                                    |
 | `external-systems/credit-rating/rest-adapter/src/main/java/.../CreditRatingRestAdapter.java` | calls the generated client and translates its answer into the port, and a failure into `CreditRatingUnavailableException`      |
 | `external-systems/e-signature/rest-adapter/src/main/java/.../CallbackController.java`        | implements the generated callback interface and calls `SignedContracts`                                                        |
-| `external-systems/*/rest-adapter/src/main/java/.../config/*Producer.java`                    | the adapter wires itself and stops the start when its address is missing                                                       |
+| `external-systems/*/rest-adapter/src/main/java/.../config/*Producer.java`                    | the adapter wires itself, with the client `RestClients` builds from its keys                                                   |
 | `loan-approval/src/main/java/.../Service.java`                                               | uses the ports by their role: `creditRating`, `contractSigning`                                                                |
 | `loan-approval/src/main/java/.../SignedContractsHandler.java`                                | implements `SignedContracts` and calls `Service`                                                                               |
 | `loan-approval/src/main/java/.../ApiController.java`                                         | the 503 with the role of the system, as a problem detail                                                                       |
@@ -134,11 +134,14 @@ Names this blueprint adds:
    system which calls back, write a second OpenAPI file for the callback. `client` generates
    the client of the API and the interface of the callback, `server` the opposite.
 5. Create a Maven module `rest-adapter` per system. It depends on the port, on `client` and on
-   `quarkus-rest-client-jackson`. It implements the port with the generated client, built by
-   `QuarkusRestClientBuilder`. A callback endpoint is a bean which implements the generated
-   callback interface. Add a `@ConfigMapping` for the address, without a default, and a producer
-   of the port's bean with `@Startup`. Fail the start with a message which names the missing
-   key. Index the module and `client` with the `jandex-maven-plugin`.
+   `quarkus-rest-client-jackson` and `business-cockpit-quarkus-support`. It implements the port
+   with the generated client, built by `RestClients` of the support library from the keys below
+   `<system>.client`. A callback endpoint is a bean which implements the generated callback
+   interface. Add a producer of the port's bean with `@Startup`. The support library checks
+   `base-url` and every other key of the client at the start, so write no check and no properties
+   class for the client. A key of the adapter itself, like a callback address, is read with
+   `@ConfigProperty` and checked at the start with a message which names it. Its key must not be
+   below a `@ConfigMapping` prefix which also holds the keys of the client. Index the module and `client` with the `jandex-maven-plugin`.
 6. Make the application depend on the adapters. Set their addresses in
    `application-local.yaml` (the simulator) and `application-real.yaml` (from the
    environment). Make one of them a parent profile with `quarkus.config.profile.parent`, next

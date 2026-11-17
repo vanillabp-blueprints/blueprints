@@ -6,9 +6,16 @@
 # The adapters are the same as in the profile 'local'. A credential a real system asks for would
 # come from the environment as well, never from this file.
 credit-rating:
-  base-url: ${CREDIT_RATING_URL}
+  # The keys of the client of the credit rating. The user waits for its answer, so the client
+  # gives up after two seconds.
+  client:
+    base-url: ${CREDIT_RATING_URL}
+    read-timeout: 2s
 e-signature:
-  base-url: ${E_SIGNATURE_URL}
+  # The keys of the client of the e-signature service.
+  client:
+    base-url: ${E_SIGNATURE_URL}
+    read-timeout: 5s
   callback-url: ${E_SIGNATURE_CALLBACK_URL}
 vanillabp:
   cockpit:

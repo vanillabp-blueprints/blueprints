@@ -271,7 +271,7 @@
                 <argument>-jar</argument>
                 <argument>${project.build.directory}/simulator.jar</argument>
                 <argument>--server.port=${simulator.port}</argument>
-                <argument>--load-run.application.base-url=http://localhost:${application.port}</argument>
+                <argument>--loan-approval.client.base-url=http://localhost:${application.port}</argument>
                 <argument>--load-run.application.metrics-url=http://localhost:${application.port}/q/metrics</argument>
                 <argument>--load-run.application.jmx-address=localhost:${jmx.port}</argument>
                 <argument>--load-run.sizes.tiny.stage-length=PT2S</argument>

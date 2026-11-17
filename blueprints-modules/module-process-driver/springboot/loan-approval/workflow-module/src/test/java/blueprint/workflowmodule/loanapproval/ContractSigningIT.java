@@ -75,7 +75,7 @@ public class ContractSigningIT extends ScenarioTest {
 
     assertThat(theCustomerDeclines(scenario.getLoanRequestId())).isEqualTo(REPORT_TAKEN);
 
-    simulator().awaitUserTask(taskId, task -> task.get("endedAt") != null);
+    awaitUserTask(taskId, task -> task.getEndedAt() != null);
     awaitAggregate(
         loanApprovals,
         scenario.getLoanRequestId(),

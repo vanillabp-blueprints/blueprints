@@ -21,25 +21,20 @@ public class CreditBureauRestAdapter implements CreditBureau {
 
   private final ScoreRequestsApi creditBureau;
 
-  private final String baseUrl;
-
   private final String callbackUrl;
 
   /**
    * Creates the adapter.
    *
    * @param creditBureau The generated client, whose base address is the credit bureau.
-   * @param baseUrl      The same address, for the messages of this class.
    * @param callbackUrl  Where the credit bureau sends the score: the address of
    *                     {@link CallbackController}, as the bureau reaches it.
    */
   public CreditBureauRestAdapter(
       final ScoreRequestsApi creditBureau,
-      final String baseUrl,
       final String callbackUrl) {
 
     this.creditBureau = creditBureau;
-    this.baseUrl = baseUrl;
     this.callbackUrl = callbackUrl;
 
   }
@@ -55,9 +50,7 @@ public class CreditBureauRestAdapter implements CreditBureau {
 
     } catch (ProcessingException | WebApplicationException e) {
 
-      throw new IllegalStateException("The credit bureau at '"
-          + baseUrl
-          + "' did not take the question about loan request '"
+      throw new IllegalStateException("The credit bureau did not take the question about loan request '"
           + loanRequestId
           + "'", e);
 

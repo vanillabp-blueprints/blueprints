@@ -79,7 +79,7 @@ Names this blueprint adds:
 | `external-systems/e-signature/e-signature-api/server/pom.xml`                                | generates the interface of the API and the client of the callback: what the simulator needs                                    |
 | `external-systems/credit-rating/rest-adapter/src/main/java/.../CreditRatingRestAdapter.java` | calls the generated client and translates its answer into the port, and a failure into `CreditRatingUnavailableException`      |
 | `external-systems/e-signature/rest-adapter/src/main/java/.../CallbackController.java`        | implements the generated callback interface and calls `SignedContracts`                                                        |
-| `external-systems/*/rest-adapter/src/main/java/.../config/*AutoConfiguration.java`           | the adapter wires itself and stops the start when its address is missing                                                       |
+| `external-systems/*/rest-adapter/src/main/java/.../config/*AutoConfiguration.java`           | the adapter wires itself with the client of its `client` module                                                                |
 | `loan-approval/src/main/java/.../Service.java`                                               | uses the ports by their role: `creditRating`, `contractSigning`                                                                |
 | `loan-approval/src/main/java/.../SignedContractsHandler.java`                                | implements `SignedContracts` and calls `Service`                                                                               |
 | `loan-approval/src/main/java/.../ApiController.java`                                         | the 503 with the role of the system, as a problem detail                                                                       |
@@ -133,11 +133,16 @@ Names this blueprint adds:
    system which calls back, write a second OpenAPI file for the callback. `client` generates
    the client of the API and the interface of the callback, `server` the opposite.
 5. Create a Maven module `rest-adapter` per system. It depends on the port and on `client`. It
-   implements the port with the generated client, created by `HttpServiceProxyFactory` from a
-   `RestClient`. A callback endpoint implements the generated callback interface. Add the
-   properties without a default for the address, and an auto-configuration registered in
-   `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`. Fail the
-   start with a message which names the missing key.
+   implements the port with the generated client, which it injects. A callback endpoint
+   implements the generated callback interface. Add an auto-configuration registered in
+   `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`. The
+   `client` module brings the auto-configuration of the client: an empty sub-interface of the
+   generated one, imported with `@ImportHttpServices` into an HTTP service group, and an
+   `HttpServiceGroupPrefix` bean which puts its keys below `<system>.client`. Copy
+   `CreditRatingClient` and `CreditRatingClientAutoConfiguration`. The support library of the
+   Business Cockpit checks `base-url` and every other key at the start, so write no check and no
+   properties class for the client. A key of the adapter itself, like a callback address, is read
+   with `@Value` and checked at the start with a message which names it.
 6. Make the application depend on the adapters. Set their addresses in
    `application-local.yaml` (the simulator) and `application-real.yaml` (from the
    environment). Activate one of them with `spring.profiles.active`.

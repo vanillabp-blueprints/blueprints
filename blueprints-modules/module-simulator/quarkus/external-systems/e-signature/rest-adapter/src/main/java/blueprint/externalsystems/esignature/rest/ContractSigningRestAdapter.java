@@ -23,25 +23,20 @@ public class ContractSigningRestAdapter implements ContractSigning {
 
   private final EnvelopesApi eSignature;
 
-  private final String baseUrl;
-
   private final String callbackUrl;
 
   /**
    * Creates the adapter.
    *
    * @param eSignature  The generated client, whose base address is the e-signature service.
-   * @param baseUrl     The same address, for the messages of this class.
    * @param callbackUrl Where the e-signature service reports a signature: the address of
    *                    {@link CallbackController}, as the service reaches it.
    */
   public ContractSigningRestAdapter(
       final EnvelopesApi eSignature,
-      final String baseUrl,
       final String callbackUrl) {
 
     this.eSignature = eSignature;
-    this.baseUrl = baseUrl;
     this.callbackUrl = callbackUrl;
 
   }
@@ -57,9 +52,7 @@ public class ContractSigningRestAdapter implements ContractSigning {
 
     } catch (ProcessingException | WebApplicationException e) {
 
-      throw new ContractSigningUnavailableException("The e-signature service at '"
-          + baseUrl
-          + "' did not take contract '"
+      throw new ContractSigningUnavailableException("The e-signature service did not take contract '"
           + contract.contractId()
           + "'", e);
 

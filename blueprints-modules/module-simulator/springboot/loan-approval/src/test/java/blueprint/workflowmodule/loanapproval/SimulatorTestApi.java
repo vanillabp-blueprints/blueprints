@@ -3,13 +3,13 @@ package blueprint.workflowmodule.loanapproval;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import org.awaitility.core.ConditionTimeoutException;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -20,9 +20,12 @@ import blueprint.simulator.testapi.client.CreditRatingTestApi;
 import blueprint.simulator.testapi.client.ESignatureTestApi;
 import blueprint.simulator.testapi.client.StatusApi;
 import blueprint.simulator.testapi.client.model.Envelope;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
 
 /**
- * The client of the simulator's test API, and of the cockpit API the simulator plays.
+ * The client of the simulator's test API, and what it takes to read the cockpit the simulator
+ * plays.
  *
  * <p>
  * The test API knows nothing about the workflow. It creates data in a simulated system and
@@ -34,8 +37,8 @@ import blueprint.simulator.testapi.client.model.Envelope;
  * <p>
  * The client of the test API is generated from
  * {@code simulator-test-api/simulator-test-api.yaml}, the file the simulator implements. The
- * official API of the cockpit is read with a plain {@link RestClient}, because the cockpit
- * publishes no client of its own.
+ * official GUI API of the cockpit the simulator plays is read with the client of the cockpit's
+ * library, which the test injects and hands to {@link #awaitUserTask}.
  * </p>
  *
  * <p>
@@ -65,8 +68,6 @@ public final class SimulatorTestApi {
 
   private final ESignatureTestApi eSignature;
 
-  private final RestClient cockpit;
-
   private SimulatorTestApi(
       final String baseUrl) {
 
@@ -77,8 +78,6 @@ public final class SimulatorTestApi {
     this.status = testApi.createClient(StatusApi.class);
     this.creditRating = testApi.createClient(CreditRatingTestApi.class);
     this.eSignature = testApi.createClient(ESignatureTestApi.class);
-    this.cockpit = RestClient.create(baseUrl
-        + "/official-api/v1");
 
   }
 
@@ -193,15 +192,17 @@ public final class SimulatorTestApi {
    * Waits until the cockpit knows a user task and the condition holds. The cockpit adapter
    * reports through the outbox, so a report arrives a moment after the event which caused it.
    *
+   * @param tasklist   The client of the official GUI API of the simulator.
    * @param userTaskId The id of the user task.
    * @param condition  What the cockpit is expected to know about the task.
    * @return The user task, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitUserTask(
+  public UserTask awaitUserTask(
+      final OfficialTasklistApi tasklist,
       final String userTaskId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<UserTask> condition) {
 
-    final var lastSeen = new AtomicReference<Optional<Map<String, Object>>>(Optional.empty());
+    final var lastSeen = new AtomicReference<Optional<UserTask>>(Optional.empty());
 
     try {
 
@@ -210,7 +211,7 @@ public final class SimulatorTestApi {
           .pollDelay(Duration.ZERO)
           .pollInterval(POLL_INTERVAL)
           .until(() -> {
-            final var found = userTask(userTaskId);
+            final var found = userTask(tasklist, userTaskId);
             lastSeen.set(found);
             return found
                 .filter(condition)
@@ -238,20 +239,16 @@ public final class SimulatorTestApi {
 
   }
 
-  @SuppressWarnings("unchecked")
-  private Optional<Map<String, Object>> userTask(
+  private static Optional<UserTask> userTask(
+      final OfficialTasklistApi tasklist,
       final String userTaskId) {
 
-    return cockpit
-        .get()
-        .uri("/usertask/{userTaskId}", userTaskId)
-        // The simulator answers a task it does not know with an error. That only means the
-        // report has not arrived yet.
-        .exchange((
-            request,
-            response) -> response.getStatusCode().is2xxSuccessful()
-                ? Optional.ofNullable((Map<String, Object>) response.bodyTo(Map.class))
-                : Optional.empty());
+    try {
+      return Optional.ofNullable(tasklist.getUserTask(userTaskId, null).getBody());
+    } catch (HttpClientErrorException.NotFound e) {
+      // The report has not arrived yet.
+      return Optional.empty();
+    }
 
   }
 

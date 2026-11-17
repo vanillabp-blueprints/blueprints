@@ -86,7 +86,11 @@ after its API, for example `credit-rating-api`. It holds the OpenAPI file and tw
 which generate Java code from it with the `openapi-generator-maven-plugin`:
 
 - `client` is for the side which calls the API. Here that is the application: the REST adapter
-  depends on it.
+  depends on it. The adapter builds the client with `RestClients` of the support library of the
+  Business Cockpit, from the keys below `<system>.client`, for example
+  `credit-rating.client.base-url` and `credit-rating.client.read-timeout`. A missing address stops
+  the start, and the message names the key. Proxy, retries, TLS and OAuth are keys there as well,
+  see [REST clients on Quarkus](https://github.com/vanillabp/business-cockpit/blob/main/support/README.md#rest-clients-on-quarkus).
 - `server` is for the side which answers. Here that is the simulator: its controllers implement
   the generated interfaces.
 
@@ -118,8 +122,8 @@ comes as a `WebApplicationException`. The callback interface returns a `Response
 the endpoint decides its status.
 
 The REST client of Quarkus implements a generated client interface while the application is
-built. The adapter builds the client with `QuarkusRestClientBuilder`, from the address in its
-properties. The callback endpoint is a bean which implements the generated callback interface.
+built. The adapter builds the client with `RestClients` of the support library of the Business
+Cockpit, from the keys below `<system>.client`. The callback endpoint is a bean which implements the generated callback interface.
 Quarkus finds both only in an index, so every `client` module and every adapter writes one
 with the `jandex-maven-plugin`.
 

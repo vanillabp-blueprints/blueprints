@@ -6,7 +6,9 @@ import static org.awaitility.Awaitility.await;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,8 @@ import blueprint.testdriver.loanapproval.gui.LoanApprovalApi;
 import blueprint.workflowmodule.SuppressOutputExtension;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
 
 /**
  * Base class of the tests of this workflow module. It runs the module with its real adapters,
@@ -88,6 +92,13 @@ public abstract class ScenarioTest extends WorkflowModuleTest {
   protected LoanApprovalApi loanApproval;
 
   /**
+   * The task list of the cockpit the simulator plays, read through the client of the official
+   * GUI API of the cockpit.
+   */
+  @Autowired
+  private OfficialTasklistApi tasklist;
+
+  /**
    * Points every adapter and the process driver at the simulator, and the driver at the
    * application, before the application starts. The application does the same in its profile
    * 'local', with the port a simulator started by hand uses.
@@ -100,12 +111,15 @@ public abstract class ScenarioTest extends WorkflowModuleTest {
 
     final var simulator = simulator().baseUrl();
     properties.add("server.port", () -> PORT);
-    properties.add("credit-rating.base-url", () -> simulator
+    properties.add("credit-rating.client.base-url", () -> simulator
         + "/credit-rating");
-    properties.add("e-signature.base-url", () -> simulator
+    properties.add("e-signature.client.base-url", () -> simulator
         + "/e-signature");
     properties.add("e-signature.callback-url", () -> CALLBACK_URL);
     properties.add("vanillabp.cockpit.rest.base-url", () -> simulator);
+    // The client of the cockpit's library, with the keys where Spring Boot looks for them.
+    properties.add("spring.http.serviceclient.official-gui-api.base-url", () -> simulator
+        + "/official-api/v1");
     properties.add("process-driver.simulator-base-url", () -> simulator);
     properties.add("process-driver.application-base-url", () -> "http://localhost:"
         + PORT);
@@ -146,6 +160,40 @@ public abstract class ScenarioTest extends WorkflowModuleTest {
         .during(A_WHILE)
         .atMost(A_WHILE.multipliedBy(2))
         .until(condition);
+
+  }
+
+  /**
+   * Waits until the cockpit knows a user task and the condition holds. The cockpit adapter
+   * reports through the outbox, so a report arrives a moment after the event which caused it.
+   *
+   * @param userTaskId The id of the user task.
+   * @param condition  What the cockpit is expected to know about the task.
+   * @return The user task, as the official GUI API of the cockpit returns it.
+   */
+  protected UserTask awaitUserTask(
+      final String userTaskId,
+      final Predicate<UserTask> condition) {
+
+    return await("the report of user task '"
+        + userTaskId
+        + "' in the cockpit")
+        .atMost(TIMEOUT)
+        .pollDelay(Duration.ZERO)
+        .until(() -> userTask(userTaskId), found -> found.filter(condition).isPresent())
+        .orElseThrow();
+
+  }
+
+  private Optional<UserTask> userTask(
+      final String userTaskId) {
+
+    try {
+      return Optional.ofNullable(tasklist.getUserTask(userTaskId, null).getBody());
+    } catch (HttpClientErrorException.NotFound e) {
+      // The report has not arrived yet.
+      return Optional.empty();
+    }
 
   }
 

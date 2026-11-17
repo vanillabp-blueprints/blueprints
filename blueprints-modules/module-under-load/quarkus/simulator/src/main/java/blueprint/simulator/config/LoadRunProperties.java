@@ -23,9 +23,9 @@ public record LoadRunProperties(
                                 Application application) {
 
   /**
-   * The application under load, as the simulator reaches it from outside.
+   * The application under load, as the simulator reaches it from outside. Where its API answers
+   * is a key of the client of that API, {@code loan-approval.client.base-url}.
    *
-   * @param baseUrl                 Where its API answers.
    * @param metricsUrl              Where it shows its meters in the Prometheus format.
    * @param jmxAddress              Where its JVM answers on JMX, as {@code host:port}.
    * @param connectionsWaitingMeter The gauge of its connection pool which counts the threads
@@ -33,7 +33,6 @@ public record LoadRunProperties(
    * @param poolSetting             The setting which sizes that pool, for the report.
    */
   public record Application(
-                            String baseUrl,
                             String metricsUrl,
                             String jmxAddress,
                             String connectionsWaitingMeter,

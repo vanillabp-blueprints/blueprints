@@ -5,7 +5,6 @@ import static org.awaitility.Awaitility.await;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -16,13 +15,15 @@ import blueprint.simulator.testapi.client.CreditRatingTestApi;
 import blueprint.simulator.testapi.client.ESignatureTestApi;
 import blueprint.simulator.testapi.client.model.Envelope;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response.Status;
 
 /**
- * The client of the simulator's test API, and of the cockpit API the simulator plays.
+ * The client of the simulator's test API, and of the official GUI API of the cockpit the
+ * simulator plays.
  *
  * <p>
  * The test API knows nothing about the workflow. It creates data in a simulated system and
@@ -37,8 +38,8 @@ import jakarta.ws.rs.core.Response.Status;
  * the REST client of Quarkus implements it. The REST client exists only while Quarkus runs, so
  * a client is made for each call and not when this class is made: {@link SimulatorExtension}
  * asks {@link #isRunning()} before Quarkus starts. That is why the status is asked with
- * RestAssured. The official API of the cockpit is read with RestAssured as well, because the
- * cockpit publishes no client of its own.
+ * RestAssured. The official GUI API of the cockpit the simulator plays is read with the client
+ * of the cockpit's library, made the same way.
  * </p>
  *
  * <p>
@@ -195,11 +196,11 @@ public final class SimulatorTestApi {
    * @param condition  What the cockpit is expected to know about the task.
    * @return The user task, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitUserTask(
+  public UserTask awaitUserTask(
       final String userTaskId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<UserTask> condition) {
 
-    final var lastSeen = new AtomicReference<Optional<Map<String, Object>>>(Optional.empty());
+    final var lastSeen = new AtomicReference<Optional<UserTask>>(Optional.empty());
 
     try {
 
@@ -236,53 +237,33 @@ public final class SimulatorTestApi {
 
   }
 
-  private Optional<Map<String, Object>> userTask(
+  private Optional<UserTask> userTask(
       final String userTaskId) {
 
-    final var response = cockpit()
-        .pathParam("userTaskId", userTaskId)
-        .get("/usertask/{userTaskId}");
-
-    // The simulator answers a task it does not know with an error. That only means the report
-    // has not arrived yet.
-    return response.statusCode() == 200
-        ? Optional.ofNullable(asMap(response))
-        : Optional.empty();
-
-  }
-
-  /**
-   * Reads a JSON object into plain Java maps and lists. {@code response.as(Map.class)} would ask
-   * RestAssured's Jackson, and that registers every Jackson module on the classpath. The Operaton
-   * engine brings the Scala module, which turns a nested JSON object into a Scala map. Such a map
-   * equals no Java map, so an assertion on the details of a task fails although the values are
-   * the same. JsonPath parses with Groovy and returns Java maps on every BPMS. The answers of
-   * the test API are read into generated classes, so only the cockpit's answers need this.
-   */
-  private static Map<String, Object> asMap(
-      final Response response) {
-
-    return response
-        .jsonPath()
-        .getMap("$");
+    try {
+      return Optional.ofNullable(testApi(OfficialTasklistApi.class, "/official-api/v1").getUserTask(userTaskId, null));
+    } catch (NotFoundException e) {
+      // The report has not arrived yet.
+      return Optional.empty();
+    }
 
   }
 
   private <T> T testApi(
       final Class<T> api) {
 
-    return QuarkusRestClientBuilder
-        .newBuilder()
-        .baseUri(URI.create(baseUrl))
-        .build(api);
+    return testApi(api, "");
 
   }
 
-  private RequestSpecification cockpit() {
+  private <T> T testApi(
+      final Class<T> api,
+      final String path) {
 
-    return given()
-        .baseUri(baseUrl)
-        .basePath("/official-api/v1");
+    return QuarkusRestClientBuilder
+        .newBuilder()
+        .baseUri(URI.create(baseUrl + path))
+        .build(api);
 
   }
 

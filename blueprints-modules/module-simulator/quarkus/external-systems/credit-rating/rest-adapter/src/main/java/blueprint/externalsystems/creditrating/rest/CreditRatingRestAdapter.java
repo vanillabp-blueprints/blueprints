@@ -8,6 +8,7 @@ import blueprint.externalsystems.creditrating.CreditScore;
 import blueprint.externalsystems.creditrating.api.client.CreditRatingApi;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
 /**
  * The credit rating, reached over REST. The API is described in
@@ -22,30 +23,22 @@ import jakarta.ws.rs.WebApplicationException;
  *
  * <p>
  * The same class runs against the simulator and against the real system. Only
- * {@code credit-rating.base-url} differs.
+ * {@code credit-rating.client.base-url} differs.
  * </p>
  */
 public class CreditRatingRestAdapter implements CreditRating {
 
-  /** The status the API answers for a customer it does not know. */
-  private static final int NOT_FOUND = 404;
-
   private final CreditRatingApi creditRating;
-
-  private final String baseUrl;
 
   /**
    * Creates the adapter.
    *
    * @param creditRating The generated client, whose base address is the credit rating.
-   * @param baseUrl      The same address, for the messages of this class.
    */
   public CreditRatingRestAdapter(
-      final CreditRatingApi creditRating,
-      final String baseUrl) {
+      final CreditRatingApi creditRating) {
 
     this.creditRating = creditRating;
-    this.baseUrl = baseUrl;
 
   }
 
@@ -62,20 +55,17 @@ public class CreditRatingRestAdapter implements CreditRating {
     } catch (WebApplicationException e) {
 
       // The API answers 404 for a customer it does not know. That is an answer, not a failure.
-      if (e.getResponse().getStatus() == NOT_FOUND) {
+      if (e.getResponse().getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
         return Optional.empty();
       }
-      throw new CreditRatingUnavailableException("The credit rating at '"
-          + baseUrl
-          + "' answered "
+      throw new CreditRatingUnavailableException("The credit rating answered "
           + e.getResponse().getStatus(), e);
 
     } catch (ProcessingException e) {
 
-      // Nothing answers at the address, or the answer took longer than the timeout.
-      throw new CreditRatingUnavailableException("The credit rating at '"
-          + baseUrl
-          + "' does not answer", e);
+      // Nothing answers at the address, or the answer took longer than the timeout. The message
+      // of the cause names the address.
+      throw new CreditRatingUnavailableException("The credit rating does not answer", e);
 
     }
 

@@ -68,9 +68,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // The cockpit shows the user task, with the details the module reported.
     final var userTask = simulator().awaitUserTask(prepareContractTaskId, task -> true);
-    assertThat(userTask.get("workflowModuleId")).isEqualTo("loan-approval");
-    assertThat(userTask.get("taskDefinition")).isEqualTo("prepareContract");
-    assertThat(userTask.get("details"))
+    assertThat(userTask.getWorkflowModuleId()).isEqualTo("loan-approval");
+    assertThat(userTask.getTaskDefinition()).isEqualTo("prepareContract");
+    assertThat(userTask.getDetails())
         .isEqualTo(Map.of(
             WorkflowTaskHandler.AMOUNT, 5000,
             WorkflowTaskHandler.CREDIT_SCORE, 720));
@@ -101,7 +101,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(signed.getContractSigned()).isTrue();
 
     // The cockpit took the user task off the list.
-    simulator().awaitUserTask(prepareContractTaskId, task -> task.get("endedAt") != null);
+    simulator().awaitUserTask(prepareContractTaskId, task -> task.getEndedAt() != null);
 
   }
 
