@@ -111,6 +111,7 @@
     <module>blueprints-bpmn/bpmn-process-sections/springboot</module>
     <module>blueprints-bpmn/bpmn-process-sections/quarkus</module>
     <module>blueprints-cockpit/cockpit-user-task-backend/springboot</module>
+    <module>blueprints-cockpit/cockpit-user-task-backend/quarkus</module>
     <module>blueprints-cockpit/cockpit-user-task-application-proxy/springboot</module>
     <module>blueprints-cockpit/cockpit-user-task-application/springboot</module>
     <module>blueprints-cockpit/cockpit-user-task-bundle/springboot</module>
