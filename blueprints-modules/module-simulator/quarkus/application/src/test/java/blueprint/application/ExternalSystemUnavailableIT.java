@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.ws.rs.core.Response;
 
 /**
  * What a user sees when a system around the application does not answer.
@@ -61,10 +62,10 @@ public class ExternalSystemUnavailableIT {
 
     final var response = given().get("/loan-approval/api/request?customerId=C-1001&amount=5000");
 
-    assertThat(response.statusCode()).isEqualTo(503);
+    assertThat(response.statusCode()).isEqualTo(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
     assertThat((Map<String, Object>) response.as(Map.class))
         .containsEntry("externalSystem", "credit-rating")
-        .containsEntry("status", 503);
+        .containsEntry("status", Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
 
   }
 

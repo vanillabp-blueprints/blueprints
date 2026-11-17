@@ -15,7 +15,6 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -294,7 +293,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
         () -> forms.completeApproveLoan(loanRequestId, approval, new ApproveLoanInput(true, "fine")));
     assertThat(userTaskExceptionHandler
         .taskNotOpen(refused)
-        .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        .getStatusCode().value()).isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
 
   }
 

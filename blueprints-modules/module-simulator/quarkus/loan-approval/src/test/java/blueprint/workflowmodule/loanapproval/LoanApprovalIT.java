@@ -19,6 +19,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Response;
 
 /**
  * The integration test of this workflow module. It runs the module with its real adapters, and
@@ -62,7 +63,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         loanRequest -> loanRequest.getPrepareContractTaskId() != null)
         .getPrepareContractTaskId();
-    assertThat(awaitAggregate(loanApprovals::findByIdOptional, loanRequestId).getCreditScore()).isEqualTo(720);
+    assertThat(awaitAggregate(loanApprovals::findByIdOptional, loanRequestId).getCreditScore())
+        .isEqualTo(720);
 
     // The cockpit shows the user task, with the details the module reported.
     final var userTask = simulator().awaitUserTask(prepareContractTaskId, task -> true);
@@ -89,7 +91,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         });
 
     // The customer signs. The simulator calls the application back, and the workflow ends.
-    assertThat(simulator().sign(loanRequestId)).startsWith("200").contains("204");
+    assertThat(simulator().sign(loanRequestId))
+        .startsWith(String.valueOf(Response.Status.OK.getStatusCode()))
+        .contains(String.valueOf(Response.Status.NO_CONTENT.getStatusCode()));
     final var signed = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
@@ -145,20 +149,22 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     api()
         .get("/{loanRequestId}/prepare-contract/{taskId}?interestRate=4", loanRequestId, taskId)
         .then()
-        .statusCode(200);
+        .statusCode(Response.Status.OK.getStatusCode());
     awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         loanRequest -> Boolean.TRUE.equals(loanRequest.getContractSentForSigning()));
 
-    assertThat(simulator().sign(loanRequestId)).contains("204");
+    assertThat(simulator().sign(loanRequestId))
+        .contains(String.valueOf(Response.Status.NO_CONTENT.getStatusCode()));
     awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         loanRequest -> Boolean.TRUE.equals(loanRequest.getContractSigned()));
 
     // A service may report again, for example after it lost the first answer.
-    assertThat(simulator().sign(loanRequestId)).contains("204");
+    assertThat(simulator().sign(loanRequestId))
+        .contains(String.valueOf(Response.Status.NO_CONTENT.getStatusCode()));
 
   }
 
@@ -171,7 +177,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .post("/e-signature/callback")
         .statusCode();
 
-    assertThat(status).isEqualTo(404);
+    assertThat(status).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
 
   }
 

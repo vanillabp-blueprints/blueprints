@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -125,7 +126,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         });
 
     // The customer signs. The simulator calls the application back, and the workflow ends.
-    assertThat(simulator().sign(loanRequestId)).startsWith("200").contains("204");
+    assertThat(simulator().sign(loanRequestId))
+        .startsWith(String.valueOf(HttpStatus.OK.value()))
+        .contains(String.valueOf(HttpStatus.NO_CONTENT.value()));
     assertThat(awaitAggregate(
         loanApprovals,
         loanRequestId,
@@ -192,14 +195,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         loanRequest -> Boolean.TRUE.equals(loanRequest.getContractSentForSigning()));
 
-    assertThat(simulator().sign(loanRequestId)).contains("204");
+    assertThat(simulator().sign(loanRequestId)).contains(String.valueOf(HttpStatus.NO_CONTENT.value()));
     awaitAggregate(
         loanApprovals,
         loanRequestId,
         loanRequest -> Boolean.TRUE.equals(loanRequest.getContractSigned()));
 
     // A service may report again, for example after it lost the first answer.
-    assertThat(simulator().sign(loanRequestId)).contains("204");
+    assertThat(simulator().sign(loanRequestId)).contains(String.valueOf(HttpStatus.NO_CONTENT.value()));
 
   }
 
@@ -219,7 +222,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
                 .getStatusCode()
                 .value());
 
-    assertThat(status).isEqualTo(404);
+    assertThat(status).isEqualTo(HttpStatus.NOT_FOUND.value());
 
   }
 

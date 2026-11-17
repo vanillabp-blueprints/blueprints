@@ -222,7 +222,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // The mapper of the Business Cockpit answers what the service refused, as the form receives
     // it. Quarkus finds it in the index of the support library.
     final var answer = new BcUserTaskExceptionMapper().taskNotOpen(refused);
-    assertThat(answer.getStatus()).isEqualTo(404);
+    assertThat(answer.getStatus()).isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
     assertThat(answer.getEntity()).isEqualTo("The user task '"
         + documentCheck
         + "' of '"

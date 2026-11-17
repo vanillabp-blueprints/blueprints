@@ -22,6 +22,7 @@ import org.awaitility.core.ConditionTimeoutException;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import jakarta.ws.rs.core.Response;
 
 /**
  * The Business Cockpit of the integration test: the dev shell simulator of the cockpit, run as
@@ -252,7 +253,7 @@ public final class CockpitSimulator {
         ? Optional.empty()
         : Optional.of(response
             .then()
-            .statusCode(200)
+            .statusCode(Response.Status.OK.getStatusCode())
             .extract()
             .jsonPath()
             .getMap("$"));
@@ -279,7 +280,7 @@ public final class CockpitSimulator {
             "pageSize", 10))
         .post("/workflow")
         .then()
-        .statusCode(200)
+        .statusCode(Response.Status.OK.getStatusCode())
         .extract()
         .jsonPath()
         .getMap("$");
