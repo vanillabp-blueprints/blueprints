@@ -11,6 +11,7 @@ import java.util.concurrent.Callable;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.HttpClientErrorException;
@@ -47,10 +48,10 @@ public abstract class ScenarioTest extends WorkflowModuleTest {
    * How the application answers a report of the e-signature service it took, as the callback
    * API says.
    */
-  protected static final int REPORT_TAKEN = 204;
+  protected static final int REPORT_TAKEN = HttpStatus.NO_CONTENT.value();
 
   /** How the application answers a report about a contract it does not know. */
-  protected static final int REPORT_OF_AN_UNKNOWN_CONTRACT = 404;
+  protected static final int REPORT_OF_AN_UNKNOWN_CONTRACT = HttpStatus.NOT_FOUND.value();
 
   /**
    * How long a test watches that nothing happens. Four times as long as the simulated customers

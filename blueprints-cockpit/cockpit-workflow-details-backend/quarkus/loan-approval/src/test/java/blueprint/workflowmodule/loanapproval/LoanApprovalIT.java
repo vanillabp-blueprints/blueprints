@@ -28,6 +28,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 
 /**
  * The integration test of this workflow module. It starts a real workflow in a real BPMS,
@@ -180,7 +181,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(approved.get("endReason")).isEqualTo("COMPLETED");
 
     // An approved loan request cannot be withdrawn any more.
-    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(loanRequestId))).isEqualTo(409);
+    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(loanRequestId)))
+        .isEqualTo(Response.Status.CONFLICT.getStatusCode());
     assertThat(casePage.getCase(loanRequestId).getStatus()).isEqualTo(Case.StatusEnum.APPROVED);
 
   }
@@ -194,7 +196,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     awaitReviewTask(loanRequestId);
 
     casePage.withdrawLoanRequest(loanRequestId);
-    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(loanRequestId))).isEqualTo(409);
+    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(loanRequestId)))
+        .isEqualTo(Response.Status.CONFLICT.getStatusCode());
     assertThat(loanApproval.approve(loanRequestId)).isEqualTo(Service.Change.NOT_POSSIBLE);
 
   }
@@ -204,8 +207,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var unknown = UUID.randomUUID().toString();
 
-    assertThat(refusalOf(() -> casePage.getCase(unknown))).isEqualTo(404);
-    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(unknown))).isEqualTo(404);
+    assertThat(refusalOf(() -> casePage.getCase(unknown)))
+        .isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(unknown)))
+        .isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
 
   }
 

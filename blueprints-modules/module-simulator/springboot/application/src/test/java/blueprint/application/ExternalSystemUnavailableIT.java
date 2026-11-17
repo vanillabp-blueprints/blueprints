@@ -9,6 +9,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.RestClient;
@@ -63,10 +64,10 @@ public class ExternalSystemUnavailableIT {
                 "status", response.getStatusCode().value(),
                 "body", response.bodyTo(Map.class)));
 
-    assertThat(answer.get("status")).isEqualTo(503);
+    assertThat(answer.get("status")).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
     assertThat((Map<String, Object>) answer.get("body"))
         .containsEntry("externalSystem", "credit-rating")
-        .containsEntry("status", 503);
+        .containsEntry("status", HttpStatus.SERVICE_UNAVAILABLE.value());
 
   }
 

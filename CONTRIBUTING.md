@@ -409,7 +409,11 @@ an execution in the phase `generate-test-sources` writes it to `target/generated
 On Spring Boot it uses the library `spring-http-interface`, on Quarkus `jaxrs-spec`, whose
 interface the REST client of Quarkus implements. The test then sends and reads the classes of the
 file, and writes no path and no field as a string. A refused call throws, and the test asserts on
-the status of that exception.
+the status of that exception. It names that status and never writes it as a bare number. Where the
+support library of the Business Cockpit answers, the test compares with the constant
+`HTTP_STATUS_CODE` of its exception, for example
+`BcTaskClaimedByAnotherUserException.HTTP_STATUS_CODE`. Every other status is a constant of the
+platform: `HttpStatus.BAD_REQUEST` on Spring Boot, `Response.Status.BAD_REQUEST` on Quarkus.
 
 The settings are in the POM of the module which generates. Where several modules generate, the
 blueprint POM shares them in `pluginManagement`. The version is the property

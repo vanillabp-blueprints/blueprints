@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -174,7 +175,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(approved.get("endReason")).isEqualTo("COMPLETED");
 
     // An approved loan request cannot be withdrawn any more.
-    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(loanRequestId))).isEqualTo(409);
+    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(loanRequestId)))
+        .isEqualTo(HttpStatus.CONFLICT.value());
     assertThat(casePage.getCase(loanRequestId).status()).isEqualTo(Case.StatusEnum.APPROVED);
 
   }
@@ -188,7 +190,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     awaitReviewTask(loanRequestId);
 
     casePage.withdrawLoanRequest(loanRequestId);
-    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(loanRequestId))).isEqualTo(409);
+    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(loanRequestId)))
+        .isEqualTo(HttpStatus.CONFLICT.value());
     assertThat(loanApproval.approve(loanRequestId)).isEqualTo(Service.Change.NOT_POSSIBLE);
 
   }
@@ -198,8 +201,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var unknown = UUID.randomUUID().toString();
 
-    assertThat(refusalOf(() -> casePage.getCase(unknown))).isEqualTo(404);
-    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(unknown))).isEqualTo(404);
+    assertThat(refusalOf(() -> casePage.getCase(unknown))).isEqualTo(HttpStatus.NOT_FOUND.value());
+    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(unknown)))
+        .isEqualTo(HttpStatus.NOT_FOUND.value());
 
   }
 

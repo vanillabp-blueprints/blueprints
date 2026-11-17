@@ -9,7 +9,6 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -227,7 +226,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // The module imports the handler of the Business Cockpit, so the handler is a bean here.
     // It answers what the service refused, as the form receives it.
     final var answer = userTaskExceptionHandler.taskNotOpen(refused);
-    assertThat(answer.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    assertThat(answer.getStatusCode().value()).isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
     assertThat(answer.getBody()).isEqualTo("The user task '"
         + documentCheck
         + "' of '"
