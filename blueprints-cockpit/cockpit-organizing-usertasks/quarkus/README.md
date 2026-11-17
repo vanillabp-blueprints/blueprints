@@ -222,7 +222,7 @@ workflow report needs one like a task report does.
 
 ## Delta to the base blueprint
 
-Compared to [`cockpit-usertasks-in-the-application`](https://github.com/vanillabp-blueprints/blueprints/tree/main/blueprints-cockpit/cockpit-usertasks-in-the-application):
+Compared to [`cockpit-usertasks-in-the-application`](https://github.com/vanillabp-blueprints/cockpit-usertasks-in-the-application-quarkus):
 
 |                                         File                                          |                                                                                    What is different                                                                                    |
 |---------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -384,7 +384,7 @@ workflow, it reads from the official API. Maven copies the runnable JAR of the s
 - [Reporting a change from your own code](https://github.com/vanillabp/business-cockpit/wiki/Reporting-workflows-and-user-tasks#reporting-a-change-from-your-own-code): `BusinessCockpitService#aggregateChanged`
 - [Templates](https://github.com/vanillabp/business-cockpit/wiki/Templates): where a template is looked for, languages, the template context
 - [Configuration](https://github.com/vanillabp/business-cockpit/wiki/Configuration#what-a-workflow-module-tells-the-cockpit): what a workflow module tells the cockpit
-- [`cockpit-usertasks-in-the-application`](https://github.com/vanillabp-blueprints/blueprints/tree/main/blueprints-cockpit/cockpit-usertasks-in-the-application): the base, a row per user task and an authority per form
+- [`cockpit-usertasks-in-the-application`](https://github.com/vanillabp-blueprints/cockpit-usertasks-in-the-application-quarkus): the base, a row per user task and an authority per form
 - [`cockpit-user-task-backend`](https://github.com/vanillabp-blueprints/cockpit-user-task-backend-quarkus): how a form reaches the workflow module through the cockpit
 
 This blueprint is developed in the monorepo

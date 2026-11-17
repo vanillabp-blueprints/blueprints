@@ -1,0 +1,19 @@
+# The configuration of the module's own test: its database, and nothing else. Where the BPMN
+# files are is a convention VanillaBP knows.
+#
+# Quarkus keeps no database session open while a response is written. The tasks of a loan
+# approval and their data are loaded only when read, so every read happens inside a
+# transaction of the service.
+quarkus:
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO

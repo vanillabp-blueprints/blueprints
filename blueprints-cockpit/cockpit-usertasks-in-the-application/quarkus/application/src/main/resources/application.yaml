@@ -1,0 +1,51 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is
+# in its own configuration file (loan-approval/loan-approval.yaml inside the module JAR).
+#
+# Nothing about a BPMS is here either. That lives in a profile file per engine,
+# 'application-camunda7.yaml' and 'application-camunda8.yaml', so switching engines is a
+# profile and not an edit. One adapter dependency and one workflow module are enough for
+# VanillaBP to derive the adapter, the workflow module and where its BPMN files are read
+# from.
+quarkus:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, and the profile
+  # file of that engine applies from then on - whichever profile the application itself runs
+  # in, because the BPMS profile is its PARENT. Nobody has to name the profile twice.
+  config:
+    profile:
+      parent: "@bpms@"
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:loan-approval;DB_CLOSE_DELAY=-1
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  # How users log in is the application's decision. Every call below /api/ needs a login with
+  # HTTP basic authentication. Which user may call which endpoint, the workflow module decides
+  # with the roles it names.
+  http:
+    auth:
+      basic: true
+      permission:
+        api:
+          paths: /api/*
+          policy: authenticated
+  # The demo users, each with the role of the workflow module it holds. The password of each
+  # is 'demo'. A real application connects its identity provider here instead.
+  security:
+    users:
+      embedded:
+        enabled: true
+        plain-text: true
+        users:
+          risk-officer: demo
+          clerk: demo
+        roles:
+          risk-officer: LOAN_APPROVAL_ASSESS_RISK
+          clerk: LOAN_APPROVAL_CHECK_DOCUMENT
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO

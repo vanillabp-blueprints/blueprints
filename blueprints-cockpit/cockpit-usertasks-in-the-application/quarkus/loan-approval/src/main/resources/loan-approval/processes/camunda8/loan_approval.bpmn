@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_loan_approval" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="loan_approval" name="Loan approval" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_LoanRequested" name="Loan requested">
+      <bpmn:outgoing>Flow_ToRetrieveCreditRating</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRetrieveCreditRating" sourceRef="StartEvent_LoanRequested" targetRef="ServiceTask_RetrieveCreditRating" />
+    <bpmn:serviceTask id="ServiceTask_RetrieveCreditRating" name="Retrieve credit rating">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="retrieveCreditRating" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToRetrieveCreditRating</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSplit</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToSplit" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="Gateway_Split" />
+    <!--
+      Two branches run at the same time. So the risk assessment and the document checks are
+      open next to each other, and each of them may hold a draft while the other one is
+      completed.
+    -->
+    <bpmn:parallelGateway id="Gateway_Split">
+      <bpmn:incoming>Flow_ToSplit</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToAssessRisk</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToCheckDocument</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="Flow_ToAssessRisk" sourceRef="Gateway_Split" targetRef="UserTask_AssessRisk" />
+    <bpmn:sequenceFlow id="Flow_ToCheckDocument" sourceRef="Gateway_Split" targetRef="UserTask_CheckDocument" />
+    <bpmn:userTask id="UserTask_AssessRisk" name="Assess risk">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition externalReference="assessRisk" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToAssessRisk</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToRiskAcceptable</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_ToRiskAcceptable" sourceRef="UserTask_AssessRisk" targetRef="Gateway_RiskAcceptable" />
+    <!-- The condition reads the result of the completed risk assessment, never a draft. -->
+    <bpmn:exclusiveGateway id="Gateway_RiskAcceptable" name="Is the risk acceptable?" default="Flow_ToRejectLoan">
+      <bpmn:incoming>Flow_ToRiskAcceptable</bpmn:incoming>
+      <bpmn:outgoing>Flow_RiskAccepted</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToRejectLoan</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_RiskAccepted" name="yes" sourceRef="Gateway_RiskAcceptable" targetRef="Gateway_Join">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=riskAccepted</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToRejectLoan" name="no" sourceRef="Gateway_RiskAcceptable" targetRef="ServiceTask_RejectLoan" />
+    <bpmn:serviceTask id="ServiceTask_RejectLoan" name="Reject loan">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="rejectLoan" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToRejectLoan</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanRejected</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanRejected" sourceRef="ServiceTask_RejectLoan" targetRef="EndEvent_LoanRejected" />
+    <!--
+      A terminate end event ends the whole workflow. Document checks which are still open are
+      canceled, and the handler of each of them is called with the event CANCELED.
+    -->
+    <bpmn:endEvent id="EndEvent_LoanRejected" name="Loan rejected">
+      <bpmn:incoming>Flow_ToLoanRejected</bpmn:incoming>
+      <bpmn:terminateEventDefinition id="TerminateEventDefinition_LoanRejected" />
+    </bpmn:endEvent>
+    <!--
+      One instance of this user task per document, all of them open at the same time. So the
+      same task definition is open several times, and only the task id tells them apart.
+    -->
+    <bpmn:userTask id="UserTask_CheckDocument" name="Check document">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition externalReference="checkDocument" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToCheckDocument</bpmn:incoming>
+      <bpmn:outgoing>Flow_DocumentsChecked</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=documentIds" inputElement="documentId" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_DocumentsChecked" sourceRef="UserTask_CheckDocument" targetRef="Gateway_Join" />
+    <bpmn:parallelGateway id="Gateway_Join">
+      <bpmn:incoming>Flow_RiskAccepted</bpmn:incoming>
+      <bpmn:incoming>Flow_DocumentsChecked</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToApproveLoan</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="Flow_ToApproveLoan" sourceRef="Gateway_Join" targetRef="ServiceTask_ApproveLoan" />
+    <bpmn:serviceTask id="ServiceTask_ApproveLoan" name="Approve loan">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="approveLoan" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToApproveLoan</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanApproved</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanApproved" sourceRef="ServiceTask_ApproveLoan" targetRef="EndEvent_LoanApproved" />
+    <bpmn:endEvent id="EndEvent_LoanApproved" name="Loan approved">
+      <bpmn:incoming>Flow_ToLoanApproved</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan_approval">
+      <bpmndi:BPMNShape id="StartEvent_LoanRequested_di" bpmnElement="StartEvent_LoanRequested">
+        <dc:Bounds x="152" y="282" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="132" y="325" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RetrieveCreditRating_di" bpmnElement="ServiceTask_RetrieveCreditRating">
+        <dc:Bounds x="240" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Split_di" bpmnElement="Gateway_Split">
+        <dc:Bounds x="395" y="275" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_AssessRisk_di" bpmnElement="UserTask_AssessRisk">
+        <dc:Bounds x="490" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_RiskAcceptable_di" bpmnElement="Gateway_RiskAcceptable">
+        <dc:Bounds x="645" y="195" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="628" y="252" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RejectLoan_di" bpmnElement="ServiceTask_RejectLoan">
+        <dc:Bounds x="750" y="40" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanRejected_di" bpmnElement="EndEvent_LoanRejected">
+        <dc:Bounds x="912" y="62" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="896" y="105" width="68" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_CheckDocument_di" bpmnElement="UserTask_CheckDocument">
+        <dc:Bounds x="490" y="340" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Join_di" bpmnElement="Gateway_Join">
+        <dc:Bounds x="895" y="275" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ApproveLoan_di" bpmnElement="ServiceTask_ApproveLoan">
+        <dc:Bounds x="1000" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanApproved_di" bpmnElement="EndEvent_LoanApproved">
+        <dc:Bounds x="1162" y="282" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1144" y="325" width="72" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
+        <di:waypoint x="188" y="300" />
+        <di:waypoint x="240" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSplit_di" bpmnElement="Flow_ToSplit">
+        <di:waypoint x="340" y="300" />
+        <di:waypoint x="395" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToAssessRisk_di" bpmnElement="Flow_ToAssessRisk">
+        <di:waypoint x="420" y="275" />
+        <di:waypoint x="420" y="220" />
+        <di:waypoint x="490" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToCheckDocument_di" bpmnElement="Flow_ToCheckDocument">
+        <di:waypoint x="420" y="325" />
+        <di:waypoint x="420" y="380" />
+        <di:waypoint x="490" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRiskAcceptable_di" bpmnElement="Flow_ToRiskAcceptable">
+        <di:waypoint x="590" y="220" />
+        <di:waypoint x="645" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RiskAccepted_di" bpmnElement="Flow_RiskAccepted">
+        <di:waypoint x="695" y="220" />
+        <di:waypoint x="920" y="220" />
+        <di:waypoint x="920" y="275" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="796" y="202" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRejectLoan_di" bpmnElement="Flow_ToRejectLoan">
+        <di:waypoint x="670" y="195" />
+        <di:waypoint x="670" y="80" />
+        <di:waypoint x="750" y="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="680" y="135" width="14" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanRejected_di" bpmnElement="Flow_ToLoanRejected">
+        <di:waypoint x="850" y="80" />
+        <di:waypoint x="912" y="80" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DocumentsChecked_di" bpmnElement="Flow_DocumentsChecked">
+        <di:waypoint x="590" y="380" />
+        <di:waypoint x="920" y="380" />
+        <di:waypoint x="920" y="325" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToApproveLoan_di" bpmnElement="Flow_ToApproveLoan">
+        <di:waypoint x="945" y="300" />
+        <di:waypoint x="1000" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanApproved_di" bpmnElement="Flow_ToLoanApproved">
+        <di:waypoint x="1100" y="300" />
+        <di:waypoint x="1162" y="300" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,265 @@
+openapi: 3.0.3
+info:
+  title: Loan approval, user task forms
+  description: >
+    The endpoints the forms of the user tasks of the workflow module 'loan-approval' call. Each
+    form has three of them, on the same path. GET reads what the form shows: the loan request,
+    the draft or the result, and the state of the task. PUT saves a draft, as often as the user
+    likes. It changes the task and nothing else. POST completes the task with what the user sent.
+    Only then does the result reach the workflow aggregate.
+
+    The build generates the Java interface 'UserTaskFormsApi' and the records below from this
+    file, and 'UserTaskFormController' implements it. Every endpoint needs a permission of its
+    own. A user without it gets 403.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: user-task-forms
+    description: The forms of the user tasks
+paths:
+  /api/loan-approval/{loanRequestId}/assess-risk/{taskId}:
+    parameters:
+      - $ref: '#/components/parameters/LoanRequestId'
+      - $ref: '#/components/parameters/TaskId'
+    get:
+      tags:
+        - user-task-forms
+      operationId: getAssessRiskForm
+      summary: What the form "Assess risk" shows
+      responses:
+        '200':
+          description: The loan request, the values of the form and the state of the task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessRiskForm'
+        '403':
+          $ref: '#/components/responses/NotAllowed'
+        '404':
+          $ref: '#/components/responses/UnknownTask'
+    put:
+      tags:
+        - user-task-forms
+      operationId: saveAssessRiskForm
+      summary: Saves a draft of the form "Assess risk"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessRiskInput'
+      responses:
+        '204':
+          description: The draft is saved
+        '403':
+          $ref: '#/components/responses/NotAllowed'
+        '404':
+          $ref: '#/components/responses/UnknownTask'
+        '409':
+          $ref: '#/components/responses/TaskNotOpen'
+    post:
+      tags:
+        - user-task-forms
+      operationId: completeAssessRisk
+      summary: Completes the user task "Assess risk"
+      description: The user who completes the task is the user logged in, never a value of the request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessRiskInput'
+      responses:
+        '204':
+          description: The user task is completed
+        '400':
+          $ref: '#/components/responses/Incomplete'
+        '403':
+          $ref: '#/components/responses/NotAllowed'
+        '404':
+          $ref: '#/components/responses/UnknownTask'
+        '409':
+          $ref: '#/components/responses/TaskNotOpen'
+  /api/loan-approval/{loanRequestId}/check-document/{taskId}:
+    parameters:
+      - $ref: '#/components/parameters/LoanRequestId'
+      - $ref: '#/components/parameters/TaskId'
+    get:
+      tags:
+        - user-task-forms
+      operationId: getCheckDocumentForm
+      summary: What a form "Check document" shows
+      description: >
+        It also shows the result of the risk assessment, which runs in the other branch of the
+        workflow. A draft somebody saved there never turns up here.
+      responses:
+        '200':
+          description: The document, the values of the form and the state of the task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckDocumentForm'
+        '403':
+          $ref: '#/components/responses/NotAllowed'
+        '404':
+          $ref: '#/components/responses/UnknownTask'
+    put:
+      tags:
+        - user-task-forms
+      operationId: saveCheckDocumentForm
+      summary: Saves a draft of a form "Check document"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckDocumentInput'
+      responses:
+        '204':
+          description: The draft is saved
+        '403':
+          $ref: '#/components/responses/NotAllowed'
+        '404':
+          $ref: '#/components/responses/UnknownTask'
+        '409':
+          $ref: '#/components/responses/TaskNotOpen'
+    post:
+      tags:
+        - user-task-forms
+      operationId: completeCheckDocument
+      summary: Completes one user task "Check document"
+      description: The user who completes the task is the user logged in, never a value of the request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckDocumentInput'
+      responses:
+        '204':
+          description: The user task is completed
+        '400':
+          $ref: '#/components/responses/Incomplete'
+        '403':
+          $ref: '#/components/responses/NotAllowed'
+        '404':
+          $ref: '#/components/responses/UnknownTask'
+        '409':
+          $ref: '#/components/responses/TaskNotOpen'
+components:
+  parameters:
+    LoanRequestId:
+      name: loanRequestId
+      in: path
+      required: true
+      description: The id of the loan request
+      schema:
+        type: string
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      description: The id of the user task
+      schema:
+        type: string
+  responses:
+    Incomplete:
+      description: The value the task is about is missing. The answer says which one
+      content:
+        text/plain:
+          schema:
+            type: string
+    NotAllowed:
+      description: The user has not got the permission of this form
+    UnknownTask:
+      description: The loan request has no user task of this kind with this id
+    TaskNotOpen:
+      description: The user task is not open any more
+  schemas:
+    TaskState:
+      type: object
+      description: The state of a user task, the same for every form
+      required:
+        - open
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+          description: When the BPMS opened the task
+        updatedAt:
+          type: string
+          format: date-time
+          description: When a draft was saved last
+        completedAt:
+          type: string
+          format: date-time
+          description: When the task was completed or canceled
+        completedBy:
+          type: string
+          description: Who completed it. Empty if the workflow canceled it
+        open:
+          type: boolean
+          description: Whether somebody can still work on it
+    AssessRiskForm:
+      type: object
+      description: What the form "Assess risk" shows
+      properties:
+        loanRequestId:
+          type: string
+          description: The id of the loan request
+        amount:
+          type: integer
+          description: The amount requested
+        creditRating:
+          type: integer
+          description: The rating of the service task before
+        riskAcceptable:
+          type: boolean
+          description: The draft, or the result once the task is completed
+        comment:
+          type: string
+          description: The draft, or the result once the task is completed
+        task:
+          $ref: '#/components/schemas/TaskState'
+    AssessRiskInput:
+      type: object
+      description: What the user entered in the form "Assess risk"
+      properties:
+        riskAcceptable:
+          type: boolean
+          description: Whether the risk is acceptable. Needed to complete, not to save
+        comment:
+          type: string
+          description: Why
+    CheckDocumentForm:
+      type: object
+      description: What a form "Check document" shows
+      properties:
+        loanRequestId:
+          type: string
+          description: The id of the loan request
+        documentId:
+          type: string
+          description: The document to check
+        valid:
+          type: boolean
+          description: The draft, or the result once the task is completed
+        remark:
+          type: string
+          description: The draft, or the result once the task is completed
+        riskAcceptable:
+          type: boolean
+          description: The result of the risk assessment. Empty until that task is completed
+        task:
+          $ref: '#/components/schemas/TaskState'
+    CheckDocumentInput:
+      type: object
+      description: What the user entered in a form "Check document"
+      properties:
+        valid:
+          type: boolean
+          description: Whether the document is in order. Needed to complete, not to save
+        remark:
+          type: string
+          description: What the user noted
