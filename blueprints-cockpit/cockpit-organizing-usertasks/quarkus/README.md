@@ -262,7 +262,7 @@ and `Service` carries `@Transactional` on the class. Quarkus keeps no database s
 while it writes a response, so every read happens in a transaction of the service.
 `BcUnknownTaskException` and `BcTaskNotOpenException` of the cockpit's
 `business-cockpit-quarkus-support` say what is wrong with a task id. The same library brings the
-mappers which answer them with 404 and 409. Quarkus finds them in the index of the library, so
+mappers which answer both with 404. Quarkus finds them in the index of the library, so
 `UserTaskFormController` needs nothing for it. The details providers run inside the transaction of VanillaBP, so they
 may read the tasks.
 

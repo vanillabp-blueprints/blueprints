@@ -315,15 +315,15 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
         .extracting(Aggregate::getLoanApproved, Aggregate::getDecidedBy)
         .containsExactly(true, "dave");
 
-    // The same form sent a second time. The module imports the handler of the cockpit, which
-    // answers that the task is done with 409.
+    // The same form sent a second time. The mapper of the cockpit answers that the task is done
+    // with 404.
     final var refused = catchThrowableOfType(
         BcTaskNotOpenException.class,
         () -> forms.completeApproveLoan(loanRequestId, approval,
             new ApproveLoanInput().approved(true).comment("fine")));
     assertThat(new BcUserTaskExceptionMapper()
         .taskNotOpen(refused)
-        .getStatus()).isEqualTo(409);
+        .getStatus()).isEqualTo(404);
 
   }
 

@@ -49,7 +49,7 @@ import io.vanillabp.cockpit.support.usertask.BcUserTaskExceptionHandler;
  * </p>
  *
  * <p>
- * A task id which is unknown gets 404, a task which is not open any more gets 409. That is
+ * A task id which is unknown gets 404, and so does a task which is not open any more. That is
  * the same for every form of every module, so the Spring Boot support of the Business Cockpit
  * brings both exceptions and {@link BcUserTaskExceptionHandler}, which answers them. Nothing
  * registers the handler on its own, so the controller imports it.

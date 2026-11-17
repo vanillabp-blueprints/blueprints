@@ -1,10 +1,14 @@
 package blueprint.workflowmodule.loanapproval;
 
+import static blueprint.workflowmodule.loanapproval.config.LoanApprovalProperties.WORKFLOW_MODULE_ID;
+
 import blueprint.workflowmodule.loanapproval.api.UserTasksApi;
 import blueprint.workflowmodule.loanapproval.api.model.AssessRiskForm;
 import blueprint.workflowmodule.loanapproval.api.model.AssessRiskInput;
 import blueprint.workflowmodule.loanapproval.api.model.CheckDocumentsForm;
 import blueprint.workflowmodule.loanapproval.api.model.CheckDocumentsInput;
+import io.vanillabp.cockpit.support.usertask.BcTaskClaimedByAnotherUserException;
+import io.vanillabp.cockpit.support.usertask.BcTaskNotOpenException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Path;
@@ -40,7 +44,14 @@ import jakarta.ws.rs.core.Response.Status;
  * <p>
  * Each form has two endpoints. GET reads what the form shows. POST takes what the user entered
  * and completes the user task. A task which is not open answers 404: the id is unknown, or the
- * task was completed already.
+ * task was completed already. The form knows nothing but the id of the task, so the exception
+ * names the workflow module where it would name the loan request.
+ * </p>
+ *
+ * <p>
+ * The exceptions of both answers come from the support library of the Business Cockpit. Its
+ * mappers answer them. Quarkus finds the mappers in the index of that library, so the controller
+ * needs nothing for it.
  * </p>
  *
  * <p>
@@ -159,21 +170,15 @@ public class UserTaskFormController implements UserTasksApi {
       final String userTaskId) {
 
     if (cockpit.saysSomebodyElseTookOver(userTaskId, headers.getHeaderString(HttpHeaders.COOKIE))) {
-      throw new WebApplicationException(
-          "Somebody else took over the user task '"
-              + userTaskId
-              + "'", Status.CONFLICT);
+      throw new BcTaskClaimedByAnotherUserException(WORKFLOW_MODULE_ID, userTaskId);
     }
 
   }
 
-  private static WebApplicationException notOpen(
+  private static BcTaskNotOpenException notOpen(
       final String userTaskId) {
 
-    return new WebApplicationException(
-        "No open user task '"
-            + userTaskId
-            + "'", Status.NOT_FOUND);
+    return new BcTaskNotOpenException(WORKFLOW_MODULE_ID, userTaskId);
 
   }
 

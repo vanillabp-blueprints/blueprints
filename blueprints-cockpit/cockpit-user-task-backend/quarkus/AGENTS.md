@@ -109,9 +109,11 @@ request. Keep the server of the OpenAPI, the path of `workflow-module-uri` and t
    relative to the server of the cockpit, and Jakarta REST takes the `@Path` of the class instead
    of the one of the interface. Write no other path and no class of a request or an answer by
    hand. GET returns what the form shows, POST writes the input to the aggregate and completes
-   the task. Answer 404 for a task id which is not open. Write the input to the aggregate only
-   on completion. Before POST completes a task, ask `Cockpit` whether somebody else took it
-   over, and answer 409 if so. Copy `Cockpit` and `LoanApprovalProperties` for that, set
+   the task. Throw `BcTaskNotOpenException` for a task id which is not open, which answers 404.
+   Write the input to the aggregate only on completion. Before POST completes a task, ask
+   `Cockpit` whether somebody else took it over, and throw `BcTaskClaimedByAnotherUserException`
+   if so, which answers 409. The mappers of `business-cockpit-quarkus-support` give both answers
+   on their own. Copy `Cockpit` and `LoanApprovalProperties` for that, set
    `WORKFLOW_MODULE_ID` to your module id, add `quarkus-rest-client-jackson` to the module, and
    set `<workflow-module-id>.cockpit.address` in the application.
 8. Copy `CockpitSimulator`, `CockpitGuiApi`, `dev-shell-simulator.yaml` and the dependency plugin

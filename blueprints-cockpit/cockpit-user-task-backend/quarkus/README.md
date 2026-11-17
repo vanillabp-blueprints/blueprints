@@ -271,7 +271,8 @@ calls `GET .../api/user-tasks/{userTaskId}/assess-risk` with the id of the task.
 the task by the same id the handler got, so `Service` finds the loan request by it. A task which
 is not open answers 404: the id is unknown, or the task was completed already.
 If the cockpit says that somebody else took the task over, `POST` answers 409 and completes
-nothing.
+nothing. The controller throws `BcTaskNotOpenException` and `BcTaskClaimedByAnotherUserException`,
+and the mappers of the cockpit's support library, which register themselves, answers them.
 
 The user enters the assessment, and the form sends it with `POST`. `Service` writes it to the
 aggregate, and `Workflow#riskAssessed` completes the user task. The BPMS moves on to "Check

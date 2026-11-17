@@ -58,8 +58,6 @@ paths:
           $ref: '#/components/responses/NotAllowed'
         '404':
           $ref: '#/components/responses/UnknownTask'
-        '409':
-          $ref: '#/components/responses/TaskNotOpen'
   /api/loan-approval/{loanRequestId}/call-customer/{taskId}/not-reached:
     parameters:
       - $ref: '#/components/parameters/LoanRequestId'
@@ -76,8 +74,6 @@ paths:
           $ref: '#/components/responses/NotAllowed'
         '404':
           $ref: '#/components/responses/UnknownTask'
-        '409':
-          $ref: '#/components/responses/TaskNotOpen'
   /api/loan-approval/{loanRequestId}/assess-risk/{taskId}:
     parameters:
       - $ref: '#/components/parameters/LoanRequestId'
@@ -118,8 +114,6 @@ paths:
           $ref: '#/components/responses/NotAllowed'
         '404':
           $ref: '#/components/responses/UnknownTask'
-        '409':
-          $ref: '#/components/responses/TaskNotOpen'
   /api/loan-approval/{loanRequestId}/approve-loan/{taskId}:
     parameters:
       - $ref: '#/components/parameters/LoanRequestId'
@@ -164,8 +158,6 @@ paths:
           $ref: '#/components/responses/NotAllowed'
         '404':
           $ref: '#/components/responses/UnknownTask'
-        '409':
-          $ref: '#/components/responses/TaskNotOpen'
 components:
   parameters:
     LoanRequestId:
@@ -192,9 +184,9 @@ components:
     NotAllowed:
       description: The user has not got the permission of this form and did not work on the task before
     UnknownTask:
-      description: The loan request has no user task of this kind with this id
-    TaskNotOpen:
-      description: The user task is not open any more
+      description: >
+        The loan request has no user task of this kind with this id, or the task is not open any
+        more
   schemas:
     TaskState:
       type: object

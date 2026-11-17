@@ -214,7 +214,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   @Test
-  public void aFormSentTwiceGets409AndAMessageToShow() {
+  public void aFormSentTwiceGets404AndAMessageToShow() {
 
     final var loanRequestId = requestLoanAndWaitForTheTasks();
     final var documentCheck = taskId(loanRequestId, CheckDocumentTaskData.class);
@@ -227,7 +227,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // The module imports the handler of the Business Cockpit, so the handler is a bean here.
     // It answers what the service refused, as the form receives it.
     final var answer = userTaskExceptionHandler.taskNotOpen(refused);
-    assertThat(answer.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    assertThat(answer.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     assertThat(answer.getBody()).isEqualTo("The user task '"
         + documentCheck
         + "' of '"

@@ -46,7 +46,7 @@ import jakarta.ws.rs.core.Response.Status;
  * </p>
  *
  * <p>
- * A task id which is unknown gets 404, a task which is not open any more gets 409. That is
+ * A task id which is unknown gets 404, and so does a task which is not open any more. That is
  * the same for every form of every module, so the support library of the Business Cockpit
  * brings both exceptions and the mappers which answer them. Quarkus finds the mappers in the
  * index of that library, so the controller needs nothing for it.

@@ -209,7 +209,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   @Test
-  public void aFormSentTwiceGets409AndAMessageToShow() {
+  public void aFormSentTwiceGets404AndAMessageToShow() {
 
     final var loanRequestId = requestLoanAndWaitForTheTasks();
     final var documentCheck = taskId(loanRequestId, CheckDocumentTaskData.class);
@@ -222,7 +222,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // The mapper of the Business Cockpit answers what the service refused, as the form receives
     // it. Quarkus finds it in the index of the support library.
     final var answer = new BcUserTaskExceptionMapper().taskNotOpen(refused);
-    assertThat(answer.getStatus()).isEqualTo(409);
+    assertThat(answer.getStatus()).isEqualTo(404);
     assertThat(answer.getEntity()).isEqualTo("The user task '"
         + documentCheck
         + "' of '"
