@@ -346,5 +346,87 @@
         </dependency>
       </dependencies>
     </profile>
+    <!--
+      Runs the workflow module on your machine, for somebody who works on its user interface:
+
+        mvn -Plocal quarkus:dev
+
+      Quarkus builds even its dev mode out of the main sources and their dependencies. The
+      adapters, the database and the YAML support of the module are in the test scope, so
+      without this profile the start fails for want of a datasource. This profile adds them
+      for the run, with Camunda 7, which is embedded. It points Quarkus at the configuration of
+      the test, which reports to a dev shell simulator on its default port 8079. The module
+      answers on port 8080.
+
+      'quarkus:dev' runs the rule 'no-adapter-in-a-workflow-module' as well, so this profile
+      switches it off. Nothing which is published changes. The JAR of the module holds no
+      dependency, and the published POM keeps this profile off. The dependencies are optional
+      anyway, so they never reach somebody who uses the module.
+    -->
+    <profile>
+      <id>local</id>
+      <properties>
+        <bpms>camunda7</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>vanillabp-quarkus-integration</artifactId>
+          <optional>true</optional>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda7-adapter-quarkus</artifactId>
+          <version>${camunda7-adapter.version}</version>
+          <optional>true</optional>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-camunda7-adapter-quarkus</artifactId>
+          <version>${businesscockpit.version}</version>
+          <optional>true</optional>
+        </dependency>
+        <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-jdbc-h2</artifactId>
+          <optional>true</optional>
+        </dependency>
+        <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-config-yaml</artifactId>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>no-adapter-in-a-workflow-module</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
+            <configuration>
+              <!--
+                The module is a library, so it has no 'build' goal of Quarkus, and 'quarkus:dev'
+                would skip it without this line.
+              -->
+              <enforceBuildGoal>false</enforceBuildGoal>
+              <systemProperties>
+                <!-- The configuration of the test, and 'application-camunda7.yaml' next to it. -->
+                <quarkus.config.locations>${project.basedir}/src/test/resources/application.yaml</quarkus.config.locations>
+                <quarkus.config.profile.parent>${bpms}</quarkus.config.profile.parent>
+              </systemProperties>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
