@@ -57,11 +57,12 @@ cockpit answers from its own data.
 
 Compared to [`cockpit-user-task-application`](https://github.com/vanillabp-blueprints/cockpit-user-task-application-springboot):
 
-|             File              |                                           What is different                                            |
-|-------------------------------|--------------------------------------------------------------------------------------------------------|
-| `pom.xml`                     | the workflow module of `cockpit-workflow-details-backend` and the UI JAR `cockpit-workflow-details-ui` |
-| `UserInterfaceSmokeTest.java` | the manifest lists `WorkflowPage` and `WorkflowList`, and the case page of a running case answers      |
-| `docker-compose.yaml`         | other names of the containers                                                                          |
+|             File              |                                              What is different                                              |
+|-------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `pom.xml`                     | the workflow module of `cockpit-workflow-details-backend` and the UI JAR `cockpit-workflow-details-ui`      |
+| `UserInterfaceSmokeTest.java` | the manifest lists `WorkflowPage` and `WorkflowList`, and the case page of a running case answers           |
+| `pom.xml`                     | the clients of `UserInterfaceSmokeTest`, generated from the OpenAPI files in the JAR of the workflow module |
+| `docker-compose.yaml`         | other names of the containers                                                                               |
 
 ## Running it
 

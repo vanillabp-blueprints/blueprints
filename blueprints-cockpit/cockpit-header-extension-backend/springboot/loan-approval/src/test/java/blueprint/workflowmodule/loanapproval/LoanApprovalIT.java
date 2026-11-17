@@ -28,6 +28,8 @@ import blueprint.workflowmodule.loanapproval.client.StartFormApi;
 import blueprint.workflowmodule.loanapproval.client.model.LoanRequest;
 import blueprint.workflowmodule.loanapproval.config.LoanApprovalModuleDetails;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.model.EndReason;
 import io.vanillabp.spi.cockpit.workflowmodules.WorkflowModuleDetailsProvider;
 
 /**
@@ -63,13 +65,20 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @Qualifier("requestMappingHandlerMapping")
   private RequestMappingHandlerMapping endpoints;
 
+  /** The case list of the cockpit, read from the simulator. */
+  @Autowired
+  private OfficialWorkflowlistApi workflowlist;
+
   @Value("${local.server.port}")
   private int port;
 
   private StartFormApi startForm;
 
   /**
-   * Starts the simulator before the application, and points the cockpit adapter at it.
+   * Starts the simulator before the application, and points the cockpit adapter at it. The
+   * client of the official GUI API, which the test reads what the cockpit knows with, gets the
+   * address of the simulator as well. It is the client of the library, with the keys where Spring
+   * Boot looks for them.
    *
    * @param properties The properties of the application under test.
    */
@@ -78,6 +87,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
       final DynamicPropertyRegistry properties) {
 
     properties.add("vanillabp.cockpit.rest.base-url", () -> CockpitSimulator.start().baseUrl());
+    properties.add("spring.http.serviceclient.official-gui-api.base-url",
+        () -> CockpitSimulator.start().officialGuiApi());
 
   }
 
@@ -116,19 +127,20 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // The cockpit was not asked to start anything. It learned about the new case from the
     // cockpit adapter, and lists it under the id of the loan request.
-    final var newCase = cockpit.awaitWorkflow(loanRequestId, workflow -> true);
-    assertThat(newCase.get("workflowModuleId")).isEqualTo("loan-approval");
-    assertThat(newCase.get("bpmnProcessId")).isEqualTo("loan_approval");
-    assertThat(newCase.get("businessId")).isEqualTo(loanRequestId);
-    assertThat(newCase.get("endedAt")).isNull();
+    final var newCase = cockpit.awaitWorkflow(workflowlist, loanRequestId, workflow -> true);
+    assertThat(newCase.getWorkflowModuleId()).isEqualTo("loan-approval");
+    assertThat(newCase.getBpmnProcessId()).isEqualTo("loan_approval");
+    assertThat(newCase.getBusinessId()).isEqualTo(loanRequestId);
+    assertThat(newCase.getEndedAt()).isNull();
 
     // From here on, the case goes on like every other one: with its user task.
     final var userTasks = cockpit.awaitUserTasksOfWorkflow(
-        (String) newCase.get("id"),
+        workflowlist,
+        newCase.getId(),
         tasks -> !tasks.isEmpty());
     assertThat(userTasks).hasSize(1);
-    assertThat(userTasks.getFirst().get("id")).isEqualTo(loanRequest.getReviewTaskId());
-    assertThat(userTasks.getFirst().get("taskDefinition")).isEqualTo("reviewLoanRequest");
+    assertThat(userTasks.getFirst().getId()).isEqualTo(loanRequest.getReviewTaskId());
+    assertThat(userTasks.getFirst().getTaskDefinition()).isEqualTo("reviewLoanRequest");
 
   }
 
@@ -172,8 +184,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(loanApproval.approve(loanRequestId)).isEqualTo(Service.Change.DONE);
     assertThat(loanApproval.approve(loanRequestId)).isEqualTo(Service.Change.NOT_POSSIBLE);
 
-    final var ended = cockpit.awaitWorkflow(loanRequestId, workflow -> workflow.get("endedAt") != null);
-    assertThat(ended.get("endReason")).isEqualTo("COMPLETED");
+    final var ended = cockpit.awaitWorkflow(workflowlist, loanRequestId, workflow -> workflow.getEndedAt() != null);
+    assertThat(ended.getEndReason()).isEqualTo(EndReason.COMPLETED);
 
   }
 

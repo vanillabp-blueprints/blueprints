@@ -18,8 +18,15 @@ import java.util.function.Supplier;
 
 import org.awaitility.core.ConditionTimeoutException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
+import io.vanillabp.cockpit.gui.api.v1.client.model.Workflow;
+import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowRetrieveMode;
+import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowsRequest;
 
 /**
  * The Business Cockpit of the integration test: the dev shell simulator of the cockpit, run as
@@ -32,6 +39,14 @@ import org.springframework.web.client.RestClient;
  * kind of notification of a user task, and these are what this blueprint is about. The simulator
  * keeps them anyway, and it shows the last report about a user task, as the module sent it, at
  * {@code GET /simulator-api/usertask/{id}/report}. The test reads the reports from there.
+ * </p>
+ *
+ * <p>
+ * The rest the test reads from the official GUI API of the cockpit, which the simulator serves
+ * below {@code /official-api/v1}, with the clients generated from the OpenAPI file of that API.
+ * Spring builds them from the key {@code spring.http.serviceclient.official-gui-api.base-url},
+ * which the test sets to {@link #officialGuiApi()}, and the test hands them to the methods which
+ * read. The report has no such file, so a plain RestClient reads it.
  * </p>
  *
  * <p>
@@ -58,16 +73,12 @@ public final class CockpitSimulator {
 
   private final RestClient simulatorApi;
 
-  private final RestClient officialApi;
-
   private CockpitSimulator(
       final String baseUrl) {
 
     this.baseUrl = baseUrl;
     this.simulatorApi = RestClient.create(baseUrl
         + "/simulator-api");
-    this.officialApi = RestClient.create(baseUrl
-        + "/official-api/v1");
 
   }
 
@@ -93,6 +104,19 @@ public final class CockpitSimulator {
   public String baseUrl() {
 
     return baseUrl;
+
+  }
+
+  /**
+   * The address of the official GUI API of the simulator. A user interface of the cockpit reads
+   * what the cockpit knows there.
+   *
+   * @return The address, with the path of the API.
+   */
+  public String officialGuiApi() {
+
+    return baseUrl
+        + "/official-api/v1";
 
   }
 
@@ -123,19 +147,21 @@ public final class CockpitSimulator {
    * Waits until the cockpit knows a user task and the condition holds. This is the user task as
    * the official API of the cockpit shows it, for example with the reason it ended.
    *
+   * @param tasklist   The client of the official GUI API of the simulator.
    * @param userTaskId The id of the user task.
    * @param condition  What the cockpit is expected to know about the user task.
    * @return The user task, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitUserTask(
+  public UserTask awaitUserTask(
+      final OfficialTasklistApi tasklist,
       final String userTaskId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<UserTask> condition) {
 
     return awaitReport(
         "user task '"
             + userTaskId
             + "'",
-        () -> userTaskOf(userTaskId),
+        () -> userTaskOf(tasklist, userTaskId),
         condition);
 
   }
@@ -143,19 +169,21 @@ public final class CockpitSimulator {
   /**
    * Waits until the cockpit knows the workflow of a business case and the condition holds.
    *
-   * @param businessId The id of the workflow aggregate.
-   * @param condition  What the cockpit is expected to know about the workflow.
+   * @param workflowlist The client of the official GUI API of the simulator.
+   * @param businessId   The id of the workflow aggregate.
+   * @param condition    What the cockpit is expected to know about the workflow.
    * @return The workflow, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitWorkflow(
+  public Workflow awaitWorkflow(
+      final OfficialWorkflowlistApi workflowlist,
       final String businessId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<Workflow> condition) {
 
     return awaitReport(
         "workflow '"
             + businessId
             + "'",
-        () -> workflowOf(businessId),
+        () -> workflowOf(workflowlist, businessId),
         condition);
 
   }
@@ -218,13 +246,20 @@ public final class CockpitSimulator {
   /**
    * Reads a user task the way a cockpit user interface reads it.
    *
+   * @param tasklist   The client of the official GUI API of the simulator.
    * @param userTaskId The id of the user task.
    * @return The user task, if the cockpit knows it.
    */
-  private Optional<Map<String, Object>> userTaskOf(
+  private static Optional<UserTask> userTaskOf(
+      final OfficialTasklistApi tasklist,
       final String userTaskId) {
 
-    return getIfKnown(officialApi, "/usertask/{userTaskId}", userTaskId);
+    try {
+      return Optional.ofNullable(tasklist.getUserTask(userTaskId, null).getBody());
+    } catch (HttpClientErrorException.NotFound e) {
+      // Nobody reported the user task yet.
+      return Optional.empty();
+    }
 
   }
 
@@ -257,28 +292,25 @@ public final class CockpitSimulator {
    * Reads the workflow of a business id the way a cockpit user interface reads the list of
    * workflows, filtered by the business id.
    *
-   * @param businessId The id of the workflow aggregate.
+   * @param workflowlist The client of the official GUI API of the simulator.
+   * @param businessId   The id of the workflow aggregate.
    * @return The workflow, if the cockpit knows it.
    */
-  @SuppressWarnings("unchecked")
-  private Optional<Map<String, Object>> workflowOf(
+  private static Optional<Workflow> workflowOf(
+      final OfficialWorkflowlistApi workflowlist,
       final String businessId) {
 
-    final Map<String, Object> page = officialApi
-        .post()
-        .uri("/workflow")
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(Map.of(
-            "mode", "All",
-            "businessIds", List.of(businessId),
-            "pageNumber", 0,
-            "pageSize", 10))
-        .retrieve()
-        .body(Map.class);
-    final var workflows = (List<Map<String, Object>>) page.get("workflows");
-    return workflows == null
+    final var page = workflowlist
+        .getWorkflows(new WorkflowsRequest()
+            .mode(WorkflowRetrieveMode.ALL)
+            .businessIds(List.of(businessId))
+            .pageNumber(0)
+            .pageSize(10), null, null)
+        .getBody();
+    return (page == null) || (page.getWorkflows() == null)
         ? Optional.empty()
-        : workflows
+        : page
+            .getWorkflows()
             .stream()
             .findFirst();
 

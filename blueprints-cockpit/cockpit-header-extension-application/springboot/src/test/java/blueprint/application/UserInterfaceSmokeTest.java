@@ -12,11 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
+import blueprint.application.client.StartFormApi;
+import blueprint.application.client.model.LoanRequest;
 import blueprint.workflowmodule.loanapproval.model.Aggregate;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
@@ -30,6 +31,13 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * dependency or a path which does not fit the module id breaks one of them, and the
  * application still starts. So this test asks for both, the way the cockpit does after it
  * replaced {@code /wm/loan-approval} by {@code /loan-approval}.
+ * </p>
+ *
+ * <p>
+ * The start form is called through a client which the build generates from the OpenAPI file in
+ * the JAR of the workflow module. So the test writes no path and no field of the API by hand.
+ * The manifest is a file of the user interface and not part of an API, so a plain RestClient
+ * reads it.
  * </p>
  *
  * <p>
@@ -55,14 +63,24 @@ public class UserInterfaceSmokeTest {
   @Value("${local.server.port}")
   private int port;
 
+  /** The files below the path of the module. */
   private RestClient module;
 
+  /** The start form, which the user interface calls. */
+  private StartFormApi startForm;
+
   @BeforeEach
-  public void createClient() {
+  public void createClients() {
 
     module = RestClient.create("http://localhost:"
         + port
         + "/loan-approval");
+    // The paths of 'loan-approval.yaml' are relative to its server, which the cockpit forwards to
+    // the path of the module.
+    startForm = HttpServiceProxyFactory
+        .builderFor(RestClientAdapter.create(module))
+        .build()
+        .createClient(StartFormApi.class);
 
   }
 
@@ -86,19 +104,9 @@ public class UserInterfaceSmokeTest {
   @Test
   public void theStartFormStartsALoanApproval() {
 
-    final var started = module
-        .post()
-        .uri("/api/loan-requests")
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(Map.of("applicant", "Jane Doe", "amount", 5000))
-        .retrieve()
-        .toEntity(new ParameterizedTypeReference<Map<String, Object>>() {
-        });
-
-    assertThat(started.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-    final var loanRequestId = (String) started
-        .getBody()
-        .get("loanRequestId");
+    final var loanRequestId = startForm
+        .requestLoan(new LoanRequest("Jane Doe", 5000))
+        .loanRequestId();
 
     await()
         .atMost(Duration.ofSeconds(30))

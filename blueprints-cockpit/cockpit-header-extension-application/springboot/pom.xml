@@ -46,6 +46,8 @@
     -->
     <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
     <businesscockpit-camunda8.version>0.9.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
+    <!-- Generates the client of the smoke test from the OpenAPI file of the workflow module. -->
+    <openapi-generator.version>7.27.0</openapi-generator.version>
     <!--
       The two parts this application is made of. Each one has a release of its own: first the
       backend, then the frontend, then this application. A bot such as Renovate moves these
@@ -135,6 +137,61 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <!--
+        The client of the smoke test, generated from 'loan-approval.yaml' of the workflow
+        module, with the start form the user interface calls. The workflow module carries the
+        file in its JAR, below 'openapi/', so the generator reads it from there. It is a Spring
+        HTTP interface which a RestClient turns into a client, so the test writes no path and no
+        field by hand.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>${openapi-generator.version}</version>
+        <configuration>
+          <generatorName>spring</generatorName>
+          <library>spring-http-interface</library>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <output>${project.build.directory}/generated-test-sources/openapi</output>
+          <addCompileSourceRoot>false</addCompileSourceRoot>
+          <addTestCompileSourceRoot>true</addTestCompileSourceRoot>
+          <apiPackage>blueprint.application.client</apiPackage>
+          <modelPackage>blueprint.application.client.model</modelPackage>
+          <configOptions>
+            <useSpringBoot4>true</useSpringBoot4>
+            <useTags>true</useTags>
+            <interfaceOnly>true</interfaceOnly>
+            <useResponseEntity>false</useResponseEntity>
+            <useRecords>true</useRecords>
+            <useJspecify>true</useJspecify>
+            <openApiNullable>false</openApiNullable>
+            <useBeanValidation>false</useBeanValidation>
+            <documentationProvider>none</documentationProvider>
+            <annotationLibrary>none</annotationLibrary>
+            <hideGenerationTimestamp>true</hideGenerationTimestamp>
+          </configOptions>
+        </configuration>
+        <dependencies>
+          <!-- Where the generator finds the OpenAPI files. -->
+          <dependency>
+            <groupId>io.vanillabp.blueprint.cockpit-header-extension-backend-springboot</groupId>
+            <artifactId>loan-approval</artifactId>
+            <version>${cockpit-header-extension-backend.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>user-interface-test-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <inputSpec>openapi/loan-approval.yaml</inputSpec>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <!--
         Copies the runnable JARs of the Business Cockpit and of the dev shell simulator to

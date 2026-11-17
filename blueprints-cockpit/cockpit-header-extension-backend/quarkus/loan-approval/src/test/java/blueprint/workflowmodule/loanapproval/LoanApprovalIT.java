@@ -24,6 +24,8 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.model.EndReason;
 import io.vanillabp.spi.cockpit.workflowmodules.WorkflowModuleDetailsProvider;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
@@ -72,6 +74,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   private StartFormApi startForm;
 
+  /** The case list of the cockpit, read from the simulator. */
+  private OfficialWorkflowlistApi workflowlist;
+
   /**
    * Starts the simulator before the application, and points the cockpit adapter at it.
    */
@@ -101,6 +106,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .newBuilder()
         .baseUri(module)
         .build(StartFormApi.class);
+    workflowlist = QuarkusRestClientBuilder
+        .newBuilder()
+        .baseUri(URI.create(CockpitSimulator.start().officialGuiApi()))
+        .build(OfficialWorkflowlistApi.class);
 
   }
 
@@ -125,19 +134,20 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // The cockpit was not asked to start anything. It learned about the new case from the
     // cockpit adapter, and lists it under the id of the loan request.
-    final var newCase = cockpit.awaitWorkflow(loanRequestId, workflow -> true);
-    assertThat(newCase.get("workflowModuleId")).isEqualTo("loan-approval");
-    assertThat(newCase.get("bpmnProcessId")).isEqualTo("loan_approval");
-    assertThat(newCase.get("businessId")).isEqualTo(loanRequestId);
-    assertThat(newCase.get("endedAt")).isNull();
+    final var newCase = cockpit.awaitWorkflow(workflowlist, loanRequestId, workflow -> true);
+    assertThat(newCase.getWorkflowModuleId()).isEqualTo("loan-approval");
+    assertThat(newCase.getBpmnProcessId()).isEqualTo("loan_approval");
+    assertThat(newCase.getBusinessId()).isEqualTo(loanRequestId);
+    assertThat(newCase.getEndedAt()).isNull();
 
     // From here on, the case goes on like every other one: with its user task.
     final var userTasks = cockpit.awaitUserTasksOfWorkflow(
-        (String) newCase.get("id"),
+        workflowlist,
+        newCase.getId(),
         tasks -> !tasks.isEmpty());
     assertThat(userTasks).hasSize(1);
-    assertThat(userTasks.getFirst().get("id")).isEqualTo(loanRequest.getReviewTaskId());
-    assertThat(userTasks.getFirst().get("taskDefinition")).isEqualTo("reviewLoanRequest");
+    assertThat(userTasks.getFirst().getId()).isEqualTo(loanRequest.getReviewTaskId());
+    assertThat(userTasks.getFirst().getTaskDefinition()).isEqualTo("reviewLoanRequest");
 
   }
 
@@ -186,8 +196,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(loanApproval.approve(loanRequestId)).isEqualTo(Service.Change.DONE);
     assertThat(loanApproval.approve(loanRequestId)).isEqualTo(Service.Change.NOT_POSSIBLE);
 
-    final var ended = cockpit.awaitWorkflow(loanRequestId, workflow -> workflow.get("endedAt") != null);
-    assertThat(ended.get("endReason")).isEqualTo("COMPLETED");
+    final var ended = cockpit.awaitWorkflow(workflowlist, loanRequestId, workflow -> workflow.getEndedAt() != null);
+    assertThat(ended.getEndReason()).isEqualTo(EndReason.COMPLETED);
 
   }
 

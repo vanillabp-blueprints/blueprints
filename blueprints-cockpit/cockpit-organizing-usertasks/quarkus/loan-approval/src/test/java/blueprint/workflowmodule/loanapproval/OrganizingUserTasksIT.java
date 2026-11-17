@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.assertj.core.api.Assertions.within;
 
+import java.net.URI;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -13,8 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
@@ -30,6 +31,7 @@ import blueprint.workflowmodule.loanapproval.model.usertask.CallCustomerTaskData
 import blueprint.workflowmodule.loanapproval.model.usertask.TaskData;
 import io.quarkus.arc.All;
 import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -41,6 +43,9 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestIdentityAssociation;
 import io.smallrye.mutiny.Uni;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.model.EndReason;
 import io.vanillabp.cockpit.support.usertask.BcTaskNotOpenException;
 import io.vanillabp.cockpit.support.usertask.BcUserTaskExceptionMapper;
 import jakarta.inject.Inject;
@@ -115,6 +120,27 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
 
   }
 
+  /** The task list of the cockpit, read from the simulator. */
+  private OfficialTasklistApi tasklist;
+
+  /** The list of workflows of the cockpit, read from the simulator. */
+  private OfficialWorkflowlistApi workflowlist;
+
+  @BeforeEach
+  public void createClients() {
+
+    final var officialGuiApi = URI.create(CockpitSimulator.start().officialGuiApi());
+    tasklist = QuarkusRestClientBuilder
+        .newBuilder()
+        .baseUri(officialGuiApi)
+        .build(OfficialTasklistApi.class);
+    workflowlist = QuarkusRestClientBuilder
+        .newBuilder()
+        .baseUri(officialGuiApi)
+        .build(OfficialWorkflowlistApi.class);
+
+  }
+
   @AfterEach
   public void logOut() {
 
@@ -135,12 +161,10 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
 
     assertThat(cockpit().awaitUserTaskReport(call, report -> true))
         .containsEntry("initiator", "alice");
-    final var workflow = cockpit().awaitWorkflow(loanRequestId, found -> true);
-    assertThat(workflow.get("initiator"))
-        .asInstanceOf(InstanceOfAssertFactories.MAP)
-        .containsEntry("id", "alice");
-    assertThat(workflow)
-        .containsEntry("title", Map.of(
+    final var workflow = cockpit().awaitWorkflow(workflowlist, loanRequestId, found -> true);
+    assertThat(workflow.getInitiator().getId()).isEqualTo("alice");
+    assertThat(workflow.getTitle())
+        .isEqualTo(Map.of(
             "en", "Loan request of Jane Roe over 5000 EUR",
             "de", "Kreditantrag von Jane Roe über 5000 EUR"));
 
@@ -234,7 +258,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var secondCall = openTaskId(loanRequest, CallCustomerTaskData.class);
 
     assertThat(secondCall).isNotEqualTo(firstCall);
-    cockpit().awaitUserTask(firstCall, userTask -> "CANCELLED".equals(userTask.get("endReason")));
+    cockpit().awaitUserTask(tasklist, firstCall, userTask -> userTask.getEndReason() == EndReason.CANCELLED);
     assertThat(cockpit().awaitUserTaskReport(secondCall, report -> true))
         .containsEntry("assignee", "erin")
         .containsEntry("initiator", "lea");

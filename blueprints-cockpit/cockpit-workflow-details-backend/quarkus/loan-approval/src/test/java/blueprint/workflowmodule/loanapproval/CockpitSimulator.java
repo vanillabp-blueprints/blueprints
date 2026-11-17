@@ -1,6 +1,5 @@
 package blueprint.workflowmodule.loanapproval;
 
-import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
@@ -11,7 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -19,10 +17,13 @@ import java.util.function.Supplier;
 
 import org.awaitility.core.ConditionTimeoutException;
 
-import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.http.ContentType;
-import io.restassured.specification.RequestSpecification;
-import jakarta.ws.rs.core.Response;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
+import io.vanillabp.cockpit.gui.api.v1.client.model.UserTaskRetrieveMode;
+import io.vanillabp.cockpit.gui.api.v1.client.model.UserTasksRequest;
+import io.vanillabp.cockpit.gui.api.v1.client.model.Workflow;
+import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowRetrieveMode;
+import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowsRequest;
 
 /**
  * The Business Cockpit of the integration test: the dev shell simulator of the cockpit, run as
@@ -39,6 +40,12 @@ import jakarta.ws.rs.core.Response;
  * Maven copies the runnable JAR of the simulator to {@code target/} before the integration
  * tests run. This class starts it once per test run, on a free port, and stops it when the test
  * run ends. Its log goes to {@code target/dev-shell-simulator.log}.
+ * </p>
+ *
+ * <p>
+ * The simulator serves the official GUI API of the cockpit below {@code /official-api/v1}. The
+ * test reads it with the client generated from the OpenAPI file of that API. The test builds the
+ * client for {@link #officialGuiApi()} and hands it to the methods which read.
  * </p>
  */
 public final class CockpitSimulator {
@@ -57,16 +64,10 @@ public final class CockpitSimulator {
 
   private final String baseUrl;
 
-  private final RequestSpecification officialApi;
-
   private CockpitSimulator(
       final String baseUrl) {
 
     this.baseUrl = baseUrl;
-    this.officialApi = new RequestSpecBuilder()
-        .setBaseUri(baseUrl
-            + "/official-api/v1")
-        .build();
 
   }
 
@@ -96,23 +97,38 @@ public final class CockpitSimulator {
   }
 
   /**
+   * The address of the official GUI API of the simulator. A user interface of the cockpit reads
+   * what the cockpit knows there.
+   *
+   * @return The address, with the path of the API.
+   */
+  public String officialGuiApi() {
+
+    return baseUrl
+        + "/official-api/v1";
+
+  }
+
+  /**
    * Waits until the cockpit knows the case of a business id and the condition holds. The cockpit
    * adapter reports through the outbox, so a report arrives a moment after the event which caused
    * it.
    *
-   * @param businessId The business id of the case, which is the id of the workflow aggregate.
-   * @param condition  What the cockpit is expected to know about the case.
+   * @param workflowlist The client of the official GUI API of the simulator.
+   * @param businessId   The business id of the case, which is the id of the workflow aggregate.
+   * @param condition    What the cockpit is expected to know about the case.
    * @return The case, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitWorkflow(
+  public Workflow awaitWorkflow(
+      final OfficialWorkflowlistApi workflowlist,
       final String businessId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<Workflow> condition) {
 
     return awaitReport(
         "case '"
             + businessId
             + "'",
-        () -> workflowOf(businessId),
+        () -> workflowOf(workflowlist, businessId),
         condition);
 
   }
@@ -122,19 +138,25 @@ public final class CockpitSimulator {
    * the case page gets from {@code workflow.getUserTasks(...)}: the cockpit answers it with
    * {@code POST /workflow/{workflowId}/usertasks}.
    *
-   * @param workflowId The id of the case in the cockpit, not its business id.
-   * @param condition  What the cockpit is expected to know about the user tasks.
+   * @param workflowlist The client of the official GUI API of the simulator.
+   * @param workflowId   The id of the case in the cockpit, not its business id.
+   * @param condition    What the cockpit is expected to know about the user tasks.
    * @return The user tasks of the case, open and ended ones.
    */
-  public List<Map<String, Object>> awaitUserTasksOfWorkflow(
+  public List<UserTask> awaitUserTasksOfWorkflow(
+      final OfficialWorkflowlistApi workflowlist,
       final String workflowId,
-      final Predicate<List<Map<String, Object>>> condition) {
+      final Predicate<List<UserTask>> condition) {
 
     return awaitReport(
         "user tasks of case '"
             + workflowId
             + "'",
-        () -> Optional.of(userTasksOf(workflowId)),
+        () -> Optional.ofNullable(workflowlist
+            .getUserTasksOfWorkflow(workflowId, false, new UserTasksRequest()
+                .mode(UserTaskRetrieveMode.ALL)
+                .pageNumber(0)
+                .pageSize(100))),
         condition);
 
   }
@@ -185,57 +207,26 @@ public final class CockpitSimulator {
    * Reads the case of a business id the way a cockpit user interface reads the case list,
    * filtered by the business id.
    *
-   * @param businessId The business id of the case.
+   * @param workflowlist The client of the official GUI API of the simulator.
+   * @param businessId   The business id of the case.
    * @return The case, if the cockpit knows it.
    */
-  @SuppressWarnings("unchecked")
-  private Optional<Map<String, Object>> workflowOf(
+  private static Optional<Workflow> workflowOf(
+      final OfficialWorkflowlistApi workflowlist,
       final String businessId) {
 
-    final Map<String, Object> page = given(officialApi)
-        .contentType(ContentType.JSON)
-        .body(Map.of(
-            "mode", "All",
-            "businessIds", List.of(businessId),
-            "pageNumber", 0,
-            "pageSize", 10))
-        .post("/workflow")
-        .then()
-        .statusCode(Response.Status.OK.getStatusCode())
-        .extract()
-        .jsonPath()
-        .getMap("$");
-    final var workflows = (List<Map<String, Object>>) page.get("workflows");
-    return workflows == null
+    final var page = workflowlist
+        .getWorkflows(new WorkflowsRequest()
+            .mode(WorkflowRetrieveMode.ALL)
+            .businessIds(List.of(businessId))
+            .pageNumber(0)
+            .pageSize(10), null, null);
+    return (page == null) || (page.getWorkflows() == null)
         ? Optional.empty()
-        : workflows
+        : page
+            .getWorkflows()
             .stream()
             .findFirst();
-
-  }
-
-  /**
-   * Reads the user tasks of a case the way the cockpit answers {@code workflow.getUserTasks}.
-   *
-   * @param workflowId The id of the case in the cockpit.
-   * @return The user tasks, open and ended ones.
-   */
-  @SuppressWarnings("unchecked")
-  private List<Map<String, Object>> userTasksOf(
-      final String workflowId) {
-
-    return given(officialApi)
-        .contentType(ContentType.JSON)
-        .body(Map.of(
-            "mode", "All",
-            "pageNumber", 0,
-            "pageSize", 100))
-        .post("/workflow/{workflowId}/usertasks?llatcup=false", workflowId)
-        .then()
-        .statusCode(Response.Status.OK.getStatusCode())
-        .extract()
-        .jsonPath()
-        .getList("$");
 
   }
 

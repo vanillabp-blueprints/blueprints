@@ -102,6 +102,17 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
+    <!--
+      The clients of the official GUI API of the cockpit, generated from its OpenAPI file. The
+      test reads with them what the dev shell simulator was told, the way a cockpit user
+      interface reads it. The support library of the cockpit builds them from keys.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>official-gui-api-quarkus-client</artifactId>
+      <version>${businesscockpit.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

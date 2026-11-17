@@ -6,6 +6,13 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+  # The official GUI API of the dev shell simulator, on its default port. The test reads there
+  # what the cockpit knows, through the client of the cockpit's library, which takes its address
+  # from here. The integration test overrides it with the address of its own simulator.
+  http:
+    serviceclient:
+      official-gui-api:
+        base-url: http://localhost:8079/official-api/v1
 vanillabp:
   # Every report to the cockpit goes through the outbox first. A short poll interval lets the
   # test see the reports a moment after they were written. An application keeps the default.
