@@ -111,6 +111,9 @@ controllers in line, or the page reaches nothing.
 8. Copy `CockpitSimulator`, `dev-shell-simulator.yaml` and the dependency plugin execution of
    `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the test
    which checks every OpenAPI operation against the endpoints.
+   The test calls the endpoints through the client which the execution `case-page-test-client` of
+   `loan-approval/pom.xml` generates from the OpenAPI file, and writes no path and no field by
+   hand.
 
 ## Verifying
 

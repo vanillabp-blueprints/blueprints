@@ -3,6 +3,7 @@ package blueprint.workflowmodule.loanapproval;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -15,14 +16,17 @@ import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.loanapproval.client.CasesApi;
+import blueprint.workflowmodule.loanapproval.client.model.Case;
 import blueprint.workflowmodule.loanapproval.model.Aggregate.Status;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.specification.RequestSpecification;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
 
 /**
@@ -37,6 +41,11 @@ import jakarta.ws.rs.core.HttpHeaders;
  * The endpoints are called the way the case page calls them, only without the proxy of the
  * cockpit in between.
  * </p>
+ *
+ * <p>
+ * The client of the case page is generated from the OpenAPI file of the endpoints, like the
+ * client of the page itself. So the test writes no path and no field of an answer by hand.
+ * </p>
  */
 @QuarkusTest
 @WithTestResource(LoanApprovalIT.ReportToTheSimulator.class)
@@ -48,7 +57,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @Inject
   AggregateRepository loanApprovals;
 
-  private RequestSpecification casePage;
+  /**
+   * Where the module answers. The paths of the OpenAPI file are relative to its server, which the
+   * cockpit forwards to the path of the module.
+   */
+  @TestHTTPResource("/loan-approval")
+  URI module;
+
+  private CasesApi casePage;
 
   /**
    * Starts the simulator before the application, and points the cockpit adapter at it.
@@ -75,9 +91,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @BeforeEach
   public void createClient() {
 
-    casePage = new RequestSpecBuilder()
-        .setBasePath("/loan-approval/api/cases")
-        .build();
+    casePage = QuarkusRestClientBuilder
+        .newBuilder()
+        .baseUri(module)
+        .build(CasesApi.class);
 
   }
 
@@ -110,14 +127,11 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(userTasks.getFirst().get("endedAt")).isNull();
 
     // ... and the data of the loan request, from the module.
-    assertThat(read(loanRequestId))
-        .containsEntry("loanRequestId", loanRequestId)
-        .containsEntry("applicant", "Jane Doe")
-        .containsEntry("amount", 5000)
-        .containsEntry("status", "REQUESTED");
+    assertThat(casePage.getCase(loanRequestId))
+        .isEqualTo(new Case(loanRequestId, "Jane Doe", 5000, Case.StatusEnum.REQUESTED));
 
     // The button "Withdraw loan request".
-    assertThat(withdraw(loanRequestId)).isEqualTo(204);
+    casePage.withdrawLoanRequest(loanRequestId);
 
     // The event subprocess ended the user task, recorded the withdrawal and ended the workflow.
     final var loanRequest = awaitAggregate(
@@ -140,7 +154,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .containsEntry(WorkflowTaskHandler.STATUS, "WITHDRAWN");
     assertThat(withdrawn.get("endReason")).isEqualTo("COMPLETED");
 
-    assertThat(read(loanRequestId)).containsEntry("status", "WITHDRAWN");
+    assertThat(casePage.getCase(loanRequestId).getStatus()).isEqualTo(Case.StatusEnum.WITHDRAWN);
 
   }
 
@@ -166,8 +180,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(approved.get("endReason")).isEqualTo("COMPLETED");
 
     // An approved loan request cannot be withdrawn any more.
-    assertThat(withdraw(loanRequestId)).isEqualTo(409);
-    assertThat(read(loanRequestId)).containsEntry("status", "APPROVED");
+    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(loanRequestId))).isEqualTo(409);
+    assertThat(casePage.getCase(loanRequestId).getStatus()).isEqualTo(Case.StatusEnum.APPROVED);
 
   }
 
@@ -179,8 +193,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     loanApproval.request(loanRequestId, "Jane Doe", 5000);
     awaitReviewTask(loanRequestId);
 
-    assertThat(withdraw(loanRequestId)).isEqualTo(204);
-    assertThat(withdraw(loanRequestId)).isEqualTo(409);
+    casePage.withdrawLoanRequest(loanRequestId);
+    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(loanRequestId))).isEqualTo(409);
     assertThat(loanApproval.approve(loanRequestId)).isEqualTo(Service.Change.NOT_POSSIBLE);
 
   }
@@ -190,8 +204,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var unknown = UUID.randomUUID().toString();
 
-    assertThat(status(unknown)).isEqualTo(404);
-    assertThat(withdraw(unknown)).isEqualTo(404);
+    assertThat(refusalOf(() -> casePage.getCase(unknown))).isEqualTo(404);
+    assertThat(refusalOf(() -> casePage.withdrawLoanRequest(unknown))).isEqualTo(404);
 
   }
 
@@ -266,34 +280,24 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   }
 
-  private Map<String, Object> read(
-      final String loanRequestId) {
+  /**
+   * Calls an endpoint which the module has to refuse. The generated client throws for every
+   * answer which is not a success.
+   *
+   * @param call The call of the generated client.
+   * @return The status of the refusal.
+   */
+  private static int refusalOf(
+      final Runnable call) {
 
-    return given(casePage)
-        .get("/{loanRequestId}", loanRequestId)
-        .then()
-        .statusCode(200)
-        .extract()
-        .jsonPath()
-        .getMap("$");
-
-  }
-
-  private int status(
-      final String loanRequestId) {
-
-    return given(casePage)
-        .get("/{loanRequestId}", loanRequestId)
-        .statusCode();
-
-  }
-
-  private int withdraw(
-      final String loanRequestId) {
-
-    return given(casePage)
-        .post("/{loanRequestId}/withdraw", loanRequestId)
-        .statusCode();
+    try {
+      call.run();
+    } catch (WebApplicationException refused) {
+      return refused
+          .getResponse()
+          .getStatus();
+    }
+    throw new AssertionError("The module did not refuse the call");
 
   }
 

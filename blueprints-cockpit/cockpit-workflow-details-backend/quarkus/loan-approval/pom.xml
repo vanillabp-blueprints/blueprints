@@ -86,6 +86,12 @@
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- The REST client of Quarkus, which implements the generated client of the test. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-client-jackson</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
@@ -161,6 +167,29 @@
               <inputSpec>${project.basedir}/src/main/resources/openapi/loan-requests.yaml</inputSpec>
               <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
               <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
+            </configuration>
+          </execution>
+          <!--
+            The client of the case page, for the integration test only. It comes from
+            the same OpenAPI file, as an interface of Jakarta REST which the REST client of
+            Quarkus implements. So the test calls the endpoints the way the user interface does,
+            and writes no path and no field by hand.
+          -->
+          <execution>
+            <id>case-page-test-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <output>${project.build.directory}/generated-test-sources/openapi</output>
+              <addCompileSourceRoot>false</addCompileSourceRoot>
+              <addTestCompileSourceRoot>true</addTestCompileSourceRoot>
+              <apiPackage>blueprint.workflowmodule.loanapproval.client</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.client.model</modelPackage>
+              <!-- The same name as the class of the controller, see above. -->
+              <modelNameMappings>Case=Case</modelNameMappings>
             </configuration>
           </execution>
         </executions>
