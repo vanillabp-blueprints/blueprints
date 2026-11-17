@@ -18,7 +18,7 @@ tags:
   - name: user-task-forms
     description: The forms of the user tasks
 paths:
-  /api/loan-approval/{loanRequestId}/assess-risk/{taskId}:
+  /loan-approval/api/{loanRequestId}/assess-risk/{taskId}:
     parameters:
       - $ref: '#/components/parameters/LoanRequestId'
       - $ref: '#/components/parameters/TaskId'
@@ -77,7 +77,7 @@ paths:
           $ref: '#/components/responses/NotAllowed'
         '404':
           $ref: '#/components/responses/UnknownTask'
-  /api/loan-approval/{loanRequestId}/check-document/{taskId}:
+  /loan-approval/api/{loanRequestId}/check-document/{taskId}:
     parameters:
       - $ref: '#/components/parameters/LoanRequestId'
       - $ref: '#/components/parameters/TaskId'

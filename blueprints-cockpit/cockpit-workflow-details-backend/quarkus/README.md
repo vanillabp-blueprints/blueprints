@@ -153,15 +153,22 @@ to that engine are in the test's profile file
 
 ### Running the backend for the development of the user interface
 
-This repository cannot run the module on its own, as in
-[`cockpit-user-task-backend`](https://github.com/vanillabp-blueprints/cockpit-user-task-backend-quarkus#running-the-backend-for-the-development-of-the-user-interface):
-the BPMS adapter, the cockpit adapter and the database are in the test scope. Run the twin of
-this blueprint for the other platform as the backend. The simulator comes with this build:
+Run the module as in
+[`cockpit-user-task-backend`](https://github.com/vanillabp-blueprints/cockpit-user-task-backend-quarkus#running-the-backend-for-the-development-of-the-user-interface),
+with the Maven profile `local`. It adds the BPMS adapter, the cockpit adapter and the database,
+which are in the test scope, for the run only. Start the simulator first. It comes with this
+build:
 
 ```bash
 mvn install -DskipTests
 java -jar loan-approval/target/dev-shell-simulator.jar \
   --spring.config.additional-location=loan-approval/src/test/resources/dev-shell-simulator.yaml
+```
+
+Then start the backend in a second terminal. It answers on port 8080:
+
+```bash
+mvn -Plocal quarkus:dev
 ```
 
 Start a loan approval in the backend. Then look at what the case page reads, or approve the loan

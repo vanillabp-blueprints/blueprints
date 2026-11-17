@@ -105,7 +105,7 @@ public class Service {
 
     log.info(
         "Loan approval '{}' waits for a risk assessment in {}. Continue with:"
-            + "\n  Assess risk -> http://localhost:8080/api/loan-approval/{}/assess-risk/{}",
+            + "\n  Assess risk -> http://localhost:8080/loan-approval/api/loan-requests/{}/assess-risk/{}",
         loanApproval.getLoanRequestId(),
         bpmsHolding(loanApproval),
         loanApproval.getLoanRequestId(),
@@ -156,7 +156,7 @@ public class Service {
     log.info(
         "Risk of loan approval '{}' was assessed. The workflow now waits for the signed"
             + " contract:"
-            + "\n  Signed -> http://localhost:8080/api/loan-approval/{}/contract-signed?signedBy=Jane%20Doe",
+            + "\n  Signed -> http://localhost:8080/loan-approval/api/loan-requests/{}/contract-signed?signedBy=Jane%20Doe",
         loanRequestId,
         loanRequestId);
 

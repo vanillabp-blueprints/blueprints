@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -31,6 +32,8 @@ import blueprint.workflowmodule.loanapproval.client.model.AssessRiskInput;
 import blueprint.workflowmodule.loanapproval.client.model.CheckDocumentsForm;
 import blueprint.workflowmodule.loanapproval.client.model.CheckDocumentsInput;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
+import io.vanillabp.cockpit.support.usertask.BcTaskClaimedByAnotherUserException;
+import io.vanillabp.cockpit.support.usertask.BcTaskNotOpenException;
 
 /**
  * The integration test of this workflow module. It starts a real workflow in a real BPMS,
@@ -168,21 +171,21 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // An unknown id, the id of a task of another loan request, and the id of a task which is
     // not of this form.
     assertThat(refusalOf(() -> forms.getAssessRiskForm(loanRequestId, UUID.randomUUID().toString())))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
     assertThat(refusalOf(() -> forms.getAssessRiskForm(otherLoanRequestId, assessRiskTaskId)))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
     assertThat(refusalOf(() -> forms.completeAssessRisk(
         otherLoanRequestId,
         assessRiskTaskId,
         new AssessRiskInput("acceptable"))))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
     assertThat(refusalOf(() -> forms.getCheckDocumentsForm(loanRequestId, assessRiskTaskId)))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
     assertThat(refusalOf(() -> forms.completeCheckDocuments(
         loanRequestId,
         assessRiskTaskId,
         new CheckDocumentsInput("complete"))))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
 
     // Completed once, the task is gone. The same form sent twice does not complete anything.
     forms.completeAssessRisk(loanRequestId, assessRiskTaskId, new AssessRiskInput("acceptable"));
@@ -190,9 +193,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         assessRiskTaskId,
         new AssessRiskInput("acceptable"))))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
     assertThat(refusalOf(() -> forms.getAssessRiskForm(loanRequestId, assessRiskTaskId)))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
 
   }
 
@@ -216,7 +219,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         assessRiskTaskId,
         new AssessRiskInput(" "))))
-        .isEqualTo(400);
+        .isEqualTo(HttpStatus.BAD_REQUEST.value());
 
     // 'bob' takes the task over in the cockpit. The form of 'anna' is still on her screen.
     CockpitGuiApi.start().assign(assessRiskTaskId, "bob");
@@ -224,7 +227,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         assessRiskTaskId,
         new AssessRiskInput("acceptable"))))
-        .isEqualTo(409);
+        .isEqualTo(BcTaskClaimedByAnotherUserException.HTTP_STATUS_CODE);
 
     // Reading takes nothing away from 'bob', and the task is still open for him.
     assertThat(formsOfAnna.getAssessRiskForm(loanRequestId, assessRiskTaskId).riskAssessment()).isNull();
@@ -247,9 +250,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .getAssessRiskTaskId();
 
     assertThat(refusalOf(() -> forms.completeAssessRisk(loanRequestId, assessRiskTaskId, new AssessRiskInput(" "))))
-        .isEqualTo(400);
+        .isEqualTo(HttpStatus.BAD_REQUEST.value());
     assertThat(refusalOf(() -> forms.completeAssessRisk(loanRequestId, assessRiskTaskId, new AssessRiskInput(null))))
-        .isEqualTo(400);
+        .isEqualTo(HttpStatus.BAD_REQUEST.value());
     assertThat(forms.getAssessRiskForm(loanRequestId, assessRiskTaskId).riskAssessment()).isNull();
 
   }

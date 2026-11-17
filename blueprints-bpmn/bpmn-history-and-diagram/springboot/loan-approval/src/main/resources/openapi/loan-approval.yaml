@@ -19,7 +19,7 @@ tags:
   - name: loan-approval
     description: Operating the use case 'loan-approval', and looking at its process
 paths:
-  /api/loan-approval/start:
+  /loan-approval/api/start:
     get:
       tags:
         - loan-approval
@@ -39,7 +39,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/{loanRequestId}/approve:
+  /loan-approval/api/{loanRequestId}/approve:
     get:
       tags:
         - loan-approval
@@ -54,7 +54,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/{loanRequestId}:
+  /loan-approval/api/{loanRequestId}:
     get:
       tags:
         - loan-approval
@@ -69,7 +69,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/{loanRequestId}/definitions:
+  /loan-approval/api/{loanRequestId}/definitions:
     get:
       tags:
         - loan-approval
@@ -88,7 +88,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ProcessDefinition'
-  /api/loan-approval/{loanRequestId}/diagram:
+  /loan-approval/api/{loanRequestId}/diagram:
     get:
       tags:
         - loan-approval
@@ -109,7 +109,7 @@ paths:
               schema:
                 type: string
                 format: binary
-  /api/loan-approval/{loanRequestId}/history:
+  /loan-approval/api/{loanRequestId}/history:
     get:
       tags:
         - loan-approval

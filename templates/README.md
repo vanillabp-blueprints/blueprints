@@ -57,7 +57,7 @@ mvn <run command of the platform>
 Start the process:
 
 ```
-http://localhost:8080/api/loan-approval/<...>
+http://localhost:8080/loan-approval/api/<...>
 ```
 
 <Then describe the walk-through. At every wait state the application logs one clickable URL for

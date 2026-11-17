@@ -15,7 +15,7 @@ tags:
   - name: loan-approval
     description: Operating the use case 'loan-approval'
 paths:
-  /api/loan-approval/start:
+  /loan-approval/api/loan-requests/start:
     get:
       tags:
         - loan-approval
@@ -35,7 +35,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/publish-interest-rate:
+  /loan-approval/api/interest-rates/publish:
     get:
       tags:
         - loan-approval
@@ -55,7 +55,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-approval/{loanRequestId}:
+  /loan-approval/api/loan-requests/{loanRequestId}:
     get:
       tags:
         - loan-approval

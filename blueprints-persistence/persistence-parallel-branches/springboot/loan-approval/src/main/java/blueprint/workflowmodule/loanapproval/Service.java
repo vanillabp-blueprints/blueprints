@@ -125,7 +125,7 @@ public class Service {
 
     log.info(
         "Loan approval '{}' waits for the partner. Approve it with:"
-            + "\n  http://localhost:8080/api/loan-approval/{}/approve?approvedBy=partner",
+            + "\n  http://localhost:8080/loan-approval/api/{}/approve?approvedBy=partner",
         loanApproval.getLoanRequestId(),
         loanApproval.getLoanRequestId());
 
@@ -188,7 +188,7 @@ public class Service {
 
     log.info(
         "Loan approval '{}' waits for the documents. They arrive with:"
-            + "\n  http://localhost:8080/api/loan-approval/{}/documents-ready",
+            + "\n  http://localhost:8080/loan-approval/api/{}/documents-ready",
         loanApproval.getLoanRequestId(),
         loanApproval.getLoanRequestId());
 

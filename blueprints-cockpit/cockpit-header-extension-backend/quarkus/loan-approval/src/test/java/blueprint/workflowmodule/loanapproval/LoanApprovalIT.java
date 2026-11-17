@@ -30,6 +30,7 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 
 /**
  * The integration test of this workflow module. It starts a loan approval through the endpoint
@@ -145,9 +146,11 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var before = loanApprovals.count();
 
-    assertThat(refusalOf(new LoanRequest(" ", 5000))).isEqualTo(400);
-    assertThat(refusalOf(new LoanRequest("Jane Doe", 0))).isEqualTo(400);
-    assertThat(refusalOf(new LoanRequest("Jane Doe", null))).isEqualTo(400);
+    assertThat(refusalOf(new LoanRequest(" ", 5000))).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(refusalOf(new LoanRequest("Jane Doe", 0)))
+        .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(refusalOf(new LoanRequest("Jane Doe", null)))
+        .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 
     assertThat(loanApprovals.count()).isEqualTo(before);
 

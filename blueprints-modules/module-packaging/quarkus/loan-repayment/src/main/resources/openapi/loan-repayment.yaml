@@ -15,7 +15,7 @@ tags:
   - name: loan-repayment
     description: Operating the use case 'loan-repayment'
 paths:
-  /api/loan-repayment/start:
+  /loan-repayment/api/start:
     get:
       tags:
         - loan-repayment
@@ -41,7 +41,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/loan-repayment/{repaymentId}:
+  /loan-repayment/api/{repaymentId}:
     get:
       tags:
         - loan-repayment

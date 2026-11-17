@@ -15,7 +15,7 @@ tags:
   - name: nightly-review
     description: Operating the use case 'nightly-review'
 paths:
-  /api/nightly-review/request:
+  /loan-approval/api/nightly-reviews/request:
     get:
       tags:
         - nightly-review
@@ -28,7 +28,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/nightly-review:
+  /loan-approval/api/nightly-reviews:
     get:
       tags:
         - nightly-review
@@ -41,7 +41,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/nightly-review/{reviewId}:
+  /loan-approval/api/nightly-reviews/{reviewId}:
     get:
       tags:
         - nightly-review

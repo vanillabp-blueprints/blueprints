@@ -53,7 +53,7 @@ request. Keep the server of the OpenAPI, the path of `workflow-module-uri` and t
 | `loan-approval/src/main/resources/openapi/loan-approval.yaml`        | the contract with the frontend: four operations, `servers: /wm/loan-approval`. Change it together with `UserTaskFormController`                                                                                |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`  | `vanillabp.workflow-modules.loan-approval.cockpit.*`: `workflow-module-uri`, `ui-uri-type: ES_MODULES`, `ui-uri-path`                                                                                          |
 | `loan-approval/src/main/java/.../WorkflowTaskHandler.java`           | one `@WorkflowTask` method per user task, keeping `@TaskId`, and the `@UserTaskDetailsProvider` method filling `details`                                                                                       |
-| `loan-approval/src/main/java/.../UserTaskFormController.java`        | the endpoints of the forms, below `/loan-approval/api/loan-approval/{loanRequestId}`, each with the task id. Implements the generated `UserTasksApi`. GET reads, POST completes, 404 if not open, 409 if taken |
+| `loan-approval/src/main/java/.../UserTaskFormController.java`        | the endpoints of the forms, below `/loan-approval/api/loan-requests/{loanRequestId}`, each with the task id. Implements the generated `UserTasksApi`. GET reads, POST completes, 404 if not open, 409 if taken |
 | `loan-approval/src/main/java/.../Cockpit.java`                       | asks the cockpit, with the cookie of the request, who the user is and whom the task is assigned to. The REST client of Quarkus implements `Cockpit.GuiApi`. Off without the address                            |
 | `loan-approval/src/main/java/.../config/LoanApprovalProperties.java` | the key `loan-approval.cockpit.address`, and the id of the module                                                                                                                                              |
 | `loan-approval/src/main/resources/openapi/loan-requests.yaml`        | the GET endpoints which start and show a loan approval. The build generates `LoanRequestsApi` from it, and `ApiController` implements it                                                                       |
@@ -66,15 +66,15 @@ request. Keep the server of the OpenAPI, the path of `workflow-module-uri` and t
 
 ## Boilerplate files
 
-|                             File                             |                                                                               Purpose                                                                               |
-|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                   | the Quarkus BOM and the VanillaBP BOM import, the versions of the BPMS adapters and of the cockpit adapters, the rule which keeps every adapter in the test scope   |
-| `loan-approval/pom.xml`                                      | `vanillabp-quarkus-support`, `business-cockpit-quarkus-support`, the REST client and the index of the module's classes; per BPMS profile both adapters for the test |
-| `loan-approval/src/test/resources/application.yaml`          | the database, a free port, a short outbox poll interval, the address of the simulator                                                                               |
-| `loan-approval/src/test/resources/application-camunda7.yaml` | the Camunda 7 settings of the test, and the same file per other BPMS                                                                                                |
-| `loan-approval/src/test/resources/dev-shell-simulator.yaml`  | the users the simulator knows. It does not start without one                                                                                                        |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`    | base class of the integration test: waits for workflow progress                                                                                                     |
-| `docs/loan_approval.png`                                     | the picture of the process the README shows, rendered from the BPMN model                                                                                           |
+|                             File                             |                                                                                                              Purpose                                                                                                               |
+|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                   | the Quarkus BOM and the VanillaBP BOM import, the versions of the BPMS adapters and of the cockpit adapters, the rule which keeps every adapter in the test scope                                                                  |
+| `loan-approval/pom.xml`                                      | `vanillabp-quarkus-support`, `business-cockpit-quarkus-support`, the REST client and the index of the module's classes; per BPMS profile both adapters for the test; the profile `local`, which runs the module with `quarkus:dev` |
+| `loan-approval/src/test/resources/application.yaml`          | the database, a free port, a short outbox poll interval, the address of the simulator                                                                                                                                              |
+| `loan-approval/src/test/resources/application-camunda7.yaml` | the Camunda 7 settings of the test, and the same file per other BPMS                                                                                                                                                               |
+| `loan-approval/src/test/resources/dev-shell-simulator.yaml`  | the users the simulator knows. It does not start without one                                                                                                                                                                       |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`    | base class of the integration test: waits for workflow progress                                                                                                                                                                    |
+| `docs/loan_approval.png`                                     | the picture of the process the README shows, rendered from the BPMN model                                                                                                                                                          |
 
 `WorkflowModuleTest` is identical in every blueprint. Copy it unchanged. Every test class carries
 `@QuarkusTest` itself. Inheriting it from the base class does not make the test a bean.
@@ -105,9 +105,10 @@ request. Keep the server of the OpenAPI, the path of `workflow-module-uri` and t
    of the task list show into `details`. Do not put `null` values into the map.
 7. Let `openapi-generator-maven-plugin` generate the interface and the classes from the OpenAPI,
    with the settings of `loan-approval/pom.xml`. Implement the interface in a bean with
-   `@Path("/<workflow-module-id>/api/<workflow-module-id>/{businessId}")`: the paths of the file are
-   relative to the server of the cockpit, and Jakarta REST takes the `@Path` of the class instead
-   of the one of the interface. Write no other path and no class of a request or an answer by
+   `@Path("/<workflow-module-id>/api/<resource>/{businessId}")`, for example
+   `/loan-approval/api/loan-requests/{loanRequestId}`. The paths of the file are relative to the
+   server of the cockpit, and Jakarta REST takes the `@Path` of the class instead of the one of
+   the interface. Write no other path and no class of a request or an answer by
    hand. GET returns what the form shows, POST writes the input to the aggregate and completes
    the task. Every path names the business id of the case and the task id. Throw
    `BcTaskNotOpenException` with both for a task which is not open on that case, which answers 404.

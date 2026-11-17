@@ -209,7 +209,7 @@ calls are the one exception to the list above:
 - The start and every view stay GET requests, and the handler logs their URLs.
 - A form saves a draft with PUT and completes its task with POST. Both send JSON.
 - A form endpoint names the business id of the case and the task id, for example
-  `/api/loan-approval/{loanRequestId}/assess-risk/{taskId}`. The module checks that they belong
+  `/loan-approval/api/{loanRequestId}/assess-risk/{taskId}`. The module checks that they belong
   together, and answers 404 if they do not. So a form never completes the task of another case
   by mistake.
 - If the blueprint has no form of its own, its `README.md` shows the `curl` commands which stand
@@ -409,7 +409,11 @@ an execution in the phase `generate-test-sources` writes it to `target/generated
 On Spring Boot it uses the library `spring-http-interface`, on Quarkus `jaxrs-spec`, whose
 interface the REST client of Quarkus implements. The test then sends and reads the classes of the
 file, and writes no path and no field as a string. A refused call throws, and the test asserts on
-the status of that exception.
+the status of that exception. It names that status and never writes it as a bare number. Where the
+support library of the Business Cockpit answers, the test compares with the constant
+`HTTP_STATUS_CODE` of its exception, for example
+`BcTaskClaimedByAnotherUserException.HTTP_STATUS_CODE`. Every other status is a constant of the
+platform: `HttpStatus.BAD_REQUEST` on Spring Boot, `Response.Status.BAD_REQUEST` on Quarkus.
 
 The settings are in the POM of the module which generates. Where several modules generate, the
 blueprint POM shares them in `pluginManagement`. The version is the property
@@ -443,6 +447,31 @@ The sources of a frontend import from another directory through the path aliases
 reads the same aliases, and `scripts/check-imports.mjs`, the first step of `npm run build`, fails
 on an import with `../`. The README of each frontend has the table of its aliases.
 
+### Every path starts with the module
+
+Every endpoint of a workflow module is below `/<workflow-module-id>/api/`. The id of the module
+comes first, then `api`, then the rest, for example
+`/loan-approval/api/{loanRequestId}/assess-risk/{taskId}`. No path of a module starts with
+`/api/`. This holds for the endpoints of the forms, of the views and of a test driver alike.
+
+If a module has one resource, its id follows `api` directly, as in the example. If a module
+has more than one resource, a resource name follows `api`, in the plural:
+`/loan-approval/api/loan-requests/{loanRequestId}` and `/loan-approval/api/nightly-reviews`.
+Each blueprint does it one way for all its paths.
+
+The reason is the Business Cockpit. The cockpit serves a module below `/wm/<workflow-module-id>/`
+and forwards such a request to the `workflow-module-uri` of the module. That address ends with
+`/<workflow-module-id>`, for example `http://localhost:8080/loan-approval`. So
+`/wm/loan-approval/api/...` in the browser reaches `/loan-approval/api/...` of the application,
+and no segment comes twice. Outside the cockpit, a person types the same path. The application
+also sees from the first segment which module a request is for, for example when it secures the
+API of one module.
+
+An OpenAPI file which only the frontend in the cockpit reads may name the server
+`/wm/<workflow-module-id>`, so its paths start with `/api/`. Then the controller puts
+`/<workflow-module-id>` in front, on Spring Boot with `@RequestMapping`, on Quarkus with the
+`@Path` of the class. `cockpit-user-task-backend` shows it.
+
 ## The test harness
 
 Every blueprint needs the same for that. So it is written once and copied:
@@ -452,7 +481,9 @@ templates/test-harness/<platform>/
 ├── workflow-module/         -> <maven-module>/src/test/java/blueprint/workflowmodule/
 │   ├── TestApplication.java     boots the workflow module for its test (Spring Boot only)
 │   ├── WorkflowModuleTest.java  base class: waiting for a workflow to make progress
-│   └── Simulator.java           base class of a stand-in for a surrounding system
+│   ├── Simulator.java           base class of a stand-in for a surrounding system
+│   └── SuppressOutputExtension.java
+│                                shows the output of a test only if it fails (Spring Boot only)
 └── application/             -> <maven-module>/src/test/java/blueprint/workflowmodule/
     └── ApplicationSmokeTest.java
 ```
@@ -501,6 +532,13 @@ python3 bin/sync_harness.py --check    # what CI does
 which already exist. Putting the first one into a new blueprint is part of creating it. A
 blueprint takes only the files it needs (`Simulator.java` only if it has a surrounding system
 to simulate).
+
+`SuppressOutputExtension` is for a blueprint whose tests make the application print what does
+not belong into a green build log, for example the stack trace of a surrounding system which a
+test makes fail on purpose. It collects the output instead of lowering a log level, and shows it
+with a test which fails. A log level would drop the lines, and a red test would then say
+nothing. Register it before every other extension which prints, so that their lines are part of
+what a failing test shows.
 
 Everything else in a blueprint's tests is specific to it, and nothing compares it. The
 integration test *is* the proof of the aspect, and it is supposed to differ.

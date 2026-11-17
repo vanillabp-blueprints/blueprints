@@ -54,6 +54,12 @@ which only a browser or the module's own user interface calls keeps its file in
 `<name>-api` with the submodules `client` and `server`. Rule 7 in `CONTRIBUTING.md` has the
 generators and their settings for both platforms.
 
+Every path of a workflow module starts with the id of the module and then `api`:
+`/loan-approval/api/{loanRequestId}`, never `/api/loan-approval/{loanRequestId}`. Through the
+Business Cockpit the same endpoint is `/wm/loan-approval/api/{loanRequestId}`, because the
+`workflow-module-uri` of the module ends with `/loan-approval`. Rule 7 in `CONTRIBUTING.md`
+says when a resource name follows `api`.
+
 ## How we write
 
 Most people who read this repository read English as a second language, and so does the

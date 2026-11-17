@@ -15,7 +15,7 @@ tags:
   - name: credit-history
     description: Operating the use case 'credit-history'
 paths:
-  /api/credit-history/start:
+  /loan-approval/api/credit-histories/start:
     get:
       tags:
         - credit-history
@@ -35,7 +35,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/credit-history/{creditHistoryId}:
+  /loan-approval/api/credit-histories/{creditHistoryId}:
     get:
       tags:
         - credit-history

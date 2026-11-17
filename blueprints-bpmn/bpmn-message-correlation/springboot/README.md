@@ -135,7 +135,7 @@ explains the modes and what each of them costs.
 Start a loan approval. This is the only URL you need:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The process rates the request and then waits. It logs the URL the message arrives at:
@@ -143,7 +143,7 @@ The process rates the request and then waits. It logs the URL the message arrive
 ```
 Loan approval '0f7c…' started
 Credit rating of loan approval '0f7c…' is 50. The workflow now waits for the signed contract:
-  Signed -> http://localhost:8080/api/loan-approval/0f7c…/contract-signed?signedBy=Jane%20Doe
+  Signed -> http://localhost:8080/loan-approval/api/0f7c…/contract-signed?signedBy=Jane%20Doe
 ```
 
 Opening it correlates the message, and the process runs to its end:

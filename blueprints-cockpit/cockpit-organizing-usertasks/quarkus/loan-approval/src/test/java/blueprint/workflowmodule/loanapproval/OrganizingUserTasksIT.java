@@ -323,7 +323,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
             new ApproveLoanInput().approved(true).comment("fine")));
     assertThat(new BcUserTaskExceptionMapper()
         .taskNotOpen(refused)
-        .getStatus()).isEqualTo(404);
+        .getStatus()).isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
 
   }
 

@@ -151,7 +151,7 @@ explains the modes and what each of them costs.
 The amount decides which branch is taken. So this is the URL to play with:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 An amount of 5000 gives a rating of 50. That is at or above the configured minimum of 30. The

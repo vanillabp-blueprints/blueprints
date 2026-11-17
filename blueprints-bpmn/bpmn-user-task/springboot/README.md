@@ -137,7 +137,7 @@ explains the modes and what each of them costs.
 Start a loan approval. This is the only URL you need:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The process runs up to the risk assessment and stops there. It logs the URLs which continue it,
@@ -147,9 +147,9 @@ each one filled in and ready to click:
 Loan approval '0f7c…' started
 Credit rating of loan approval '0f7c…' is 50
 Loan approval '0f7c…' waits for a risk assessment. Continue with one of:
-  Acceptable    -> http://localhost:8080/api/loan-approval/0f7c…/assess-risk/1a2b…?riskIsAcceptable=true
-  Too risky     -> http://localhost:8080/api/loan-approval/0f7c…/assess-risk/1a2b…?riskIsAcceptable=false
-  Withdraw      -> http://localhost:8080/api/loan-approval/0f7c…/withdraw/1a2b…
+  Acceptable    -> http://localhost:8080/loan-approval/api/0f7c…/assess-risk/1a2b…?riskIsAcceptable=true
+  Too risky     -> http://localhost:8080/loan-approval/api/0f7c…/assess-risk/1a2b…?riskIsAcceptable=false
+  Withdraw      -> http://localhost:8080/loan-approval/api/0f7c…/withdraw/1a2b…
 ```
 
 Opening one of the first two completes the task, and the process goes on to its end:

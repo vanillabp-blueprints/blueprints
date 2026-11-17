@@ -27,10 +27,13 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.vanillabp.cockpit.support.usertask.BcTaskClaimedByAnotherUserException;
+import io.vanillabp.cockpit.support.usertask.BcTaskNotOpenException;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 
 /**
  * The integration test of this workflow module. It starts a real workflow in a real BPMS,
@@ -178,21 +181,21 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // An unknown id, the id of a task of another loan request, and the id of a task which is
     // not of this form.
     assertThat(refusalOf(() -> forms.getAssessRiskForm(loanRequestId, UUID.randomUUID().toString())))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
     assertThat(refusalOf(() -> forms.getAssessRiskForm(otherLoanRequestId, assessRiskTaskId)))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
     assertThat(refusalOf(() -> forms.completeAssessRisk(
         otherLoanRequestId,
         assessRiskTaskId,
         new AssessRiskInput("acceptable"))))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
     assertThat(refusalOf(() -> forms.getCheckDocumentsForm(loanRequestId, assessRiskTaskId)))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
     assertThat(refusalOf(() -> forms.completeCheckDocuments(
         loanRequestId,
         assessRiskTaskId,
         new CheckDocumentsInput("complete"))))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
 
     // Completed once, the task is gone. The same form sent twice does not complete anything.
     forms.completeAssessRisk(loanRequestId, assessRiskTaskId, new AssessRiskInput("acceptable"));
@@ -200,9 +203,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         assessRiskTaskId,
         new AssessRiskInput("acceptable"))))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
     assertThat(refusalOf(() -> forms.getAssessRiskForm(loanRequestId, assessRiskTaskId)))
-        .isEqualTo(404);
+        .isEqualTo(BcTaskNotOpenException.HTTP_STATUS_CODE);
 
   }
 
@@ -226,7 +229,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         assessRiskTaskId,
         new AssessRiskInput(" "))))
-        .isEqualTo(400);
+        .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 
     // 'bob' takes the task over in the cockpit. The form of 'anna' is still on her screen.
     CockpitGuiApi.start().assign(assessRiskTaskId, "bob");
@@ -234,7 +237,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         assessRiskTaskId,
         new AssessRiskInput("acceptable"))))
-        .isEqualTo(409);
+        .isEqualTo(BcTaskClaimedByAnotherUserException.HTTP_STATUS_CODE);
 
     // Reading takes nothing away from 'bob', and the task is still open for him.
     assertThat(formsOfAnna.getAssessRiskForm(loanRequestId, assessRiskTaskId).getRiskAssessment()).isNull();
@@ -257,9 +260,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .getAssessRiskTaskId();
 
     assertThat(refusalOf(() -> forms.completeAssessRisk(loanRequestId, assessRiskTaskId, new AssessRiskInput(" "))))
-        .isEqualTo(400);
+        .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
     assertThat(refusalOf(() -> forms.completeAssessRisk(loanRequestId, assessRiskTaskId, new AssessRiskInput(null))))
-        .isEqualTo(400);
+        .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
     assertThat(forms.getAssessRiskForm(loanRequestId, assessRiskTaskId).getRiskAssessment()).isNull();
 
   }

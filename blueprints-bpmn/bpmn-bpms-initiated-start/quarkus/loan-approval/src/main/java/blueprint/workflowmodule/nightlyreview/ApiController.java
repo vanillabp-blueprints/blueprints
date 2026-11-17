@@ -35,10 +35,10 @@ public class ApiController implements NightlyReviewApi {
     nightlyReview.request();
 
     log.info(
-        "Show the reviews -> http://localhost:8080/api/nightly-review");
+        "Show the reviews -> http://localhost:8080/loan-approval/api/nightly-reviews");
 
     return "A review was requested. Whether one starts is the engine's decision,"
-        + " and the reviews are listed at /api/nightly-review";
+        + " and the reviews are listed at /loan-approval/api/nightly-reviews";
 
   }
 

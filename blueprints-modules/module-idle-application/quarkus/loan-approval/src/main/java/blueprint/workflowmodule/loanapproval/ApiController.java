@@ -54,12 +54,12 @@ public class ApiController implements LoanApprovalApi {
     loanApproval.request(loanRequestId, amount);
 
     log.info(
-        "Show the result -> http://localhost:8080/api/loan-approval/{}",
+        "Show the result -> http://localhost:8080/loan-approval/api/{}",
         loanRequestId);
     log.info(
         "The loan is paid out after the withdrawal period. Until then nothing of this"
             + " application runs, which this URL shows ->"
-            + " http://localhost:8080/api/loan-approval/statements");
+            + " http://localhost:8080/loan-approval/api/statements");
 
     return loanRequestId;
 

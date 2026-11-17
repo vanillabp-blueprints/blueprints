@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -136,9 +137,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var before = loanApprovals.count();
 
-    assertThat(refusalOf(new LoanRequest(" ", 5000))).isEqualTo(400);
-    assertThat(refusalOf(new LoanRequest("Jane Doe", 0))).isEqualTo(400);
-    assertThat(refusalOf(new LoanRequest("Jane Doe", null))).isEqualTo(400);
+    assertThat(refusalOf(new LoanRequest(" ", 5000))).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    assertThat(refusalOf(new LoanRequest("Jane Doe", 0))).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    assertThat(refusalOf(new LoanRequest("Jane Doe", null))).isEqualTo(HttpStatus.BAD_REQUEST.value());
 
     assertThat(loanApprovals.count()).isEqualTo(before);
 

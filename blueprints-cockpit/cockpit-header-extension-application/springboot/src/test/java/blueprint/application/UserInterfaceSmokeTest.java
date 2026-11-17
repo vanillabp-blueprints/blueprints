@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 
@@ -94,7 +95,7 @@ public class UserInterfaceSmokeTest {
         .toEntity(new ParameterizedTypeReference<Map<String, Object>>() {
         });
 
-    assertThat(started.getStatusCode().value()).isEqualTo(201);
+    assertThat(started.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     final var loanRequestId = (String) started
         .getBody()
         .get("loanRequestId");

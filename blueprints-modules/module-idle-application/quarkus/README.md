@@ -43,7 +43,7 @@ blueprint names both. And if you set one of them and see no saving, the feature 
 
 ### Counting it yourself
 
-`GET /api/loan-approval/statements` returns how many SQL statements the database has received.
+`GET /loan-approval/api/statements` returns how many SQL statements the database has received.
 Open it, wait, and open it again. The difference is what this application costs while nothing
 happens.
 
@@ -102,7 +102,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `loan_approval.bpmn`                                                                  | a timer catch event for the withdrawal period and a service task behind it                               |
 | `DatabaseTraffic.java`                                                                | counts the statements H2 wrote into its trace file                                                       |
 | `ApiController.java`                                                                  | one more endpoint, which returns that number                                                             |
-| `openapi/loan-approval.yaml`                                                          | the endpoint `/api/loan-approval/statements`                                                             |
+| `openapi/loan-approval.yaml`                                                          | the endpoint `/loan-approval/api/statements`                                                             |
 | `WorkflowTaskHandler.java`                                                            | the `@WorkflowTask` method of the task behind the timer                                                  |
 | `Service.java`                                                                        | pays out the loan                                                                                        |
 | `Aggregate.java`                                                                      | `paidOut`                                                                                                |
@@ -197,7 +197,7 @@ the database every 900 seconds and woken this engine four times an hour.
 Now walk through it. Start a loan approval, which is the only URL you need:
 
 ```
-http://localhost:8080/api/loan-approval/start?amount=5000
+http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The rating is done at once and then the workflow waits:
@@ -205,7 +205,7 @@ The rating is done at once and then the workflow waits:
 ```
 Loan approval '0f7c…' started
 Credit rating of loan approval '0f7c…' is 50
-The loan is paid out after the withdrawal period. Until then nothing of this application runs, which this URL shows -> http://localhost:8080/api/loan-approval/statements
+The loan is paid out after the withdrawal period. Until then nothing of this application runs, which this URL shows -> http://localhost:8080/loan-approval/api/statements
 ```
 
 Thirty seconds later the timer is due and the task behind it runs. This is the half nobody may
@@ -218,7 +218,7 @@ Loan approval '0f7c…' was paid out
 From here the application has nothing left to do. Ask what its database has done so far:
 
 ```
-http://localhost:8080/api/loan-approval/statements
+http://localhost:8080/loan-approval/api/statements
 ```
 
 Wait a minute, ask again, and compare the two numbers. The file behind them is

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.DockerClientFactory;
@@ -112,7 +113,7 @@ public class UserInterfaceProxyIT {
 
     final var manifest = get("/loan-approval/bc-manifest.json");
 
-    assertThat(manifest.statusCode()).isEqualTo(200);
+    assertThat(manifest.statusCode()).isEqualTo(HttpStatus.OK.value());
     assertThat(manifest.body()).contains("\"entries\"");
     // only the nginx sends this header, so the answer came from there
     assertThat(manifest
@@ -141,7 +142,7 @@ public class UserInterfaceProxyIT {
           + file);
       assertThat(answer.statusCode())
           .describedAs(file)
-          .isEqualTo(200);
+          .isEqualTo(HttpStatus.OK.value());
       assertThat(answer
           .headers()
           .firstValue("Content-Type"))
@@ -156,7 +157,7 @@ public class UserInterfaceProxyIT {
 
     final var answer = get("/loan-approval/api/loan-requests/nobody");
 
-    assertThat(answer.statusCode()).isEqualTo(200);
+    assertThat(answer.statusCode()).isEqualTo(HttpStatus.OK.value());
     assertThat(answer.body()).isEqualTo("unknown loan request 'nobody'");
 
   }

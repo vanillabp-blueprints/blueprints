@@ -15,7 +15,7 @@ tags:
   - name: rate-watch
     description: Operating the use case 'rate-watch'
 paths:
-  /api/rate-watch/start:
+  /loan-approval/api/rate-watches/start:
     get:
       tags:
         - rate-watch
@@ -28,7 +28,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/rate-watch/{watchId}:
+  /loan-approval/api/rate-watches/{watchId}:
     get:
       tags:
         - rate-watch

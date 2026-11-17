@@ -290,7 +290,7 @@ adapter talks to the simulator. Request a
 loan for a customer the simulated credit rating knows from the start:
 
 ```
-http://localhost:8080/api/loan-approval/request?customerId=C-1001&amount=5000
+http://localhost:8080/loan-approval/api/request?customerId=C-1001&amount=5000
 ```
 
 The customer `C-1002` has a low score, so the same request for that customer is declined at
@@ -299,7 +299,7 @@ once. For `C-1001` the workflow starts, and the application logs where to go on:
 ```
 Loan approval '0f7c…' started: customer 'C-1001' asks for 5000 with a credit score of 720
 Loan approval '0f7c…' waits for its contract. Continue with:
-  Prepare the contract -> http://localhost:8080/api/loan-approval/0f7c…/prepare-contract/4711?interestRate=3.5
+  Prepare the contract -> http://localhost:8080/loan-approval/api/0f7c…/prepare-contract/4711?interestRate=3.5
 ```
 
 The cockpit shows the same user task. The simulator answers the official API of the cockpit,
