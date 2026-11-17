@@ -39,11 +39,11 @@ place of `/wm/loan-approval`. So the application gets `/loan-approval/bc-manifes
 such file, so the route of the workflow module passes the request on to the nginx, with the path
 unchanged:
 
-|          The browser asks the cockpit for           |       The application gets        |            Who answers             |
-|-----------------------------------------------------|-----------------------------------|------------------------------------|
-| `/wm/loan-approval/bc-manifest.json`                | `/loan-approval/bc-manifest.json` | the nginx, through the application |
-| `/wm/loan-approval/entries/UserTaskForm-….js`       | `/loan-approval/entries/…`        | the nginx, through the application |
-| `/wm/loan-approval/api/user-tasks/{id}/assess-risk` | `/loan-approval/api/user-tasks/…` | the application                    |
+|                The browser asks the cockpit for                 |         The application gets         |            Who answers             |
+|-----------------------------------------------------------------|--------------------------------------|------------------------------------|
+| `/wm/loan-approval/bc-manifest.json`                            | `/loan-approval/bc-manifest.json`    | the nginx, through the application |
+| `/wm/loan-approval/entries/UserTaskForm-….js`                   | `/loan-approval/entries/…`           | the nginx, through the application |
+| `/wm/loan-approval/api/loan-approval/{id}/assess-risk/{taskId}` | `/loan-approval/api/loan-approval/…` | the application                    |
 
 The browser sees one origin, the cockpit's. It never talks to the application or to the nginx
 directly. And every file of the user interface passes through the application, so the security

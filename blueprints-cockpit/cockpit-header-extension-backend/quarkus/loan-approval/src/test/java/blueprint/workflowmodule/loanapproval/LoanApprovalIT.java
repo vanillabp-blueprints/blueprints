@@ -3,6 +3,7 @@ package blueprint.workflowmodule.loanapproval;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -14,18 +15,20 @@ import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.loanapproval.client.StartFormApi;
+import blueprint.workflowmodule.loanapproval.client.model.LoanRequest;
 import blueprint.workflowmodule.loanapproval.config.LoanApprovalModuleDetails;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.http.ContentType;
-import io.restassured.specification.RequestSpecification;
 import io.vanillabp.spi.cockpit.workflowmodules.WorkflowModuleDetailsProvider;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
 
 /**
@@ -38,6 +41,11 @@ import jakarta.ws.rs.core.HttpHeaders;
  * blueprint. The simulator says what the cockpit was told: the new case is in the case list,
  * with its open user task. No user interface is involved. The endpoint is called the way the
  * start form calls it, only without the proxy of the cockpit in between.
+ * </p>
+ *
+ * <p>
+ * The client of the start form is generated from the OpenAPI file of the endpoint, like the
+ * client of the form itself. So the test writes no path and no field of the request by hand.
  * </p>
  */
 @QuarkusTest
@@ -54,7 +62,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @Any
   Instance<WorkflowModuleDetailsProvider> workflowModuleDetails;
 
-  private RequestSpecification startForm;
+  /**
+   * Where the module answers. The paths of the OpenAPI file are relative to its server, which the
+   * cockpit forwards to the path of the module.
+   */
+  @TestHTTPResource("/loan-approval")
+  URI module;
+
+  private StartFormApi startForm;
 
   /**
    * Starts the simulator before the application, and points the cockpit adapter at it.
@@ -81,27 +96,22 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @BeforeEach
   public void createClient() {
 
-    startForm = new RequestSpecBuilder()
-        .setBasePath("/loan-approval/api/loan-requests")
-        .build();
+    startForm = QuarkusRestClientBuilder
+        .newBuilder()
+        .baseUri(module)
+        .build(StartFormApi.class);
 
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void theStartFormStartsALoanApprovalAndTheCaseIsInTheCaseList() {
 
     final var cockpit = CockpitSimulator.start();
 
     // The button "OK" of the start form.
-    final var started = given(startForm)
-        .contentType(ContentType.JSON)
-        .body(Map.of("applicant", "Jane Doe", "amount", 5000))
-        .post();
-    assertThat(started.statusCode()).isEqualTo(201);
-    final var loanRequestId = started
-        .jsonPath()
-        .getString("loanRequestId");
+    final var loanRequestId = startForm
+        .requestLoan(new LoanRequest("Jane Doe", 5000))
+        .getLoanRequestId();
     assertThat(loanRequestId).isNotBlank();
 
     // The module started the process, and the process waits in the user task.
@@ -135,9 +145,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     final var before = loanApprovals.count();
 
-    assertThat(post(Map.of("applicant", " ", "amount", 5000))).isEqualTo(400);
-    assertThat(post(Map.of("applicant", "Jane Doe", "amount", 0))).isEqualTo(400);
-    assertThat(post(Map.of("applicant", "Jane Doe"))).isEqualTo(400);
+    assertThat(refusalOf(new LoanRequest(" ", 5000))).isEqualTo(400);
+    assertThat(refusalOf(new LoanRequest("Jane Doe", 0))).isEqualTo(400);
+    assertThat(refusalOf(new LoanRequest("Jane Doe", null))).isEqualTo(400);
 
     assertThat(loanApprovals.count()).isEqualTo(before);
 
@@ -229,14 +239,25 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   }
 
-  private int post(
-      final Map<String, Object> body) {
+  /**
+   * Sends a start form which the module has to refuse. The generated client throws for every
+   * answer which is not a success.
+   *
+   * @param loanRequest What the user typed.
+   * @return The status of the refusal.
+   */
+  private int refusalOf(
+      final LoanRequest loanRequest) {
 
-    return given(startForm)
-        .contentType(ContentType.JSON)
-        .body(body)
-        .post()
-        .statusCode();
+    try {
+      startForm.requestLoan(loanRequest);
+    } catch (WebApplicationException refused) {
+      return refused
+          .getResponse()
+          .getStatus();
+    }
+    throw new AssertionError("The module started a loan approval for "
+        + loanRequest);
 
   }
 

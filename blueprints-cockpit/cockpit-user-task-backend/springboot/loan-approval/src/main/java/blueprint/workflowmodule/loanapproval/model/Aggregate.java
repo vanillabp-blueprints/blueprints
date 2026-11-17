@@ -17,8 +17,9 @@ import lombok.NoArgsConstructor;
  *
  * <p>
  * Each user task has two attributes here. One is the id of the open task. A form arrives with
- * that id, and it is how the application finds the loan request the form is about. The other
- * is what the user entered in the form. It is written once, when the form completes the task.
+ * the id of the loan request and the id of its task, and the module accepts it only if the two
+ * match. So a form never completes the task of another loan request. The other attribute is
+ * what the user entered in the form. It is written once, when the form completes the task.
  * Nothing is stored while the user is still typing.
  * </p>
  *

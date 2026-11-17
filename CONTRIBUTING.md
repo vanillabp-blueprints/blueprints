@@ -208,6 +208,10 @@ calls are the one exception to the list above:
 
 - The start and every view stay GET requests, and the handler logs their URLs.
 - A form saves a draft with PUT and completes its task with POST. Both send JSON.
+- A form endpoint names the business id of the case and the task id, for example
+  `/api/loan-approval/{loanRequestId}/assess-risk/{taskId}`. The module checks that they belong
+  together, and answers 404 if they do not. So a form never completes the task of another case
+  by mistake.
 - If the blueprint has no form of its own, its `README.md` shows the `curl` commands which stand
   in for one.
 
@@ -400,6 +404,13 @@ resource class only carries its bean annotation. The paths in the file are compl
 server is `http://localhost:8080`. So the file names the URL a person types into the browser
 (Rule 3), and the interface needs no path of its own.
 
+A test which calls the module's own API generates a client from the same file, in the test scope:
+an execution in the phase `generate-test-sources` writes it to `target/generated-test-sources`.
+On Spring Boot it uses the library `spring-http-interface`, on Quarkus `jaxrs-spec`, whose
+interface the REST client of Quarkus implements. The test then sends and reads the classes of the
+file, and writes no path and no field as a string. A refused call throws, and the test asserts on
+the status of that exception.
+
 The settings are in the POM of the module which generates. Where several modules generate, the
 blueprint POM shares them in `pluginManagement`. The version is the property
 `openapi-generator.version` of the blueprint POM. There is no shared parent (Rule 1).
@@ -416,8 +427,8 @@ A frontend of a cockpit blueprint generates its TypeScript client from the same 
 npm package `@hey-api/openapi-ts`. Its names follow the file like the Java names do: the tag
 `user-tasks` becomes the class `UserTasksApi`, and each schema a type of the same name. A method
 takes one object with all its parameters, and the body comes under the name of its schema:
-`loanApproval.completeAssessRisk({ userTaskId, assessRiskInput: { riskAssessment } })`. It
-returns the data and throws when the answer is not a success. An error interceptor in
+`loanApproval.completeAssessRisk({ loanRequestId, taskId, assessRiskInput: { riskAssessment } })`.
+It returns the data and throws when the answer is not a success. An error interceptor in
 `src/shared/api.ts` turns such an answer into a `ResponseError`, which keeps its status. Nobody
 writes a `fetch` call to the module API by hand. The generator is a Node program with no install
 scripts, so the build of a frontend needs Node and nothing else: no Java, no Maven, and no

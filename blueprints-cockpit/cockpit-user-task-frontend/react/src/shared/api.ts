@@ -5,7 +5,7 @@
 // side: the tag `user-tasks` becomes the class UserTasksApi, each operation one of its methods,
 // and each schema a type of the same name. A method takes one object with all its parameters,
 // and the body comes under the name of its schema:
-// loanApproval.completeAssessRisk({ userTaskId, assessRiskInput: { riskAssessment } }).
+// loanApproval.completeAssessRisk({ loanRequestId, taskId, assessRiskInput: { riskAssessment } }).
 //
 // Every call goes to /wm/loan-approval/. That is the server of the OpenAPI file, and the generator
 // makes it the base URL of the client. The cockpit forwards the path to the workflow module. So

@@ -179,19 +179,19 @@ sends.
 
 ## How it works
 
-|                                          File                                          |                                                        Role                                                         |
-|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract between the page and the module: two operations, below the server `/wm/loan-approval`                  |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: one user task, and the event subprocess "Withdraw loan request" with the message `WithdrawLoanRequest` |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the same for Camunda 8                                                                                              |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest                            |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of the user task, records a withdrawal, and says what the cockpit shows about a case                   |
-| `.../loanapproval/CasePageController.java`                                             | the endpoints of the case page: GET reads the case, POST withdraws the loan request                                 |
-| `.../loanapproval/Service.java`                                                        | writes the status, and tells `Workflow` to complete the task or to correlate the message                            |
-| `.../loanapproval/Workflow.java`                                                       | `startWorkflow`, `completeUserTask` and `correlateMessage`, the only place `ProcessService` is used                 |
-| `.../loanapproval/model/Aggregate.java`                                                | the loan request, the id of the open user task and the status                                                       |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | withdraws a loan request and approves another, and checks what the cockpit was told                                 |
-| `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test, and reads cases and user tasks from it                    |
+|                                          File                                          |                                                                 Role                                                                  |
+|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract between the page and the module: two operations, below the server `/wm/loan-approval`                                    |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: one user task, and the event subprocess "Withdraw loan request" with the message `WithdrawLoanRequest`                   |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the same for Camunda 8                                                                                                                |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest                                              |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of the user task, records a withdrawal, and says what the cockpit shows about a case                                     |
+| `.../loanapproval/CasePageController.java`                                             | the endpoints of the case page: GET reads the case, POST withdraws the loan request                                                   |
+| `.../loanapproval/Service.java`                                                        | writes the status, and tells `Workflow` to complete the task or to correlate the message                                              |
+| `.../loanapproval/Workflow.java`                                                       | `startWorkflow`, `completeUserTask` and `correlateMessage`, the only place `ProcessService` is used                                   |
+| `.../loanapproval/model/Aggregate.java`                                                | the loan request, the id of the open user task and the status                                                                         |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | withdraws a loan request and approves another, and checks what the cockpit was told, through a client generated from the OpenAPI file |
+| `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test, and reads cases and user tasks from it                                      |
 
 The order of events: the BPMS starts the workflow, and the cockpit adapter reports the case with
 the details of `WorkflowTaskHandler#workflowDetails`. The BPMS creates "Review loan request" and

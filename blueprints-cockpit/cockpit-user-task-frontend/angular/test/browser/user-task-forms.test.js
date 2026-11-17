@@ -18,8 +18,8 @@ const projectDir = resolve(import.meta.dirname, '..', '..');
 const microFrontends = join(projectDir, 'dist', 'micro-frontends');
 const hostBundle = join(projectDir, 'build', 'test-host.js');
 
-const assessRisk = { id: 'task-1', title: 'Assess risk', bpmnProcessId: 'loan_approval', taskDefinition: 'assessRisk' };
-const checkDocuments = { id: 'task-2', title: 'Check documents', bpmnProcessId: 'loan_approval', taskDefinition: 'checkDocuments' };
+const assessRisk = { id: 'task-1', businessId: 'LR-4711', title: 'Assess risk', bpmnProcessId: 'loan_approval', taskDefinition: 'assessRisk' };
+const checkDocuments = { id: 'task-2', businessId: 'LR-4711', title: 'Check documents', bpmnProcessId: 'loan_approval', taskDefinition: 'checkDocuments' };
 
 const AREAS = { body: 'body', information: 'information', actions: 'actions' };
 
@@ -50,17 +50,18 @@ after(async () => {
 });
 
 /**
- * Answers the module API in the browser. GET returns the data of the form, or `status` if one
- * is given. POST answers `completeStatus`, 204 if none is given, and keeps the body of each 204.
+ * Answers the module API in the browser. Each path names the loan request, the form and the user
+ * task. GET returns the data of the form, or `status` if one is given. POST answers
+ * `completeStatus`, 204 if none is given, and keeps the body of each 204.
  */
 async function mockApi(page, { forms = {}, status, completeStatus = 204 } = {}) {
   const completed = [];
-  await page.route('**/wm/loan-approval/api/user-tasks/*/*', async (route) => {
+  await page.route('**/wm/loan-approval/api/loan-approval/*/*/*', async (route) => {
     const request = route.request();
-    const [, userTaskId, form] = new URL(request.url()).pathname.match(/\/user-tasks\/([^/]+)\/([^/]+)$/);
+    const [, loanRequestId, form, taskId] = new URL(request.url()).pathname.match(/\/api\/loan-approval\/([^/]+)\/([^/]+)\/([^/]+)$/);
     if (status) return route.fulfill({ status });
     if (request.method() === 'POST') {
-      if (completeStatus === 204) completed.push({ userTaskId, form, body: request.postDataJSON() });
+      if (completeStatus === 204) completed.push({ loanRequestId, taskId, form, body: request.postDataJSON() });
       return route.fulfill({ status: completeStatus });
     }
     return route.fulfill({ json: forms[form] });
@@ -173,7 +174,7 @@ for (const cockpit of COCKPITS) {
       await complete.click({ timeout: 5000 });
       await page.getByTestId('assess-risk-done').waitFor();
 
-      assert.deepEqual(completed, [{ userTaskId: 'task-1', form: 'assess-risk', body: { riskAssessment: 'low, a steady income' } }]);
+      assert.deepEqual(completed, [{ loanRequestId: 'LR-4711', taskId: 'task-1', form: 'assess-risk', body: { riskAssessment: 'low, a steady income' } }]);
       assert.equal(await page.getByTestId('assess-risk-input').isDisabled(), true);
       assert.equal(await complete.isDisabled(), true);
       assert.deepEqual(await page.evaluate(() => window.bcTest.notifications), [{ level: 'success', text: 'Completed', sticky: false }]);
@@ -200,7 +201,7 @@ for (const cockpit of COCKPITS) {
       await page.getByTestId('check-documents-complete').click();
       await page.getByTestId('check-documents-done').waitFor();
 
-      assert.deepEqual(completed, [{ userTaskId: 'task-2', form: 'check-documents', body: { documentsNote: 'all documents are there' } }]);
+      assert.deepEqual(completed, [{ loanRequestId: 'LR-4711', taskId: 'task-2', form: 'check-documents', body: { documentsNote: 'all documents are there' } }]);
       const loaded = await loadedFiles(page);
       assert.ok(!loaded.some((path) => path.includes('/AssessRiskForm-')), loaded.join(', '));
       assert.deepEqual(pageErrors, []);
@@ -226,7 +227,7 @@ for (const cockpit of COCKPITS) {
       assert.equal(await input.inputValue(), 'low, a steady income');
       await complete.click({ timeout: 5000 });
       await page.getByTestId('assess-risk-done').waitFor();
-      assert.deepEqual(completed, [{ userTaskId: 'task-1', form: 'assess-risk', body: { riskAssessment: 'low, a steady income' } }]);
+      assert.deepEqual(completed, [{ loanRequestId: 'LR-4711', taskId: 'task-1', form: 'assess-risk', body: { riskAssessment: 'low, a steady income' } }]);
       assert.deepEqual(pageErrors, []);
       await page.close();
     });

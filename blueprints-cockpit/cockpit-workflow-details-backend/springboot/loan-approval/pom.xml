@@ -145,6 +145,30 @@
               <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
             </configuration>
           </execution>
+          <!--
+            The client of the case page, for the integration test only. It comes from
+            the same OpenAPI file, as a Spring HTTP interface which a RestClient turns into a
+            client. So the test calls the endpoints the way the user interface does, and writes
+            no path and no field by hand.
+          -->
+          <execution>
+            <id>case-page-test-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <output>${project.build.directory}/generated-test-sources/openapi</output>
+              <addCompileSourceRoot>false</addCompileSourceRoot>
+              <addTestCompileSourceRoot>true</addTestCompileSourceRoot>
+              <apiPackage>blueprint.workflowmodule.loanapproval.client</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.client.model</modelPackage>
+              <!-- The same name as the class of the controller, see above. -->
+              <modelNameMappings>Case=Case</modelNameMappings>
+              <library>spring-http-interface</library>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <!--

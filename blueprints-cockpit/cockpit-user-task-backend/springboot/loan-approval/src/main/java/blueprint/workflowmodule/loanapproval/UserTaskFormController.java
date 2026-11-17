@@ -1,7 +1,5 @@
 package blueprint.workflowmodule.loanapproval;
 
-import static blueprint.workflowmodule.loanapproval.config.LoanApprovalAutoConfiguration.WORKFLOW_MODULE_ID;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
@@ -28,26 +26,27 @@ import jakarta.servlet.http.HttpServletRequest;
  *
  * <p>
  * A form runs in the browser, inside the Business Cockpit. It calls
- * {@code /wm/loan-approval/api/user-tasks/...}, a path of the cockpit, which is the server the
+ * {@code /wm/loan-approval/api/loan-approval/...}, a path of the cockpit, which is the server the
  * OpenAPI names. The cockpit forwards the request to the {@code workflow-module-uri} of this
  * module and puts the path of that address in place of {@code /wm/loan-approval}. The address
  * ends with {@code /loan-approval}, so the request arrives here as
- * {@code /loan-approval/api/user-tasks/...}.
+ * {@code /loan-approval/api/loan-approval/...}.
  * </p>
  *
  * <p>
  * The paths, the parameters and the records of the requests and answers come from
  * {@link UserTasksApi}, the interface the build generates from the same OpenAPI file. This class
  * only implements it. The OpenAPI names its paths below the server {@code /wm/loan-approval}, so
- * the interface maps {@code /api/user-tasks/...}. The {@code @RequestMapping} of this class puts
+ * the interface maps {@code /api/loan-approval/...}. The {@code @RequestMapping} of this class puts
  * {@code /loan-approval} in front, which is where the request arrives.
  * </p>
  *
  * <p>
  * Each form has two endpoints. GET reads what the form shows. POST takes what the user entered
- * and completes the user task. A task which is not open answers 404: the id is unknown, or the
- * task was completed already. The form knows nothing but the id of the task, so the exception
- * names the workflow module where it would name the loan request.
+ * and completes the user task. Both name the loan request and the id of the user task. A task
+ * which is not open on that loan request answers 404: the id is unknown, the task belongs to
+ * another loan request, or it was completed already. Checking the loan request as well keeps a
+ * form from completing the task of another case by mistake.
  * </p>
  *
  * <p>
@@ -82,37 +81,41 @@ public class UserTaskFormController implements UserTasksApi {
   /**
    * What the form "Assess risk" shows ({@code getAssessRiskForm}).
    *
-   * @param userTaskId The id of the user task.
+   * @param loanRequestId The id of the loan request.
+   * @param taskId        The id of the user task.
    * @return The loan request.
    */
   @Override
   public AssessRiskForm getAssessRiskForm(
-      final String userTaskId) {
+      final String loanRequestId,
+      final String taskId) {
 
     return loanApproval
-        .riskAssessment(userTaskId)
+        .riskAssessment(loanRequestId, taskId)
         .map(loanRequest -> new AssessRiskForm(
             loanRequest.getLoanRequestId(), loanRequest.getAmount(), loanRequest.getRiskAssessment()))
-        .orElseThrow(() -> notOpen(userTaskId));
+        .orElseThrow(() -> notOpen(loanRequestId, taskId));
 
   }
 
   /**
    * Completes the user task "Assess risk" ({@code completeAssessRisk}).
    *
-   * @param userTaskId The id of the user task.
-   * @param input      What the user entered.
+   * @param loanRequestId The id of the loan request.
+   * @param taskId        The id of the user task.
+   * @param input         What the user entered.
    */
   @Override
   public void completeAssessRisk(
-      final String userTaskId,
+      final String loanRequestId,
+      final String taskId,
       final AssessRiskInput input) {
 
     final var riskAssessment = required(input.riskAssessment(), "riskAssessment");
-    refuseIfSomebodyElseTookOver(userTaskId);
+    refuseIfSomebodyElseTookOver(loanRequestId, taskId);
 
-    if (!loanApproval.assessRisk(userTaskId, riskAssessment)) {
-      throw notOpen(userTaskId);
+    if (!loanApproval.assessRisk(loanRequestId, taskId, riskAssessment)) {
+      throw notOpen(loanRequestId, taskId);
     }
 
   }
@@ -120,37 +123,41 @@ public class UserTaskFormController implements UserTasksApi {
   /**
    * What the form "Check documents" shows ({@code getCheckDocumentsForm}).
    *
-   * @param userTaskId The id of the user task.
+   * @param loanRequestId The id of the loan request.
+   * @param taskId        The id of the user task.
    * @return The loan request, with the risk assessment of the first user task.
    */
   @Override
   public CheckDocumentsForm getCheckDocumentsForm(
-      final String userTaskId) {
+      final String loanRequestId,
+      final String taskId) {
 
     return loanApproval
-        .documentsCheck(userTaskId)
+        .documentsCheck(loanRequestId, taskId)
         .map(loanRequest -> new CheckDocumentsForm(
             loanRequest.getLoanRequestId(), loanRequest.getRiskAssessment(), loanRequest.getDocumentsNote()))
-        .orElseThrow(() -> notOpen(userTaskId));
+        .orElseThrow(() -> notOpen(loanRequestId, taskId));
 
   }
 
   /**
    * Completes the user task "Check documents" ({@code completeCheckDocuments}).
    *
-   * @param userTaskId The id of the user task.
-   * @param input      What the user entered.
+   * @param loanRequestId The id of the loan request.
+   * @param taskId        The id of the user task.
+   * @param input         What the user entered.
    */
   @Override
   public void completeCheckDocuments(
-      final String userTaskId,
+      final String loanRequestId,
+      final String taskId,
       final CheckDocumentsInput input) {
 
     final var documentsNote = required(input.documentsNote(), "documentsNote");
-    refuseIfSomebodyElseTookOver(userTaskId);
+    refuseIfSomebodyElseTookOver(loanRequestId, taskId);
 
-    if (!loanApproval.checkDocuments(userTaskId, documentsNote)) {
-      throw notOpen(userTaskId);
+    if (!loanApproval.checkDocuments(loanRequestId, taskId, documentsNote)) {
+      throw notOpen(loanRequestId, taskId);
     }
 
   }
@@ -169,18 +176,20 @@ public class UserTaskFormController implements UserTasksApi {
   }
 
   private void refuseIfSomebodyElseTookOver(
-      final String userTaskId) {
+      final String loanRequestId,
+      final String taskId) {
 
-    if (cockpit.saysSomebodyElseTookOver(userTaskId, request.getHeader(HttpHeaders.COOKIE))) {
-      throw new BcTaskClaimedByAnotherUserException(WORKFLOW_MODULE_ID, userTaskId);
+    if (cockpit.saysSomebodyElseTookOver(taskId, request.getHeader(HttpHeaders.COOKIE))) {
+      throw new BcTaskClaimedByAnotherUserException(loanRequestId, taskId);
     }
 
   }
 
   private static BcTaskNotOpenException notOpen(
-      final String userTaskId) {
+      final String loanRequestId,
+      final String taskId) {
 
-    return new BcTaskNotOpenException(WORKFLOW_MODULE_ID, userTaskId);
+    return new BcTaskNotOpenException(loanRequestId, taskId);
 
   }
 

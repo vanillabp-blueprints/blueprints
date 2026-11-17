@@ -24,12 +24,15 @@ export interface InputForm<Form> {
   testId: string;
   /** The label of the input field. */
   label: (texts: Texts) => string;
-  /** Loads the data of the form from the module API. */
-  load: (userTaskId: string) => Promise<Form>;
+  /**
+   * Loads the data of the form from the module API. A call names the loan request, which is the
+   * business id of the user task, and the user task. The module checks that they belong together.
+   */
+  load: (loanRequestId: string, taskId: string) => Promise<Form>;
   /** The value the input field starts with. */
   initialInput: (form: Form) => string;
   /** Completes the user task with the value of the input field. */
-  complete: (userTaskId: string, input: string) => Promise<void>;
+  complete: (loanRequestId: string, taskId: string, input: string) => Promise<void>;
   /** What the area 'information' shows. */
   Information: ComponentType<{ form: Form; texts: Texts; language: string }>;
 }
@@ -49,12 +52,12 @@ const PROBLEMS: Record<number, Problem> = { 404: 'notFound', 409: 'claimed' };
 const problemOf = (error: unknown): Problem => (error instanceof ResponseError && PROBLEMS[error.response.status]) || 'failed';
 
 /** The areas 'body' and 'information' both need the data. It is loaded once for both. */
-function loadOnce<Form>(definition: InputForm<Form>, cache: Map<string, Promise<Form>>, userTaskId: string) {
-  let loading = cache.get(userTaskId);
+function loadOnce<Form>(definition: InputForm<Form>, cache: Map<string, Promise<Form>>, loanRequestId: string, taskId: string) {
+  let loading = cache.get(taskId);
   if (!loading) {
-    loading = definition.load(userTaskId);
-    loading.catch(() => cache.delete(userTaskId));
-    cache.set(userTaskId, loading);
+    loading = definition.load(loanRequestId, taskId);
+    loading.catch(() => cache.delete(taskId));
+    cache.set(taskId, loading);
   }
   return loading;
 }
@@ -63,17 +66,19 @@ export function defineInputForm<Form>(elements: { all: string; body: string; inf
   const { testId, Information } = definition;
   const cache = new Map<string, Promise<Form>>();
 
-  function useForm(userTaskId: string) {
+  function useForm(userTask: BcUserTask) {
+    const loanRequestId: string = userTask.businessId;
+    const taskId = userTask.id!;
     const [form, setForm] = useState<Form>();
     const [problem, setProblem] = useState<Problem>();
     useEffect(() => {
       let current = true;
-      loadOnce(definition, cache, userTaskId).then(
+      loadOnce(definition, cache, loanRequestId, taskId).then(
         (loaded) => current && setForm(loaded),
         (error) => current && setProblem(problemOf(error)),
       );
       return () => { current = false; };
-    }, [userTaskId]);
+    }, [loanRequestId, taskId]);
     return { form, problem };
   }
 
@@ -86,7 +91,7 @@ export function defineInputForm<Form>(elements: { all: string; body: string; inf
       setState('running');
       setProblem(undefined);
       try {
-        await definition.complete(userTask!.id!, input.trim());
+        await definition.complete(userTask!.businessId, userTask!.id!, input.trim());
         cache.delete(userTask!.id!);
         setState('completed');
         // A cockpit which cannot show notifications refuses; the form says it anyway.
@@ -128,7 +133,7 @@ export function defineInputForm<Form>(elements: { all: string; body: string; inf
   /** The area 'all': everything in one web component, so no messages are needed. */
   function All(props: BcElementProps) {
     const texts = textsFor(props.language);
-    const { form, problem } = useForm(props.userTask!.id!);
+    const { form, problem } = useForm(props.userTask!);
     const completion = useCompletion(props);
     const [input, setInput] = useState('');
     useEffect(() => { if (form) setInput(definition.initialInput(form)); }, [form]);
@@ -151,7 +156,7 @@ export function defineInputForm<Form>(elements: { all: string; body: string; inf
   function Body(props: BcElementProps) {
     const userTask = props.userTask as BcUserTask;
     const texts = textsFor(props.language);
-    const { form, problem } = useForm(userTask.id!);
+    const { form, problem } = useForm(userTask);
     const [input, setInput] = useState('');
     const [completed, setCompleted] = useState(false);
     const inputNow = useRef('');
@@ -182,7 +187,7 @@ export function defineInputForm<Form>(elements: { all: string; body: string; inf
   /** The area 'information': the data to read. */
   function InformationArea(props: BcElementProps) {
     const texts = textsFor(props.language);
-    const { form } = useForm(props.userTask!.id!);
+    const { form } = useForm(props.userTask!);
     return (
       <>
         <style>{STYLE}</style>
