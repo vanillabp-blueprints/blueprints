@@ -15,14 +15,21 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import org.yaml.snakeyaml.Yaml;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.loanapproval.client.UserTasksApi;
+import blueprint.workflowmodule.loanapproval.client.model.AssessRiskForm;
+import blueprint.workflowmodule.loanapproval.client.model.AssessRiskInput;
+import blueprint.workflowmodule.loanapproval.client.model.CheckDocumentsForm;
+import blueprint.workflowmodule.loanapproval.client.model.CheckDocumentsInput;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
 /**
@@ -35,6 +42,11 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * blueprint. The simulator says what the cockpit was told: which user tasks it shows, and what
  * the column of the task list reads. No user interface is involved. The endpoints are called
  * the way a form calls them, only without the proxy of the cockpit in between.
+ * </p>
+ *
+ * <p>
+ * The client of the forms is generated from the OpenAPI file of the endpoints, like the client
+ * of the forms themselves. So the test writes no path and no field of a form by hand.
  * </p>
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -53,7 +65,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @Value("${local.server.port}")
   private int port;
 
-  private RestClient forms;
+  /** The forms, sent without a login, like a person who follows a URL of the log. */
+  private UserTasksApi forms;
 
   /**
    * Starts the simulator before the application, and points the cockpit adapter at it.
@@ -72,9 +85,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @BeforeEach
   public void createClient() {
 
-    forms = RestClient.create("http://localhost:"
-        + port
-        + "/loan-approval/api/loan-approval");
+    forms = formsOf(null);
 
   }
 
@@ -99,12 +110,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(details(assessRisk)).doesNotContainKey(WorkflowTaskHandler.RISK_ASSESSMENT);
 
     // The form reads the loan request and completes the task.
-    assertThat(read(loanRequestId, assessRiskTaskId, "assess-risk"))
-        .containsEntry("loanRequestId", loanRequestId)
-        .containsEntry("amount", 5000)
-        .doesNotContainKey("riskAssessment");
-    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
-        .isEqualTo(204);
+    assertThat(forms.getAssessRiskForm(loanRequestId, assessRiskTaskId))
+        .isEqualTo(new AssessRiskForm(loanRequestId, 5000, null));
+    forms.completeAssessRisk(loanRequestId, assessRiskTaskId, new AssessRiskInput("acceptable"));
 
     // The second user task is open. Its report carries the risk assessment for the column of
     // the task list.
@@ -120,12 +128,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(details(checkDocuments))
         .containsEntry(WorkflowTaskHandler.RISK_ASSESSMENT, "acceptable");
 
-    assertThat(read(loanRequestId, checkDocumentsTaskId, "check-documents"))
-        .containsEntry("loanRequestId", loanRequestId)
-        .containsEntry("riskAssessment", "acceptable")
-        .doesNotContainKey("documentsNote");
-    assertThat(send(loanRequestId, checkDocumentsTaskId, "check-documents", Map.of("documentsNote", "complete")))
-        .isEqualTo(204);
+    assertThat(forms.getCheckDocumentsForm(loanRequestId, checkDocumentsTaskId))
+        .isEqualTo(new CheckDocumentsForm(loanRequestId, "acceptable", null));
+    forms.completeCheckDocuments(loanRequestId, checkDocumentsTaskId, new CheckDocumentsInput("complete"));
 
     // The workflow ended, and the cockpit took both tasks off the list.
     final var loanRequest = awaitAggregate(
@@ -141,35 +146,53 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   @Test
-  public void aFormOfATaskWhichIsNotOpenGets404() {
+  public void aFormOfATaskWhichIsNotOpenOnItsLoanRequestGets404() {
 
     final var loanRequestId = UUID.randomUUID().toString();
+    final var otherLoanRequestId = UUID.randomUUID().toString();
 
     loanApproval.request(loanRequestId, 5000);
+    loanApproval.request(otherLoanRequestId, 7000);
 
     final var assessRiskTaskId = awaitAggregate(
         loanApprovals,
         loanRequestId,
         aggregate -> aggregate.getAssessRiskTaskId() != null)
         .getAssessRiskTaskId();
+    // The other loan request waits for its own risk assessment.
+    awaitAggregate(
+        loanApprovals,
+        otherLoanRequestId,
+        aggregate -> aggregate.getAssessRiskTaskId() != null);
 
     // An unknown id, the id of a task of another loan request, and the id of a task which is
     // not of this form.
-    assertThat(status(loanRequestId, UUID.randomUUID().toString(), "assess-risk")).isEqualTo(404);
-    assertThat(status(UUID.randomUUID().toString(), assessRiskTaskId, "assess-risk")).isEqualTo(404);
-    assertThat(
-        send(UUID.randomUUID().toString(), assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
+    assertThat(refusalOf(() -> forms.getAssessRiskForm(loanRequestId, UUID.randomUUID().toString())))
         .isEqualTo(404);
-    assertThat(status(loanRequestId, assessRiskTaskId, "check-documents")).isEqualTo(404);
-    assertThat(send(loanRequestId, assessRiskTaskId, "check-documents", Map.of("documentsNote", "complete")))
+    assertThat(refusalOf(() -> forms.getAssessRiskForm(otherLoanRequestId, assessRiskTaskId)))
+        .isEqualTo(404);
+    assertThat(refusalOf(() -> forms.completeAssessRisk(
+        otherLoanRequestId,
+        assessRiskTaskId,
+        new AssessRiskInput("acceptable"))))
+        .isEqualTo(404);
+    assertThat(refusalOf(() -> forms.getCheckDocumentsForm(loanRequestId, assessRiskTaskId)))
+        .isEqualTo(404);
+    assertThat(refusalOf(() -> forms.completeCheckDocuments(
+        loanRequestId,
+        assessRiskTaskId,
+        new CheckDocumentsInput("complete"))))
         .isEqualTo(404);
 
     // Completed once, the task is gone. The same form sent twice does not complete anything.
-    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
-        .isEqualTo(204);
-    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
+    forms.completeAssessRisk(loanRequestId, assessRiskTaskId, new AssessRiskInput("acceptable"));
+    assertThat(refusalOf(() -> forms.completeAssessRisk(
+        loanRequestId,
+        assessRiskTaskId,
+        new AssessRiskInput("acceptable"))))
         .isEqualTo(404);
-    assertThat(status(loanRequestId, assessRiskTaskId, "assess-risk")).isEqualTo(404);
+    assertThat(refusalOf(() -> forms.getAssessRiskForm(loanRequestId, assessRiskTaskId)))
+        .isEqualTo(404);
 
   }
 
@@ -188,19 +211,25 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // Nobody took the task over yet, so anybody's form may complete it. Here it is refused for
     // the empty input only, which leaves the task open for the rest of the test.
-    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", " "), "anna"))
+    final var formsOfAnna = formsOf("anna");
+    assertThat(refusalOf(() -> formsOfAnna.completeAssessRisk(
+        loanRequestId,
+        assessRiskTaskId,
+        new AssessRiskInput(" "))))
         .isEqualTo(400);
 
     // 'bob' takes the task over in the cockpit. The form of 'anna' is still on her screen.
     CockpitGuiApi.start().assign(assessRiskTaskId, "bob");
-    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable"), "anna"))
+    assertThat(refusalOf(() -> formsOfAnna.completeAssessRisk(
+        loanRequestId,
+        assessRiskTaskId,
+        new AssessRiskInput("acceptable"))))
         .isEqualTo(409);
 
     // Reading takes nothing away from 'bob', and the task is still open for him.
-    assertThat(status(loanRequestId, assessRiskTaskId, "assess-risk")).isEqualTo(200);
+    assertThat(formsOfAnna.getAssessRiskForm(loanRequestId, assessRiskTaskId).riskAssessment()).isNull();
     assertThat(loanApprovals.findById(loanRequestId).orElseThrow().getRiskAssessment()).isNull();
-    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable"), "bob"))
-        .isEqualTo(204);
+    formsOf("bob").completeAssessRisk(loanRequestId, assessRiskTaskId, new AssessRiskInput("acceptable"));
 
   }
 
@@ -217,10 +246,11 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         aggregate -> aggregate.getAssessRiskTaskId() != null)
         .getAssessRiskTaskId();
 
-    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", " ")))
+    assertThat(refusalOf(() -> forms.completeAssessRisk(loanRequestId, assessRiskTaskId, new AssessRiskInput(" "))))
         .isEqualTo(400);
-    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of())).isEqualTo(400);
-    assertThat(status(loanRequestId, assessRiskTaskId, "assess-risk")).isEqualTo(200);
+    assertThat(refusalOf(() -> forms.completeAssessRisk(loanRequestId, assessRiskTaskId, new AssessRiskInput(null))))
+        .isEqualTo(400);
+    assertThat(forms.getAssessRiskForm(loanRequestId, assessRiskTaskId).riskAssessment()).isNull();
 
   }
 
@@ -282,67 +312,53 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   }
 
-  @SuppressWarnings("unchecked")
-  private Map<String, Object> read(
-      final String loanRequestId,
-      final String taskId,
-      final String form) {
-
-    return forms
-        .get()
-        .uri("/{loanRequestId}/{form}/{taskId}", loanRequestId, form, taskId)
-        .retrieve()
-        .body(Map.class);
-
-  }
-
-  private int status(
-      final String loanRequestId,
-      final String taskId,
-      final String form) {
-
-    return forms
-        .get()
-        .uri("/{loanRequestId}/{form}/{taskId}", loanRequestId, form, taskId)
-        .exchange((
-            request,
-            response) -> response.getStatusCode().value());
-
-  }
-
-  /** Sends a form without a login, like a person who follows a URL of the log. */
-  private int send(
-      final String loanRequestId,
-      final String taskId,
-      final String form,
-      final Map<String, Object> input) {
-
-    return send(loanRequestId, taskId, form, input, null);
-
-  }
-
-  /** Sends a form as a user of the cockpit, with the cookie the browser sends. */
-  private int send(
-      final String loanRequestId,
-      final String taskId,
-      final String form,
-      final Map<String, Object> input,
+  /**
+   * The forms as a user of the cockpit sends them: with the cookie the browser sends. The OpenAPI
+   * file does not name the cookie, because the browser adds it on its own, so the client sends it
+   * with every request.
+   *
+   * @param user The user logged in to the cockpit, or null for nobody.
+   * @return The client of the forms.
+   */
+  private UserTasksApi formsOf(
       final String user) {
 
-    return forms
-        .post()
-        .uri("/{loanRequestId}/{form}/{taskId}", loanRequestId, form, taskId)
-        .contentType(MediaType.APPLICATION_JSON)
-        .headers(headers -> {
-          if (user != null) {
-            headers.add(HttpHeaders.COOKIE, "bc="
-                + user);
-          }
-        })
-        .body(input)
-        .exchange((
-            request,
-            response) -> response.getStatusCode().value());
+    // The paths of the OpenAPI file are relative to its server, which the cockpit forwards to
+    // the path of the module.
+    final var restClient = RestClient
+        .builder()
+        .baseUrl("http://localhost:"
+            + port
+            + "/loan-approval");
+    if (user != null) {
+      restClient.defaultHeader(HttpHeaders.COOKIE, "bc="
+          + user);
+    }
+    return HttpServiceProxyFactory
+        .builderFor(RestClientAdapter.create(restClient.build()))
+        .build()
+        .createClient(UserTasksApi.class);
+
+  }
+
+  /**
+   * Calls an endpoint which the module has to refuse. The generated client throws for every
+   * answer which is not a success.
+   *
+   * @param call The call of the generated client.
+   * @return The status of the refusal.
+   */
+  private static int refusalOf(
+      final Runnable call) {
+
+    try {
+      call.run();
+    } catch (HttpStatusCodeException refused) {
+      return refused
+          .getStatusCode()
+          .value();
+    }
+    throw new AssertionError("The module did not refuse the call");
 
   }
 

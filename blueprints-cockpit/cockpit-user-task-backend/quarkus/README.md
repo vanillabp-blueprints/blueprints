@@ -146,28 +146,28 @@ of its own, because the aggregate holds results, not drafts.
 
 Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user-task-quarkus):
 
-|                File                |                                                                  What is different                                                                   |
-|------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `openapi/loan-approval.yaml`       | new: the four endpoints of the forms                                                                                                                 |
-| `loan-approval/loan-approval.yaml` | the keys the cockpit needs, below `vanillabp.workflow-modules.loan-approval.cockpit`                                                                 |
-| `loan_approval.bpmn`               | two user tasks in a row, and no service task and no boundary event                                                                                   |
-| `WorkflowTaskHandler.java`         | a `@WorkflowTask` method per user task, and the `@UserTaskDetailsProvider` method                                                                    |
-| `UserTaskFormController.java`      | new: the endpoints of the forms, which implement the interface generated from the OpenAPI; 409 for a task somebody else took over                    |
-| `Cockpit.java`                     | new: asks the cockpit whether somebody else took over a user task, through a REST client                                                             |
-| `LoanApprovalProperties.java`      | the key `loan-approval.cockpit.address` and the id of the module, instead of the rating scale                                                        |
-| `ApiController.java`               | only starts and shows a loan approval, below `/loan-approval/api/loan-requests`                                                                      |
-| `Workflow.java`                    | `documentsChecked` completes the second user task; no `loanRequestWithdrawn` and no BPMN error                                                       |
-| `openapi/loan-requests.yaml`       | new: the API of `ApiController`, from which the build generates `LoanRequestsApi`                                                                    |
-| `Service.java`                     | per user task: keep the id, give a form its data, complete the task with what the user entered                                                       |
-| `Aggregate.java`                   | per user task the id of the open task and what the user entered                                                                                      |
-| `LoanApprovalIT.java`              | reports to the dev shell simulator and completes both tasks through their endpoints                                                                  |
-| `CockpitSimulator.java`            | new: starts the dev shell simulator for the test                                                                                                     |
-| `CockpitGuiApi.java`               | new: answers for the cockpit who is logged in and whom a task is assigned to, for the test                                                           |
-| `loan-approval/pom.xml`            | the cockpit support, the REST client, the cockpit adapter next to the BPMS adapter in every profile, the JAR of the dev shell simulator for the test |
-| `application.yaml` (test)          | a free port, the outbox is polled every 0.2 seconds, and the reports go to the dev shell simulator                                                   |
-| `dev-shell-simulator.yaml` (test)  | new: the one demo user of the dev shell simulator                                                                                                    |
-| `pom.xml`                          | no `application` module; the versions of the cockpit and of its adapter for Camunda 8, instead of `blueprint.bpms`                                   |
-| `application/`                     | deleted: the application is a repository of its own, see below                                                                                       |
+|                File                |                                                                                What is different                                                                                 |
+|------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `openapi/loan-approval.yaml`       | new: the four endpoints of the forms                                                                                                                                             |
+| `loan-approval/loan-approval.yaml` | the keys the cockpit needs, below `vanillabp.workflow-modules.loan-approval.cockpit`                                                                                             |
+| `loan_approval.bpmn`               | two user tasks in a row, and no service task and no boundary event                                                                                                               |
+| `WorkflowTaskHandler.java`         | a `@WorkflowTask` method per user task, and the `@UserTaskDetailsProvider` method                                                                                                |
+| `UserTaskFormController.java`      | new: the endpoints of the forms, which implement the interface generated from the OpenAPI; 409 for a task somebody else took over                                                |
+| `Cockpit.java`                     | new: asks the cockpit whether somebody else took over a user task, through a REST client                                                                                         |
+| `LoanApprovalProperties.java`      | the key `loan-approval.cockpit.address` and the id of the module, instead of the rating scale                                                                                    |
+| `ApiController.java`               | only starts and shows a loan approval, below `/loan-approval/api/loan-requests`                                                                                                  |
+| `Workflow.java`                    | `documentsChecked` completes the second user task; no `loanRequestWithdrawn` and no BPMN error                                                                                   |
+| `openapi/loan-requests.yaml`       | new: the API of `ApiController`, from which the build generates `LoanRequestsApi`                                                                                                |
+| `Service.java`                     | per user task: keep the id, give a form its data, complete the task with what the user entered                                                                                   |
+| `Aggregate.java`                   | per user task the id of the open task and what the user entered                                                                                                                  |
+| `LoanApprovalIT.java`              | reports to the dev shell simulator and completes both tasks through their endpoints                                                                                              |
+| `CockpitSimulator.java`            | new: starts the dev shell simulator for the test                                                                                                                                 |
+| `CockpitGuiApi.java`               | new: answers for the cockpit who is logged in and whom a task is assigned to, for the test                                                                                       |
+| `loan-approval/pom.xml`            | the cockpit support, the REST client, the cockpit adapter next to the BPMS adapter in every profile, the JAR of the dev shell simulator and the client of the forms for the test |
+| `application.yaml` (test)          | a free port, the outbox is polled every 0.2 seconds, and the reports go to the dev shell simulator                                                                               |
+| `dev-shell-simulator.yaml` (test)  | new: the one demo user of the dev shell simulator                                                                                                                                |
+| `pom.xml`                          | no `application` module; the versions of the cockpit and of its adapter for Camunda 8, instead of `blueprint.bpms`                                                               |
+| `application/`                     | deleted: the application is a repository of its own, see below                                                                                                                   |
 
 There is no application module. The application is a repository of its own, see above. So the
 blueprint has no smoke test of an application either. The application repository brings it.
@@ -243,21 +243,21 @@ does. The frontend's README shows how.
 
 ## How it works
 
-|                                          File                                          |                                                 Role                                                 |
-|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract between the forms and the module: four operations, below the server `/wm/loan-approval` |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: two user tasks, each carrying its task definition                                       |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest             |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of each user task, and says what the cockpit shows about a task                         |
-| `.../loanapproval/UserTaskFormController.java`                                         | the endpoints of the forms: GET reads what a form shows, POST completes the task                     |
-| `.../loanapproval/Cockpit.java`                                                        | asks the cockpit whether somebody else took over a task, if `loan-approval.cockpit.address` is set   |
-| `.../loanapproval/config/LoanApprovalProperties.java`                                  | the key `loan-approval.cockpit.address`, and the id of the module                                    |
-| `.../loanapproval/Service.java`                                                        | finds the loan request, checks that the task is open on it, writes the input and completes the task  |
-| `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                      |
-| `.../loanapproval/model/Aggregate.java`                                                | the id of each open task, and what the user entered in each form                                     |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays both tasks through, and checks what the cockpit was told                                       |
-| `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test                                             |
-| `loan-approval/src/test/.../CockpitGuiApi.java`                                        | stands in for the interface of the cockpit which `Cockpit` asks                                      |
+|                                          File                                          |                                                       Role                                                       |
+|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract between the forms and the module: four operations, below the server `/wm/loan-approval`             |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: two user tasks, each carrying its task definition                                                   |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest                         |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of each user task, and says what the cockpit shows about a task                                     |
+| `.../loanapproval/UserTaskFormController.java`                                         | the endpoints of the forms: GET reads what a form shows, POST completes the task                                 |
+| `.../loanapproval/Cockpit.java`                                                        | asks the cockpit whether somebody else took over a task, if `loan-approval.cockpit.address` is set               |
+| `.../loanapproval/config/LoanApprovalProperties.java`                                  | the key `loan-approval.cockpit.address`, and the id of the module                                                |
+| `.../loanapproval/Service.java`                                                        | finds the loan request, checks that the task is open on it, writes the input and completes the task              |
+| `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                                  |
+| `.../loanapproval/model/Aggregate.java`                                                | the id of each open task, and what the user entered in each form                                                 |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays both tasks through, and checks what the cockpit was told, through a client generated from the OpenAPI file |
+| `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test                                                         |
+| `loan-approval/src/test/.../CockpitGuiApi.java`                                        | stands in for the interface of the cockpit which `Cockpit` asks                                                  |
 
 The order of events: the BPMS creates "Assess risk" and calls `WorkflowTaskHandler#assessRisk`.
 The handler hands the id over to `Service`, which keeps it on the aggregate. In the same moment

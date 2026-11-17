@@ -120,6 +120,9 @@ request. Keep the server of the OpenAPI, the path of `workflow-module-uri` and t
 8. Copy `CockpitSimulator`, `CockpitGuiApi`, `dev-shell-simulator.yaml` and the dependency plugin
    execution of `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`,
    keeping the test which checks every OpenAPI operation against the endpoints.
+   The test calls the endpoints through the client which the execution `user-task-forms-test-client` of
+   `loan-approval/pom.xml` generates from the OpenAPI file, and writes no path and no field by
+   hand.
 
 The module needs no class which wires it. Quarkus finds its beans, its entity and its repository
 through the Jandex index of the JAR, which the `jandex-maven-plugin` of `loan-approval/pom.xml`

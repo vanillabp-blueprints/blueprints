@@ -128,6 +128,9 @@ module a second time, under another name.
 9. Copy `CockpitSimulator`, `CockpitGuiApi`, `dev-shell-simulator.yaml` and the dependency plugin execution of
    `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the test
    which checks every OpenAPI operation against the endpoints.
+   The test calls the endpoints through the client which the execution `user-task-forms-test-client` of
+   `loan-approval/pom.xml` generates from the OpenAPI file, and writes no path and no field by
+   hand.
 
 ## Verifying
 

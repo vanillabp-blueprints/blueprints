@@ -166,6 +166,27 @@
               <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
             </configuration>
           </execution>
+          <!--
+            The client of the forms, for the integration test only. It comes from
+            the same OpenAPI file, as an interface of Jakarta REST which the REST client of
+            Quarkus implements. So the test calls the endpoints the way the user interface does,
+            and writes no path and no field by hand.
+          -->
+          <execution>
+            <id>user-task-forms-test-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <output>${project.build.directory}/generated-test-sources/openapi</output>
+              <addCompileSourceRoot>false</addCompileSourceRoot>
+              <addTestCompileSourceRoot>true</addTestCompileSourceRoot>
+              <apiPackage>blueprint.workflowmodule.loanapproval.client</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.client.model</modelPackage>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <!--
