@@ -118,6 +118,7 @@
     <module>blueprints-cockpit/cockpit-usertasks-in-the-application/springboot</module>
     <module>blueprints-cockpit/cockpit-organizing-usertasks/springboot</module>
     <module>blueprints-cockpit/cockpit-workflow-details-backend/springboot</module>
+    <module>blueprints-cockpit/cockpit-workflow-details-backend/quarkus</module>
     <module>blueprints-cockpit/cockpit-workflow-details-application/springboot</module>
     <module>blueprints-cockpit/cockpit-header-extension-backend/springboot</module>
     <module>blueprints-cockpit/cockpit-header-extension-application/springboot</module>
