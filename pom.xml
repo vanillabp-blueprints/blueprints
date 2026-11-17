@@ -121,6 +121,7 @@
     <module>blueprints-cockpit/cockpit-workflow-details-backend/quarkus</module>
     <module>blueprints-cockpit/cockpit-workflow-details-application/springboot</module>
     <module>blueprints-cockpit/cockpit-header-extension-backend/springboot</module>
+    <module>blueprints-cockpit/cockpit-header-extension-backend/quarkus</module>
     <module>blueprints-cockpit/cockpit-header-extension-application/springboot</module>
   </modules>
 
