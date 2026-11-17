@@ -46,6 +46,8 @@
     -->
     <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
     <businesscockpit-camunda8.version>0.9.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
+    <!-- Generates the clients of the smoke test from the OpenAPI files of the workflow module. -->
+    <openapi-generator.version>7.27.0</openapi-generator.version>
     <!--
       The two parts this bundle is made of. Each one has a release of its own: first the
       backend, then the frontend, then this bundle. A bot such as Renovate moves these two
@@ -166,6 +168,72 @@
                   <message>A workflow module depends on an adapter or on vanillabp-quarkus-integration only in the test scope. The application brings them.</message>
                 </bannedDependencies>
               </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        The clients of the smoke test, generated from the two OpenAPI files of the workflow
+        module: 'loan-requests.yaml' with the start of a loan approval, and 'loan-approval.yaml'
+        with the endpoints the user interface calls. The workflow module carries both files in
+        its JAR, below 'openapi/', so the generator reads them from there. Each is a Spring HTTP
+        interface which a RestClient turns into a client, so the test writes no path and no
+        field by hand.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>${openapi-generator.version}</version>
+        <configuration>
+          <generatorName>spring</generatorName>
+          <library>spring-http-interface</library>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <output>${project.build.directory}/generated-test-sources/openapi</output>
+          <addCompileSourceRoot>false</addCompileSourceRoot>
+          <addTestCompileSourceRoot>true</addTestCompileSourceRoot>
+          <apiPackage>blueprint.application.client</apiPackage>
+          <modelPackage>blueprint.application.client.model</modelPackage>
+          <configOptions>
+            <useSpringBoot4>true</useSpringBoot4>
+            <useTags>true</useTags>
+            <interfaceOnly>true</interfaceOnly>
+            <useResponseEntity>false</useResponseEntity>
+            <useRecords>true</useRecords>
+            <useJspecify>true</useJspecify>
+            <openApiNullable>false</openApiNullable>
+            <useBeanValidation>false</useBeanValidation>
+            <documentationProvider>none</documentationProvider>
+            <annotationLibrary>none</annotationLibrary>
+            <hideGenerationTimestamp>true</hideGenerationTimestamp>
+          </configOptions>
+        </configuration>
+        <dependencies>
+          <!-- Where the generator finds the OpenAPI files. -->
+          <dependency>
+            <groupId>io.vanillabp.blueprint.cockpit-user-task-backend-springboot</groupId>
+            <artifactId>loan-approval</artifactId>
+            <version>${cockpit-user-task-backend.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>loan-requests-test-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <inputSpec>openapi/loan-requests.yaml</inputSpec>
+            </configuration>
+          </execution>
+          <execution>
+            <id>user-interface-test-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <inputSpec>openapi/loan-approval.yaml</inputSpec>
             </configuration>
           </execution>
         </executions>

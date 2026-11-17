@@ -33,6 +33,12 @@ vanillabp:
         # application takes both values from the environment.
         username: loan-approval
         password: loan-approval
+# Where the workflow module asks the cockpit who took over a user task: the official GUI API of
+# the cockpit of 'docker-compose.yaml'. The module refuses a form with 409 if somebody else has
+# the task. The key belongs to the module, so it is below its id and not below 'vanillabp'.
+loan-approval:
+  cockpit:
+    base-url: http://localhost:9080/gui/api/v1
 logging:
   level:
     blueprint.workflowmodule: INFO

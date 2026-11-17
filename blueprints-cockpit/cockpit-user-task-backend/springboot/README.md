@@ -90,10 +90,26 @@ holds the login of the user. The cockpit answers who that user is and whom the t
 to, and the module compares the two. A task without an assignee, or one assigned to the user who
 sends the form, is completed as before.
 
-The module asks only if the application sets `loan-approval.cockpit.address`, the address of the
-cockpit. Without it, or without a cookie, nothing is asked. So the URLs of the log still work in a
-browser alone. Any answer which is not clear counts as "nobody else took it", because a form which
-is refused for no reason is worse than one which is not refused. Reading a form is never refused.
+`Cockpit` asks through the official GUI API of the cockpit, with the clients of
+`official-gui-api-spring-boot-client`, which are generated from the OpenAPI file of that API. No
+call is written by hand. `CockpitClientAutoConfiguration` imports the two interfaces into an HTTP
+service group of the module, and the support library of the cockpit builds the clients from the
+keys below `loan-approval.cockpit`. The clients send the cookie of the request along on their own.
+The application sets the address of the API:
+
+```yaml
+loan-approval:
+  cockpit:
+    base-url: http://localhost:9080/gui/api/v1
+```
+
+Without `base-url` the application does not start, and the message names the key. The other keys
+of the support library work there as well: timeouts, a proxy, retries, OAuth. They belong to the
+module and not to `vanillabp`, so a second module in the same application asks the cockpit with
+values of its own. A request without a cookie asks nothing, so the URLs of the log still work in
+a browser alone. Any answer which is not clear counts as "nobody else took it", because a form
+which is refused for no reason is worse than one which is not refused. Reading a form is never
+refused.
 
 ### What the cockpit shows about a task
 
@@ -160,7 +176,8 @@ Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user
 | `loan_approval.bpmn`                       | two user tasks in a row, and no service task and no boundary event                                                                                                                |
 | `WorkflowTaskHandler.java`                 | a `@WorkflowTask` method per user task, and the `@UserTaskDetailsProvider` method                                                                                                 |
 | `UserTaskFormController.java`              | new: the endpoints of the forms, which implement the interface generated from the OpenAPI; 409 for a task somebody else took over                                                 |
-| `Cockpit.java`                             | new: asks the cockpit whether somebody else took over a user task                                                                                                                 |
+| `Cockpit.java`                             | new: asks the cockpit whether somebody else took over a user task, through the generated clients of its official GUI API                                                          |
+| `CockpitClientAutoConfiguration.java`      | new: the clients of the official GUI API, with their keys below `loan-approval.cockpit`                                                                                           |
 | `ApiController.java`                       | only starts and shows a loan approval, below `/loan-approval/api/loan-requests`                                                                                                   |
 | `Workflow.java`                            | `documentsChecked` completes the second user task; no `loanRequestWithdrawn` and no BPMN error                                                                                    |
 | `loan-approval/openapi/loan-requests.yaml` | new: the API of `ApiController`, from which the build generates `LoanRequestsApi`                                                                                                 |
@@ -172,7 +189,7 @@ Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user
 | `LocalBackend.java`                        | new: runs the workflow module for the development of the user interface                                                                                                           |
 | `LoanApprovalAutoConfiguration.java`       | new: the module scans its own beans, entities and repositories                                                                                                                    |
 | `UserInterfaceRouteAutoConfiguration.java` | new: forwards the user interface to an nginx, if the application names one                                                                                                        |
-| `...AutoConfiguration.imports`             | new: tells Spring Boot about both auto-configurations                                                                                                                             |
+| `...AutoConfiguration.imports`             | new: tells Spring Boot about the three auto-configurations                                                                                                                        |
 | `ModuleTestApplication.java`               | replaces `TestApplication`: scans nothing, the auto-configuration wires the module                                                                                                |
 | `TestApplication.java`                     | deleted, `ModuleTestApplication.java` takes its place                                                                                                                             |
 | `LoanApprovalProperties.java`              | deleted: the module reads no settings of its own                                                                                                                                  |
@@ -264,13 +281,14 @@ does. The frontend's README shows how.
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest                         |
 | `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of each user task, and says what the cockpit shows about a task                                     |
 | `.../loanapproval/UserTaskFormController.java`                                         | the endpoints of the forms: GET reads what a form shows, POST completes the task                                 |
-| `.../loanapproval/Cockpit.java`                                                        | asks the cockpit whether somebody else took over a task, if `loan-approval.cockpit.address` is set               |
+| `.../loanapproval/Cockpit.java`                                                        | asks the cockpit whether somebody else took over a task, through the official GUI API                            |
+| `.../loanapproval/config/CockpitClientAutoConfiguration.java`                          | the clients of the official GUI API, with their keys below `loan-approval.cockpit`                               |
 | `.../loanapproval/Service.java`                                                        | finds the loan request, checks that the task is open on it, writes the input and completes the task              |
 | `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                                  |
 | `.../loanapproval/model/Aggregate.java`                                                | the id of each open task, and what the user entered in each form                                                 |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays both tasks through, and checks what the cockpit was told, through a client generated from the OpenAPI file |
 | `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test                                                         |
-| `loan-approval/src/test/.../CockpitGuiApi.java`                                        | stands in for the interface of the cockpit which `Cockpit` asks                                                  |
+| `loan-approval/src/test/.../CockpitGuiApi.java`                                        | stands in for the official GUI API of the cockpit which `Cockpit` asks                                           |
 | `.../loanapproval/config/LoanApprovalAutoConfiguration.java`                           | wires the module into any application which has it as a dependency                                               |
 | `.../loanapproval/config/UserInterfaceRouteAutoConfiguration.java`                     | forwards the files of the user interface to an nginx, if `loan-approval.user-interface.address` is set           |
 

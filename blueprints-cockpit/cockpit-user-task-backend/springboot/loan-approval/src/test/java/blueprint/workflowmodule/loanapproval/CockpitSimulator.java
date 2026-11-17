@@ -10,13 +10,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import org.awaitility.core.ConditionTimeoutException;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
 
 /**
  * The Business Cockpit of the integration test: the dev shell simulator of the cockpit, run as
@@ -33,6 +38,13 @@ import org.springframework.web.client.RestClient;
  * Maven copies the runnable JAR of the simulator to {@code target/} before the integration
  * tests run. This class starts it once per test run, on a free port, and stops it when the test
  * run ends. Its log goes to {@code target/dev-shell-simulator.log}.
+ * </p>
+ *
+ * <p>
+ * The simulator serves the official GUI API of the cockpit below {@code /official-api/v1}. The
+ * test reads it with the client generated from the OpenAPI file of that API. The client is built
+ * here and not by Spring: the module imports the same API with keys of its own, which point at
+ * {@link CockpitGuiApi}, and the simulator outlives every application context of the test run.
  * </p>
  */
 public final class CockpitSimulator {
@@ -51,14 +63,17 @@ public final class CockpitSimulator {
 
   private final String baseUrl;
 
-  private final RestClient officialApi;
+  private final OfficialTasklistApi tasklist;
 
   private CockpitSimulator(
       final String baseUrl) {
 
     this.baseUrl = baseUrl;
-    this.officialApi = RestClient.create(baseUrl
-        + "/official-api/v1");
+    this.tasklist = HttpServiceProxyFactory
+        .builderFor(RestClientAdapter.create(RestClient.create(baseUrl
+            + "/official-api/v1")))
+        .build()
+        .createClient(OfficialTasklistApi.class);
 
   }
 
@@ -95,11 +110,11 @@ public final class CockpitSimulator {
    * @param condition  What the cockpit is expected to know about the task.
    * @return The user task, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitUserTask(
+  public UserTask awaitUserTask(
       final String userTaskId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<UserTask> condition) {
 
-    final var lastSeen = new AtomicReference<Optional<Map<String, Object>>>(Optional.empty());
+    final var lastSeen = new AtomicReference<Optional<UserTask>>(Optional.empty());
 
     try {
 
@@ -142,20 +157,15 @@ public final class CockpitSimulator {
    * @param userTaskId The id of the user task.
    * @return The user task, if the cockpit knows it.
    */
-  @SuppressWarnings("unchecked")
-  private Optional<Map<String, Object>> userTask(
+  private Optional<UserTask> userTask(
       final String userTaskId) {
 
-    return officialApi
-        .get()
-        .uri("/usertask/{userTaskId}", userTaskId)
-        // The simulator answers a task it does not know with an error. That only means the
-        // report has not arrived yet.
-        .exchange((
-            request,
-            response) -> response.getStatusCode().is2xxSuccessful()
-                ? Optional.ofNullable((Map<String, Object>) response.bodyTo(Map.class))
-                : Optional.empty());
+    try {
+      return Optional.ofNullable(tasklist.getUserTask(userTaskId, null).getBody());
+    } catch (HttpClientErrorException.NotFound e) {
+      // The report has not arrived yet.
+      return Optional.empty();
+    }
 
   }
 

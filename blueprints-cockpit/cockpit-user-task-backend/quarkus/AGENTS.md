@@ -48,21 +48,20 @@ request. Keep the server of the OpenAPI, the path of `workflow-module-uri` and t
 
 ## Core files
 
-|                                    File                                     |                                                                                                 Why it matters                                                                                                 |
-|-----------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml` | the contract with the frontend: four operations, `servers: /wm/loan-approval`. Change it together with `UserTaskFormController`                                                                                |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`         | `vanillabp.workflow-modules.loan-approval.cockpit.*`: `workflow-module-uri`, `ui-uri-type: ES_MODULES`, `ui-uri-path`                                                                                          |
-| `loan-approval/src/main/java/.../WorkflowTaskHandler.java`                  | one `@WorkflowTask` method per user task, keeping `@TaskId`, and the `@UserTaskDetailsProvider` method filling `details`                                                                                       |
-| `loan-approval/src/main/java/.../UserTaskFormController.java`               | the endpoints of the forms, below `/loan-approval/api/loan-requests/{loanRequestId}`, each with the task id. Implements the generated `UserTasksApi`. GET reads, POST completes, 404 if not open, 409 if taken |
-| `loan-approval/src/main/java/.../Cockpit.java`                              | asks the cockpit, with the cookie of the request, who the user is and whom the task is assigned to. The REST client of Quarkus implements `Cockpit.GuiApi`. Off without the address                            |
-| `loan-approval/src/main/java/.../config/LoanApprovalProperties.java`        | the key `loan-approval.cockpit.address`, and the id of the module                                                                                                                                              |
-| `loan-approval/src/main/resources/loan-approval/openapi/loan-requests.yaml` | the GET endpoints which start and show a loan approval. The build generates `LoanRequestsApi` from it, and `ApiController` implements it                                                                       |
-| `loan-approval/src/main/java/.../Service.java`                              | finds the loan request by its id, checks that the task is open on it, writes the input, completes the task through `Workflow`                                                                                  |
-| `loan-approval/src/main/java/.../Workflow.java`                             | `startWorkflow` and `completeUserTask`                                                                                                                                                                         |
-| `loan-approval/src/main/java/.../model/Aggregate.java`                      | per user task the id of the open task and the input of its form                                                                                                                                                |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                       | both tasks through the endpoints, what the cockpit was told, and every OpenAPI operation mapped                                                                                                                |
-| `loan-approval/src/test/java/.../CockpitSimulator.java`                     | starts the dev shell simulator as the cockpit of the test                                                                                                                                                      |
-| `loan-approval/src/test/java/.../CockpitGuiApi.java`                        | stands in for the two answers of the cockpit which `Cockpit` asks for, because the simulator has no such interface                                                                                             |
+|                                File                                 |                                                                                                 Why it matters                                                                                                 |
+|---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`       | the contract with the frontend: four operations, `servers: /wm/loan-approval`. Change it together with `UserTaskFormController`                                                                                |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | `vanillabp.workflow-modules.loan-approval.cockpit.*`: `workflow-module-uri`, `ui-uri-type: ES_MODULES`, `ui-uri-path`                                                                                          |
+| `loan-approval/src/main/java/.../WorkflowTaskHandler.java`          | one `@WorkflowTask` method per user task, keeping `@TaskId`, and the `@UserTaskDetailsProvider` method filling `details`                                                                                       |
+| `loan-approval/src/main/java/.../UserTaskFormController.java`       | the endpoints of the forms, below `/loan-approval/api/loan-requests/{loanRequestId}`, each with the task id. Implements the generated `UserTasksApi`. GET reads, POST completes, 404 if not open, 409 if taken |
+| `loan-approval/src/main/java/.../Cockpit.java`                      | asks the cockpit, with the cookie of the request, who the user is and whom the task is assigned to, through the generated clients of the official GUI API, built by `RestClients` from `loan-approval.cockpit` |
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-requests.yaml`       | the GET endpoints which start and show a loan approval. The build generates `LoanRequestsApi` from it, and `ApiController` implements it                                                                       |
+| `loan-approval/src/main/java/.../Service.java`                      | finds the loan request by its id, checks that the task is open on it, writes the input, completes the task through `Workflow`                                                                                  |
+| `loan-approval/src/main/java/.../Workflow.java`                     | `startWorkflow` and `completeUserTask`                                                                                                                                                                         |
+| `loan-approval/src/main/java/.../model/Aggregate.java`              | per user task the id of the open task and the input of its form                                                                                                                                                |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`               | both tasks through the endpoints, what the cockpit was told, and every OpenAPI operation mapped                                                                                                                |
+| `loan-approval/src/test/java/.../CockpitSimulator.java`             | starts the dev shell simulator as the cockpit of the test                                                                                                                                                      |
+| `loan-approval/src/test/java/.../CockpitGuiApi.java`                | stands in for the two answers of the official GUI API which `Cockpit` asks for, because the simulator does not know who is logged in                                                                           |
 
 ## Boilerplate files
 
@@ -115,9 +114,10 @@ request. Keep the server of the OpenAPI, the path of `workflow-module-uri` and t
    Write the input to the aggregate only on completion. Before POST completes a task, ask
    `Cockpit` whether somebody else took it over, and throw `BcTaskClaimedByAnotherUserException`
    if so, which answers 409. The mappers of `business-cockpit-quarkus-support` give both answers
-   on their own. Copy `Cockpit` and `LoanApprovalProperties` for that, set
-   `WORKFLOW_MODULE_ID` to your module id, add `quarkus-rest-client-jackson` to the module, and
-   set `<workflow-module-id>.cockpit.address` in the application.
+   on their own. Copy `Cockpit` for that, set `KEYS` to
+   `<workflow-module-id>.cockpit`, add `official-gui-api-quarkus-client` and
+   `quarkus-rest-client-jackson` to the module, and set `<workflow-module-id>.cockpit.base-url` in
+   the application. Write no call of the cockpit by hand.
 8. Copy `CockpitSimulator`, `CockpitGuiApi`, `dev-shell-simulator.yaml` and the dependency plugin
    execution of `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`,
    keeping the test which checks every OpenAPI operation against the endpoints.

@@ -40,6 +40,7 @@ Blueprint-specific names, each occurring in more than one place:
 |                    Name                     |                                      Where it occurs                                      |
 |---------------------------------------------|-------------------------------------------------------------------------------------------|
 | `loan-approval.user-interface.address`      | `application.yaml`, `docker-compose.yaml` and `UserInterfaceProxyIT`. The module reads it |
+| `loan-approval.cockpit.base-url`            | `application.yaml` and `docker-compose.yaml`. The module asks the cockpit there           |
 | `user-interface.image`                      | the property in `pom.xml`, which failsafe hands to `UserInterfaceProxyIT`                 |
 | `vanillabp-blueprints/cockpit-user-task-ui` | the nginx image of the frontend, in `pom.xml` and `docker-compose.yaml`                   |
 | `cockpit-user-task-backend.version`         | the version of the workflow module in `pom.xml`                                           |

@@ -1,25 +1,26 @@
 package blueprint.workflowmodule.loanapproval;
 
-import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import org.awaitility.core.ConditionTimeoutException;
 
-import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.specification.RequestSpecification;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
+import jakarta.ws.rs.NotFoundException;
 
 /**
  * The Business Cockpit of the integration test: the dev shell simulator of the cockpit, run as
@@ -36,6 +37,13 @@ import io.restassured.specification.RequestSpecification;
  * Maven copies the runnable JAR of the simulator to {@code target/} before the integration
  * tests run. This class starts it once per test run, on a free port, and stops it when the test
  * run ends. Its log goes to {@code target/dev-shell-simulator.log}.
+ * </p>
+ *
+ * <p>
+ * The simulator serves the official GUI API of the cockpit below {@code /official-api/v1}. The
+ * test reads it with the client generated from the OpenAPI file of that API. The client is built
+ * here and not from keys: the module builds the same API from keys of its own, which point at
+ * {@link CockpitGuiApi}, and the simulator outlives the application of the test.
  * </p>
  */
 public final class CockpitSimulator {
@@ -54,16 +62,16 @@ public final class CockpitSimulator {
 
   private final String baseUrl;
 
-  private final RequestSpecification officialApi;
+  private final String officialApi;
+
+  private OfficialTasklistApi tasklist;
 
   private CockpitSimulator(
       final String baseUrl) {
 
     this.baseUrl = baseUrl;
-    this.officialApi = new RequestSpecBuilder()
-        .setBaseUri(baseUrl
-            + "/official-api/v1")
-        .build();
+    this.officialApi = baseUrl
+        + "/official-api/v1";
 
   }
 
@@ -100,11 +108,11 @@ public final class CockpitSimulator {
    * @param condition  What the cockpit is expected to know about the task.
    * @return The user task, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitUserTask(
+  public UserTask awaitUserTask(
       final String userTaskId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<UserTask> condition) {
 
-    final var lastSeen = new AtomicReference<Optional<Map<String, Object>>>(Optional.empty());
+    final var lastSeen = new AtomicReference<Optional<UserTask>>(Optional.empty());
 
     try {
 
@@ -147,15 +155,31 @@ public final class CockpitSimulator {
    * @param userTaskId The id of the user task.
    * @return The user task, if the cockpit knows it.
    */
-  private Optional<Map<String, Object>> userTask(
+  private Optional<UserTask> userTask(
       final String userTaskId) {
 
-    final var response = given(officialApi).get("/usertask/{userTaskId}", userTaskId);
-    // The simulator answers a task it does not know with an error. That only means the
-    // report has not arrived yet.
-    return response.statusCode() / 100 == 2
-        ? Optional.ofNullable(response.jsonPath().getMap("$"))
-        : Optional.empty();
+    try {
+      return Optional.ofNullable(tasklist().getUserTask(userTaskId, null));
+    } catch (NotFoundException e) {
+      // The report has not arrived yet.
+      return Optional.empty();
+    }
+
+  }
+
+  /**
+   * The client of the official GUI API of the simulator. The REST client of Quarkus needs the
+   * running application, so it is built at the first read and not when the simulator starts.
+   */
+  private synchronized OfficialTasklistApi tasklist() {
+
+    if (tasklist == null) {
+      tasklist = QuarkusRestClientBuilder
+          .newBuilder()
+          .baseUri(URI.create(officialApi))
+          .build(OfficialTasklistApi.class);
+    }
+    return tasklist;
 
   }
 

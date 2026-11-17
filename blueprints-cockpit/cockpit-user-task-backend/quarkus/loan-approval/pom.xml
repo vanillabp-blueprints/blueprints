@@ -46,7 +46,16 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-rest-jackson</artifactId>
     </dependency>
-    <!-- The client which asks the cockpit who took over a user task. -->
+    <!--
+      The clients of the official GUI API of the cockpit, generated from its OpenAPI file. The
+      module asks the cockpit with them who took over a user task. The support library of the
+      cockpit builds them from keys, on the REST client of Quarkus.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>official-gui-api-quarkus-client</artifactId>
+      <version>${businesscockpit.version}</version>
+    </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-rest-client-jackson</artifactId>

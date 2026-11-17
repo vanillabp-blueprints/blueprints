@@ -90,19 +90,25 @@ up to the application. `application.yaml` names it below `vanillabp.cockpit.rest
 account the cockpit accepts reports from. Each BPMS profile adds two adapters: the BPMS adapter,
 and the cockpit adapter of the same BPMS, which reports the user tasks.
 
+The workflow module asks the cockpit who took over a user task before a form completes it. It
+asks the official GUI API of the cockpit, and the application names its address in
+`loan-approval.cockpit.base-url`. The key belongs to the module, so it is below the id of the
+module and not below `vanillabp`. Without it the application does not start.
+
 ## Delta to the base blueprint
 
 Compared to the application of
 [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user-task-springboot):
 
-|               File                |                                         What is different                                          |
-|-----------------------------------|----------------------------------------------------------------------------------------------------|
-| `pom.xml`                         | the workflow module and the user interface JAR come from other repositories, in their own versions |
-| `pom.xml`                         | the cockpit adapter next to the BPMS adapter in every profile, and no web applications of the BPMS |
-| `application.yaml`                | where the reports to the cockpit go                                                                |
-| `UserInterfaceSmokeTest.java`     | new: the manifest and an endpoint of a form answer below `/loan-approval`                          |
-| `docker-compose.yaml`             | new: a cockpit with its MongoDB, to see the reports arrive                                         |
-| `docker/dev-shell-simulator.yaml` | new: the users of that cockpit                                                                     |
+|               File                |                                              What is different                                              |
+|-----------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `pom.xml`                         | the workflow module and the user interface JAR come from other repositories, in their own versions          |
+| `pom.xml`                         | the cockpit adapter next to the BPMS adapter in every profile, and no web applications of the BPMS          |
+| `application.yaml`                | where the reports to the cockpit go, and where the module asks the cockpit who has a task                   |
+| `UserInterfaceSmokeTest.java`     | new: the manifest and an endpoint of a form answer below `/loan-approval`                                   |
+| `pom.xml`                         | the clients of `UserInterfaceSmokeTest`, generated from the OpenAPI files in the JAR of the workflow module |
+| `docker-compose.yaml`             | new: a cockpit with its MongoDB, to see the reports arrive                                                  |
+| `docker/dev-shell-simulator.yaml` | new: the users of that cockpit                                                                              |
 
 The workflow module itself is the subject of the backend, and the forms are the subject of the
 frontend.

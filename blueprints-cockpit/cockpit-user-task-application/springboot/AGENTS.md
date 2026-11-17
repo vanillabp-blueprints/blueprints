@@ -70,10 +70,14 @@ Blueprint-specific names, each occurring in more than one place:
 3. Add the cockpit adapter of your BPMS next to the BPMS adapter, in every profile:
    `businesscockpit-<bpms>-adapter-spring-boot`.
 4. Write `vanillabp.cockpit.rest.base-url` and the account into `application.yaml`. Take the
-   password from the environment in a real application.
+   password from the environment in a real application. Write the address of the official GUI
+   API of the cockpit into `<workflow-module-id>.cockpit.base-url`, once per module which asks
+   the cockpit.
 5. Check that the path of `workflow-module-uri` in the module's configuration is the address the
    application really runs at. Set it in the application if it differs.
-6. Copy `UserInterfaceSmokeTest` and adapt the module id and the task to your module.
+6. Copy `UserInterfaceSmokeTest` and adapt the module id and the task to your module. The test calls the API of the module through
+   clients which `openapi-generator-maven-plugin` in `pom.xml` generates from the OpenAPI files in
+   the JAR of the module. Copy that plugin too, and write no path and no field of the API by hand.
 
 ## Verifying
 
