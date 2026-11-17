@@ -143,6 +143,27 @@
               <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
             </configuration>
           </execution>
+          <!--
+            The client of the start form, for the integration test only. It comes from the same
+            OpenAPI file, as a Spring HTTP interface which a RestClient turns into a client. So the
+            test calls the endpoint the way the form does, and writes no path and no field by hand.
+          -->
+          <execution>
+            <id>start-form-test-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <output>${project.build.directory}/generated-test-sources/openapi</output>
+              <addCompileSourceRoot>false</addCompileSourceRoot>
+              <addTestCompileSourceRoot>true</addTestCompileSourceRoot>
+              <apiPackage>blueprint.workflowmodule.loanapproval.client</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.client.model</modelPackage>
+              <library>spring-http-interface</library>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <!--

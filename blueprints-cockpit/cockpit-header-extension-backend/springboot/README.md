@@ -118,7 +118,7 @@ Compared to [`cockpit-workflow-details-backend`](https://github.com/vanillabp-bl
 | `LoanApprovalIT.java`                | starts a loan approval through the start form, finds the case in the case list, and checks who sees the module         |
 | `dev-shell-simulator.yaml` (test)    | two users: Jane is a loan officer, John is not                                                                         |
 | `LoanApprovalAutoConfiguration.java` | its Javadoc names `LoanApprovalModuleDetails`                                                                          |
-| `pom.xml`, `loan-approval/pom.xml`   | the generator builds the interface `StartFormApi` instead of `CasesApi`                                                |
+| `pom.xml`, `loan-approval/pom.xml`   | the generator builds the interface `StartFormApi` and the test client of the start form, instead of `CasesApi`         |
 
 ## Running it
 
@@ -168,21 +168,21 @@ form posts to `/loan-approval/api/loan-requests`, which a browser cannot do from
 
 ## How it works
 
-|                                          File                                          |                                                     Role                                                      |
-|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract between the start form and the module: one operation, below the server `/wm/loan-approval`       |
-| `loan-approval/src/main/resources/openapi/loan-requests.yaml`                          | the GET endpoints for a person with a browser                                                                 |
-| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: one user task                                                                                    |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest                      |
-| `.../loanapproval/config/LoanApprovalModuleDetails.java`                               | names the group whose members see the module in the cockpit                                                   |
-| `.../loanapproval/StartFormController.java`                                            | the endpoint of the start form: checks the values, starts the loan approval, answers 201 with its id          |
-| `.../loanapproval/Service.java`                                                        | picks the id, starts the process through `Workflow`, keeps the id of the user task                            |
-| `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                               |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of the user task when the process creates it                                                     |
-| `.../loanapproval/model/Aggregate.java`                                                | the loan request and the id of the open user task                                                             |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a loan approval like the start form does, and checks what the cockpit was told and who sees the module |
-| `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test, and reads cases and user tasks from it              |
-| `.../loanapproval/config/LoanApprovalAutoConfiguration.java`                           | wires the module into any application which has it as a dependency                                            |
+|                                          File                                          |                                                                              Role                                                                               |
+|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract between the start form and the module: one operation, below the server `/wm/loan-approval`                                                         |
+| `loan-approval/src/main/resources/openapi/loan-requests.yaml`                          | the GET endpoints for a person with a browser                                                                                                                   |
+| `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: one user task                                                                                                                                      |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest                                                                        |
+| `.../loanapproval/config/LoanApprovalModuleDetails.java`                               | names the group whose members see the module in the cockpit                                                                                                     |
+| `.../loanapproval/StartFormController.java`                                            | the endpoint of the start form: checks the values, starts the loan approval, answers 201 with its id                                                            |
+| `.../loanapproval/Service.java`                                                        | picks the id, starts the process through `Workflow`, keeps the id of the user task                                                                              |
+| `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                                                                                 |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of the user task when the process creates it                                                                                                       |
+| `.../loanapproval/model/Aggregate.java`                                                | the loan request and the id of the open user task                                                                                                               |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a loan approval like the start form does, and checks what the cockpit was told and who sees the module, through a client generated from the OpenAPI file |
+| `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test, and reads cases and user tasks from it                                                                |
+| `.../loanapproval/config/LoanApprovalAutoConfiguration.java`                           | wires the module into any application which has it as a dependency                                                                                              |
 
 The order of events: the application starts, and the cockpit adapter registers the module with
 the cockpit. It asks `LoanApprovalModuleDetails` for the groups, and the registration carries
