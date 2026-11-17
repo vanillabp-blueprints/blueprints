@@ -27,3 +27,10 @@ vanillabp:
     # starts a simulator of its own on a free port and overrides this address.
     rest:
       base-url: http://localhost:8079
+# The module reads no login token of the Business Cockpit. Its support library checks such a
+# token unless it is told not to, and then the start asks for the secret of the cockpit. So the
+# test leaves the check out. It is a build property: Quarkus reads it while it builds the
+# application. An application which runs this module and reads no token says the same.
+business-cockpit:
+  jwt:
+    enabled: false

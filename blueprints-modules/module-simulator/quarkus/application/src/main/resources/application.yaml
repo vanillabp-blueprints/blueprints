@@ -24,3 +24,10 @@ quarkus:
     category:
       "blueprint":
         level: INFO
+# The application reads no login token of the Business Cockpit. The support library of the
+# cockpit checks such a token unless it is told not to, and then the start asks for the secret
+# of the cockpit. So the check is left out. It is a build property: Quarkus reads it while it
+# builds the application.
+business-cockpit:
+  jwt:
+    enabled: false
