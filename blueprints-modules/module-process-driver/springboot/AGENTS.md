@@ -133,6 +133,7 @@ Names this blueprint adds:
 | `loan-approval/workflow-module/src/test/java/.../ModuleTestApplication.java`         | boots the module and the driver through their auto-configurations                                  |
 | `loan-approval/workflow-module/src/test/java/.../WorkflowModuleTest.java`            | base class of the integration test, identical in every blueprint                                   |
 | `loan-approval/workflow-module/src/test/java/.../SimulatorExtension.java`            | skips without a simulator, and prints its log when a test fails                                    |
+| `loan-approval/workflow-module/src/test/java/.../SuppressOutputExtension.java`       | keeps a green build log empty and shows the output of a failing test, from the test harness        |
 | `loan-approval/test-driver/src/test/java/.../ProcessDriverSwitchTest.java`           | the driver is off unless the property says otherwise                                               |
 | `loan-approval/test-driver/src/test/java/.../StepOrderTest.java`                     | the order of the steps, without an application                                                     |
 | `application/src/test/java/.../ApplicationSmokeTest.java`                            | boots the application in the profile `local`, identical in every blueprint                         |

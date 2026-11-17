@@ -8,11 +8,11 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestWatcher;
 
 import blueprint.testdriver.simulator.SimulatorTestApi;
 
@@ -33,8 +33,15 @@ import blueprint.testdriver.simulator.SimulatorTestApi;
  * this extension prints the lines the simulator wrote while the test ran. They show what the
  * application sent to the systems around it, which is often where the reason is.
  * </p>
+ *
+ * <p>
+ * It prints in {@code afterEach}, not in a {@code TestWatcher}. JUnit calls a watcher after
+ * {@code afterEach}, and by then {@code SuppressOutputExtension} has already decided what to
+ * show. Registered after that extension, this one prints into the output which is shown with
+ * the failing test.
+ * </p>
  */
-public class SimulatorExtension implements ExecutionCondition, BeforeEachCallback, TestWatcher {
+public class SimulatorExtension implements ExecutionCondition, BeforeEachCallback, AfterEachCallback {
 
   /** How long the build gives a simulator it started to answer. */
   private static final Duration STARTUP_TIMEOUT = Duration.ofSeconds(120);
@@ -93,10 +100,14 @@ public class SimulatorExtension implements ExecutionCondition, BeforeEachCallbac
   }
 
   @Override
-  public void testFailed(
-      final ExtensionContext context,
-      final Throwable cause) {
+  public void afterEach(
+      final ExtensionContext context) {
 
+    if (context
+        .getExecutionException()
+        .isEmpty()) {
+      return;
+    }
     final var position = context
         .getStore(ExtensionContext.Namespace.GLOBAL)
         .getOrDefault(LOG_POSITION, Long.class, 0L);

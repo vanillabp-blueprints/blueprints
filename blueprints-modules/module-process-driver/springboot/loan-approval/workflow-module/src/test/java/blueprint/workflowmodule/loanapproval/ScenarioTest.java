@@ -17,6 +17,7 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import blueprint.testdriver.loanapproval.ProcessDriver;
 import blueprint.testdriver.loanapproval.gui.LoanApprovalApi;
+import blueprint.workflowmodule.SuppressOutputExtension;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
@@ -40,6 +41,9 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * </p>
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+// The output of a test is shown only if it fails, together with what the simulator logged
+// meanwhile. So the suppression comes first. See SimulatorExtension for why the order matters.
+@ExtendWith(SuppressOutputExtension.class)
 @ExtendWith(SimulatorExtension.class)
 public abstract class ScenarioTest extends WorkflowModuleTest {
 

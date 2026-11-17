@@ -452,7 +452,9 @@ templates/test-harness/<platform>/
 ├── workflow-module/         -> <maven-module>/src/test/java/blueprint/workflowmodule/
 │   ├── TestApplication.java     boots the workflow module for its test (Spring Boot only)
 │   ├── WorkflowModuleTest.java  base class: waiting for a workflow to make progress
-│   └── Simulator.java           base class of a stand-in for a surrounding system
+│   ├── Simulator.java           base class of a stand-in for a surrounding system
+│   └── SuppressOutputExtension.java
+│                                shows the output of a test only if it fails (Spring Boot only)
 └── application/             -> <maven-module>/src/test/java/blueprint/workflowmodule/
     └── ApplicationSmokeTest.java
 ```
@@ -501,6 +503,13 @@ python3 bin/sync_harness.py --check    # what CI does
 which already exist. Putting the first one into a new blueprint is part of creating it. A
 blueprint takes only the files it needs (`Simulator.java` only if it has a surrounding system
 to simulate).
+
+`SuppressOutputExtension` is for a blueprint whose tests make the application print what does
+not belong into a green build log, for example the stack trace of a surrounding system which a
+test makes fail on purpose. It collects the output instead of lowering a log level, and shows it
+with a test which fails. A log level would drop the lines, and a red test would then say
+nothing. Register it before every other extension which prints, so that their lines are part of
+what a failing test shows.
 
 Everything else in a blueprint's tests is specific to it, and nothing compares it. The
 integration test *is* the proof of the aspect, and it is supposed to differ.
