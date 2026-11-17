@@ -9,8 +9,8 @@ import AssessRiskInformation from './AssessRiskInformation.ce.vue';
 defineInputForm<AssessRiskForm>(ASSESS_RISK_ELEMENTS, {
   testId: 'assess-risk',
   label: (texts) => texts.riskAssessment,
-  load: (userTaskId) => loanApproval.getAssessRiskForm({ userTaskId }),
+  load: (loanRequestId, taskId) => loanApproval.getAssessRiskForm({ loanRequestId, taskId }),
   initialInput: (form) => form.riskAssessment ?? '',
-  complete: (userTaskId, riskAssessment) => loanApproval.completeAssessRisk({ userTaskId, assessRiskInput: { riskAssessment } }),
+  complete: (loanRequestId, taskId, riskAssessment) => loanApproval.completeAssessRisk({ loanRequestId, taskId, assessRiskInput: { riskAssessment } }),
   information: AssessRiskInformation,
 });

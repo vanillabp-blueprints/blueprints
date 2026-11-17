@@ -27,12 +27,15 @@ export interface InputForm<Form> {
   testId: string;
   /** The label of the input field. */
   label: (texts: Texts) => string;
-  /** Loads the data of the form from the module API. */
-  load: (userTaskId: string) => Promise<Form>;
+  /**
+   * Loads the data of the form from the module API. A call names the loan request, which is the
+   * business id of the user task, and the user task. The module checks that they belong together.
+   */
+  load: (loanRequestId: string, taskId: string) => Promise<Form>;
   /** The value the input field starts with. */
   initialInput: (form: Form) => string;
   /** Completes the user task with the value of the input field. */
-  complete: (userTaskId: string, input: string) => Promise<void>;
+  complete: (loanRequestId: string, taskId: string, input: string) => Promise<void>;
   /** What the area 'information' shows: a component with the inputs form, texts and language. */
   information: Type<unknown>;
 }
@@ -60,12 +63,12 @@ interface InputFormOfModule {
 const INPUT_FORM = new InjectionToken<InputFormOfModule>('InputForm');
 
 /** The areas 'body' and 'information' both need the data. It is loaded once for both. */
-function loadOnce({ definition, cache }: InputFormOfModule, userTaskId: string) {
-  let loading = cache.get(userTaskId);
+function loadOnce({ definition, cache }: InputFormOfModule, loanRequestId: string, taskId: string) {
+  let loading = cache.get(taskId);
   if (!loading) {
-    loading = definition.load(userTaskId);
-    loading.catch(() => cache.delete(userTaskId));
-    cache.set(userTaskId, loading);
+    loading = definition.load(loanRequestId, taskId);
+    loading.catch(() => cache.delete(taskId));
+    cache.set(taskId, loading);
   }
   return loading;
 }
@@ -80,14 +83,16 @@ abstract class Area {
   protected readonly userTask = computed(() => this.props().userTask as BcUserTask);
   /**
    * The cockpit hands over a new user task object whenever it sets any property, the language
-   * for example. The id stays the same then, so whatever depends on the id only does not run again.
+   * for example. The ids stay the same then, so whatever depends on the ids only does not run again.
    */
   protected readonly userTaskId = computed(() => this.userTask().id!);
+  /** The business id of the user task, which is the id of the loan request. */
+  protected readonly loanRequestId = computed((): string => this.userTask().businessId);
   protected readonly texts = computed(() => textsFor(this.props().language));
   protected readonly language = computed(() => String(this.props().language ?? 'en'));
 }
 
-/** An area which shows the data of the form. It loads them when the id of the user task changes. */
+/** An area which shows the data of the form. It loads them when the user task changes. */
 @Directive()
 abstract class AreaWithData extends Area {
   protected readonly form = signal<unknown>(undefined);
@@ -96,10 +101,11 @@ abstract class AreaWithData extends Area {
   constructor() {
     super();
     effect((onCleanup) => {
+      const loanRequestId = this.loanRequestId();
       const userTaskId = this.userTaskId();
       let current = true;
       onCleanup(() => { current = false; });
-      untracked(() => loadOnce(this.inputForm, userTaskId).then(
+      untracked(() => loadOnce(this.inputForm, loanRequestId, userTaskId).then(
         (loaded) => {
           if (!current) return;
           this.form.set(loaded);
@@ -127,7 +133,7 @@ class Completion {
     this.state.set('running');
     this.problem.set(undefined);
     try {
-      await this.inputForm.definition.complete(userTask!.id!, input.trim());
+      await this.inputForm.definition.complete(userTask!.businessId, userTask!.id!, input.trim());
       this.inputForm.cache.delete(userTask!.id!);
       this.state.set('completed');
       // A cockpit which cannot show notifications refuses; the form says it anyway.

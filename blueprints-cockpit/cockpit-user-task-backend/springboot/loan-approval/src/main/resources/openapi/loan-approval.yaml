@@ -10,6 +10,10 @@ info:
     Each form has two endpoints. GET reads what the form shows. POST sends what the user
     entered and completes the user task. Nothing is stored in between.
 
+    Every path names the loan request and the id of the user task. The module checks that the
+    task belongs to that loan request, so a form never completes a task of another case by
+    mistake. A task of another loan request answers 404, like a task which is not open.
+
     The cockpit lets a user take a task over. POST refuses a task which somebody else took
     over with 409, so a form which was open on two screens is completed only by the user who
     has the task.
@@ -20,9 +24,10 @@ tags:
   - name: user-tasks
     description: The forms of the user tasks
 paths:
-  /api/user-tasks/{userTaskId}/assess-risk:
+  /api/loan-approval/{loanRequestId}/assess-risk/{taskId}:
     parameters:
-      - $ref: '#/components/parameters/UserTaskId'
+      - $ref: '#/components/parameters/LoanRequestId'
+      - $ref: '#/components/parameters/TaskId'
     get:
       tags:
         - user-tasks
@@ -36,7 +41,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AssessRiskForm'
         '404':
-          description: No open user task "Assess risk" has this id
+          description: This loan request has no open user task "Assess risk" with this id
     post:
       tags:
         - user-tasks
@@ -54,14 +59,15 @@ paths:
         '400':
           description: The input is missing or empty
         '404':
-          description: No open user task "Assess risk" has this id
+          description: This loan request has no open user task "Assess risk" with this id
         '409':
           description: >
             Somebody else took the user task over in the Business Cockpit. The task stays open
             for that user
-  /api/user-tasks/{userTaskId}/check-documents:
+  /api/loan-approval/{loanRequestId}/check-documents/{taskId}:
     parameters:
-      - $ref: '#/components/parameters/UserTaskId'
+      - $ref: '#/components/parameters/LoanRequestId'
+      - $ref: '#/components/parameters/TaskId'
     get:
       tags:
         - user-tasks
@@ -75,7 +81,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CheckDocumentsForm'
         '404':
-          description: No open user task "Check documents" has this id
+          description: This loan request has no open user task "Check documents" with this id
     post:
       tags:
         - user-tasks
@@ -93,15 +99,22 @@ paths:
         '400':
           description: The input is missing or empty
         '404':
-          description: No open user task "Check documents" has this id
+          description: This loan request has no open user task "Check documents" with this id
         '409':
           description: >
             Somebody else took the user task over in the Business Cockpit. The task stays open
             for that user
 components:
   parameters:
-    UserTaskId:
-      name: userTaskId
+    LoanRequestId:
+      name: loanRequestId
+      in: path
+      required: true
+      description: The id of the loan request, the business id the cockpit shows with the user task
+      schema:
+        type: string
+    TaskId:
+      name: taskId
       in: path
       required: true
       description: The id of the user task, as the cockpit knows it

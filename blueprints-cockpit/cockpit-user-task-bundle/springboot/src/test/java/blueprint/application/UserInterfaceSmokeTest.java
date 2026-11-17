@@ -102,7 +102,7 @@ public class UserInterfaceSmokeTest {
 
     final var form = module
         .get()
-        .uri("/api/user-tasks/{userTaskId}/assess-risk", userTaskId)
+        .uri("/api/loan-approval/{loanRequestId}/assess-risk/{taskId}", loanRequestId, userTaskId)
         .retrieve()
         .body(new ParameterizedTypeReference<Map<String, Object>>() {
         });

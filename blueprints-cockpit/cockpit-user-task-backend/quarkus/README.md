@@ -60,10 +60,10 @@ the cockpit forwards the request to the address the module reported, its `workfl
 On the way, the cockpit puts the path of that address in place of `/wm/loan-approval`. This
 module reports `http://localhost:8080/loan-approval`, so:
 
-|                    The browser asks for                     |                     The module gets                      |
-|-------------------------------------------------------------|----------------------------------------------------------|
-| `/wm/loan-approval/api/user-tasks/{userTaskId}/assess-risk` | `/loan-approval/api/user-tasks/{userTaskId}/assess-risk` |
-| `/wm/loan-approval/bc-manifest.json`                        | `/loan-approval/bc-manifest.json`                        |
+|                            The browser asks for                            |                             The module gets                             |
+|----------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| `/wm/loan-approval/api/loan-approval/{loanRequestId}/assess-risk/{taskId}` | `/loan-approval/api/loan-approval/{loanRequestId}/assess-risk/{taskId}` |
+| `/wm/loan-approval/bc-manifest.json`                                       | `/loan-approval/bc-manifest.json`                                       |
 
 That is why the OpenAPI names `/wm/loan-approval` as its server, and why every endpoint of the
 module starts with `/loan-approval`. The second line is the user interface. The application
@@ -160,7 +160,6 @@ Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user
 | `openapi/loan-requests.yaml`       | new: the API of `ApiController`, from which the build generates `LoanRequestsApi`                                                                    |
 | `Service.java`                     | per user task: keep the id, give a form its data, complete the task with what the user entered                                                       |
 | `Aggregate.java`                   | per user task the id of the open task and what the user entered                                                                                      |
-| `AggregateRepository.java`         | finds the loan request by the id of an open user task                                                                                                |
 | `LoanApprovalIT.java`              | reports to the dev shell simulator and completes both tasks through their endpoints                                                                  |
 | `CockpitSimulator.java`            | new: starts the dev shell simulator for the test                                                                                                     |
 | `CockpitGuiApi.java`               | new: answers for the cockpit who is logged in and whom a task is assigned to, for the test                                                           |
@@ -234,7 +233,7 @@ which gives the form its data:
 ```
 Loan approval '0f7c…' started
 Loan approval '0f7c…' waits for a risk assessment. Its form reads
-  http://localhost:8080/loan-approval/api/user-tasks/1a2b…/assess-risk
+  http://localhost:8080/loan-approval/api/loan-approval/0f7c…/assess-risk/1a2b…
 ```
 
 Open it in a browser, and you see what the form shows. Completing the task is a POST with what
@@ -253,7 +252,7 @@ does. The frontend's README shows how.
 | `.../loanapproval/UserTaskFormController.java`                                         | the endpoints of the forms: GET reads what a form shows, POST completes the task                     |
 | `.../loanapproval/Cockpit.java`                                                        | asks the cockpit whether somebody else took over a task, if `loan-approval.cockpit.address` is set   |
 | `.../loanapproval/config/LoanApprovalProperties.java`                                  | the key `loan-approval.cockpit.address`, and the id of the module                                    |
-| `.../loanapproval/Service.java`                                                        | finds the loan request by the id of its open task, writes the input and completes the task           |
+| `.../loanapproval/Service.java`                                                        | finds the loan request, checks that the task is open on it, writes the input and completes the task  |
 | `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                      |
 | `.../loanapproval/model/Aggregate.java`                                                | the id of each open task, and what the user entered in each form                                     |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | plays both tasks through, and checks what the cockpit was told                                       |
@@ -267,9 +266,12 @@ the cockpit adapter reports the task to the cockpit, with the details of
 down loses nothing.
 
 A user opens the task in the cockpit. The cockpit loads the form of the module, and the form
-calls `GET .../api/user-tasks/{userTaskId}/assess-risk` with the id of the task. The cockpit knows
-the task by the same id the handler got, so `Service` finds the loan request by it. A task which
-is not open answers 404: the id is unknown, or the task was completed already.
+calls `GET .../api/loan-approval/{loanRequestId}/assess-risk/{taskId}` with the business id of the
+task and its id. The cockpit knows the task by the same id the handler got, and its business id is
+the id of the loan request. `Service` finds the loan request by its id and accepts it only if that
+task is open on it. A task which is not open on that loan request answers 404: the id is unknown,
+the task belongs to another loan request, or it was completed already. So a form never completes
+the task of another case by mistake.
 If the cockpit says that somebody else took the task over, `POST` answers 409 and completes
 nothing. The controller throws `BcTaskNotOpenException` and `BcTaskClaimedByAnotherUserException`,
 and the mappers of the cockpit's support library, which register themselves, answers them.
@@ -283,10 +285,10 @@ workflow ends, and the cockpit takes both tasks off the list.
 Nobody writes the endpoints by hand. The build generates the interface `UserTasksApi` and the
 classes of the forms from the OpenAPI, with the `openapi-generator-maven-plugin`, and
 `UserTaskFormController` implements it. The paths of the file are relative to its server
-`/wm/loan-approval`, so the interface carries `@Path("/api/user-tasks/{userTaskId}")`. The
+`/wm/loan-approval`, so the interface carries `@Path("/api/loan-approval/{loanRequestId}")`. The
 controller has to put `/loan-approval`, the path of the module, in front. Jakarta REST takes the
 `@Path` of a class instead of the one of its interface, not in addition to it. So the controller
-carries `@Path("/loan-approval/api/user-tasks/{userTaskId}")`, and its methods keep the paths of
+carries `@Path("/loan-approval/api/loan-approval/{loanRequestId}")`, and its methods keep the paths of
 the interface. The integration test reads the OpenAPI from the classpath and checks that every
 operation in it has its endpoint at that path. It asks with `OPTIONS`, and Quarkus answers with
 the methods it has for the path.

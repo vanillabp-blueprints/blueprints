@@ -30,12 +30,15 @@ export interface InputForm<Form> {
   testId: string;
   /** The label of the input field. */
   label: (texts: Texts) => string;
-  /** Loads the data of the form from the module API. */
-  load: (userTaskId: string) => Promise<Form>;
+  /**
+   * Loads the data of the form from the module API. A call names the loan request, which is the
+   * business id of the user task, and the user task. The module checks that they belong together.
+   */
+  load: (loanRequestId: string, taskId: string) => Promise<Form>;
   /** The value the input field starts with. */
   initialInput: (form: Form) => string;
   /** Completes the user task with the value of the input field. */
-  complete: (userTaskId: string, input: string) => Promise<void>;
+  complete: (loanRequestId: string, taskId: string, input: string) => Promise<void>;
   /** What the area 'information' shows: a component with the properties form, texts and language. */
   information: Component;
 }
@@ -63,12 +66,12 @@ interface InputFormOfModule {
 const INPUT_FORM: InjectionKey<InputFormOfModule> = Symbol('InputForm');
 
 /** The areas 'body' and 'information' both need the data. It is loaded once for both. */
-function loadOnce({ definition, cache }: InputFormOfModule, userTaskId: string) {
-  let loading = cache.get(userTaskId);
+function loadOnce({ definition, cache }: InputFormOfModule, loanRequestId: string, taskId: string) {
+  let loading = cache.get(taskId);
   if (!loading) {
-    loading = definition.load(userTaskId);
-    loading.catch(() => cache.delete(userTaskId));
-    cache.set(userTaskId, loading);
+    loading = definition.load(loanRequestId, taskId);
+    loading.catch(() => cache.delete(taskId));
+    cache.set(taskId, loading);
   }
   return loading;
 }
@@ -86,26 +89,28 @@ export function useArea() {
     userTask,
     /**
      * The cockpit hands over a new user task object whenever it sets any property, the language
-     * for example. The id stays the same then, so whatever watches the id only does not run again.
+     * for example. The ids stay the same then, so whatever watches the ids only does not run again.
      */
     userTaskId: computed(() => userTask.value.id!),
+    /** The business id of the user task, which is the id of the loan request. */
+    loanRequestId: computed((): string => userTask.value.businessId),
     texts: computed(() => textsFor(props.value.language)),
     language: computed(() => String(props.value.language ?? 'en')),
   };
 }
 
 /**
- * The data of the form. They are loaded when the id of the user task changes.
+ * The data of the form. They are loaded when the user task changes.
  *
  * @param loaded called once the data are there
  */
 export function useFormData(area: ReturnType<typeof useArea>, loaded: (form: unknown) => void = () => {}) {
   const form = shallowRef<unknown>();
   const loadProblem = ref<Problem>();
-  watch(area.userTaskId, (userTaskId, _, onCleanup) => {
+  watch([area.loanRequestId, area.userTaskId], ([loanRequestId, userTaskId], _, onCleanup) => {
     let current = true;
     onCleanup(() => { current = false; });
-    loadOnce(area.inputForm, userTaskId).then(
+    loadOnce(area.inputForm, loanRequestId, userTaskId).then(
       (data) => {
         if (!current) return;
         form.value = data;
@@ -127,7 +132,7 @@ export function useCompletion(area: ReturnType<typeof useArea>) {
     state.value = 'running';
     problem.value = undefined;
     try {
-      await area.definition.complete(userTask!.id!, input.trim());
+      await area.definition.complete(userTask!.businessId, userTask!.id!, input.trim());
       area.inputForm.cache.delete(userTask!.id!);
       state.value = 'completed';
       // A cockpit which cannot show notifications refuses; the form says it anyway.

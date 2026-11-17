@@ -78,10 +78,10 @@ The cockpit forwards everything below `/wm/loan-approval/` to the address the mo
 module reports `http://localhost:8080/loan-approval`. So the API of the forms and the user
 interface are both below `/loan-approval` here:
 
-|              The browser asks the cockpit for               |                   The application gets                   |     It comes from      |
-|-------------------------------------------------------------|----------------------------------------------------------|------------------------|
-| `/wm/loan-approval/bc-manifest.json`                        | `/loan-approval/bc-manifest.json`                        | the user interface JAR |
-| `/wm/loan-approval/api/user-tasks/{userTaskId}/assess-risk` | `/loan-approval/api/user-tasks/{userTaskId}/assess-risk` | the workflow module    |
+|                      The browser asks the cockpit for                      |                          The application gets                           |     It comes from      |
+|----------------------------------------------------------------------------|-------------------------------------------------------------------------|------------------------|
+| `/wm/loan-approval/bc-manifest.json`                                       | `/loan-approval/bc-manifest.json`                                       | the user interface JAR |
+| `/wm/loan-approval/api/loan-approval/{loanRequestId}/assess-risk/{taskId}` | `/loan-approval/api/loan-approval/{loanRequestId}/assess-risk/{taskId}` | the workflow module    |
 
 ### Where the reports go is the application's choice
 
@@ -187,7 +187,7 @@ is not running yet loses nothing, and the reports arrive once it is up.
 A loan approval starts, and the BPMS creates "Assess risk". The cockpit adapter reports the task.
 A user opens it in the cockpit. The cockpit loads `/wm/loan-approval/bc-manifest.json`, which is
 the manifest of the user interface JAR in this application. Then it loads the form, and the form
-calls `/wm/loan-approval/api/user-tasks/...`, which is the controller of the workflow module.
+calls `/wm/loan-approval/api/loan-approval/...`, which is the controller of the workflow module.
 
 The smoke tests ask for both paths without a cockpit. A missing dependency, or a path which does
 not fit the module id, breaks one of them, and the application still starts. That is why the

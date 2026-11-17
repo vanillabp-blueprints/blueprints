@@ -74,7 +74,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     forms = RestClient.create("http://localhost:"
         + port
-        + "/loan-approval/api/user-tasks");
+        + "/loan-approval/api/loan-approval");
 
   }
 
@@ -99,11 +99,11 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(details(assessRisk)).doesNotContainKey(WorkflowTaskHandler.RISK_ASSESSMENT);
 
     // The form reads the loan request and completes the task.
-    assertThat(read(assessRiskTaskId, "assess-risk"))
+    assertThat(read(loanRequestId, assessRiskTaskId, "assess-risk"))
         .containsEntry("loanRequestId", loanRequestId)
         .containsEntry("amount", 5000)
         .doesNotContainKey("riskAssessment");
-    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
+    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
         .isEqualTo(204);
 
     // The second user task is open. Its report carries the risk assessment for the column of
@@ -120,11 +120,11 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(details(checkDocuments))
         .containsEntry(WorkflowTaskHandler.RISK_ASSESSMENT, "acceptable");
 
-    assertThat(read(checkDocumentsTaskId, "check-documents"))
+    assertThat(read(loanRequestId, checkDocumentsTaskId, "check-documents"))
         .containsEntry("loanRequestId", loanRequestId)
         .containsEntry("riskAssessment", "acceptable")
         .doesNotContainKey("documentsNote");
-    assertThat(send(checkDocumentsTaskId, "check-documents", Map.of("documentsNote", "complete")))
+    assertThat(send(loanRequestId, checkDocumentsTaskId, "check-documents", Map.of("documentsNote", "complete")))
         .isEqualTo(204);
 
     // The workflow ended, and the cockpit took both tasks off the list.
@@ -153,18 +153,23 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         aggregate -> aggregate.getAssessRiskTaskId() != null)
         .getAssessRiskTaskId();
 
-    // An unknown id, and the id of a task which is not of this form.
-    assertThat(status(UUID.randomUUID().toString(), "assess-risk")).isEqualTo(404);
-    assertThat(status(assessRiskTaskId, "check-documents")).isEqualTo(404);
-    assertThat(send(assessRiskTaskId, "check-documents", Map.of("documentsNote", "complete")))
+    // An unknown id, the id of a task of another loan request, and the id of a task which is
+    // not of this form.
+    assertThat(status(loanRequestId, UUID.randomUUID().toString(), "assess-risk")).isEqualTo(404);
+    assertThat(status(UUID.randomUUID().toString(), assessRiskTaskId, "assess-risk")).isEqualTo(404);
+    assertThat(
+        send(UUID.randomUUID().toString(), assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
+        .isEqualTo(404);
+    assertThat(status(loanRequestId, assessRiskTaskId, "check-documents")).isEqualTo(404);
+    assertThat(send(loanRequestId, assessRiskTaskId, "check-documents", Map.of("documentsNote", "complete")))
         .isEqualTo(404);
 
     // Completed once, the task is gone. The same form sent twice does not complete anything.
-    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
+    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
         .isEqualTo(204);
-    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
+    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable")))
         .isEqualTo(404);
-    assertThat(status(assessRiskTaskId, "assess-risk")).isEqualTo(404);
+    assertThat(status(loanRequestId, assessRiskTaskId, "assess-risk")).isEqualTo(404);
 
   }
 
@@ -183,18 +188,18 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // Nobody took the task over yet, so anybody's form may complete it. Here it is refused for
     // the empty input only, which leaves the task open for the rest of the test.
-    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", " "), "anna"))
+    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", " "), "anna"))
         .isEqualTo(400);
 
     // 'bob' takes the task over in the cockpit. The form of 'anna' is still on her screen.
     CockpitGuiApi.start().assign(assessRiskTaskId, "bob");
-    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable"), "anna"))
+    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable"), "anna"))
         .isEqualTo(409);
 
     // Reading takes nothing away from 'bob', and the task is still open for him.
-    assertThat(status(assessRiskTaskId, "assess-risk")).isEqualTo(200);
+    assertThat(status(loanRequestId, assessRiskTaskId, "assess-risk")).isEqualTo(200);
     assertThat(loanApprovals.findById(loanRequestId).orElseThrow().getRiskAssessment()).isNull();
-    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable"), "bob"))
+    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", "acceptable"), "bob"))
         .isEqualTo(204);
 
   }
@@ -212,10 +217,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         aggregate -> aggregate.getAssessRiskTaskId() != null)
         .getAssessRiskTaskId();
 
-    assertThat(send(assessRiskTaskId, "assess-risk", Map.of("riskAssessment", " ")))
+    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of("riskAssessment", " ")))
         .isEqualTo(400);
-    assertThat(send(assessRiskTaskId, "assess-risk", Map.of())).isEqualTo(400);
-    assertThat(status(assessRiskTaskId, "assess-risk")).isEqualTo(200);
+    assertThat(send(loanRequestId, assessRiskTaskId, "assess-risk", Map.of())).isEqualTo(400);
+    assertThat(status(loanRequestId, assessRiskTaskId, "assess-risk")).isEqualTo(200);
 
   }
 
@@ -279,24 +284,26 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   @SuppressWarnings("unchecked")
   private Map<String, Object> read(
-      final String userTaskId,
+      final String loanRequestId,
+      final String taskId,
       final String form) {
 
     return forms
         .get()
-        .uri("/{userTaskId}/{form}", userTaskId, form)
+        .uri("/{loanRequestId}/{form}/{taskId}", loanRequestId, form, taskId)
         .retrieve()
         .body(Map.class);
 
   }
 
   private int status(
-      final String userTaskId,
+      final String loanRequestId,
+      final String taskId,
       final String form) {
 
     return forms
         .get()
-        .uri("/{userTaskId}/{form}", userTaskId, form)
+        .uri("/{loanRequestId}/{form}/{taskId}", loanRequestId, form, taskId)
         .exchange((
             request,
             response) -> response.getStatusCode().value());
@@ -305,24 +312,26 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   /** Sends a form without a login, like a person who follows a URL of the log. */
   private int send(
-      final String userTaskId,
+      final String loanRequestId,
+      final String taskId,
       final String form,
       final Map<String, Object> input) {
 
-    return send(userTaskId, form, input, null);
+    return send(loanRequestId, taskId, form, input, null);
 
   }
 
   /** Sends a form as a user of the cockpit, with the cookie the browser sends. */
   private int send(
-      final String userTaskId,
+      final String loanRequestId,
+      final String taskId,
       final String form,
       final Map<String, Object> input,
       final String user) {
 
     return forms
         .post()
-        .uri("/{userTaskId}/{form}", userTaskId, form)
+        .uri("/{loanRequestId}/{form}/{taskId}", loanRequestId, form, taskId)
         .contentType(MediaType.APPLICATION_JSON)
         .headers(headers -> {
           if (user != null) {
