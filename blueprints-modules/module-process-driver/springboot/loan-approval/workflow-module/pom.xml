@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
+    <artifactId>loan-approval</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>loan-approval-workflow-module</artifactId>
+  <name>Workflow module 'loan-approval'</name>
+  <description>The workflow module: BPMN models and the code implementing them, packaged as a JAR. It knows the systems around it only through their ports. Its integration tests run it against the simulator, and the process driver plays its users.</description>
+
+  <properties>
+    <!-- '-DskipTests' starts no simulator either. -->
+    <skipTests>false</skipTests>
+  </properties>
+
+  <dependencies>
+    <!--
+      The workflow module knows the VanillaBP APIs, but no BPMS: 'vanillabp-spring-boot-support'
+      deliberately does not expose any BPMS API, so the hexagonal architecture cannot be
+      broken by accident. The adapter is chosen by the application (see ../application).
+    -->
+    <dependency>
+      <groupId>io.vanillabp</groupId>
+      <artifactId>vanillabp-spring-boot-support</artifactId>
+    </dependency>
+    <!--
+      The same for the Business Cockpit: its annotations, such as @UserTaskDetailsProvider. It
+      knows no BPMS either. The cockpit adapter of the BPMS is chosen by the application, next
+      to the BPMS adapter.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>business-cockpit-spring-boot-support</artifactId>
+      <version>${businesscockpit.version}</version>
+    </dependency>
+    <!--
+      The systems around the module, as ports: interfaces named after the role each system
+      plays. Not the adapters. Which adapter implements a port is the choice of the
+      application, like the choice of the BPMS adapter.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
+      <artifactId>credit-rating-port</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
+      <artifactId>e-signature-port</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <!--
+      The tests run the module with a database, a BPMS adapter, a cockpit adapter and the REST
+      adapters of the ports. The adapters talk to the simulator, which the build starts. Nothing
+      is mocked.
+
+      The process driver plays the users. It brings a loan approval to a point of its process
+      through the API of the user interface and the test API of the simulator. It does not
+      depend on this module, so this dependency is no cycle.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
+      <artifactId>loan-approval-test-driver</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
+      <artifactId>credit-rating-rest-adapter</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
+      <artifactId>e-signature-rest-adapter</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!--
+      Only for the order of the build: the simulator has to be built before these tests run.
+      Putting it first in the parent's <modules> is not enough. Maven sorts the modules by their
+      dependencies and keeps the order of <modules> only between modules which do not depend on
+      each other, and a parallel build ('-T') builds such modules at the same time. Only this
+      dependency makes Maven wait for the simulator's JAR, and only this dependency brings the
+      simulator into 'mvn -pl loan-approval/workflow-module -am'.
+
+      It puts nothing on a classpath: the type 'pom' adds no JAR, and the exclusion keeps the
+      simulator's own dependencies away. The tests talk to the simulator over HTTP, as the
+      application does.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
+      <artifactId>simulator-application</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        The API of this module is written as the OpenAPI file
+        'src/main/resources/openapi/loan-approval.yaml'. This plugin generates the Java interface
+        'LoanApprovalApi' and the records of its answers from it. 'ApiController' implements the
+        interface and holds nothing but the code of each call. The settings all generated code
+        shares are in the POM of the blueprint.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>loan-approval-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
+              <configOptions>
+                <!-- Only the interface. The controller implements it. -->
+                <interfaceOnly>true</interfaceOnly>
+                <skipDefaultInterface>true</skipDefaultInterface>
+                <!-- The paths in the file are complete, so the interface needs no path of its own. -->
+                <requestMappingMode>none</requestMappingMode>
+                <!-- A method returns the answer itself. Spring Boot turns it into the response. -->
+                <useResponseEntity>false</useResponseEntity>
+              </configOptions>
+            </configuration>
+          </execution>
+          <!--
+            The client of the REST API of the process driver, for its integration test only. The
+            dev shell and the tests of a user interface use the API from TypeScript, so the
+            driver brings no Java client of its own.
+          -->
+          <execution>
+            <id>process-driver-api-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <inputSpec>${project.basedir}/../test-driver/src/main/resources/openapi/process-driver.yaml</inputSpec>
+              <output>${project.build.directory}/generated-test-sources/openapi</output>
+              <addCompileSourceRoot>false</addCompileSourceRoot>
+              <addTestCompileSourceRoot>true</addTestCompileSourceRoot>
+              <apiPackage>blueprint.workflowmodule.processdriver.client</apiPackage>
+              <modelPackage>blueprint.workflowmodule.processdriver.client.model</modelPackage>
+              <library>spring-http-interface</library>
+              <configOptions>
+                <useResponseEntity>false</useResponseEntity>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        The next four plugins start the simulator before the integration tests, on a free port,
+        and tell the tests where it is. Its log goes to target/simulator.log, and a failing test
+        prints what the simulator logged meanwhile. The simulator ends with the build.
+
+        This is the plain build and not a profile which switches itself on. Such a profile
+        would switch off 'camunda7', the BPMS profile which is active by default, and a build
+        without '-P<bpms>' would have no BPMS adapter.
+
+        To run the tests against a simulator you started yourself, for example while you debug
+        it, name its address. The build still starts its own simulator, and the tests use yours:
+
+          mvn -pl simulator/application spring-boot:run
+          mvn verify -Dsimulator.base-url=http://localhost:8079
+
+        A test run from the IDE has none of this. It looks for a simulator at
+        http://localhost:8079 and skips, with a message, when nobody answers.
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>simulator-port</id>
+            <goals>
+              <goal>reserve-network-port</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <portNames>
+                <portName>simulator.port</portName>
+              </portNames>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        The runnable JAR of the simulator, from this build, copied to target/. It is not a
+        dependency of the tests, because it is a whole application.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>simulator-jar</id>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
+                  <artifactId>simulator-application</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>runnable</classifier>
+                  <destFileName>simulator.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        Starts the simulator and goes on at once. The tests wait until it answers. Maven
+        stops it when the build ends, also when the build fails. Its log goes to a file and
+        not to the console, so the build output stays readable.
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.7.0</version>
+        <executions>
+          <execution>
+            <id>start-simulator</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <async>true</async>
+              <asyncDestroyOnShutdown>true</asyncDestroyOnShutdown>
+              <executable>${java.home}/bin/java</executable>
+              <arguments>
+                <argument>-jar</argument>
+                <argument>${project.build.directory}/simulator.jar</argument>
+                <argument>--server.port=${simulator.port}</argument>
+                <argument>--logging.file.name=${project.build.directory}/simulator.log</argument>
+                <argument>--logging.threshold.console=OFF</argument>
+                <argument>--spring.main.banner-mode=off</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        Measures which code of this module the integration tests run. The agent goes into the JVM
+        of Failsafe, and the report covers the classes of this module only, not those of the
+        process driver or of the adapters. 'mvn verify' writes it to target/site/jacoco-it/, and
+        the check below fails the build when less than 85 percent of the instructions run.
+      -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <execution>
+            <id>coverage-agent</id>
+            <goals>
+              <goal>prepare-agent-integration</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>coverage-report</id>
+            <goals>
+              <goal>report-integration</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>coverage-check</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>verify</phase>
+            <configuration>
+              <dataFile>${project.build.directory}/jacoco-it.exec</dataFile>
+              <haltOnFailure>true</haltOnFailure>
+              <rules>
+                <rule>
+                  <element>BUNDLE</element>
+                  <limits>
+                    <limit>
+                      <counter>INSTRUCTION</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.85</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <simulator.base-url>http://localhost:${simulator.port}</simulator.base-url>
+            <simulator.log>${project.build.directory}/simulator.log</simulator.log>
+            <!-- The build started the simulator, so a test which finds none fails instead of skipping. -->
+            <simulator.required>true</simulator.required>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <!--
+      One profile per BPMS. Each adds two adapters to the test: the BPMS adapter, which runs
+      the workflows, and the cockpit adapter of the same BPMS, which reports their user tasks
+      to the cockpit. The application declares the same two.
+    -->
+    <profile>
+      <id>camunda7</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <bpms>camunda7</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda7-adapter-spring-boot</artifactId>
+          <version>${camunda7-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-camunda7-adapter-spring-boot</artifactId>
+          <version>${businesscockpit.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>camunda8</id>
+      <properties>
+        <bpms>camunda8</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda8-adapter-spring-boot</artifactId>
+          <version>${camunda8-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-camunda8-adapter-spring-boot</artifactId>
+          <version>${businesscockpit-camunda8.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>operaton</id>
+      <properties>
+        <bpms>operaton</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>operaton-adapter-spring-boot</artifactId>
+          <version>${operaton-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-operaton-adapter-spring-boot</artifactId>
+          <version>${businesscockpit.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>cibseven</id>
+      <properties>
+        <bpms>cibseven</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>cibseven-adapter-spring-boot</artifactId>
+          <version>${cibseven-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-cibseven-adapter-spring-boot</artifactId>
+          <version>${businesscockpit.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>

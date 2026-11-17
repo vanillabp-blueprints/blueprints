@@ -13,7 +13,7 @@ paths:
       tags:
         - SignatureCallback
       operationId: reportSignature
-      summary: Reports that a document was signed
+      summary: "Reports that the signer signed a document, or declined to sign it"
       requestBody:
         required: true
         content:
@@ -24,7 +24,7 @@ paths:
         "204":
           description: The receiver took the report
         "400":
-          description: The receiver does not know the status
+          description: The receiver does not take reports with this status
         "404":
           description: The receiver does not know the contract
 components:
@@ -41,3 +41,4 @@ components:
           type: string
           enum:
             - SIGNED
+            - DECLINED

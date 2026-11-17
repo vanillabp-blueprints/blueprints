@@ -1,6 +1,6 @@
 # Every system around the application is the simulator, started with
 #
-#   mvn -pl simulator spring-boot:run
+#   mvn -pl simulator/application spring-boot:run
 #
 # It answers on one port and plays each system below a path of its own. The adapters are the
 # same as in the profile 'real'. Only these addresses differ.
