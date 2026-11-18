@@ -26,11 +26,13 @@ coordinates, which carry the name of the blueprint.
 
 Blueprint-specific names, each occurring in more than one place:
 
-|          Name          |                                            Where it occurs                                             |
-|------------------------|--------------------------------------------------------------------------------------------------------|
-| `retrieveCreditRating` | the `@WorkflowTask` method, the Camunda 7 expression `${retrieveCreditRating}`, the Camunda 8 job type |
-| `loan-rejected`        | the constant `Service.LOAN_REJECTED` and the `errorCode` of `bpmn:error` in the model                  |
-| `ratingProvider`       | the input mapping in the BPMN and the `@TaskParam` of the handler                                      |
+|               Name                |                                            Where it occurs                                             |
+|-----------------------------------|--------------------------------------------------------------------------------------------------------|
+| `retrieveCreditRating`            | the `@WorkflowTask` method, the Camunda 7 expression `${retrieveCreditRating}`, the Camunda 8 job type |
+| `loan-rejected`                   | the constant `Service.LOAN_REJECTED` and the `errorCode` of `bpmn:error` in the model                  |
+| `ratingProvider`                  | the input mapping in the BPMN and the `@TaskParam` of the handler                                      |
+| `sendApprovalLetter`              | the first `@WorkflowTask` of `informCustomer`, the Camunda 7 expression, the Camunda 8 job type        |
+| `ServiceTask_SendRejectionLetter` | the second `@WorkflowTask` of `informCustomer` and the id of the BPMN element                          |
 
 The error code is the contract between code and model. If the two drift apart, the boundary
 event does not catch the `TaskException`. The workflow then ends as an incident instead of
@@ -38,16 +40,16 @@ taking the error path.
 
 ## Core files
 
-|                                            File                                            |                                                      Why it matters                                                      |
-|--------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | service task with an input mapping and an error boundary event referencing `bpmn:error` with `errorCode="loan-rejected"` |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | the `@WorkflowTask` method: aggregate plus `@TaskParam`, calls `Service`, catches nothing. No `@Transactional`           |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | the work: return early if rated, ask the provider, throw `TaskException(LOAN_REJECTED)` after writing the rejection      |
-| `loan-approval/src/main/java/.../loanapproval/CreditRatingClient.java`                     | the port to the surrounding system, so a test can put a simulator in its place                                           |
-| `loan-approval/src/main/java/.../loanapproval/CreditRatingUnavailableException.java`       | the technical failure. Because nothing catches it, the BPMS retries                                                      |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `creditRating`, `ratedBy`, `rejectionReason`                                                                             |
-| `loan-approval/src/test/java/.../CreditRatingSimulator.java`                               | the provider under test control, extending the harness class `Simulator`                                                 |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | one test per outcome: rated, retried, rejected                                                                           |
+|                                            File                                            |                                                                                                    Why it matters                                                                                                    |
+|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | service task with an input mapping and an error boundary event referencing `bpmn:error` with `errorCode="loan-rejected"`                                                                                             |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | the `@WorkflowTask` method: aggregate plus `@TaskParam`, calls `Service`, catches nothing. No `@Transactional`. And `informCustomer`, one method for two elements: one `@WorkflowTask` by task definition, one by id |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | the work: return early if rated, ask the provider, throw `TaskException(LOAN_REJECTED)` after writing the rejection                                                                                                  |
+| `loan-approval/src/main/java/.../loanapproval/CreditRatingClient.java`                     | the port to the surrounding system, so a test can put a simulator in its place                                                                                                                                       |
+| `loan-approval/src/main/java/.../loanapproval/CreditRatingUnavailableException.java`       | the technical failure. Because nothing catches it, the BPMS retries                                                                                                                                                  |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `creditRating`, `ratedBy`, `rejectionReason`, `letterSent`                                                                                                                                                           |
+| `loan-approval/src/test/java/.../CreditRatingSimulator.java`                               | the provider under test control, extending the harness class `Simulator`                                                                                                                                             |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | one test per outcome: rated, retried, rejected                                                                                                                                                                       |
 
 ## Boilerplate files
 
@@ -95,6 +97,11 @@ in every blueprint. Copy them unchanged.
    is exposed as a `@Primary` bean of a `@TestConfiguration` inside the test.
 7. Copy `LoanApprovalIT` and write one test per outcome the task has.
 
+One method may serve several BPMN elements. Then repeat `@WorkflowTask`, once per element.
+Name the task definition, or `id` with the BPMN id of the element, if the model is given and
+its names are not method names. Prefer the task definition. Use the id where one task
+definition is used for elements which need different methods.
+
 If the project already has a business service for this use case, add the methods there instead
 of creating a second one. Put `@Transactional` on the class `Service`. A method a task handler
 calls joins the transaction of the task. If it throws a `TaskException`, it needs
@@ -118,6 +125,8 @@ All three tests of `LoanApprovalIT` have to pass. They prove the aspect:
 - a refused request is followed by a second one, so the BPMS (business process management
   system) did retry,
 - a rejected loan keeps its `rejectionReason`. That proves that a `TaskException` commits.
+- the approved and the rejected loan each got their letter, so the one method `informCustomer`
+  served the element wired by task definition and the element wired by id.
 
 You no longer have to guess a `@Transactional` which reaches the task from a failing assertion.
 On the handler it fails the boot. On a bean the handler calls, a plain one fails the task once a

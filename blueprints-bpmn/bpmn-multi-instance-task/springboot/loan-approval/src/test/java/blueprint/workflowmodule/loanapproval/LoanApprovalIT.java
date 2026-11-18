@@ -41,7 +41,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     return awaitAggregate(
         loanApprovals,
         loanRequestId,
-        aggregate -> aggregate.getChosenPartnerId() != null);
+        aggregate -> aggregate.getContractCopiesSent() != null && aggregate.getContractCopiesSent() == aggregate
+            .getContractCopies());
 
   }
 
@@ -74,6 +75,20 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(loanRequest.getCreditRating()).isEqualTo(50);
     assertThat(loanRequest.getChosenPartnerId()).isEqualTo("harbour-credit");
     assertThat(loanRequest.getChosenRate()).isEqualTo(70);
+
+  }
+
+  @Test
+  @DisplayName("A multi-instance task based on a number sends one copy per recipient")
+  public void oneIterationPerContractCopy() {
+
+    final var loanRequest = runWith(5000);
+
+    // the model iterated 'contractCopies' times: the customer and the partner chosen
+    assertThat(loanRequest.contractRecipients()).containsExactly(Aggregate.CUSTOMER, "harbour-credit");
+    assertThat(loanRequest.getContractCopiesSent())
+        .describedAs("one iteration per copy, counted by the index the BPMS passed")
+        .isEqualTo(2);
 
   }
 

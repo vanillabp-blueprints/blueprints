@@ -55,6 +55,9 @@ public class WorkflowTaskHandler {
    */
   private static final String REQUEST_PARTNER_OFFER = "ServiceTask_RequestPartnerOffer";
 
+  /** The ID of the second multi-instance element, the one based on a number. */
+  private static final String SEND_CONTRACT_COPY = "ServiceTask_SendContractCopy";
+
   @Inject
   Service loanApproval;
 
@@ -116,6 +119,27 @@ public class WorkflowTaskHandler {
       final Aggregate loanRequest) {
 
     loanApproval.chooseBestOffer(loanRequest);
+
+  }
+
+  /**
+   * Called once per copy of the contract, one after the other.
+   *
+   * <p>
+   * This multi-instance task is based on a number of iterations, not on a collection. So
+   * there is no element to pass. The method asks for the index only, and the business code
+   * fetches the recipient from the aggregate.
+   * </p>
+   *
+   * @param loanRequest The workflow's aggregate.
+   * @param index        Which copy this is, counted from zero.
+   */
+  @WorkflowTask
+  public void sendContractCopy(
+      final Aggregate loanRequest,
+      @MultiInstanceIndex(SEND_CONTRACT_COPY) final int index) {
+
+    loanApproval.sendContractCopy(loanRequest, index);
 
   }
 

@@ -18,7 +18,8 @@ loan-approval:
 
 # The list the model loops over reaches the BPMS, and a list is neither a boolean nor a
 # text, so it is declared. A multi-instance task needs the collection itself: it counts the
-# entries to know how often it runs, and no boolean getter can answer that.
+# entries to know how often it runs, and no boolean getter can answer that. The same holds
+# for the number of contract copies, which the second multi-instance task loops over.
 vanillabp:
   workflow-modules:
     loan-approval:
@@ -26,6 +27,7 @@ vanillabp:
         loan_approval:
           declared-aggregate-values:
             - partnerIds
+            - contractCopies
           # Every instance of the multi-instance task is a token of its own, and the aggregate has
           # no version attribute. So VanillaBP warns at startup that two instances may overwrite
           # each other. Here they do not: an instance only adds a PartnerOffer, which is a row of

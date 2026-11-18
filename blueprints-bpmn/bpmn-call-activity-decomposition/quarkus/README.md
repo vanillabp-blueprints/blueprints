@@ -29,7 +29,7 @@ well be drawn into the calling model. So it is the same business case, and there
 copy or keep in sync. `checkCollateral` and `checkDebtRatio` write onto the loan approval.
 `decideOnLoan` reads what they wrote, as if it had all happened in one diagram.
 
-One annotation wires the tasks of both processes:
+One annotation declares both processes:
 
 ```java
 @WorkflowService(
@@ -45,6 +45,23 @@ processes there, not into the `bpmnProcess` of a class of their own. VanillaBP b
 called process as its `bpmnProcess`, that choice would be a coin flip. So the boot fails and
 names both classes and both processes. A second class for the same aggregate is fine, as long
 as it declares the same `bpmnProcess`.
+
+This blueprint has such a second class. The called process is a section of the loan approval,
+so its tasks get a package of their own, `riskassessment`. Its `WorkflowTaskHandler` holds
+`checkCollateral` and `checkDebtRatio` and declares the same processes as the main handler:
+
+```java
+@WorkflowService(
+    workflowAggregateClass = Aggregate.class,
+    bpmnProcess = @BpmnProcess(bpmnProcessId = "loan_approval"),
+    secondaryBpmnProcesses = @BpmnProcess(bpmnProcessId = "risk_assessment"))
+public class WorkflowTaskHandler {
+```
+
+The secondary process has to be named in this class as well. VanillaBP wires the tasks of a
+process to the classes which declare it. Without it, the boot says that `checkCollateral` has
+no method. This is how a large workflow is split by its sections, while it stays one workflow
+with one `ProcessService`.
 
 The call activity carries no input mapping. That is worth a sentence, because it used to need
 one. VanillaBP finds the workflow aggregate of a task by the handle the engine keeps on the
@@ -89,7 +106,8 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 |-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
 | `loan_approval.bpmn`                                | a call activity pointing at `risk_assessment`, and a task after it using the result                                    |
 | `risk_assessment.bpmn`                              | new: the called process, two service tasks between a plain start and end event                                         |
-| `WorkflowTaskHandler.java`                          | `secondaryBpmnProcesses` names the called process; its tasks are methods like any other                                |
+| `WorkflowTaskHandler.java`                          | `secondaryBpmnProcesses` names the called process                                                                      |
+| `riskassessment/WorkflowTaskHandler.java`           | new: the tasks of the called process, in a class of their own which declares the same processes                        |
 | `Aggregate.java`                                    | what the called process writes, the decision made from it, and `@NoSyncWithBPMS` on the class                          |
 | `Service.java`                                      | the two checks of the risk assessment and the decision after it                                                        |
 | `loan-approval.yaml`, `LoanApprovalProperties.java` | the two numbers the checks and the decision use                                                                        |
@@ -210,7 +228,8 @@ Both numbers the checks use are in the module's own configuration
 |----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn`   | the calling process: the call activity and the task using its result                                       |
 | `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/risk_assessment.bpmn` | the called process, started by nobody but the call activity                                                |
-| `.../loanapproval/WorkflowTaskHandler.java`                                                  | the tasks of both processes, wired by one `@WorkflowService`                                               |
+| `.../loanapproval/WorkflowTaskHandler.java`                                                  | the tasks of the calling process, and the `@WorkflowService` which declares both processes                 |
+| `.../loanapproval/riskassessment/WorkflowTaskHandler.java`                                   | the tasks of the called process, declaring the same processes                                              |
 | `.../loanapproval/Service.java`                                                              | the business code, which does not know that two processes are involved                                     |
 | `.../loanapproval/model/Aggregate.java`                                                      | the one aggregate, `@NoSyncWithBPMS` on it, and a comment per attribute which says which process writes it |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                             | starts the calling process and waits for the decision, across the call activity                            |
@@ -223,7 +242,7 @@ aggregate is loaded and saved around each of them.
 
 Nothing in the business code says which process it serves. That property is worth keeping. A
 section moved into a called process today can move back into the calling model tomorrow, and
-only the BPMN files change.
+only the BPMN files and the declarations of the secondary process change.
 
 ## Documentation
 

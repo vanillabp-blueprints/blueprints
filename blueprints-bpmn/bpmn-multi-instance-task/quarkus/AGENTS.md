@@ -30,6 +30,8 @@ Blueprint-specific names, each occurring in more than one place:
 | `ServiceTask_RequestPartnerOffer` | the ID of the multi-instance element in the BPMN and the value of all three multi-instance annotations |
 | `partnerIds`                      | the attribute of the workflow aggregate and the collection expression of the multi-instance element    |
 | `partnerId`                       | the element variable of the model and the parameter the handler is given                               |
+| `ServiceTask_SendContractCopy`    | the ID of the multi-instance element based on a number and the value of its `@MultiInstanceIndex`      |
+| `contractCopies`                  | the getter `getContractCopies()` of the aggregate and the number the model loops over                  |
 
 The value of the annotations is the ID of the multi-instance ELEMENT, not the name of the
 element variable. If it is wrong, the task fails while it runs. The message names the contexts
@@ -40,7 +42,7 @@ the BPMS (business process management system) did supply.
 |                                            File                                            |                                                                    Why it matters                                                                     |
 |--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance element: what it loops over, what each instance gets, and whether they run at the same time                                        |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | `@MultiInstanceElement`, `@MultiInstanceIndex`, `@MultiInstanceTotal`                                                                                 |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | `@MultiInstanceElement`, `@MultiInstanceIndex`, `@MultiInstanceTotal`, and a method which takes the index alone                                       |
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the collection the model iterates over, and the rows the iterations write                                                                             |
 | `loan-approval/src/main/java/.../loanapproval/model/PartnerOffer.java`                     | a row per iteration, which is what makes concurrent instances harmless                                                                                |
 | `loan-approval/src/main/java/.../loanapproval/Service.java`                                | one method per iteration and one for the result over all of them                                                                                      |
@@ -98,6 +100,13 @@ does not make the test a bean.
 7. Extend `LoanApprovalIT` with assertions which do not depend on the order of the iterations.
    Use `containsExactlyInAnyOrder`, not `containsExactly`, because there is no order.
 
+If the model loops over a NUMBER and not over a collection, there is no element. Take only
+`@MultiInstanceIndex` and fetch what the iteration needs from the aggregate, as
+`sendContractCopy` does. Share the number through a getter annotated `@SyncWithBPMS`. On
+Camunda 7, Operaton and CIB seven the model reads it as `loopCardinality`. Camunda 8 has no
+`loopCardinality`: write `inputCollection="=for copy in 1..<number> return copy"`. The number
+must be at least 1 there, because `1..0` counts down and gives two elements.
+
 The `resolverBean` of `@MultiInstanceElement` is for nested iterations, like a multi-instance
 task inside a multi-instance subprocess. This blueprint does not need it. The
 [SPI documentation](https://github.com/vanillabp/spi-for-java/wiki/Multi-instance#nested-multi-instance-activities) shows it.
@@ -113,6 +122,7 @@ running cluster and a configured `vanillabp.adapters.camunda8.rest-address`. Che
 you report a failure of that profile as a defect of the generated code.
 
 `LoanApprovalIT` proves the aspect and has to pass: one row per element, the index each
-iteration was given, and the result computed after the last of them.
+iteration was given, the result computed after the last of them, and one copy of the contract
+per recipient.
 
 Do not report success without having run this.

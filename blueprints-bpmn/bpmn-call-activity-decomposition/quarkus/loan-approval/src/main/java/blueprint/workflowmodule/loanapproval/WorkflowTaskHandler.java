@@ -17,20 +17,23 @@ import jakarta.inject.Inject;
  * </p>
  *
  * <p>
- * <strong>Two processes, one handler, one aggregate.</strong> {@code loan_approval} is the
- * process the application starts, {@code risk_assessment} is the one its call activity
- * calls, and {@code secondaryBpmnProcesses} is what tells VanillaBP that the tasks of both
- * belong to this class and work on the same workflow aggregate. That is what decomposition
- * means: the model was split to stay readable, the business case was not.
+ * <strong>Two processes, one aggregate.</strong> {@code loan_approval} is the process the
+ * application starts, {@code risk_assessment} is the one its call activity calls, and
+ * {@code secondaryBpmnProcesses} is what tells VanillaBP that the tasks of both work on the
+ * same workflow aggregate. That is what decomposition means: the model was split to stay
+ * readable, the business case was not.
  * </p>
  *
  * <p>
- * Declare every called process here rather than in a handler class of its own. VanillaBP
- * builds one {@code ProcessService} per workflow aggregate class, and the process it
- * starts is the one of the first workflow service class it happens to find - with a second
- * class on the same aggregate, {@code startWorkflow} may start the called process instead
- * of the calling one, and nothing says so. A called process with an aggregate of its own is
- * a different situation altogether; the README says what VanillaBP does with that one.
+ * Declare every called process here, as a secondary process, rather than as the
+ * {@code bpmnProcess} of a class of its own. VanillaBP builds one {@code ProcessService} per
+ * workflow aggregate class, and exactly one process is the one {@code startWorkflow} starts.
+ * Two classes on the same aggregate which declared different processes fail the boot, naming
+ * both. The tasks of the called process may still live in a class of their own, if that class
+ * declares the same {@code bpmnProcess} and the same secondary process. The class
+ * {@link blueprint.workflowmodule.loanapproval.riskassessment.WorkflowTaskHandler} does that.
+ * A called process with an aggregate of its own is a different situation altogether; the
+ * README says what VanillaBP does with that one.
  * </p>
  *
  * <p>
@@ -76,34 +79,6 @@ public class WorkflowTaskHandler {
       final Aggregate loanRequest) {
 
     loanApproval.assessCreditRating(loanRequest);
-
-  }
-
-  /**
-   * A task of the called process. Nothing marks it as one: it is handed the aggregate of
-   * the loan approval like every other task, because the called process is a section of
-   * the same business case.
-   *
-   * @param loanRequest The workflow's aggregate.
-   */
-  @WorkflowTask
-  public void checkCollateral(
-      final Aggregate loanRequest) {
-
-    loanApproval.checkCollateral(loanRequest);
-
-  }
-
-  /**
-   * The second task of the called process.
-   *
-   * @param loanRequest The workflow's aggregate.
-   */
-  @WorkflowTask
-  public void checkDebtRatio(
-      final Aggregate loanRequest) {
-
-    loanApproval.checkDebtRatio(loanRequest);
 
   }
 

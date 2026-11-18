@@ -59,9 +59,31 @@
         <zeebe:taskDefinition type="chooseBestOffer" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_ToChooseBestOffer</bpmn:incoming>
-      <bpmn:outgoing>Flow_ToLoanDecided</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToSendContractCopy</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_ToLoanDecided" sourceRef="ServiceTask_ChooseBestOffer" targetRef="EndEvent_LoanDecided" />
+    <bpmn:sequenceFlow id="Flow_ToSendContractCopy" sourceRef="ServiceTask_ChooseBestOffer" targetRef="ServiceTask_SendContractCopy" />
+    <!--
+      A multi-instance task based on a NUMBER rather than a collection: one instance per copy
+      of the contract, one after the other ('isSequential="true"'). Camunda 8 has no
+      'loopCardinality'. So a FEEL expression turns the number 'contractCopies' into a list
+      of that length, 'for copy in 1..contractCopies return copy'. 'contractCopies' is a getter
+      of the workflow aggregate annotated '@SyncWithBPMS'. The Java method ignores the
+      element and asks for the index, and the business code fetches the recipient from the
+      aggregate.
+    -->
+    <bpmn:serviceTask id="ServiceTask_SendContractCopy" name="Send contract copy">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="sendContractCopy" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToSendContractCopy</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanDecided</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=for copy in 1..contractCopies return copy" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanDecided" sourceRef="ServiceTask_SendContractCopy" targetRef="EndEvent_LoanDecided" />
     <bpmn:endEvent id="EndEvent_LoanDecided" name="Loan decided">
       <bpmn:incoming>Flow_ToLoanDecided</bpmn:incoming>
     </bpmn:endEvent>
@@ -83,10 +105,13 @@
       <bpmndi:BPMNShape id="ServiceTask_ChooseBestOffer_di" bpmnElement="ServiceTask_ChooseBestOffer">
         <dc:Bounds x="560" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_SendContractCopy_di" bpmnElement="ServiceTask_SendContractCopy">
+        <dc:Bounds x="720" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_LoanDecided_di" bpmnElement="EndEvent_LoanDecided">
-        <dc:Bounds x="722" y="102" width="36" height="36" />
+        <dc:Bounds x="882" y="102" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="708" y="145" width="66" height="14" />
+          <dc:Bounds x="868" y="145" width="66" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
@@ -101,9 +126,13 @@
         <di:waypoint x="500" y="120" />
         <di:waypoint x="560" y="120" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_ToLoanDecided_di" bpmnElement="Flow_ToLoanDecided">
+      <bpmndi:BPMNEdge id="Flow_ToSendContractCopy_di" bpmnElement="Flow_ToSendContractCopy">
         <di:waypoint x="660" y="120" />
-        <di:waypoint x="722" y="120" />
+        <di:waypoint x="720" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanDecided_di" bpmnElement="Flow_ToLoanDecided">
+        <di:waypoint x="820" y="120" />
+        <di:waypoint x="882" y="120" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

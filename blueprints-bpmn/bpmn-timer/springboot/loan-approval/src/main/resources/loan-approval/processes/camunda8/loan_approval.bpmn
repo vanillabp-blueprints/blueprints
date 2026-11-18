@@ -10,22 +10,50 @@
         <zeebe:taskDefinition type="retrieveCreditRating" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_ToRetrieveCreditRating</bpmn:incoming>
-      <bpmn:outgoing>Flow_ToRequestPartnerApproval</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToCoolOff</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="Flow_ToCoolOff" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="CatchEvent_CoolOff" />
     <!--
       A timer in the sequence flow: the workflow waits here, and nothing in the application
       runs meanwhile. The duration is part of the model, so changing it is a new process
       version - put it in the model only if it belongs to the process, not to a customer.
+      The customer may withdraw while the workflow waits. The application tells the BPMS
+      with aggregateChanged, because the gateway behind the timer reads 'withdrawn'.
     -->
     <bpmn:intermediateCatchEvent id="CatchEvent_CoolOff" name="Cool-off period">
       <bpmn:incoming>Flow_ToCoolOff</bpmn:incoming>
-      <bpmn:outgoing>Flow_ToRequestPartnerApproval</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToWithdrawn</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_CoolOff">
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10S</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:intermediateCatchEvent>
-    <bpmn:sequenceFlow id="Flow_ToRequestPartnerApproval" sourceRef="CatchEvent_CoolOff" targetRef="SendTask_RequestPartnerApproval" />
+    <bpmn:sequenceFlow id="Flow_ToWithdrawn" sourceRef="CatchEvent_CoolOff" targetRef="Gateway_Withdrawn" />
+    <!--
+      The gateway reads what the BPMS was told last. Nothing of VanillaBP talks to the BPMS
+      while the timer waits, so a withdrawal in that time reaches this gateway only because
+      the application pushed it with aggregateChanged.
+    -->
+    <bpmn:exclusiveGateway id="Gateway_Withdrawn" name="Withdrawn?" default="Flow_ToRequestPartnerApproval">
+      <bpmn:incoming>Flow_ToWithdrawn</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToConfirmWithdrawal</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToRequestPartnerApproval</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_ToConfirmWithdrawal" name="yes" sourceRef="Gateway_Withdrawn" targetRef="ServiceTask_ConfirmWithdrawal">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=withdrawn</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="ServiceTask_ConfirmWithdrawal" name="Confirm withdrawal">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="confirmWithdrawal" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToConfirmWithdrawal</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanWithdrawn</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanWithdrawn" sourceRef="ServiceTask_ConfirmWithdrawal" targetRef="EndEvent_LoanWithdrawn" />
+    <bpmn:endEvent id="EndEvent_LoanWithdrawn" name="Loan withdrawn">
+      <bpmn:incoming>Flow_ToLoanWithdrawn</bpmn:incoming>
+    </bpmn:endEvent>
+    <!-- The default flow: taken when nobody withdrew. -->
+    <bpmn:sequenceFlow id="Flow_ToRequestPartnerApproval" name="no" sourceRef="Gateway_Withdrawn" targetRef="SendTask_RequestPartnerApproval" />
     <!--
       The asynchronous task, now with a deadline attached. Its job type is the task definition, and the job stays open
       after the handler returned because that handler asks for the task's ID. The process
@@ -91,30 +119,30 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SendTask_RequestPartnerApproval_di" bpmnElement="SendTask_RequestPartnerApproval">
-        <dc:Bounds x="460" y="80" width="100" height="80" />
+        <dc:Bounds x="560" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ServiceTask_InformCustomer_di" bpmnElement="ServiceTask_InformCustomer">
-        <dc:Bounds x="620" y="80" width="100" height="80" />
+        <dc:Bounds x="720" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_LoanAssessed_di" bpmnElement="EndEvent_LoanAssessed">
-        <dc:Bounds x="772" y="102" width="36" height="36" />
+        <dc:Bounds x="872" y="102" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="759" y="145" width="66" height="14" />
+          <dc:Bounds x="859" y="145" width="66" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BoundaryEvent_Deadline_di" bpmnElement="BoundaryEvent_Deadline">
-        <dc:Bounds x="492" y="142" width="36" height="36" />
+        <dc:Bounds x="592" y="142" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="470" y="185" width="100" height="14" />
+          <dc:Bounds x="570" y="185" width="100" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ServiceTask_NoteTimeout_di" bpmnElement="ServiceTask_NoteTimeout">
-        <dc:Bounds x="620" y="240" width="100" height="80" />
+        <dc:Bounds x="720" y="240" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_LoanTimedOut_di" bpmnElement="EndEvent_LoanTimedOut">
-        <dc:Bounds x="772" y="262" width="36" height="36" />
+        <dc:Bounds x="872" y="262" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="757" y="305" width="80" height="14" />
+          <dc:Bounds x="857" y="305" width="80" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
@@ -125,26 +153,60 @@
         <di:waypoint x="340" y="120" />
         <di:waypoint x="372" y="120" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_ToRequestPartnerApproval_di" bpmnElement="Flow_ToRequestPartnerApproval">
+      <bpmndi:BPMNEdge id="Flow_ToWithdrawn_di" bpmnElement="Flow_ToWithdrawn">
         <di:waypoint x="408" y="120" />
         <di:waypoint x="460" y="120" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_ToInformCustomer_di" bpmnElement="Flow_ToInformCustomer">
+      <bpmndi:BPMNEdge id="Flow_ToRequestPartnerApproval_di" bpmnElement="Flow_ToRequestPartnerApproval">
+        <di:waypoint x="510" y="120" />
         <di:waypoint x="560" y="120" />
-        <di:waypoint x="620" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="525" y="102" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToInformCustomer_di" bpmnElement="Flow_ToInformCustomer">
+        <di:waypoint x="660" y="120" />
+        <di:waypoint x="720" y="120" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_ToLoanAssessed_di" bpmnElement="Flow_ToLoanAssessed">
-        <di:waypoint x="720" y="120" />
-        <di:waypoint x="772" y="120" />
+        <di:waypoint x="820" y="120" />
+        <di:waypoint x="872" y="120" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_ToNoteTimeout_di" bpmnElement="Flow_ToNoteTimeout">
-        <di:waypoint x="510" y="178" />
-        <di:waypoint x="510" y="280" />
-        <di:waypoint x="620" y="280" />
+        <di:waypoint x="610" y="178" />
+        <di:waypoint x="610" y="280" />
+        <di:waypoint x="720" y="280" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_ToLoanTimedOut_di" bpmnElement="Flow_ToLoanTimedOut">
-        <di:waypoint x="720" y="280" />
-        <di:waypoint x="772" y="280" />
+        <di:waypoint x="820" y="280" />
+        <di:waypoint x="872" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Gateway_Withdrawn_di" bpmnElement="Gateway_Withdrawn" isMarkerVisible="true">
+        <dc:Bounds x="460" y="95" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="450" y="65" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ConfirmWithdrawal_di" bpmnElement="ServiceTask_ConfirmWithdrawal">
+        <dc:Bounds x="560" y="380" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LoanWithdrawn_di" bpmnElement="EndEvent_LoanWithdrawn">
+        <dc:Bounds x="722" y="402" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="702" y="445" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToConfirmWithdrawal_di" bpmnElement="Flow_ToConfirmWithdrawal">
+        <di:waypoint x="485" y="145" />
+        <di:waypoint x="485" y="420" />
+        <di:waypoint x="560" y="420" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="491" y="393" width="25" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanWithdrawn_di" bpmnElement="Flow_ToLoanWithdrawn">
+        <di:waypoint x="660" y="420" />
+        <di:waypoint x="722" y="420" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

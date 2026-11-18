@@ -12,10 +12,17 @@ import io.vanillabp.spi.service.WorkflowTask;
  * What the process tells the application: the incoming half of the BPMN wiring.
  *
  * <p>
- * The two methods below serve the SAME task definition, and which of them is called is
- * decided by the version of the process definition the workflow runs on. A workflow started
- * before the model was changed keeps the code it was started with, and it does so without a
- * flag on the aggregate or an if in the business code.
+ * The method below and the one in {@link WorkflowTaskHandlerOfVersion1} serve the SAME task
+ * definition, and which of them is called is decided by the version of the process
+ * definition the workflow runs on. A workflow started before the model was changed keeps the
+ * code it was started with, and it does so without a flag on the aggregate or an if in the
+ * business code.
+ * </p>
+ *
+ * <p>
+ * Here the range is written on the method. {@link WorkflowTaskHandlerOfVersion1} writes it
+ * once on the class instead, for every method in it. Both ways can be mixed, as long as no two
+ * methods of one task definition serve the same version.
  * </p>
  *
  * <p>
@@ -36,26 +43,6 @@ public class WorkflowTaskHandler {
 
   @Autowired
   private Service loanApproval;
-
-  /**
-   * The risk assessment as version 1 of the process meant it: a person looks at the request
-   * and the workflow records who did.
-   *
-   * <p>
-   * This method exists for the workflows which are still running on that version. It is not
-   * dead code, and deleting it is what turns a running workflow into an incident at its next
-   * task.
-   * </p>
-   *
-   * @param loanRequest The workflow's aggregate.
-   */
-  @WorkflowTask(taskDefinition = "assessRisk", version = "1")
-  public void assessRiskManually(
-      final Aggregate loanRequest) {
-
-    loanApproval.assessRiskManually(loanRequest);
-
-  }
 
   /**
    * The risk assessment as every version after the first one means it: a score, computed
