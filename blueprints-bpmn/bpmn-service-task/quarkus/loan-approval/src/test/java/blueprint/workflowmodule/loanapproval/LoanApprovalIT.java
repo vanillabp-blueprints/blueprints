@@ -6,7 +6,9 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import blueprint.workflowmodule.SuppressOutputExtension;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import io.quarkus.test.junit.QuarkusTest;
@@ -21,6 +23,9 @@ import jakarta.inject.Inject;
  * this blueprint. Each of them asserts on the workflow aggregate, never on the engine.
  * </p>
  */
+// One test makes the credit rating fail on purpose, and the application logs the failure with
+// its stack trace. That output is shown only with a test which fails.
+@ExtendWith(SuppressOutputExtension.class)
 @QuarkusTest
 public class LoanApprovalIT extends WorkflowModuleTest {
 

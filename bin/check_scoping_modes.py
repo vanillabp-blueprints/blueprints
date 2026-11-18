@@ -81,8 +81,9 @@ DEFAULT_MODE = "by-adapter"
 
 # The Maven modules which run no BPMS at all, by the name of their directory. Their
 # 'application.yaml' configures another application, so no profile of a BPMS applies to them.
-# 'simulator' is the simulator of module-simulator, which plays the systems around the
-# application and runs no workflow.
+# 'simulator' is the simulator of module-under-load, which plays the systems around the
+# application and runs no workflow. The simulator of module-simulator sits one level deeper, in
+# 'simulator/application', where this check does not look.
 MODULES_WITHOUT_A_BPMS = ("simulator",)
 
 
