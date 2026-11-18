@@ -16,7 +16,12 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.awaitility.core.ConditionTimeoutException;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
+import io.vanillabp.cockpit.devshell.simulator.api.client.SimulatorApi;
+import io.vanillabp.cockpit.devshell.simulator.api.client.model.VisibleWorkflowModule;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
 import io.vanillabp.cockpit.gui.api.v1.client.model.UserTaskRetrieveMode;
@@ -49,6 +54,14 @@ import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowsRequest;
  * {@code spring.http.serviceclient.official-gui-api.base-url}, which the test sets to
  * {@link #cockpitBaseUrl()}, and the test hands it to the methods which read.
  * </p>
+ *
+ * <p>
+ * Which workflow modules a user sees comes from a path only the simulator answers,
+ * {@code GET /simulator-api/workflow-module?user=...}, through a client generated from the
+ * OpenAPI file of the simulator's own paths, which the cockpit publishes in
+ * {@code dev-shell-simulator-api-client}. The cockpit answers the same list only to the user
+ * who is signed in, and this path names the user instead.
+ * </p>
  */
 public final class CockpitSimulator {
 
@@ -66,10 +79,18 @@ public final class CockpitSimulator {
 
   private final String baseUrl;
 
+  private final SimulatorApi simulatorApi;
+
   private CockpitSimulator(
       final String baseUrl) {
 
     this.baseUrl = baseUrl;
+    // The paths in the OpenAPI file of the simulator are complete, so the client takes the
+    // address of the simulator as it is.
+    this.simulatorApi = HttpServiceProxyFactory
+        .builderFor(RestClientAdapter.create(RestClient.create(baseUrl)))
+        .build()
+        .createClient(SimulatorApi.class);
 
   }
 
@@ -163,6 +184,48 @@ public final class CockpitSimulator {
                 .pageSize(100))
             .getBody()),
         condition);
+
+  }
+
+  /**
+   * Waits until the cockpit lists the workflow modules for a user which the condition expects. A
+   * workflow module registers itself when the application starts, and the cockpit may get the
+   * registration a moment after the test began.
+   *
+   * @param user      The id of the user, as {@code dev-shell-simulator.yaml} lists it.
+   * @param condition What the cockpit is expected to list for the user.
+   * @return The ids of the workflow modules the user sees.
+   */
+  public List<String> awaitWorkflowModulesSeenBy(
+      final String user,
+      final Predicate<List<String>> condition) {
+
+    return awaitReport(
+        "workflow modules of user '"
+            + user
+            + "'",
+        () -> Optional.of(workflowModulesSeenBy(user)),
+        condition);
+
+  }
+
+  /**
+   * The workflow modules the cockpit lists for a user. The simulator applies the rule of the
+   * cockpit: a module which names groups is listed only for the members of these groups.
+   *
+   * @param user The id of the user, as {@code dev-shell-simulator.yaml} lists it.
+   * @return The ids of the workflow modules the user sees.
+   */
+  public List<String> workflowModulesSeenBy(
+      final String user) {
+
+    return simulatorApi
+        .getWorkflowModulesOfUser(user)
+        .getBody()
+        .getModules()
+        .stream()
+        .map(VisibleWorkflowModule::getId)
+        .toList();
 
   }
 

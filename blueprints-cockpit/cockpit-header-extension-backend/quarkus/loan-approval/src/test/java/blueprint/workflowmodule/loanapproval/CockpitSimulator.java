@@ -4,6 +4,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -17,6 +18,9 @@ import java.util.function.Supplier;
 
 import org.awaitility.core.ConditionTimeoutException;
 
+import blueprint.workflowmodule.loanapproval.simulator.client.SimulatorApi;
+import blueprint.workflowmodule.loanapproval.simulator.client.model.VisibleWorkflowModule;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
 import io.vanillabp.cockpit.gui.api.v1.client.model.UserTaskRetrieveMode;
@@ -49,6 +53,14 @@ import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowsRequest;
  * {@code official-gui-api.base-url}, which the test sets to {@link #cockpitBaseUrl()}, and the
  * test hands it to the methods which read.
  * </p>
+ *
+ * <p>
+ * Which workflow modules a user sees comes from a path only the simulator answers,
+ * {@code GET /simulator-api/workflow-module?user=...}, through a client generated from the
+ * OpenAPI file of the simulator's own paths, which the cockpit publishes in
+ * {@code dev-shell-simulator-api-client}. The cockpit answers the same list only to the user
+ * who is signed in, and this path names the user instead.
+ * </p>
  */
 public final class CockpitSimulator {
 
@@ -65,6 +77,9 @@ public final class CockpitSimulator {
   private static CockpitSimulator running;
 
   private final String baseUrl;
+
+  /** The client of the simulator's own paths, made when the test asks for the first time. */
+  private SimulatorApi simulatorApi;
 
   private CockpitSimulator(
       final String baseUrl) {
@@ -162,6 +177,67 @@ public final class CockpitSimulator {
                 .pageNumber(0)
                 .pageSize(100))),
         condition);
+
+  }
+
+  /**
+   * Waits until the cockpit lists the workflow modules for a user which the condition expects. A
+   * workflow module registers itself when the application starts, and the cockpit may get the
+   * registration a moment after the test began.
+   *
+   * @param user      The id of the user, as {@code dev-shell-simulator.yaml} lists it.
+   * @param condition What the cockpit is expected to list for the user.
+   * @return The ids of the workflow modules the user sees.
+   */
+  public List<String> awaitWorkflowModulesSeenBy(
+      final String user,
+      final Predicate<List<String>> condition) {
+
+    return awaitReport(
+        "workflow modules of user '"
+            + user
+            + "'",
+        () -> Optional.of(workflowModulesSeenBy(user)),
+        condition);
+
+  }
+
+  /**
+   * The workflow modules the cockpit lists for a user. The simulator applies the rule of the
+   * cockpit: a module which names groups is listed only for the members of these groups.
+   *
+   * @param user The id of the user, as {@code dev-shell-simulator.yaml} lists it.
+   * @return The ids of the workflow modules the user sees.
+   */
+  public List<String> workflowModulesSeenBy(
+      final String user) {
+
+    return simulatorApi()
+        .getWorkflowModulesOfUser(user)
+        .getModules()
+        .stream()
+        .map(VisibleWorkflowModule::getId)
+        .toList();
+
+  }
+
+  /**
+   * The client of the simulator's own paths. The REST client of Quarkus is made in the test, not
+   * while the simulator starts, because the simulator starts before the application. The paths
+   * in the OpenAPI file of the simulator are complete, so the client takes the address of the
+   * simulator as it is.
+   *
+   * @return The client.
+   */
+  private synchronized SimulatorApi simulatorApi() {
+
+    if (simulatorApi == null) {
+      simulatorApi = QuarkusRestClientBuilder
+          .newBuilder()
+          .baseUri(URI.create(baseUrl))
+          .build(SimulatorApi.class);
+    }
+    return simulatorApi;
 
   }
 

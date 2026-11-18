@@ -57,8 +57,8 @@ controllers in line, or the start form reaches nothing.
 | `loan-approval/src/main/java/.../Service.java`                                  | picks the id of the new loan request and starts the process through `Workflow`                                                       |
 | `loan-approval/src/main/java/.../WorkflowTaskHandler.java`                      | the `@WorkflowTask` method which keeps `@TaskId`                                                                                     |
 | `loan-approval/src/main/java/.../Workflow.java`                                 | `startWorkflow` and `completeUserTask`                                                                                               |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                           | the start form starts a case which reaches the cockpit, refused values, the groups of the module, every OpenAPI operation mapped     |
-| `loan-approval/src/test/java/.../CockpitSimulator.java`                         | starts the dev shell simulator as the cockpit of the test, and reads cases and user tasks from it                                    |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                           | the start form starts a case which reaches the cockpit, refused values, who sees the module, every OpenAPI operation mapped          |
+| `loan-approval/src/test/java/.../CockpitSimulator.java`                         | starts the dev shell simulator as the cockpit of the test, and reads cases, user tasks and who sees a module from it                 |
 | `loan-approval/src/main/java/.../config/LoanApprovalAutoConfiguration.java`     | the module wires itself: component scan, `@EntityScan` and `@EnableJpaRepositories` of its own package, with fully qualified names   |
 | `loan-approval/src/main/resources/META-INF/spring/...AutoConfiguration.imports` | names the auto-configuration                                                                                                         |
 
@@ -125,8 +125,8 @@ profile as a defect of the generated code.
 - the start form endpoint answers 201 with the id of a new loan request, the process waits in its
   user task, and the cockpit lists the new case under that id with its open user task,
 - an empty applicant, an amount of 0 and a missing amount get 400, and no loan request is started,
-- the module has exactly one `WorkflowModuleDetailsProvider`, for `loan-approval`, with the group
-  `LOAN_OFFICERS`,
+- the simulator lists `loan-approval` for Jane, who is in `LOAN_OFFICERS`, and not for John,
+  who is not. It applies the rule of the cockpit to the groups the module registered,
 - an approved loan request ends its case (`endReason` says `COMPLETED`),
 - every operation of the OpenAPI of the start form has its endpoint.
 

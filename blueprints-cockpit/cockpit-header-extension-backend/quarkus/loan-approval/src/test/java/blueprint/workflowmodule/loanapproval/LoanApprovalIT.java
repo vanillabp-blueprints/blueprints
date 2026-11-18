@@ -17,7 +17,6 @@ import org.yaml.snakeyaml.Yaml;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.client.StartFormApi;
 import blueprint.workflowmodule.loanapproval.client.model.LoanRequest;
-import blueprint.workflowmodule.loanapproval.config.LoanApprovalModuleDetails;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
@@ -27,9 +26,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.model.EndReason;
 import io.vanillabp.cockpit.support.rest.restclient.RestClients;
-import io.vanillabp.spi.cockpit.workflowmodules.WorkflowModuleDetailsProvider;
-import jakarta.enterprise.inject.Any;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -67,10 +63,6 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
   AggregateRepository loanApprovals;
-
-  @Inject
-  @Any
-  Instance<WorkflowModuleDetailsProvider> workflowModuleDetails;
 
   /**
    * Where the module answers. The paths of the OpenAPI file are relative to its server, which the
@@ -180,21 +172,22 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   /**
-   * The cockpit lists this workflow module only for the members of the group the module names.
-   * A cockpit user interface loads the button in the header only from the modules in that list.
-   * The cockpit applies the groups. The module only has to name them, and this checks that it
-   * does.
+   * The cockpit lists this workflow module only for the members of the group the module names,
+   * and a cockpit user interface loads the button in the header only from the modules in that
+   * list. The simulator applies the same rule as the cockpit, so it shows who sees the module:
+   * Jane, a loan officer, sees it, and John, who works in customer service, does not. The users
+   * and their groups are in {@code dev-shell-simulator.yaml}.
    */
   @Test
   public void onlyLoanOfficersSeeTheModuleAndSoTheButton() {
 
-    final var all = workflowModuleDetails
-        .stream()
-        .toList();
-    assertThat(all).hasSize(1);
-    final var details = all.getFirst();
-    assertThat(details.getWorkflowModuleId()).isEqualTo("loan-approval");
-    assertThat(details.getAccessibleToGroups()).containsExactly(LoanApprovalModuleDetails.LOAN_OFFICERS);
+    final var cockpit = CockpitSimulator.start();
+
+    // Wait for Jane first. Before the module registered, nobody sees it, and the check for John
+    // would pass for the wrong reason.
+    assertThat(cockpit.awaitWorkflowModulesSeenBy("jane", modules -> modules.contains("loan-approval")))
+        .contains("loan-approval");
+    assertThat(cockpit.workflowModulesSeenBy("john")).doesNotContain("loan-approval");
 
   }
 

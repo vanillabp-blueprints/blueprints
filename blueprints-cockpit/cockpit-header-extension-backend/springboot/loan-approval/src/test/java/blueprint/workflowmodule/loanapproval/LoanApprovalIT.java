@@ -26,11 +26,9 @@ import org.yaml.snakeyaml.Yaml;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.client.StartFormApi;
 import blueprint.workflowmodule.loanapproval.client.model.LoanRequest;
-import blueprint.workflowmodule.loanapproval.config.LoanApprovalModuleDetails;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.model.EndReason;
-import io.vanillabp.spi.cockpit.workflowmodules.WorkflowModuleDetailsProvider;
 
 /**
  * The integration test of this workflow module. It starts a loan approval through the endpoint
@@ -57,9 +55,6 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Autowired
   private AggregateRepository loanApprovals;
-
-  @Autowired
-  private List<WorkflowModuleDetailsProvider> workflowModuleDetails;
 
   @Autowired
   @Qualifier("requestMappingHandlerMapping")
@@ -158,18 +153,22 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   /**
-   * The cockpit lists this workflow module only for the members of the group the module names.
-   * A cockpit user interface loads the button in the header only from the modules in that list.
-   * The cockpit applies the groups. The module only has to name them, and this checks that it
-   * does.
+   * The cockpit lists this workflow module only for the members of the group the module names,
+   * and a cockpit user interface loads the button in the header only from the modules in that
+   * list. The simulator applies the same rule as the cockpit, so it shows who sees the module:
+   * Jane, a loan officer, sees it, and John, who works in customer service, does not. The users
+   * and their groups are in {@code dev-shell-simulator.yaml}.
    */
   @Test
   public void onlyLoanOfficersSeeTheModuleAndSoTheButton() {
 
-    assertThat(workflowModuleDetails).hasSize(1);
-    final var details = workflowModuleDetails.getFirst();
-    assertThat(details.getWorkflowModuleId()).isEqualTo("loan-approval");
-    assertThat(details.getAccessibleToGroups()).containsExactly(LoanApprovalModuleDetails.LOAN_OFFICERS);
+    final var cockpit = CockpitSimulator.start();
+
+    // Wait for Jane first. Before the module registered, nobody sees it, and the check for John
+    // would pass for the wrong reason.
+    assertThat(cockpit.awaitWorkflowModulesSeenBy("jane", modules -> modules.contains("loan-approval")))
+        .contains("loan-approval");
+    assertThat(cockpit.workflowModulesSeenBy("john")).doesNotContain("loan-approval");
 
   }
 
