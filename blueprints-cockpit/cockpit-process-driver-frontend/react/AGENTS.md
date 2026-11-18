@@ -66,36 +66,36 @@ name.
 
 ## Boilerplate files
 
-|                  File                  |                                              Purpose                                               |
-|----------------------------------------|----------------------------------------------------------------------------------------------------|
-| `package.json`                         | the scripts, and in `config` the module id, both OpenAPI files, the jar and the image name         |
-| `tsconfig.json`                        | type checking only, and the path aliases, which esbuild reads as well                              |
-| `openapi-ts.config.mjs`                | the options of `@hey-api/openapi-ts`, one job per OpenAPI file                                     |
-| `scripts/fetch-openapi.mjs`            | copies the two OpenAPI files of the backend from the submodule, and the copy of the cockpit's file |
+|                  File                  |                                               Purpose                                               |
+|----------------------------------------|-----------------------------------------------------------------------------------------------------|
+| `package.json`                         | the scripts, and in `config` the module id, both OpenAPI files, the jar and the image name          |
+| `tsconfig.json`                        | type checking only, and the path aliases, which esbuild reads as well                               |
+| `openapi-ts.config.mjs`                | the options of `@hey-api/openapi-ts`, one job per OpenAPI file                                      |
+| `scripts/fetch-openapi.mjs`            | copies the two OpenAPI files of the backend from the submodule, and the copy of the cockpit's file  |
 | `scripts/write-bc-build.mjs`           | writes `src/bc-build.js`, the module id from `package.json` and the build id, before the type check |
 | `src/bc-build.d.ts`                    | the types of `src/bc-build.js`, which is written for every build and not checked in                 |
-| `.gitmodules`                          | the submodule `backend`, the backend repository which owns the OpenAPI files                       |
-| `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                          |
-| `scripts/build-dev-shell.mjs`          | the dev shell into `dist/dev-shell`                                                                |
-| `scripts/build-ui-jar.mjs`             | the UI jar and its pom                                                                             |
-| `scripts/build-image.mjs`              | the nginx image                                                                                    |
-| `dev-shell/index.html`                 | the page of the dev shell                                                                          |
-| `dev-shell/src/main.tsx`               | the three views of the dev shell                                                                   |
-| `dev-shell/src/workflow-page.tsx`      | a case and its user tasks                                                                          |
-| `src/data/user-task-list.ts`           | data entry `UserTaskList`, the columns `details.amount` and `details.creditScore`                  |
-| `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`                                                                      |
-| `src/forms/check-contract-form.tsx`    | visual entry `CheckContractForm`                                                                   |
-| `src/shared/response-error.ts`         | `ResponseError`, which keeps the status of an answer                                               |
-| `scripts/check-imports.mjs`            | fails `npm run build` on an import with `../`; import through an alias instead                     |
-| `src/shared/index.ts`                  | what the forms import as `@shared`                                                                 |
-| `src/shared/react-element.tsx`         | a React component as a web component, with `defineBcElement` of the kit                            |
-| `src/shared/style.ts`                  | the styles, put into each shadow root                                                              |
-| `src/shared/texts.ts`                  | the texts in English and German                                                                    |
-| `docker/Dockerfile`                    | the nginx image                                                                                    |
-| `docker/nginx.conf`                    | serves `/loan-approval/`, the manifest without caching                                             |
-| `test/browser/user-task-forms.test.js` | the browser tests of the forms, with areas and with `all` only                                     |
-| `test/browser/page.js`                 | the test page of the forms with `createModuleHost`                                                 |
-| `test/browser/server.js`               | serves the test pages, the dev shell and `dist/micro-frontends` below `/wm/loan-approval/`         |
+| `.gitmodules`                          | the submodule `backend`, the backend repository which owns the OpenAPI files                        |
+| `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                           |
+| `scripts/build-dev-shell.mjs`          | the dev shell into `dist/dev-shell`                                                                 |
+| `scripts/build-ui-jar.mjs`             | the UI jar and its pom                                                                              |
+| `scripts/build-image.mjs`              | the nginx image                                                                                     |
+| `dev-shell/index.html`                 | the page of the dev shell                                                                           |
+| `dev-shell/src/main.tsx`               | the three views of the dev shell                                                                    |
+| `dev-shell/src/workflow-page.tsx`      | a case and its user tasks                                                                           |
+| `src/data/user-task-list.ts`           | data entry `UserTaskList`, the columns `details.amount` and `details.creditScore`                   |
+| `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`                                                                       |
+| `src/forms/check-contract-form.tsx`    | visual entry `CheckContractForm`                                                                    |
+| `src/shared/response-error.ts`         | `ResponseError`, which keeps the status of an answer                                                |
+| `scripts/check-imports.mjs`            | fails `npm run build` on an import with `../`; import through an alias instead                      |
+| `src/shared/index.ts`                  | what the forms import as `@shared`                                                                  |
+| `src/shared/react-element.tsx`         | a React component as a web component, with `defineBcElement` of the kit                             |
+| `src/shared/style.ts`                  | the styles, put into each shadow root                                                               |
+| `src/shared/texts.ts`                  | the texts in English and German                                                                     |
+| `docker/Dockerfile`                    | the nginx image                                                                                     |
+| `docker/nginx.conf`                    | serves `/loan-approval/`, the manifest without caching                                              |
+| `test/browser/user-task-forms.test.js` | the browser tests of the forms, with areas and with `all` only                                      |
+| `test/browser/page.js`                 | the test page of the forms with `createModuleHost`                                                  |
+| `test/browser/server.js`               | serves the test pages, the dev shell and `dist/micro-frontends` below `/wm/loan-approval/`          |
 
 The imports go through path aliases, never through `../`. `tsconfig.json` declares them, and
 esbuild reads them from there: `@loan-approval`, `@shared`, `@gui-client` (`src/shared/api.ts`),
