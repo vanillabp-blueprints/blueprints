@@ -110,7 +110,7 @@ Compared to [`cockpit-user-task-backend`](https://github.com/vanillabp-blueprint
 
 |                    File                    |                                                     What is different                                                      |
 |--------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| `openapi/loan-approval.yaml`               | the two endpoints of the case page instead of the four of the forms                                                        |
+| `loan-approval/openapi/loan-approval.yaml` | the two endpoints of the case page instead of the four of the forms                                                        |
 | `loan_approval.bpmn`                       | one user task, and the interrupting event subprocess "Withdraw loan request" with a message start event and a service task |
 | `WorkflowTaskHandler.java`                 | two `@WorkflowTask` methods, and a `@WorkflowDetailsProvider` method instead of the `@UserTaskDetailsProvider` method      |
 | `CasePageController.java`                  | new, instead of `UserTaskFormController.java`: reads a case and withdraws it, below `/loan-approval/api/cases`             |
@@ -118,7 +118,7 @@ Compared to [`cockpit-user-task-backend`](https://github.com/vanillabp-blueprint
 | `Cockpit.java`                             | deleted: no form completes a user task here, so nothing asks the cockpit who took one over                                 |
 | `CockpitGuiApi.java`                       | deleted, together with `Cockpit.java`                                                                                      |
 | `ApiController.java`                       | starts a loan approval with an applicant, approves it and shows it                                                         |
-| `openapi/loan-requests.yaml`               | the start takes an applicant, and a new endpoint approves a loan request                                                   |
+| `loan-approval/openapi/loan-requests.yaml` | the start takes an applicant, and a new endpoint approves a loan request                                                   |
 | `Service.java`                             | keeps the id of the user task, approves, withdraws by correlating the message, and records the withdrawal                  |
 | `Workflow.java`                            | `correlateMessage` next to `startWorkflow` and `completeUserTask`                                                          |
 | `Aggregate.java`                           | the applicant, the id of the open user task and the status                                                                 |
@@ -184,7 +184,7 @@ sends.
 
 |                                          File                                          |                                                                 Role                                                                  |
 |----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract between the page and the module: two operations, below the server `/wm/loan-approval`                                    |
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`            | the contract between the page and the module: two operations, below the server `/wm/loan-approval`                                    |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: one user task, and the event subprocess "Withdraw loan request" with the message `WithdrawLoanRequest`                   |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the same for Camunda 8                                                                                                                |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest                                              |

@@ -77,11 +77,11 @@
     <plugins>
       <!--
         The API of this module is written as the OpenAPI files
-        'src/main/resources/openapi/loan-approval.yaml' and
-        'src/main/resources/openapi/nightly-review.yaml', one per use case. This plugin generates
-        the Java interfaces 'LoanApprovalApi' and 'NightlyReviewApi' from them, with the paths, the
-        parameters and the answers. Each controller implements its interface and holds nothing but
-        the code of each call.
+        'src/main/resources/loan-approval/openapi/loan-approval.yaml' and
+        'src/main/resources/loan-approval/openapi/nightly-review.yaml', one per use case. This
+        plugin generates the Java interfaces 'LoanApprovalApi' and 'NightlyReviewApi' from them,
+        with the paths, the parameters and the answers. Each controller implements its interface and
+        holds nothing but the code of each call.
       -->
       <plugin>
         <groupId>org.openapitools</groupId>
@@ -117,7 +117,7 @@
               <goal>generate</goal>
             </goals>
             <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/loan-approval.yaml</inputSpec>
               <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
               <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
             </configuration>
@@ -128,7 +128,7 @@
               <goal>generate</goal>
             </goals>
             <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/openapi/nightly-review.yaml</inputSpec>
+              <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/nightly-review.yaml</inputSpec>
               <apiPackage>blueprint.workflowmodule.nightlyreview.api</apiPackage>
               <modelPackage>blueprint.workflowmodule.nightlyreview.api.model</modelPackage>
             </configuration>

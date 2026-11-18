@@ -27,20 +27,20 @@ Replace all of these consistently; they are the same in every blueprint.
 
 Names this blueprint adds:
 
-|                             Name                             |                                             What it is                                              |
-|--------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
-| `loan-approval/workflow-module`                              | the workflow module, artifact `loan-approval-workflow-module`, with all its tests                   |
-| `loan-approval/test-driver`                                  | the process driver, artifact `loan-approval-test-driver`                                            |
-| `simulator/api`, `simulator/application`                     | the test API (`simulator-api-client`, `simulator-api-server`) and the simulator itself              |
-| `blueprint.testdriver.loanapproval`                          | the package of the driver, deliberately NOT below the package of the workflow module                |
-| `blueprint.testdriver.loanapproval.gui`                      | the client of the API of the user interface, generated from `openapi/loan-approval.yaml`            |
-| `blueprint.testdriver.simulator`                             | `SimulatorTestApi`, the client of the test API of the simulator                                     |
-| `ProcessState`                                               | the states a scenario can reach, each with the step which finishes it                               |
-| `*Step`                                                      | one step, named after what is true when it is done, with its direct predecessors                    |
-| `TestData`                                                   | what a scenario says about the case, with defaults which make sense for the business                |
-| `John Signing`, `Jack Nosign`, ...                           | signers the simulated e-signature service acts on, see the table in the README                      |
-| `process-driver.*`                                           | the configuration of the driver: `enabled`, `simulator-base-url`, `application-base-url`, `timeout` |
-| `/loan-approval/api/process-driver/states`, `.../advance-to` | the REST API of the driver, for the dev shell and the tests of a user interface                     |
+|                             Name                             |                                               What it is                                               |
+|--------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `loan-approval/workflow-module`                              | the workflow module, artifact `loan-approval-workflow-module`, with all its tests                      |
+| `loan-approval/test-driver`                                  | the process driver, artifact `loan-approval-test-driver`                                               |
+| `simulator/api`, `simulator/application`                     | the test API (`simulator-api-client`, `simulator-api-server`) and the simulator itself                 |
+| `blueprint.testdriver.loanapproval`                          | the package of the driver, deliberately NOT below the package of the workflow module                   |
+| `blueprint.testdriver.loanapproval.gui`                      | the client of the API of the user interface, generated from `loan-approval/openapi/loan-approval.yaml` |
+| `blueprint.testdriver.simulator`                             | `SimulatorTestApi`, the client of the test API of the simulator                                        |
+| `ProcessState`                                               | the states a scenario can reach, each with the step which finishes it                                  |
+| `*Step`                                                      | one step, named after what is true when it is done, with its direct predecessors                       |
+| `TestData`                                                   | what a scenario says about the case, with defaults which make sense for the business                   |
+| `John Signing`, `Jack Nosign`, ...                           | signers the simulated e-signature service acts on, see the table in the README                         |
+| `process-driver.*`                                           | the configuration of the driver: `enabled`, `simulator-base-url`, `application-base-url`, `timeout`    |
+| `/loan-approval/api/process-driver/states`, `.../advance-to` | the REST API of the driver, for the dev shell and the tests of a user interface                        |
 
 **The rules this blueprint is built on:**
 
@@ -99,7 +99,7 @@ Names this blueprint adds:
 | `loan-approval/test-driver/src/main/java/.../steps/ContractCheckOpenedStep.java`               | the last wait of a state: for what the workflow writes after the engine moved on                                            |
 | `loan-approval/test-driver/src/main/java/.../ProcessDriverController.java`                     | the REST API of the driver, implements the interface generated from `process-driver.yaml`                                   |
 | `loan-approval/test-driver/src/main/java/.../config/ProcessDriverAutoConfiguration.java`       | wires the driver and its two clients only if `process-driver.enabled` is `true`                                             |
-| `loan-approval/test-driver/src/main/resources/openapi/process-driver.yaml`                     | the REST API of the driver as an OpenAPI file                                                                               |
+| `loan-approval/test-driver/src/main/resources/loan-approval/openapi/process-driver.yaml`       | the REST API of the driver as an OpenAPI file                                                                               |
 | `loan-approval/test-driver/src/main/java/blueprint/testdriver/simulator/SimulatorTestApi.java` | the client of the test API and of the cockpit API the simulator plays                                                       |
 | `loan-approval/test-driver/pom.xml`                                                            | the driver; generates the client of the API of the user interface from the file of the module                               |
 | `loan-approval/workflow-module/pom.xml`                                                        | the module, its tests with the driver in the test scope, the start of the simulator, JaCoCo, the BPMS profiles of the tests |
@@ -109,7 +109,7 @@ Names this blueprint adds:
 | `loan-approval/workflow-module/src/test/java/.../ContractSigningIT.java`                       | one test per behaviour of the simulated e-signature service, the misbehaving ones included                                  |
 | `loan-approval/workflow-module/src/test/java/.../ProcessDriverIT.java`                         | the REST API of the driver, and the reason for a state the test data cannot reach                                           |
 | `loan-approval/workflow-module/src/main/java/.../ApiController.java`                           | completes each task with GET, for a person, and with POST, for its form; the 409; the loan request as JSON                  |
-| `loan-approval/workflow-module/src/main/resources/openapi/loan-approval.yaml`                  | the API of the use case; the form calls `completeAssessRisk` and `completeCheckContract`, the driver reads `show`           |
+| `loan-approval/workflow-module/src/main/resources/loan-approval/openapi/loan-approval.yaml`    | the API of the use case; the form calls `completeAssessRisk` and `completeCheckContract`, the driver reads `show`           |
 | `loan-approval/workflow-module/src/main/java/.../Service.java`                                 | writes the id of each open task into the aggregate, refuses to check an unsigned contract, correlates the decline           |
 | `loan-approval/workflow-module/src/main/java/.../model/Aggregate.java`                         | `riskAssessmentNeeded` as a plain `boolean` for the gateway, the ids of the open tasks, `@DynamicUpdate`                    |
 | `loan-approval/workflow-module/src/main/resources/.../loan_approval.bpmn`                      | the gateway, "Assess risk", "Send contract for signing", "Check contract" with its message "Contract declined"              |

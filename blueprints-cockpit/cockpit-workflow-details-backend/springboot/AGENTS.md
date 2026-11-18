@@ -51,7 +51,7 @@ controllers in line, or the page reaches nothing.
 
 |                                          File                                          |                                                                                     Why it matters                                                                                     |
 |----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract with the frontend: two operations, `servers: /wm/loan-approval`. Change it together with `CasePageController`                                                             |
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`            | the contract with the frontend: two operations, `servers: /wm/loan-approval`. Change it together with `CasePageController`                                                             |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the user task, and the event subprocess with `triggeredByEvent="true"`, an interrupting message start event, the service task `recordWithdrawal` and the message `WithdrawLoanRequest` |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda8/loan_approval.bpmn` | the same for Camunda 8. Nothing about the correlation is modelled, the adapter adds the correlation key                                                                                |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | `vanillabp.workflow-modules.loan-approval.cockpit.*`: `workflow-module-uri`, `ui-uri-type: ES_MODULES`, `ui-uri-path`                                                                  |
@@ -67,20 +67,20 @@ controllers in line, or the page reaches nothing.
 
 ## Boilerplate files
 
-|                               File                               |                                                                    Purpose                                                                    |
-|------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                       | the VanillaBP BOM import, the versions of the BPMS adapters and of the cockpit adapters, the rule which keeps every adapter in the test scope |
-| `loan-approval/pom.xml`                                          | `vanillabp-spring-boot-support` and the cockpit `support`; per BPMS profile both adapters for the test                                        |
-| `loan-approval/src/main/java/.../ApiController.java`             | GET endpoints for a human: start, approve, show                                                                                               |
-| `loan-approval/src/main/resources/openapi/loan-requests.yaml`    | those GET endpoints as an OpenAPI file. The build generates `LoanRequestsApi` from it, and `ApiController` implements it                      |
-| `loan-approval/src/main/java/.../model/AggregateRepository.java` | the repository of the aggregate                                                                                                               |
-| `loan-approval/src/test/resources/application.yaml`              | the database, a short outbox poll interval, the address of the simulator                                                                      |
-| `loan-approval/src/test/resources/application-camunda7.yaml`     | the Camunda 7 settings of the test, and the same file per other BPMS                                                                          |
-| `loan-approval/src/test/resources/dev-shell-simulator.yaml`      | the users the simulator knows. It does not start without one                                                                                  |
-| `loan-approval/src/test/java/.../ModuleTestApplication.java`     | the minimal application the module's test boots. It scans nothing, the auto-configuration wires the module                                    |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`        | base class of the integration test: waits for workflow progress                                                                               |
-| `loan-approval/src/test/java/.../LocalBackend.java`              | runs the module with `spring-boot:test-run` for the development of the page                                                                   |
-| `docs/loan_approval.png`                                         | the picture of the process the README shows, rendered from the BPMN model                                                                     |
+|                                    File                                     |                                                                    Purpose                                                                    |
+|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                                  | the VanillaBP BOM import, the versions of the BPMS adapters and of the cockpit adapters, the rule which keeps every adapter in the test scope |
+| `loan-approval/pom.xml`                                                     | `vanillabp-spring-boot-support` and the cockpit `support`; per BPMS profile both adapters for the test                                        |
+| `loan-approval/src/main/java/.../ApiController.java`                        | GET endpoints for a human: start, approve, show                                                                                               |
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-requests.yaml` | those GET endpoints as an OpenAPI file. The build generates `LoanRequestsApi` from it, and `ApiController` implements it                      |
+| `loan-approval/src/main/java/.../model/AggregateRepository.java`            | the repository of the aggregate                                                                                                               |
+| `loan-approval/src/test/resources/application.yaml`                         | the database, a short outbox poll interval, the address of the simulator                                                                      |
+| `loan-approval/src/test/resources/application-camunda7.yaml`                | the Camunda 7 settings of the test, and the same file per other BPMS                                                                          |
+| `loan-approval/src/test/resources/dev-shell-simulator.yaml`                 | the users the simulator knows. It does not start without one                                                                                  |
+| `loan-approval/src/test/java/.../ModuleTestApplication.java`                | the minimal application the module's test boots. It scans nothing, the auto-configuration wires the module                                    |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`                   | base class of the integration test: waits for workflow progress                                                                               |
+| `loan-approval/src/test/java/.../LocalBackend.java`                         | runs the module with `spring-boot:test-run` for the development of the page                                                                   |
+| `docs/loan_approval.png`                                                    | the picture of the process the README shows, rendered from the BPMN model                                                                     |
 
 `WorkflowModuleTest` is identical in every blueprint. Copy it unchanged.
 
@@ -91,7 +91,7 @@ controllers in line, or the page reaches nothing.
    scope, the keys below `vanillabp.workflow-modules.<workflow-module-id>.cockpit`, and the
    auto-configuration.
 2. Put the OpenAPI of the case page into the workflow module, at
-   `src/main/resources/openapi/<workflow-module-id>.yaml`, with the server
+   `src/main/resources/loan-approval/openapi/<workflow-module-id>.yaml`, with the server
    `/wm/<workflow-module-id>`. Key the paths by the id of the workflow aggregate. The cockpit
    hands the page that id as the `businessId` of the case.
 3. Add a status attribute to the aggregate, an enum in business words. Name the negative outcome

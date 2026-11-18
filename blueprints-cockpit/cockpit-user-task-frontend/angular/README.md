@@ -132,7 +132,7 @@ commit, and `.gitmodules` says which repository that is. The file lies in the wo
 the backend, and `config.openapi` in `package.json` names it:
 
 ```text
-backend/loan-approval/src/main/resources/openapi/loan-approval.yaml
+backend/loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml
 ```
 
 Why a submodule and not a released jar? The frontend builds without the backend being built or

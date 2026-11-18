@@ -56,23 +56,23 @@ Two things this blueprint leaves out on purpose, and where to find them:
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|             File              |                                        What is different                                        |
-|-------------------------------|-------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`          | a signal catch event the workflow waits at, and a service task behind it                        |
-| `Workflow.java`               | `sendSignal`, plus the signal name as a constant                                                |
-| `WorkflowTaskHandler.java`    | the `@WorkflowTask` method of the service task behind the signal                                |
-| `Service.java`                | stores the published rate, then broadcasts. Reads the rate again when a workflow goes on        |
-| `ApiController.java`          | the endpoint which publishes the rate. It is the only one without a loan request id in its path |
-| `openapi/loan-approval.yaml`  | the URL which publishes the rate, `interest-rates/publish`                                      |
-| `InterestRate.java`           | the published rate, application data belonging to no workflow                                   |
-| `InterestRateRepository.java` | new: the repository of the published rates, which finds the latest one                          |
-| `Aggregate.java`              | `interestRate`, which is where the rate ends up per loan approval                               |
-| `LoanApprovalIT.java`         | waiting, one broadcast continuing two workflows, and a signal nobody caught                     |
-| `ratewatch/`                  | a second use case, whose process waits for the same signal                                      |
-| `openapi/rate-watch.yaml`     | new: the OpenAPI file of the second use case                                                    |
-| `rate_watch.bpmn`             | that process: start, catch the signal, record it                                                |
-| `RateWatchIT.java`            | the broadcast of one use case reaching the process of the other                                 |
-| `loan-approval/pom.xml`       | generates the Java interface of `rate-watch.yaml` as well                                       |
+|                    File                    |                                        What is different                                        |
+|--------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                       | a signal catch event the workflow waits at, and a service task behind it                        |
+| `Workflow.java`                            | `sendSignal`, plus the signal name as a constant                                                |
+| `WorkflowTaskHandler.java`                 | the `@WorkflowTask` method of the service task behind the signal                                |
+| `Service.java`                             | stores the published rate, then broadcasts. Reads the rate again when a workflow goes on        |
+| `ApiController.java`                       | the endpoint which publishes the rate. It is the only one without a loan request id in its path |
+| `loan-approval/openapi/loan-approval.yaml` | the URL which publishes the rate, `interest-rates/publish`                                      |
+| `InterestRate.java`                        | the published rate, application data belonging to no workflow                                   |
+| `InterestRateRepository.java`              | new: the repository of the published rates, which finds the latest one                          |
+| `Aggregate.java`                           | `interestRate`, which is where the rate ends up per loan approval                               |
+| `LoanApprovalIT.java`                      | waiting, one broadcast continuing two workflows, and a signal nobody caught                     |
+| `ratewatch/`                               | a second use case, whose process waits for the same signal                                      |
+| `loan-approval/openapi/rate-watch.yaml`    | new: the OpenAPI file of the second use case                                                    |
+| `rate_watch.bpmn`                          | that process: start, catch the signal, record it                                                |
+| `RateWatchIT.java`                         | the broadcast of one use case reaching the process of the other                                 |
+| `loan-approval/pom.xml`                    | generates the Java interface of `rate-watch.yaml` as well                                       |
 
 ## Running it
 

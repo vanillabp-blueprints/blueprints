@@ -135,8 +135,8 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `.../loanapproval/Service.java`                     | injects no repository. The reading method calls `Aggregate.byId` inside its own transaction                         |
 | `credithistory/`                                    | the second use case, the same four classes, with an aggregate extending `PanacheMongoEntityBase`                    |
 | `credit_history.bpmn`                               | new: the process of the second use case, one per BPMS                                                               |
-| `openapi/credit-history.yaml`                       | new: the API of the second use case, from which the build generates its interface                                   |
-| `openapi/loan-approval.yaml`                        | the paths name the resource, `/loan-approval/api/loan-requests/...`, because the module has two                     |
+| `loan-approval/openapi/credit-history.yaml`         | new: the API of the second use case, from which the build generates its interface                                   |
+| `loan-approval/openapi/loan-approval.yaml`          | the paths name the resource, `/loan-approval/api/loan-requests/...`, because the module has two                     |
 | `.../loanapproval/ApiController.java`               | logs the URL with the resource name `loan-requests`                                                                 |
 | `loan-approval/pom.xml`                             | both Panache flavours, because the module has an aggregate of each                                                  |
 | `application/src/main/resources/application.yaml`   | a MongoDB database next to the data source, and no connection string, so the dev services run one                   |

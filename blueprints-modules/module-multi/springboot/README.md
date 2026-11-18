@@ -93,9 +93,10 @@ hurts:
 - **JPA entities.** Both aggregates are called `Aggregate`, and one persistence unit cannot
   hold two entities of that name. `@Entity(name = "LoanRepayment")` gives the second one a name
   of its own. The tables differ anyway.
-- **HTTP paths.** `/loan-approval/api/...` and `/loan-repayment/api/...`, each named after
-  its module. Each module writes its paths in an OpenAPI file of its own,
-  `src/main/resources/openapi/<module-id>.yaml`, and generates its own interface from it.
+- **HTTP paths.** `/loan-approval/api/...` and `/loan-repayment/api/...`, each named after its
+  module. Each module writes its paths in an OpenAPI file of its own,
+  `src/main/resources/<module-id>/openapi/<module-id>.yaml`, and generates its own interface from
+  it.
 - **Identifiers inside the BPMS.** Two modules may use the same BPMN process ID or message
   name, and that is allowed. `name-clash-avoidance` keeps them apart. In this blueprint it
   stops being a footnote.
@@ -185,7 +186,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `.../loanapproval/config/LoanApprovalAutoConfiguration.java`           | new: the module contributes its beans, entities, repositories and properties itself                          |
 | `loan-approval/src/main/resources/META-INF/spring/...imports`          | new: the file which makes the auto-configuration one                                                         |
 | `.../loanapproval/*.java`                                              | beans named after the module, and a loan request which names a customer                                      |
-| `openapi/loan-approval.yaml`                                           | the start URL takes a `customerId`                                                                           |
+| `loan-approval/openapi/loan-approval.yaml`                             | the start URL takes a `customerId`                                                                           |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`    | `rating-provider`, which each environment sets to its own value                                              |
 | `loan-approval/.../loan-approval-test.yaml`, `loan-approval-prod.yaml` | new: the module's configuration per environment                                                              |
 | `application/.../Application.java`                                     | moved to `blueprint.application`: the application is no longer above the modules, and it does not need to be |

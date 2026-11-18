@@ -11,7 +11,7 @@
 
   <!--
     The backend is one of three repositories. It holds what needs Java and Maven only: the
-    workflow module, with the OpenAPI of its case page in src/main/resources/openapi. The
+    workflow module, with the OpenAPI of its case page in src/main/resources/loan-approval/openapi. The
     frontend reads that file and builds the user interface with npm. The application takes the
     workflow module and the user interface and runs them. The README says why the three are
     apart and in which order they are released.

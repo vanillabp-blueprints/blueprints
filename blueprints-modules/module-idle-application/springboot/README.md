@@ -102,7 +102,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `loan_approval.bpmn`                                                                  | a timer catch event for the withdrawal period and a service task behind it                               |
 | `DatabaseTraffic.java`                                                                | counts the statements H2 wrote into its trace file                                                       |
 | `ApiController.java`                                                                  | one more endpoint, which returns that number                                                             |
-| `openapi/loan-approval.yaml`                                                          | the endpoint `/loan-approval/api/statements`                                                             |
+| `loan-approval/openapi/loan-approval.yaml`                                            | the endpoint `/loan-approval/api/statements`                                                             |
 | `WorkflowTaskHandler.java`                                                            | the `@WorkflowTask` method of the task behind the timer                                                  |
 | `Service.java`                                                                        | pays out the loan                                                                                        |
 | `Aggregate.java`                                                                      | `paidOut`                                                                                                |

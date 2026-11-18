@@ -12,9 +12,9 @@ import lombok.extern.slf4j.Slf4j;
  * browser.
  *
  * <p>
- * The paths, the parameters and the answers come from {@link CreditHistoryApi}, the interface
- * the build generates from {@code src/main/resources/openapi/credit-history.yaml}. This class
- * only implements it.
+ * The paths, the parameters and the answers come from {@link CreditHistoryApi}, the interface the
+ * build generates from {@code src/main/resources/loan-approval/openapi/credit-history.yaml}. This
+ * class only implements it.
  * </p>
  */
 @Slf4j

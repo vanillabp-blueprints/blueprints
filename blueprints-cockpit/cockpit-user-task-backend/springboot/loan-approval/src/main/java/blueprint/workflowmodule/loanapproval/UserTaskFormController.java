@@ -20,9 +20,9 @@ import jakarta.servlet.http.HttpServletRequest;
 
 
 /**
- * The endpoints the forms of the two user tasks call. They implement
- * {@code src/main/resources/openapi/loan-approval.yaml} of this module, which the frontends read
- * to generate their client.
+ * The endpoints the forms of the two user tasks call. They implement {@code
+ * src/main/resources/loan-approval/openapi/loan-approval.yaml} of this module, which the frontends
+ * read to generate their client.
  *
  * <p>
  * A form runs in the browser, inside the Business Cockpit. It calls

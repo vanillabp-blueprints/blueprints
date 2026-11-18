@@ -157,9 +157,9 @@ The driver never talks to a BPMS. It does not move a token to an activity, and i
 the engine where a workflow is. Such a jump is specific to one BPMS, and it builds a state the
 real process never had. The driver uses two things:
 
-- the API of the user interface of the workflow module, as a person in the browser or the form
-  of a user task does. It requests a loan, completes a task, and reads how far a loan request
-  came. The client is generated from `openapi/loan-approval.yaml`, the file of the module,
+- the API of the user interface of the workflow module, as a person in the browser or the form of a
+  user task does. It requests a loan, completes a task, and reads how far a loan request came. The
+  client is generated from `loan-approval/openapi/loan-approval.yaml`, the file of the module,
 - the test API of the simulator, to prepare data and to make a system act.
 
 The driver does not know a single Java class of the module, not `Service`, not the repository,

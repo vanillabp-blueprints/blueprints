@@ -57,8 +57,8 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `nightlyreview/model/Aggregate.java`           | the aggregate of a workflow nobody started, built by the application all the same               |
 | `nightlyreview/model/AggregateRepository.java` | new: the repository of the reviews, with a query for the kind of start                          |
 | `nightlyreview/ApiController.java`             | new: asks for a review by broadcasting the signal, and lists the reviews                        |
-| `openapi/nightly-review.yaml`                  | new: the OpenAPI file of that controller                                                        |
-| `openapi/loan-approval.yaml`                   | the paths name the resource, `/loan-approval/api/loan-requests/...`, because the module has two |
+| `loan-approval/openapi/nightly-review.yaml`    | new: the OpenAPI file of that controller                                                        |
+| `loan-approval/openapi/loan-approval.yaml`     | the paths name the resource, `/loan-approval/api/loan-requests/...`, because the module has two |
 | `loanapproval/ApiController.java`              | logs the URL with the resource name `loan-requests`                                             |
 | `NightlyReviewIT.java`                         | a test which cannot start anything and waits for an aggregate to appear                         |
 | `loan-approval/pom.xml`                        | generates the Java interface of `nightly-review.yaml` as well                                   |

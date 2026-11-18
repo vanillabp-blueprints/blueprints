@@ -15,9 +15,9 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  *
  * <p>
- * The paths, the parameters and the answers come from {@link RiskAssessmentApi}, the interface
- * the build generates from {@code src/main/resources/openapi/risk-assessment.yaml}. This class
- * only implements it.
+ * The paths, the parameters and the answers come from {@link RiskAssessmentApi}, the interface the
+ * build generates from {@code src/main/resources/risk-assessment/openapi/risk-assessment.yaml}.
+ * This class only implements it.
  * </p>
  */
 @Slf4j

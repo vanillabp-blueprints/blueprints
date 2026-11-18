@@ -133,31 +133,31 @@ measures nothing.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|             File              |                                         What is different                                          |
-|-------------------------------|----------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`          | the credit bureau, its answer or its timeout, the user task, the gateway and the payout run        |
-| `load-profile.yaml`           | new: what the model does not say about the load                                                    |
-| `loan-approval.yaml`          | how often the payout run comes, and the due date of the payout run declared for the timer          |
-| `LoanApprovalProperties.java` | `payoutRunEvery` instead of `ratingScale`                                                          |
-| `CreditBureau.java`           | new: the neighbour system, known to the module only by its role                                    |
-| `WorkflowTaskHandler.java`    | the four `@WorkflowTask` methods, one of them with `@TaskId` for the user task                     |
-| `Service.java`                | asks the bureau, takes its answer, opens and decides the assessment, pays out, rejects             |
-| `Workflow.java`               | correlates the answer of the bureau and completes the user task                                    |
-| `Aggregate.java`              | the documents, the score, the open task, the decision and the due date of the payout run           |
-| `AggregateRepository.java`    | the open assessments, as a task list shows them, and the number of unfinished workflows            |
-| `ApiController.java`          | the decision of a clerk, a request with documents, the task list and the number of open approvals  |
-| `loan-approval-api/`          | new Maven module: the API of the module moved here, because the simulator calls it from Java       |
-| `openapi/loan-approval.yaml`  | deleted from the workflow module: its API is in `loan-approval-api/` now                           |
-| `external-systems/`           | new: the API of the credit bureau and its callback, and the REST adapter of the application        |
-| `load-run-api/`               | new Maven module: the two URLs of a run, which the simulator offers and the test calls             |
-| `simulator/`                  | new Maven module: an application of its own with the driver, the credit bureau and the report      |
-| `pom.xml`                     | the new modules, and the OpenAPI generator managed for all of them                                 |
-| `loan-approval/pom.xml`       | depends on `loan-approval-api-server` instead of generating the API itself                         |
-| `application/pom.xml`         | the REST adapter, Micrometer with Prometheus, JMX for `quarkus:dev`, starting the simulator        |
-| `application.yaml`            | a file database, the pool, the dispatch threads, a fresh gauge each second, the meters, the bureau |
-| `LoanApprovalIT.java`         | each path of the process, one loan at a time                                                       |
-| `ScriptedCreditBureau.java`   | new: the credit bureau of the module test, which answers a moment later or stays silent            |
-| `LoadRunIT.java`              | new: a tiny run against the application, which has to start and finish                             |
+|                    File                    |                                         What is different                                          |
+|--------------------------------------------|----------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                       | the credit bureau, its answer or its timeout, the user task, the gateway and the payout run        |
+| `load-profile.yaml`                        | new: what the model does not say about the load                                                    |
+| `loan-approval.yaml`                       | how often the payout run comes, and the due date of the payout run declared for the timer          |
+| `LoanApprovalProperties.java`              | `payoutRunEvery` instead of `ratingScale`                                                          |
+| `CreditBureau.java`                        | new: the neighbour system, known to the module only by its role                                    |
+| `WorkflowTaskHandler.java`                 | the four `@WorkflowTask` methods, one of them with `@TaskId` for the user task                     |
+| `Service.java`                             | asks the bureau, takes its answer, opens and decides the assessment, pays out, rejects             |
+| `Workflow.java`                            | correlates the answer of the bureau and completes the user task                                    |
+| `Aggregate.java`                           | the documents, the score, the open task, the decision and the due date of the payout run           |
+| `AggregateRepository.java`                 | the open assessments, as a task list shows them, and the number of unfinished workflows            |
+| `ApiController.java`                       | the decision of a clerk, a request with documents, the task list and the number of open approvals  |
+| `loan-approval-api/`                       | new Maven module: the API of the module moved here, because the simulator calls it from Java       |
+| `loan-approval/openapi/loan-approval.yaml` | deleted from the workflow module: its API is in `loan-approval-api/` now                           |
+| `external-systems/`                        | new: the API of the credit bureau and its callback, and the REST adapter of the application        |
+| `load-run-api/`                            | new Maven module: the two URLs of a run, which the simulator offers and the test calls             |
+| `simulator/`                               | new Maven module: an application of its own with the driver, the credit bureau and the report      |
+| `pom.xml`                                  | the new modules, and the OpenAPI generator managed for all of them                                 |
+| `loan-approval/pom.xml`                    | depends on `loan-approval-api-server` instead of generating the API itself                         |
+| `application/pom.xml`                      | the REST adapter, Micrometer with Prometheus, JMX for `quarkus:dev`, starting the simulator        |
+| `application.yaml`                         | a file database, the pool, the dispatch threads, a fresh gauge each second, the meters, the bureau |
+| `LoanApprovalIT.java`                      | each path of the process, one loan at a time                                                       |
+| `ScriptedCreditBureau.java`                | new: the credit bureau of the module test, which answers a moment later or stays silent            |
+| `LoadRunIT.java`                           | new: a tiny run against the application, which has to start and finish                             |
 
 ## Running it
 

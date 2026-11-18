@@ -89,23 +89,23 @@ has the other three ways, and why they are real alternatives and not opinions.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|             File             |                                     What is different                                     |
-|------------------------------|-------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`         | a parallel gateway splitting into two branches and joining them again                     |
-| `model/Aggregate.java`       | carries only what a single token writes, plus a relation per branch                       |
-| `model/PartnerApproval.java` | what the branch of the application writes, including the id of its open task              |
-| `model/DocumentCheck.java`   | what the branch of the BPMS writes                                                        |
-| `Service.java`               | one method per branch. Each touches the entity of its own branch and nothing of the other |
-| `WorkflowTaskHandler.java`   | the branch methods, two of them keeping the id of an open task (`@TaskId`)                |
-| `Workflow.java`              | `partnerApproved` and `documentsDelivered` complete the open task of each branch          |
-| `ApiController.java`         | new endpoints: the partner approves, and the documents arrived                            |
-| `openapi/loan-approval.yaml` | the endpoints `approve` and `documentsReady`                                              |
-| `DocumentsClient.java`       | new: the port to the document service, so the test can put a simulator in its place       |
-| `LocalDocumentsClient.java`  | new: the stand-in for the document service, so the blueprint runs without one             |
-| `DocumentsSimulator.java`    | the surrounding system, and the delay which keeps a branch inside its transaction         |
-| `Simulator.java`             | new, in the tests: the base class of simulators, from the test harness                    |
-| `LoanApprovalIT.java`        | produces the overlap of the two transactions in every run                                 |
-| `loan-approval.yaml`         | `concurrent-branches-reviewed`, which ends the startup warning about a second token       |
+|                    File                    |                                     What is different                                     |
+|--------------------------------------------|-------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                       | a parallel gateway splitting into two branches and joining them again                     |
+| `model/Aggregate.java`                     | carries only what a single token writes, plus a relation per branch                       |
+| `model/PartnerApproval.java`               | what the branch of the application writes, including the id of its open task              |
+| `model/DocumentCheck.java`                 | what the branch of the BPMS writes                                                        |
+| `Service.java`                             | one method per branch. Each touches the entity of its own branch and nothing of the other |
+| `WorkflowTaskHandler.java`                 | the branch methods, two of them keeping the id of an open task (`@TaskId`)                |
+| `Workflow.java`                            | `partnerApproved` and `documentsDelivered` complete the open task of each branch          |
+| `ApiController.java`                       | new endpoints: the partner approves, and the documents arrived                            |
+| `loan-approval/openapi/loan-approval.yaml` | the endpoints `approve` and `documentsReady`                                              |
+| `DocumentsClient.java`                     | new: the port to the document service, so the test can put a simulator in its place       |
+| `LocalDocumentsClient.java`                | new: the stand-in for the document service, so the blueprint runs without one             |
+| `DocumentsSimulator.java`                  | the surrounding system, and the delay which keeps a branch inside its transaction         |
+| `Simulator.java`                           | new, in the tests: the base class of simulators, from the test harness                    |
+| `LoanApprovalIT.java`                      | produces the overlap of the two transactions in every run                                 |
+| `loan-approval.yaml`                       | `concurrent-branches-reviewed`, which ends the startup warning about a second token       |
 
 ## Running it
 

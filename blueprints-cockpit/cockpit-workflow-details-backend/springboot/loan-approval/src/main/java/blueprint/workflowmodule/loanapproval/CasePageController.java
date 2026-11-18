@@ -12,9 +12,9 @@ import blueprint.workflowmodule.loanapproval.api.model.Case;
 import blueprint.workflowmodule.loanapproval.model.Aggregate;
 
 /**
- * The endpoints the case page calls. They implement
- * {@code src/main/resources/openapi/loan-approval.yaml} of this module, which the frontend reads
- * to generate its client.
+ * The endpoints the case page calls. They implement {@code
+ * src/main/resources/loan-approval/openapi/loan-approval.yaml} of this module, which the frontend
+ * reads to generate its client.
  *
  * <p>
  * The case page runs in the browser, inside the Business Cockpit. It calls

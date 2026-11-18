@@ -57,8 +57,9 @@ import io.vanillabp.cockpit.support.usertask.BcUserTaskExceptionHandler;
  *
  * <p>
  * The paths and the records of the requests and answers come from {@link UserTaskFormsApi}, the
- * interface the build generates from {@code src/main/resources/openapi/user-task-forms.yaml}.
- * This class only implements it, and adds the permission of each endpoint.
+ * interface the build generates from {@code
+ * src/main/resources/loan-approval/openapi/user-task-forms.yaml}. This class only implements it,
+ * and adds the permission of each endpoint.
  * </p>
  */
 @RestController

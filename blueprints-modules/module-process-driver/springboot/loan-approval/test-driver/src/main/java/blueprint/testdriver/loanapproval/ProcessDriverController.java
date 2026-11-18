@@ -22,7 +22,7 @@ import blueprint.testdriver.loanapproval.steps.ProcessStateNotReachedException;
  * It exists only where this module is on the classpath and {@code process-driver.enabled} is
  * {@code true}. The application in production has neither. The paths come from
  * {@link ProcessDriverApi}, which the build generates from
- * {@code src/main/resources/openapi/process-driver.yaml}.
+ * {@code src/main/resources/loan-approval/openapi/process-driver.yaml}.
  * </p>
  */
 @RestController
