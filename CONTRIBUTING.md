@@ -309,7 +309,7 @@ python3 bin/check_scoping_modes.py
 ```
 
 A Maven module which runs no BPMS has no BPMS profile to compare. The simulator of
-`module-simulator` is such a module, and `MODULES_WITHOUT_A_BPMS` in the script names it.
+`module-under-load` is such a module, and `MODULES_WITHOUT_A_BPMS` in the script names it.
 
 It found `module-bpms-migration`, whose `camunda7` profile set `use-prefix` while its
 `camunda8` profile named nothing. So the migration the blueprint shows lost the message of
@@ -486,11 +486,15 @@ takes one object with all its parameters, and the body comes under the name of i
 It returns the data and throws when the answer is not a success. An error interceptor in
 `src/shared/api.ts` turns such an answer into a `ResponseError`, which keeps its status. Nobody
 writes a `fetch` call to the module API by hand. The generator is a Node program with no install
-scripts, so the build of a frontend needs Node and nothing else: no Java, no Maven, and no
-download during the build. `openapi-ts.config.mjs` of the frontend holds the options, and
-`package.json` pins the version exactly, because the 0.x line breaks things in minor versions.
-The code is written to `src/generated/`, which git ignores, as `target/` is ignored on the Java
-side.
+scripts, so the build of a frontend needs Node and nothing else: no Java and no Maven. A
+frontend which calls an API of the cockpit, such as the dev shell of
+`cockpit-process-driver-frontend`, keeps no copy of the cockpit's OpenAPI file. Its
+`scripts/fetch-openapi.mjs` downloads the jar of the cockpit from Maven Central, in the version
+the backend uses, and takes the file out of it. The skill `business-cockpit-creator` describes
+the same way for the user interface of a cockpit. `openapi-ts.config.mjs` of the frontend holds
+the options, and `package.json` pins the version exactly, because the 0.x line breaks things in
+minor versions. The code is written to `src/generated/`, which git ignores, as `target/` is
+ignored on the Java side.
 
 The sources of a frontend import from another directory through the path aliases of its
 `tsconfig.json`, never with `../`: `@loan-approval`, `@shared`, `@gui-client` (the client with
@@ -535,7 +539,7 @@ templates/test-harness/<platform>/
 │   ├── WorkflowModuleTest.java  base class: waiting for a workflow to make progress
 │   ├── Simulator.java           base class of a stand-in for a surrounding system
 │   └── SuppressOutputExtension.java
-│                                shows the output of a test only if it fails (Spring Boot only)
+│                                shows the output of a test only if it fails
 └── application/             -> <maven-module>/src/test/java/blueprint/application/
     └── ApplicationSmokeTest.java
 ```
@@ -590,7 +594,9 @@ not belong into a green build log, for example the stack trace of a surrounding 
 test makes fail on purpose. It collects the output instead of lowering a log level, and shows it
 with a test which fails. A log level would drop the lines, and a red test would then say
 nothing. Register it before every other extension which prints, so that their lines are part of
-what a failing test shows.
+what a failing test shows. The Quarkus copy does one thing more: Quarkus logs through JBoss
+LogManager, whose console handler keeps the `System.out` it found at the start. So the copy
+points every stream handler of that log manager at the current `System.out`.
 
 Everything else in a blueprint's tests is specific to it, and nothing compares it. The
 integration test *is* the proof of the aspect, and it is supposed to differ.
@@ -1145,11 +1151,6 @@ Two kinds of YAML are left out, both because the formatter drops comments. The f
 workflow files, where it also removes the quotes around version numbers and turns `"3.10"` into
 `3.1`. The second is everything below a blueprint's `src/`, where the comments are what the
 blueprint teaches.
-
-A copy of an OpenAPI file which another project publishes is left out as well. The frontend of
-`cockpit-process-driver-frontend` keeps the file of the cockpit's official API below `openapi/`.
-It stays as it came, so the next version of the file replaces it without a difference which only
-the formatter made.
 
 ## License
 

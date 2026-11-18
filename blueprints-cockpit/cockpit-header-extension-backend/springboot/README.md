@@ -103,22 +103,23 @@ dependency, and that is all. Its user interface comes from the UI jar.
 
 Compared to [`cockpit-workflow-details-backend`](https://github.com/vanillabp-blueprints/cockpit-workflow-details-backend-springboot):
 
-|                    File                    |                                                   What is different                                                    |
-|--------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/openapi/loan-approval.yaml` | the one endpoint of the start form instead of the two of the case page                                                 |
-| `loan_approval.bpmn`                       | the one user task, without the event subprocess                                                                        |
-| `LoanApprovalModuleDetails.java`           | new: names the group `LOAN_OFFICERS`, the only users who see the module, and so the button                             |
-| `StartFormController.java`                 | new, instead of `CasePageController.java`: starts a loan approval with what the user typed, below `/loan-approval/api` |
-| `CasePageController.java`                  | deleted, `StartFormController.java` takes its place                                                                    |
-| `WorkflowTaskHandler.java`                 | the `@WorkflowTask` method of the user task only, and no `@WorkflowDetailsProvider` method                             |
-| `Service.java`                             | picks the id of a new loan request and starts the process. No withdrawal                                               |
-| `Workflow.java`                            | `startWorkflow` and `completeUserTask`, no `correlateMessage`                                                          |
-| `Aggregate.java`                           | the applicant, the amount and the id of the open user task, no status                                                  |
-| `ApiController.java`                       | the id of a loan request comes from the service                                                                        |
-| `LoanApprovalIT.java`                      | starts a loan approval through the start form, finds the case in the case list, and checks who sees the module         |
-| `dev-shell-simulator.yaml` (test)          | two users: Jane is a loan officer, John is not                                                                         |
-| `LoanApprovalAutoConfiguration.java`       | its Javadoc names `LoanApprovalModuleDetails`                                                                          |
-| `pom.xml`, `loan-approval/pom.xml`         | the generator builds the interface `StartFormApi` and the test client of the start form, instead of `CasesApi`         |
+|                    File                    |                                                                             What is different                                                                              |
+|--------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/openapi/loan-approval.yaml` | the one endpoint of the start form instead of the two of the case page                                                                                                     |
+| `loan_approval.bpmn`                       | the one user task, without the event subprocess                                                                                                                            |
+| `LoanApprovalModuleDetails.java`           | new: names the group `LOAN_OFFICERS`, the only users who see the module, and so the button                                                                                 |
+| `StartFormController.java`                 | new, instead of `CasePageController.java`: starts a loan approval with what the user typed, below `/loan-approval/api`                                                     |
+| `CasePageController.java`                  | deleted, `StartFormController.java` takes its place                                                                                                                        |
+| `WorkflowTaskHandler.java`                 | the `@WorkflowTask` method of the user task only, and no `@WorkflowDetailsProvider` method                                                                                 |
+| `Service.java`                             | picks the id of a new loan request and starts the process. No withdrawal                                                                                                   |
+| `Workflow.java`                            | `startWorkflow` and `completeUserTask`, no `correlateMessage`                                                                                                              |
+| `Aggregate.java`                           | the applicant, the amount and the id of the open user task, no status                                                                                                      |
+| `ApiController.java`                       | the id of a loan request comes from the service                                                                                                                            |
+| `LoanApprovalIT.java`                      | starts a loan approval through the start form, finds the case in the case list, and checks who sees the module                                                             |
+| `CockpitSimulator.java`                    | also asks the simulator which workflow modules a user sees                                                                                                                 |
+| `dev-shell-simulator.yaml` (test)          | two users: Jane is a loan officer, John is not                                                                                                                             |
+| `LoanApprovalAutoConfiguration.java`       | its Javadoc names `LoanApprovalModuleDetails`                                                                                                                              |
+| `pom.xml`, `loan-approval/pom.xml`         | the generator builds the interface `StartFormApi` and the test client of the start form, instead of `CasesApi`; the test also gets the client of the simulator's own paths |
 
 ## Running it
 
@@ -181,7 +182,7 @@ form posts to `/loan-approval/api/loan-requests`, which a browser cannot do from
 | `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of the user task when the process creates it                                                                                                       |
 | `.../loanapproval/model/Aggregate.java`                                                | the loan request and the id of the open user task                                                                                                               |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a loan approval like the start form does, and checks what the cockpit was told and who sees the module, through a client generated from the OpenAPI file |
-| `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test, and reads cases and user tasks from it                                                                |
+| `loan-approval/src/test/.../CockpitSimulator.java`                                     | runs the dev shell simulator of the cockpit for the test, and reads cases, user tasks and who sees a module from it                                             |
 | `.../loanapproval/config/LoanApprovalAutoConfiguration.java`                           | wires the module into any application which has it as a dependency                                                                                              |
 
 The order of events: the application starts, and the cockpit adapter registers the module with

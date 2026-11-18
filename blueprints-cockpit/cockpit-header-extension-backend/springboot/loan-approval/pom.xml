@@ -88,6 +88,17 @@
       <version>${businesscockpit.version}</version>
       <scope>test</scope>
     </dependency>
+    <!--
+      The client of the paths only the dev shell simulator answers, generated from its OpenAPI
+      file. The test asks with it which workflow modules a given user sees, without signing in
+      as that user.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>dev-shell-simulator-api-client</artifactId>
+      <version>${businesscockpit.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

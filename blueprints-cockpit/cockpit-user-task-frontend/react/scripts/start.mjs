@@ -1,5 +1,5 @@
 // `npm run start` will start the dev shell with the micro-frontends of this project. The dev shell
-// comes from the cockpits generated with the skill business-cockpit-user-interface, as the
+// comes from the cockpits generated with the skill business-cockpit-creator, as the
 // package @acme/bc-dev-shell-react. None of them publishes it yet. Until one does, this script
 // only says so. See the README, section "Running it".
 

@@ -128,6 +128,8 @@ the restart does not. Usually that is the database or a context left running.
 
 The database is a FILE here, unlike in every other blueprint, because the scenario restarts the
 application. A test which has to start from nothing deletes it first. `mvn clean` throws it
-away.
+away. After a new cluster the start can end with the message "The BPMS behind adapter
+'camunda8' is not the one this application met before". That is VanillaBP's check for a new
+cluster, not a defect of the generated code, and `mvn clean` is the way out here as well.
 
 Do not report success without having run this.

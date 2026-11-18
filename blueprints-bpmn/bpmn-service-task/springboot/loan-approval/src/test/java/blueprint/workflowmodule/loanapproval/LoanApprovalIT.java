@@ -6,11 +6,13 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
+import blueprint.workflowmodule.SuppressOutputExtension;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
@@ -23,6 +25,9 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * this blueprint. Each of them asserts on the workflow aggregate, never on the engine.
  * </p>
  */
+// One test makes the credit rating fail on purpose, and the application logs the failure with
+// its stack trace. That output is shown only with a test which fails.
+@ExtendWith(SuppressOutputExtension.class)
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   /** The surrounding system, replaced by a simulator the test can steer. */

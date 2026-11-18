@@ -173,6 +173,13 @@ which BPMS are configured and starts it again. So the aggregates and the tables 
 engine have to survive the first run. `mvn clean` throws the database away, and that is how you
 start over.
 
+The file outlives the cluster of `-Pcamunda8` as well, and VanillaBP's delivery log is in it. A
+new cluster, for example after `docker compose down`, hands out the job keys of the old one
+again. So at every start VanillaBP compares the cluster with the one the delivery log was
+written with. If the cluster is new and the log still holds records of the old one, the start
+ends, and the message says how to go on. `mvn clean` is the simple way here as well. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#the-identity-of-the-cluster) explains the check.
+
 ### Walking through a migration
 
 This is the sequence to show it to somebody. `MigrationRestartIT` does the same without a

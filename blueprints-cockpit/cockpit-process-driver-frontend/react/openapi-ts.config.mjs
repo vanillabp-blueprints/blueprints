@@ -1,7 +1,6 @@
 // How `npm run generate:client` writes the API clients: @hey-api/openapi-ts reads the three OpenAPI
-// files, which scripts/fetch-openapi.mjs copied to build/openapi, and writes TypeScript to
-// src/generated/<name of the file>. It runs on Node only, so the build needs no Java and downloads
-// nothing.
+// files, which scripts/fetch-openapi.mjs put into build/openapi, and writes TypeScript to
+// src/generated/<name of the file>. It runs on Node only, so the build needs no Java.
 //
 //   loan-approval      the API of the use case, which the forms call
 //   process-driver     the API of the process driver, which only the dev shell calls

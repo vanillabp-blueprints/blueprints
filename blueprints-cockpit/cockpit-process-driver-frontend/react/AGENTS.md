@@ -56,7 +56,6 @@ name.
 | `dev-shell/src/element-names.ts`        | checks the names of the web components before the host draws them, with the note of a cockpit; keep it when the dev shell changes                                                                   |
 | `scripts/start.mjs`                     | serves the dev shell and forwards `/wm/loan-approval/api/` and `/official-api/`                                                                                                                     |
 | `src/shared/official-gui-api.ts`        | `tasklist` and `workflowlist`, the generated clients of the official API of the cockpit. Only the dev shell imports them, through `@official-gui-client`                                            |
-| `openapi/official-gui-api.yaml`         | a copy of the OpenAPI file of the cockpit's official API, `apis/official-gui-api/openapi/v1.yaml` of the version the backend uses. Replace it when the backend moves to another version             |
 | `src/shared/process-driver-api.ts`      | `processDriver`, the generated client of the driver. Only the dev shell imports it, through `@process-driver-client`                                                                                |
 | `src/shared/api.ts`                     | `loanApproval`, the generated client of the module API, and `ResponseError`. The forms import it as `@gui-client` and complete their tasks with POST: `completeAssessRisk`, `completeCheckContract` |
 | `src/loan-approval.ts`                  | module id, process id, task definitions, keys of the details, entry names and web component names                                                                                                   |
@@ -66,36 +65,36 @@ name.
 
 ## Boilerplate files
 
-|                  File                  |                                               Purpose                                               |
-|----------------------------------------|-----------------------------------------------------------------------------------------------------|
-| `package.json`                         | the scripts, and in `config` the module id, both OpenAPI files, the jar and the image name          |
-| `tsconfig.json`                        | type checking only, and the path aliases, which esbuild reads as well                               |
-| `openapi-ts.config.mjs`                | the options of `@hey-api/openapi-ts`, one job per OpenAPI file                                      |
-| `scripts/fetch-openapi.mjs`            | copies the two OpenAPI files of the backend from the submodule, and the copy of the cockpit's file  |
-| `scripts/write-bc-build.mjs`           | writes `src/bc-build.js`, the module id from `package.json` and the build id, before the type check |
-| `src/bc-build.d.ts`                    | the types of `src/bc-build.js`, which is written for every build and not checked in                 |
-| `.gitmodules`                          | the submodule `backend`, the backend repository which owns the OpenAPI files                        |
-| `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                           |
-| `scripts/build-dev-shell.mjs`          | the dev shell into `dist/dev-shell`                                                                 |
-| `scripts/build-ui-jar.mjs`             | the UI jar and its pom                                                                              |
-| `scripts/build-image.mjs`              | the nginx image                                                                                     |
-| `dev-shell/index.html`                 | the page of the dev shell                                                                           |
-| `dev-shell/src/main.tsx`               | the three views of the dev shell                                                                    |
-| `dev-shell/src/workflow-page.tsx`      | a case and its user tasks                                                                           |
-| `src/data/user-task-list.ts`           | data entry `UserTaskList`, the columns `details.amount` and `details.creditScore`                   |
-| `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`                                                                       |
-| `src/forms/check-contract-form.tsx`    | visual entry `CheckContractForm`                                                                    |
-| `src/shared/response-error.ts`         | `ResponseError`, which keeps the status of an answer                                                |
-| `scripts/check-imports.mjs`            | fails `npm run build` on an import with `../`; import through an alias instead                      |
-| `src/shared/index.ts`                  | what the forms import as `@shared`                                                                  |
-| `src/shared/react-element.tsx`         | a React component as a web component, with `defineBcElement` of the kit                             |
-| `src/shared/style.ts`                  | the styles, put into each shadow root                                                               |
-| `src/shared/texts.ts`                  | the texts in English and German                                                                     |
-| `docker/Dockerfile`                    | the nginx image                                                                                     |
-| `docker/nginx.conf`                    | serves `/loan-approval/`, the manifest without caching                                              |
-| `test/browser/user-task-forms.test.js` | the browser tests of the forms, with areas and with `all` only                                      |
-| `test/browser/page.js`                 | the test page of the forms with `createModuleHost`                                                  |
-| `test/browser/server.js`               | serves the test pages, the dev shell and `dist/micro-frontends` below `/wm/loan-approval/`          |
+|                  File                  |                                                   Purpose                                                   |
+|----------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `package.json`                         | the scripts, and in `config` the module id, the OpenAPI files, both jars and the image name                 |
+| `tsconfig.json`                        | type checking only, and the path aliases, which esbuild reads as well                                       |
+| `openapi-ts.config.mjs`                | the options of `@hey-api/openapi-ts`, one job per OpenAPI file                                              |
+| `scripts/fetch-openapi.mjs`            | copies the two OpenAPI files of the backend from the submodule, and takes the cockpit's file out of its jar |
+| `scripts/write-bc-build.mjs`           | writes `src/bc-build.js`, the module id from `package.json` and the build id, before the type check         |
+| `src/bc-build.d.ts`                    | the types of `src/bc-build.js`, which is written for every build and not checked in                         |
+| `.gitmodules`                          | the submodule `backend`, the backend repository which owns the OpenAPI files                                |
+| `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                                   |
+| `scripts/build-dev-shell.mjs`          | the dev shell into `dist/dev-shell`                                                                         |
+| `scripts/build-ui-jar.mjs`             | the UI jar and its pom                                                                                      |
+| `scripts/build-image.mjs`              | the nginx image                                                                                             |
+| `dev-shell/index.html`                 | the page of the dev shell                                                                                   |
+| `dev-shell/src/main.tsx`               | the three views of the dev shell                                                                            |
+| `dev-shell/src/workflow-page.tsx`      | a case and its user tasks                                                                                   |
+| `src/data/user-task-list.ts`           | data entry `UserTaskList`, the columns `details.amount` and `details.creditScore`                           |
+| `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`                                                                               |
+| `src/forms/check-contract-form.tsx`    | visual entry `CheckContractForm`                                                                            |
+| `src/shared/response-error.ts`         | `ResponseError`, which keeps the status of an answer                                                        |
+| `scripts/check-imports.mjs`            | fails `npm run build` on an import with `../`; import through an alias instead                              |
+| `src/shared/index.ts`                  | what the forms import as `@shared`                                                                          |
+| `src/shared/react-element.tsx`         | a React component as a web component, with `defineBcElement` of the kit                                     |
+| `src/shared/style.ts`                  | the styles, put into each shadow root                                                                       |
+| `src/shared/texts.ts`                  | the texts in English and German                                                                             |
+| `docker/Dockerfile`                    | the nginx image                                                                                             |
+| `docker/nginx.conf`                    | serves `/loan-approval/`, the manifest without caching                                                      |
+| `test/browser/user-task-forms.test.js` | the browser tests of the forms, with areas and with `all` only                                              |
+| `test/browser/page.js`                 | the test page of the forms with `createModuleHost`                                                          |
+| `test/browser/server.js`               | serves the test pages, the dev shell and `dist/micro-frontends` below `/wm/loan-approval/`                  |
 
 The imports go through path aliases, never through `../`. `tsconfig.json` declares them, and
 esbuild reads them from there: `@loan-approval`, `@shared`, `@gui-client` (`src/shared/api.ts`),
@@ -113,11 +112,14 @@ neighbour with `./`. `npm run check:imports`, the first step of `npm run build`,
 2. If the workflow module has no frontend project yet, copy this one and replace the
    placeholders. If it has one, take `dev-shell/`, `scripts/start.mjs`,
    `scripts/build-dev-shell.mjs`, `src/shared/process-driver-api.ts`,
-   `src/shared/official-gui-api.ts`, `openapi/official-gui-api.yaml` and the second and third job
-   in `openapi-ts.config.mjs`.
+   `src/shared/official-gui-api.ts`, the second and third job in `openapi-ts.config.mjs`, and
+   `config.cockpitOpenapi`, `config.cockpitVersion` and `config.cockpitRepository` in
+   `package.json` with the part of `scripts/fetch-openapi.mjs` which reads them.
 3. Add the OpenAPI file of the driver to `config.openapi` in `package.json`, next to the one of
    the module API. Point the submodule in `.gitmodules` at your backend repository
-   (`git submodule add <url> backend`), and delete `config.openapiInMonorepo`.
+   (`git submodule add <url> backend`), and delete `config.openapiInMonorepo` and
+   `config.cockpitVersion.pomInMonorepo`. If your build reads from a Maven repository of its own,
+   put it into `config.cockpitRepository`.
 4. Change the test data in `dev-shell/src/process-driver-page.tsx` to the parameters of your
    `advance-to`. Choose defaults with which every state can be reached.
 5. Change `DRIVER_SWITCH` in the same file to the profile and the property of your backend.

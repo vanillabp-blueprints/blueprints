@@ -108,7 +108,7 @@ public class Cockpit {
       }
 
       final var user = Optional
-          .ofNullable(currentUser.currentUser(null))
+          .ofNullable(currentUser.currentUser())
           .map(User::getId);
       return user.isPresent() && !assignee.get().equals(user.get());
 

@@ -11,8 +11,12 @@
 
   <!--
     Maven sorts these modules by their dependencies. The order below only shows how they
-    belong together. That the simulator is built before the workflow module, whose integration
-    tests run against it, comes from a dependency in loan-approval/pom.xml.
+    belong together. 'simulator' is an aggregator with modules of their own:
+
+      simulator  the test API of the simulator (with client and server) and the application
+
+    That the simulator is built before the workflow module, whose integration tests run against
+    it, comes from a dependency in loan-approval/pom.xml.
 
     Four modules do not take this POM as their parent: the simulator and the three 'server'
     modules, whose code only the simulator uses. The simulator extends the dev shell simulator
@@ -28,7 +32,6 @@
     <module>external-systems/e-signature/e-signature-api</module>
     <module>external-systems/e-signature/port</module>
     <module>external-systems/e-signature/rest-adapter</module>
-    <module>simulator-test-api</module>
     <module>simulator</module>
     <module>loan-approval</module>
     <module>application</module>

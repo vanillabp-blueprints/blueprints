@@ -14,12 +14,26 @@
     "uiJar": "io.vanillabp.blueprint:cockpit-process-driver-ui",
     "openapi": {
       "loan-approval": "backend/loan-approval/workflow-module/src/main/resources/loan-approval/openapi/loan-approval.yaml",
-      "process-driver": "backend/loan-approval/test-driver/src/main/resources/loan-approval/openapi/process-driver.yaml",
-      "official-gui-api": "openapi/official-gui-api.yaml"
+      "process-driver": "backend/loan-approval/test-driver/src/main/resources/loan-approval/openapi/process-driver.yaml"
     },
     "openapiInMonorepo": {
       "loan-approval": "../../../blueprints-modules/module-process-driver/springboot/loan-approval/workflow-module/src/main/resources/loan-approval/openapi/loan-approval.yaml",
       "process-driver": "../../../blueprints-modules/module-process-driver/springboot/loan-approval/test-driver/src/main/resources/loan-approval/openapi/process-driver.yaml"
+    },
+    "cockpitOpenapi": {
+      "official-gui-api": {
+        "artifact": "io.vanillabp.businesscockpit:official-gui-api-server",
+        "path": "v1.yaml"
+      }
+    },
+    "cockpitVersion": {
+      "pom": "backend/pom.xml",
+      "pomInMonorepo": "../../../blueprints-modules/module-process-driver/springboot/pom.xml",
+      "property": "businesscockpit.version"
+    },
+    "cockpitRepository": {
+      "releases": "https://repo1.maven.org/maven2/",
+      "snapshots": "https://central.sonatype.com/repository/maven-snapshots/"
     },
     "image": "vanillabp-blueprints/cockpit-process-driver-ui"
   },
@@ -46,8 +60,8 @@
     "@hey-api/openapi-ts": "0.99.0",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@vanillabp/bc-module-host": "0.1.0-snapshot.3",
-    "@vanillabp/bc-module-kit": "0.1.0-snapshot.3",
+    "@vanillabp/bc-module-host": "0.1.0-snapshot.4",
+    "@vanillabp/bc-module-kit": "0.1.0-snapshot.4",
     "esbuild": "0.28.2",
     "fflate": "0.8.3",
     "playwright": "1.65.1",

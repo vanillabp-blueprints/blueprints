@@ -95,6 +95,11 @@ That runs on Camunda 7, which is embedded and needs no infrastructure. `-Pcamund
 running cluster and a configured `vanillabp.adapters.camunda8.rest-address`. Check both before
 you report a failure of that profile as a defect of the generated code.
 
+The database is a file, `target/loan-approval`, and it outlives the cluster. Against a new
+cluster the start can end with the message "The BPMS behind adapter 'camunda8' is not the one
+this application met before". That is VanillaBP's check for a new cluster, not a defect of the
+generated code. `mvn clean` deletes the file.
+
 `LoanApprovalIT` proves the aspect and has to pass:
 
 - the database executes nothing while the workflow waits in its timer, apart from the two

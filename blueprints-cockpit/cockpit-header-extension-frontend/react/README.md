@@ -226,7 +226,7 @@ and a cockpit without a header, whose host does not know the entry.
 
 ## Documentation
 
-- [Loading the parts of a workflow module](https://github.com/vanillabp/business-cockpit/blob/main/skills/business-cockpit-creator/references/module-loading.md#the-other-extension-points): the extension point `Header`, dialogs and the event protocol
+- [Loading the parts of a workflow module](https://github.com/vanillabp/business-cockpit/wiki/Loading-the-parts-of-a-workflow-module#the-header-and-dialogs): the extension point `Header`, dialogs and the event protocol
 - [The module kit](https://github.com/vanillabp/business-cockpit-module-kit): `@vanillabp/bc-module-kit` and `@vanillabp/bc-module-host`
 - [`@hey-api/openapi-ts`](https://heyapi.dev/openapi-ts/get-started): the generator of the API client
 

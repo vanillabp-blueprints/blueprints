@@ -91,7 +91,7 @@
     -->
     <dependency>
       <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
-      <artifactId>simulator-test-api-client</artifactId>
+      <artifactId>simulator-api-client</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -114,7 +114,7 @@
     -->
     <dependency>
       <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
-      <artifactId>simulator</artifactId>
+      <artifactId>simulator-application</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
       <scope>test</scope>
@@ -256,7 +256,7 @@
         To run the tests against a simulator you started yourself, for example while you debug
         it, name its address. The build still starts its own simulator, and the tests use yours:
 
-          java -jar simulator/target/simulator-1.0.0-SNAPSHOT-runnable.jar
+          java -jar simulator/application/target/simulator-application-1.0.0-SNAPSHOT-runnable.jar
           mvn verify -Dsimulator.base-url=http://localhost:8079
 
         A test run from the IDE has none of this. It looks for a simulator at
@@ -301,7 +301,7 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>io.vanillabp.blueprint.module-simulator-quarkus</groupId>
-                  <artifactId>simulator</artifactId>
+                  <artifactId>simulator-application</artifactId>
                   <version>${project.version}</version>
                   <classifier>runnable</classifier>
                   <destFileName>simulator.jar</destFileName>

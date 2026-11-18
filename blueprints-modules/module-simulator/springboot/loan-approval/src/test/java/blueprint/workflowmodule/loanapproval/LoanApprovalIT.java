@@ -14,13 +14,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
+import blueprint.workflowmodule.SuppressOutputExtension;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.client.LoanApprovalApi;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
@@ -45,6 +45,9 @@ import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
  * </p>
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+// The output of a test is shown only if it fails, together with what the simulator logged
+// meanwhile. So the suppression comes first. See SimulatorExtension for why the order matters.
+@ExtendWith(SuppressOutputExtension.class)
 @ExtendWith(SimulatorExtension.class)
 public class LoanApprovalIT extends WorkflowModuleTest {
 
@@ -53,6 +56,20 @@ public class LoanApprovalIT extends WorkflowModuleTest {
    * the e-signature service has to know where to call back.
    */
   private static final int PORT = freePort();
+
+  /** Where the application takes the reports of the e-signature service. */
+  private static final String CALLBACK_URL = "http://localhost:"
+      + PORT
+      + "/e-signature/callback";
+
+  /**
+   * How the application answers a report of the e-signature service it took, as the callback
+   * API says.
+   */
+  private static final int REPORT_TAKEN = HttpStatus.NO_CONTENT.value();
+
+  /** How the application answers a report about a contract it does not know. */
+  private static final int REPORT_OF_AN_UNKNOWN_CONTRACT = HttpStatus.NOT_FOUND.value();
 
   @Autowired
   private AggregateRepository loanApprovals;
@@ -87,9 +104,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         + "/credit-rating");
     properties.add("e-signature.client.base-url", () -> simulator
         + "/e-signature");
-    properties.add("e-signature.callback-url", () -> "http://localhost:"
-        + PORT
-        + "/e-signature/callback");
+    properties.add("e-signature.callback-url", () -> CALLBACK_URL);
     properties.add("vanillabp.cockpit.rest.base-url", () -> simulator);
     // The client of the cockpit's library, with the keys where Spring Boot looks for them. The
     // simulator answers the cockpit below a prefix of its own, and the client adds /gui/api/v1.
@@ -140,9 +155,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         });
 
     // The customer signs. The simulator calls the application back, and the workflow ends.
-    assertThat(simulator().sign(loanRequestId))
-        .startsWith(String.valueOf(HttpStatus.OK.value()))
-        .contains(String.valueOf(HttpStatus.NO_CONTENT.value()));
+    assertThat(simulator().sign(loanRequestId).answer()).as("the application took the report")
+        .isEqualTo(REPORT_TAKEN);
     assertThat(awaitAggregate(
         loanApprovals,
         loanRequestId,
@@ -197,34 +211,36 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         loanRequest -> Boolean.TRUE.equals(loanRequest.getContractSentForSigning()));
 
-    assertThat(simulator().sign(loanRequestId)).contains(String.valueOf(HttpStatus.NO_CONTENT.value()));
+    assertThat(simulator().sign(loanRequestId).answer()).as("the application took the report")
+        .isEqualTo(REPORT_TAKEN);
     awaitAggregate(
         loanApprovals,
         loanRequestId,
         loanRequest -> Boolean.TRUE.equals(loanRequest.getContractSigned()));
 
     // A service may report again, for example after it lost the first answer.
-    assertThat(simulator().sign(loanRequestId)).contains(String.valueOf(HttpStatus.NO_CONTENT.value()));
+    assertThat(simulator().sign(loanRequestId).answer()).as("the application took the report again")
+        .isEqualTo(REPORT_TAKEN);
 
   }
 
+  /**
+   * The e-signature service reports a signature of a contract the application never sent, for
+   * example because another system uses the same callback address. The simulator sends such a
+   * report on request of its test API.
+   */
   @Test
   public void aSignatureOfAnUnknownContractIsRefused() {
 
-    final var status = RestClient
-        .create("http://localhost:"
-            + PORT)
-        .post()
-        .uri("/e-signature/callback")
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(Map.of("contractId", UUID.randomUUID().toString(), "status", "SIGNED"))
-        .exchange((
-            request,
-            response) -> response
-                .getStatusCode()
-                .value());
+    final var unknownContract = UUID
+        .randomUUID()
+        .toString();
 
-    assertThat(status).isEqualTo(HttpStatus.NOT_FOUND.value());
+    final var report = simulator().sendCallback(unknownContract, CALLBACK_URL);
+
+    assertThat(report.answer()).as("the application does not know the contract")
+        .isEqualTo(REPORT_OF_AN_UNKNOWN_CONTRACT);
+    assertThat(loanApprovals.findById(unknownContract)).isEmpty();
 
   }
 

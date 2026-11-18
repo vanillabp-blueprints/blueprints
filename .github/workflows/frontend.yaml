@@ -8,6 +8,9 @@ name: Build the cockpit frontends
 # so a change of the API and of the frontend builds together in one pull request. Most backends
 # are cockpit blueprints next to their frontend. cockpit-process-driver-frontend reads its two
 # OpenAPI files from blueprints-modules/module-process-driver, so that path is listed as well.
+# It also takes the OpenAPI file of the cockpit's official API out of the cockpit's jar, in the
+# version of 'businesscockpit.version' in the pom.xml of that backend. A new version there
+# changes the client, so that pom.xml is listed too.
 "on":
   push:
     branches:
@@ -16,12 +19,14 @@ name: Build the cockpit frontends
       - "blueprints-cockpit/*-frontend/**"
       - "blueprints-cockpit/*-backend/*/*/src/main/resources/*/openapi/**"
       - "blueprints-modules/module-process-driver/**/openapi/**"
+      - "blueprints-modules/module-process-driver/springboot/pom.xml"
       - ".github/workflows/frontend.yaml"
   pull_request:
     paths:
       - "blueprints-cockpit/*-frontend/**"
       - "blueprints-cockpit/*-backend/*/*/src/main/resources/*/openapi/**"
       - "blueprints-modules/module-process-driver/**/openapi/**"
+      - "blueprints-modules/module-process-driver/springboot/pom.xml"
       - ".github/workflows/frontend.yaml"
   workflow_dispatch:
 concurrency:

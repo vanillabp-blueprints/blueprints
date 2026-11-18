@@ -1,7 +1,6 @@
 package blueprint.workflowmodule.loanapproval;
 
 import static blueprint.workflowmodule.loanapproval.SimulatorTestApi.simulator;
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import blueprint.workflowmodule.SuppressOutputExtension;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.client.LoanApprovalApi;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
@@ -20,7 +20,6 @@ import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 
@@ -44,8 +43,20 @@ import jakarta.ws.rs.core.Response;
  */
 @QuarkusTest
 @WithTestResource(EverySystemIsTheSimulator.class)
+// The output of a test is shown only if it fails, together with what the simulator logged
+// meanwhile. So the suppression comes first. See SimulatorExtension for why the order matters.
+@ExtendWith(SuppressOutputExtension.class)
 @ExtendWith(SimulatorExtension.class)
 public class LoanApprovalIT extends WorkflowModuleTest {
+
+  /**
+   * How the application answers a report of the e-signature service it took, as the callback
+   * API says.
+   */
+  private static final int REPORT_TAKEN = Response.Status.NO_CONTENT.getStatusCode();
+
+  /** How the application answers a report about a contract it does not know. */
+  private static final int REPORT_OF_AN_UNKNOWN_CONTRACT = Response.Status.NOT_FOUND.getStatusCode();
 
   @Inject
   AggregateRepository loanApprovals;
@@ -53,6 +64,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   /** The address of the application under test, which Quarkus chose for this test run. */
   @TestHTTPResource("/")
   URI application;
+
+  /** Where the application takes the reports of the e-signature service. */
+  @TestHTTPResource("/e-signature/callback")
+  URI callbackUrl;
 
   /**
    * The API of the module, through the client the build generates from its OpenAPI file. The
@@ -113,9 +128,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         });
 
     // The customer signs. The simulator calls the application back, and the workflow ends.
-    assertThat(simulator().sign(loanRequestId))
-        .startsWith(String.valueOf(Response.Status.OK.getStatusCode()))
-        .contains(String.valueOf(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(simulator().sign(loanRequestId).getAnswer()).as("the application took the report")
+        .isEqualTo(REPORT_TAKEN);
     final var signed = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
@@ -170,29 +184,36 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         loanRequest -> Boolean.TRUE.equals(loanRequest.getContractSentForSigning()));
 
-    assertThat(simulator().sign(loanRequestId))
-        .contains(String.valueOf(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(simulator().sign(loanRequestId).getAnswer()).as("the application took the report")
+        .isEqualTo(REPORT_TAKEN);
     awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
         loanRequest -> Boolean.TRUE.equals(loanRequest.getContractSigned()));
 
     // A service may report again, for example after it lost the first answer.
-    assertThat(simulator().sign(loanRequestId))
-        .contains(String.valueOf(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(simulator().sign(loanRequestId).getAnswer()).as("the application took the report again")
+        .isEqualTo(REPORT_TAKEN);
 
   }
 
+  /**
+   * The e-signature service reports a signature of a contract the application never sent, for
+   * example because another system uses the same callback address. The simulator sends such a
+   * report on request of its test API.
+   */
   @Test
   public void aSignatureOfAnUnknownContractIsRefused() {
 
-    final var status = given()
-        .contentType(ContentType.JSON)
-        .body(Map.of("contractId", UUID.randomUUID().toString(), "status", "SIGNED"))
-        .post("/e-signature/callback")
-        .statusCode();
+    final var unknownContract = UUID
+        .randomUUID()
+        .toString();
 
-    assertThat(status).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+    final var report = simulator().sendCallback(unknownContract, callbackUrl.toString());
+
+    assertThat(report.getAnswer()).as("the application does not know the contract")
+        .isEqualTo(REPORT_OF_AN_UNKNOWN_CONTRACT);
+    assertThat(loanApprovals.findByIdOptional(unknownContract)).isEmpty();
 
   }
 
