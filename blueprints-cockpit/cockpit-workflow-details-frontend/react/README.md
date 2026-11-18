@@ -84,18 +84,19 @@ npm test
 
 The scripts are the same as in `cockpit-user-task-frontend-react`:
 
-|             Script              |                                            What it does                                            |
-|---------------------------------|----------------------------------------------------------------------------------------------------|
-| `npm run build`                 | all of the following, one after the other                                                          |
-| `npm run fetch:openapi`         | copies the OpenAPI file of the backend into `build/openapi`                                        |
-| `npm run generate:client`       | generates the API client from it with `@hey-api/openapi-ts`                                        |
-| `npm run typecheck`             | checks the types of the whole project                                                              |
-| `npm run build:micro-frontends` | builds the entries and `bc-manifest.json` into `dist/micro-frontends`                              |
-| `npm run check:entries`         | runs `bc-check-entries` of the kit: no bare import, no framework in a data entry, every file there |
-| `npm run build:jar`             | builds the UI jar `io.vanillabp.blueprint:cockpit-workflow-details-ui` and its pom into `dist`     |
-| `npm run build:image`           | builds the nginx image. `npm run build` skips it with a warning where Docker does not run          |
-| `npm test`                      | the browser tests, see [How it works](#how-it-works)                                               |
-| `npm run start`                 | the dev shell. Not there yet                                                                       |
+|             Script              |                                                                 What it does                                                                  |
+|---------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| `npm run build`                 | all of the following, one after the other                                                                                                     |
+| `npm run fetch:openapi`         | copies the OpenAPI file of the backend into `build/openapi`                                                                                   |
+| `npm run generate:client`       | generates the API client from it with `@hey-api/openapi-ts`                                                                                   |
+| `npm run write:bc-build`        | writes the module id and the id of this build into `src/bc-build.js`, see [The names of the web components](#the-names-of-the-web-components) |
+| `npm run typecheck`             | checks the types of the whole project                                                                                                         |
+| `npm run build:micro-frontends` | builds the entries and `bc-manifest.json` into `dist/micro-frontends`                                                                         |
+| `npm run check:entries`         | runs `bc-check-entries` of the kit: no bare import, no framework in a data entry, every file there                                            |
+| `npm run build:jar`             | builds the UI jar `io.vanillabp.blueprint:cockpit-workflow-details-ui` and its pom into `dist`                                                |
+| `npm run build:image`           | builds the nginx image. `npm run build` skips it with a warning where Docker does not run                                                     |
+| `npm test`                      | the browser tests, see [How it works](#how-it-works)                                                                                          |
+| `npm run start`                 | the dev shell. Not there yet                                                                                                                  |
 
 ### With the backend during development
 
@@ -144,6 +145,26 @@ browser tests are the way to see the page.
    with the status `WITHDRAWN`. The page calls `showNotification`, and `actions` tells `body` and
    `information` with `sendTo` to load their data again. The button is enabled only while the
    status is `REQUESTED`.
+
+### The names of the web components
+
+All modules of a cockpit define their web components in the one registry of the page. A name
+can be defined only once there, and the cockpit refuses a name which does not start with the
+prefix of its module. So every name has three parts, built by `createElementNames` of the kit:
+
+1. the prefix of the workflow module id, `loan-approval`,
+2. the id of the build, the time of the build in milliseconds in base 36,
+3. the BPMN process id and the part, `page` for the area `all` and the name of the area for the others.
+
+`elementName.workflow(BPMN_PROCESS_ID, 'page')` in `src/loan-approval.ts` gives `loan-approval-<build id>-loan-approval--page`. A new build gets new names, so the
+cockpit loads it while somebody has the cockpit open, without a reload of the page.
+
+`npm run write:bc-build` (`scripts/write-bc-build.mjs`) writes `src/bc-build.js` before the type
+check: `WORKFLOW_MODULE_ID` from `config.workflowModuleId` in `package.json`, and `BUILD_ID`.
+`scripts/build-micro-frontends.mjs` passes the same time to `createManifest`, so the manifest and
+the names speak of one build. The file is written for every build and not checked in, its types
+are in `src/bc-build.d.ts`. The browser tests read the build id from it, and
+`test/build-id.test.js` proves that two builds give different names.
 
 ### Imports through path aliases
 

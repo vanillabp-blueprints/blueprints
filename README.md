@@ -94,6 +94,11 @@ default.
 Each blueprint declares its profiles in its own POM, so that POM is the list. The `bpms` entry
 of the blueprint in `blueprints.yaml` names the same set. CI builds against that entry.
 
+A pull request builds every blueprint it touches on Camunda 7 only. A blueprint which does not
+run on Camunda 7 builds on the first BPMS of its entry. Every merge to `main` and the nightly
+build test every BPMS of the entry, so a blueprint which breaks on another BPMS shows up the
+next morning at the latest, in the `Nightly build` badge above. CONTRIBUTING.md has the details.
+
 What a BPMS does behind its profile is not explained here. The wiki of its adapter explains it,
 and `Documentation of VanillaBP itself` below links it. A blueprint which needed that knowledge
 would prove the opposite of what a blueprint is for.

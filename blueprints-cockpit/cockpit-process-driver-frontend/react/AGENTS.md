@@ -33,6 +33,13 @@ coordinates, which carry the name of the blueprint.
 wrong, the build does not fail. The data entry returns `undefined`, and the cockpit says that the
 task has no form.
 
+The names of the web components come from `elementName` in `src/loan-approval.ts`, which is
+`createElementNames` of the kit. A name is the prefix of the workflow module id, the id of the
+build and the BPMN process id, the task definition and the part, `form` for the area `all` and the name of the area for the others, for example `loan-approval-<build id>-loan-approval--assess-risk--form`. Never write a name by hand. Web components
+share one registry per page, so two modules which define the same name break each other, and
+the browser defines a name only once, so a new build needs new names to load without a reload of
+the page. `npm run build` writes the module id and the build id into `src/bc-build.js` first.
+
 The states of the driver are not in this project. The page "Process driver" asks the backend for
 them. Do not write them into the dev shell.
 A state may end the workflow, like `CONTRACT_DECLINED`. Then `advance-to` names no user task,
@@ -46,6 +53,7 @@ name.
 | `dev-shell/src/process-driver-page.tsx` | the page "Process driver": loads the states, sends the test data to advance-to, links to the case and its user task                                                                                 |
 | `dev-shell/src/cockpit.ts`              | the host of the module kit with the areas `body` and `actions`, and the four calls to the simulated cockpit, through the generated clients of its official API                                      |
 | `dev-shell/src/user-task-page.tsx`      | reads the user task from the simulated cockpit and draws its form with `showUserTask`                                                                                                               |
+| `dev-shell/src/element-names.ts`        | checks the names of the web components before the host draws them, with the note of a cockpit; keep it when the dev shell changes                                                                   |
 | `scripts/start.mjs`                     | serves the dev shell and forwards `/wm/loan-approval/api/` and `/official-api/`                                                                                                                     |
 | `src/shared/official-gui-api.ts`        | `tasklist` and `workflowlist`, the generated clients of the official API of the cockpit. Only the dev shell imports them, through `@official-gui-client`                                            |
 | `openapi/official-gui-api.yaml`         | a copy of the OpenAPI file of the cockpit's official API, `apis/official-gui-api/openapi/v1.yaml` of the version the backend uses. Replace it when the backend moves to another version             |
@@ -64,6 +72,8 @@ name.
 | `tsconfig.json`                        | type checking only, and the path aliases, which esbuild reads as well                              |
 | `openapi-ts.config.mjs`                | the options of `@hey-api/openapi-ts`, one job per OpenAPI file                                     |
 | `scripts/fetch-openapi.mjs`            | copies the two OpenAPI files of the backend from the submodule, and the copy of the cockpit's file |
+| `scripts/write-bc-build.mjs`           | writes `src/bc-build.js`, the module id from `package.json` and the build id, before the type check |
+| `src/bc-build.d.ts`                    | the types of `src/bc-build.js`, which is written for every build and not checked in                 |
 | `.gitmodules`                          | the submodule `backend`, the backend repository which owns the OpenAPI files                       |
 | `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                          |
 | `scripts/build-dev-shell.mjs`          | the dev shell into `dist/dev-shell`                                                                |

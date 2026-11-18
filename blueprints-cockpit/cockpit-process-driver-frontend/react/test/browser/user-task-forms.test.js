@@ -8,6 +8,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { after, before, describe, it } from 'node:test';
 import { build } from 'esbuild';
 import { chromium } from 'playwright';
@@ -17,6 +18,17 @@ import { startServer } from './server.js';
 const projectDir = resolve(import.meta.dirname, '..', '..');
 const microFrontends = join(projectDir, 'dist', 'micro-frontends');
 const hostBundle = join(projectDir, 'build', 'test-host.js');
+
+/**
+ * The web components of a form, as the built data entry has to name them. Every name carries the
+ * id of the build, which the last `npm run build` wrote into src/bc-build.js.
+ */
+const { BUILD_ID } = await import(pathToFileURL(join(projectDir, 'src', 'bc-build.js')).href);
+const formElements = (task) => ({
+  all: `loan-approval-${BUILD_ID}-loan-approval--${task}--form`,
+  body: `loan-approval-${BUILD_ID}-loan-approval--${task}--body`,
+  actions: `loan-approval-${BUILD_ID}-loan-approval--${task}--actions`,
+});
 
 const details = { amount: 25000, creditScore: 720 };
 const assessRisk = { id: 'task-1', businessId: 'LR-4711', title: { en: 'Assess risk' }, bpmnProcessId: 'loan_approval', taskDefinition: 'assessRisk', details };
@@ -89,11 +101,11 @@ describe('the data entries', () => {
     assert.deepEqual(forms, [
       {
         entry: 'AssessRiskForm',
-        element: { all: 'loan-approval-assess-risk', body: 'loan-approval-assess-risk-body', actions: 'loan-approval-assess-risk-actions' },
+        element: formElements('assess-risk'),
       },
       {
         entry: 'CheckContractForm',
-        element: { all: 'loan-approval-check-contract', body: 'loan-approval-check-contract-body', actions: 'loan-approval-check-contract-actions' },
+        element: formElements('check-contract'),
       },
       undefined,
       undefined,

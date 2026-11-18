@@ -28,6 +28,12 @@ one matrix job per part. The parts differ in size by one at most, and a part may
 part which would grow beyond the limit stops this script with a message, and then PARTS and
 the workflows get one part more.
 
+'--engine <bpms>' builds each blueprint on that one engine instead of on all of its engines, which
+is what a pull request gets: build.yaml and the cockpit workflows pass '--engine camunda7' for a
+pull request, and every engine runs on main and in the nightly run. A blueprint which does not run
+on that engine, such as one for Camunda 8 only, is built on the first engine it declares, so a
+pull request which changes it still tests it.
+
 A cockpit blueprint with a user interface comes in parts: '<base>-backend', '<base>-frontend'
 and the parts which take both, such as '<base>-application' and '<base>-bundle'. Only the
 backend builds on its own. The frontend is an npm project without a POM. The other parts need
@@ -37,9 +43,9 @@ frontend builds nothing here. Their own workflows build the parts one after the 
 (.github/workflows/cockpit-applications.yaml and frontend.yaml). '--chain' prints what such a
 workflow builds, and '--chained-modules' what the aggregator of build.yaml leaves out.
 
-Usage: bin/build_matrix.py <blueprints.yaml> [<file with changed paths, one per line>]
+Usage: bin/build_matrix.py [--engine <bpms>] <blueprints.yaml> [<file with changed paths, one per line>]
        Prints PARTS lines, each one JSON array of {"blueprint": ..., "bpms": ...} objects.
-       bin/build_matrix.py --chain <blueprints.yaml>
+       bin/build_matrix.py [--engine <bpms>] --chain <blueprints.yaml>
        Prints one JSON object: "frontends", a list of {"frontend", "artifact"}, and "builds", a
        list of {"part", "frontend", "artifact", "bpms"}: every application and bundle crossed
        with every frontend of its blueprint and with its engines.
@@ -110,7 +116,20 @@ def blueprint_directories(root, with_chained=False):
     return directories
 
 
-def bpms_of(index, blueprint_id):
+def bpms_of(index, blueprint_id, engine=None):
+    """The runnable engines of one blueprint, or all of them if the index has no entry.
+
+    :param engine: the one engine a pull request builds on, or None for every engine
+    """
+
+    engines = all_bpms_of(index, blueprint_id)
+    if engine is None:
+        return engines
+    # the first engine of the blueprint when it does not run on the one asked for
+    return [engine] if engine in engines else engines[:1]
+
+
+def all_bpms_of(index, blueprint_id):
     """The runnable engines of one blueprint, or all of them if the index has no entry."""
 
     for blueprint in index.get("blueprints", []):
@@ -165,7 +184,7 @@ def blueprint_directory_of(path, directories):
     return None
 
 
-def chain(root, index):
+def chain(root, index, engine=None):
     """What the workflow cockpit-applications.yaml builds, see the usage above."""
 
     frontends = []
@@ -181,7 +200,7 @@ def chain(root, index):
             entry = {"frontend": str(frontend), "artifact": artifact}
             if entry not in frontends:
                 frontends.append(entry)
-            for bpms in bpms_of(index, blueprint_id):
+            for bpms in bpms_of(index, blueprint_id, engine):
                 builds.append({"part": str(directory), "bpms": bpms, **entry})
     return {"frontends": frontends, "builds": builds}
 
@@ -212,20 +231,29 @@ def main():
     # Only here, because the aggregator job asks for the chained modules without PyYAML.
     import yaml
 
-    if len(sys.argv) == 3 and sys.argv[1] == "--chain":
-        index = yaml.safe_load(Path(sys.argv[2]).read_text(encoding="utf-8")) or {}
-        print(json.dumps(chain(root, index), separators=(",", ":")))
+    arguments = sys.argv[1:]
+    engine = None
+    if arguments[:1] == ["--engine"]:
+        if len(arguments) < 2 or arguments[1] not in RUNNABLE:
+            print(f"--engine takes one of {', '.join(RUNNABLE)}", file=sys.stderr)
+            return 2
+        engine = arguments[1]
+        arguments = arguments[2:]
+
+    if len(arguments) == 2 and arguments[0] == "--chain":
+        index = yaml.safe_load(Path(arguments[1]).read_text(encoding="utf-8")) or {}
+        print(json.dumps(chain(root, index, engine), separators=(",", ":")))
         return 0
-    if len(sys.argv) not in (2, 3) or sys.argv[1].startswith("--"):
+    if len(arguments) not in (1, 2) or arguments[0].startswith("--"):
         print(__doc__, file=sys.stderr)
         return 2
-    index = yaml.safe_load(Path(sys.argv[1]).read_text(encoding="utf-8")) or {}
+    index = yaml.safe_load(Path(arguments[0]).read_text(encoding="utf-8")) or {}
 
     directories = [str(directory) for directory in blueprint_directories(root)]
-    if len(sys.argv) == 3:
+    if len(arguments) == 2:
         changed = [
             line.strip()
-            for line in Path(sys.argv[2]).read_text(encoding="utf-8").splitlines()
+            for line in Path(arguments[1]).read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
         directories = wanted(directories, changed, root)
@@ -233,7 +261,7 @@ def main():
     combinations = []
     for directory in directories:
         blueprint_id = Path(directory).parent.name
-        for bpms in bpms_of(index, blueprint_id):
+        for bpms in bpms_of(index, blueprint_id, engine):
             combinations.append({"blueprint": directory, "bpms": bpms})
 
     for part in parts_of(combinations):
