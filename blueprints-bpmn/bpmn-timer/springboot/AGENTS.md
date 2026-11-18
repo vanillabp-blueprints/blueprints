@@ -103,7 +103,10 @@ in every blueprint. Copy them unchanged.
    the model. Copy it into an attribute of the aggregate when the workflow starts, mark that
    attribute `@SyncWithBPMS`, and let the timer read it: `${partnerDeadline}` on Camunda 7,
    `=partnerDeadline` on Camunda 8. Use a `String`, so `P3D` stays `P3D`. A fixed period of
-   the process may stay a literal.
+   the process may stay a literal. A model you received may carry a business deadline as a
+   literal, such as `P3D` on a timer boundary event. Turn it into an expression in the same
+   way, and keep its value in the configuration. That is part of making the model run with
+   VanillaBP, as adding the task definitions is. It is not a change of the model for a test.
 9. Add the callback endpoint which carries the task id. When the request goes out, log the URLs
    which continue the process.
 10. If the business case may change while the workflow waits for a timer, and the model reads

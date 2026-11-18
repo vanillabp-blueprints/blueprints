@@ -86,6 +86,34 @@ correlation reaches no waiting event. The call then fails at runtime, not at sta
 7. Copy `LoanApprovalIT`: one test for the waiting workflow, one for the message which lets it
    continue, one for a repeat.
 
+The sender may not know the aggregate's id. A delivery note, for example, carries the order
+number of the supplier, not the id of your purchase request. Then store that key on the
+aggregate as soon as you learn it, add a lookup by it to `AggregateRepository`, and let the
+method in `Service` load the aggregate by that key. It must find exactly one aggregate. Then
+correlate by the aggregate as above. Nothing changes in the model. A correlation id does not
+help here. It tells several waiting occurrences of the same message apart inside one workflow,
+it does not find the workflow.
+
+A message may arrive while nothing waits for it: before the workflow reached the catch event,
+or while it is between two waits, for example in a loop which leads back to an event-based
+gateway. Without a time-to-live the Camunda 7 family refuses such a correlation at your call,
+and your transaction fails. Camunda 8 keeps the message for its time-to-live. If your message
+can come at such a moment, set `message-time-to-live` for the workflow module in
+`loan-approval.yaml`:
+
+```yaml
+vanillabp:
+  workflow-modules:
+    loan-approval:
+      message-time-to-live: 10m
+```
+
+Then the message waits that long for the workflow on every BPMS which supports it. This
+blueprint sets none. A person opens its message URL by hand, long after the workflow reached
+the catch event. The
+[wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Message-correlation#a-message-which-comes-before-the-workflow-waits-for-it)
+explains the levels of the key and what happens when the time is over.
+
 If several occurrences of the same message may wait at once, for example one per ordered item,
 pass a correlation id as the third argument. That variant drops repeats among the correlations
 which still wait for their dispatch. So a repeating scope has to vary the id per round or
