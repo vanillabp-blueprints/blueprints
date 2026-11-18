@@ -1,10 +1,10 @@
 package blueprint.workflowmodule.loanapproval;
 
-import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -19,15 +19,15 @@ import java.util.function.Supplier;
 
 import org.awaitility.core.ConditionTimeoutException;
 
-import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.specification.RequestSpecification;
+import blueprint.workflowmodule.loanapproval.simulator.client.SimulatorApi;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
 import io.vanillabp.cockpit.gui.api.v1.client.model.Workflow;
 import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowRetrieveMode;
 import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowsRequest;
-import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 /**
@@ -48,8 +48,9 @@ import jakarta.ws.rs.core.Response;
  * below {@code /official-api/gui/api/v1}, with the clients generated from the OpenAPI file of
  * that API. The support library of the cockpit builds them from the key
  * {@code official-gui-api.base-url}, which the test sets to {@link #cockpitBaseUrl()}, and the
- * test hands them to the methods which read. The report has no such file, so REST Assured reads
- * it.
+ * test hands them to the methods which read. The report comes through a client generated from
+ * the OpenAPI file of the simulator's own paths, which the cockpit publishes in
+ * {@code dev-shell-simulator-api-client}.
  * </p>
  *
  * <p>
@@ -74,16 +75,13 @@ public final class CockpitSimulator {
 
   private final String baseUrl;
 
-  private final RequestSpecification simulatorApi;
+  /** The client of the simulator's own paths, made when the test asks for the first report. */
+  private SimulatorApi simulatorApi;
 
   private CockpitSimulator(
       final String baseUrl) {
 
     this.baseUrl = baseUrl;
-    this.simulatorApi = new RequestSpecBuilder()
-        .setBaseUri(baseUrl
-            + "/simulator-api")
-        .build();
 
   }
 
@@ -246,7 +244,37 @@ public final class CockpitSimulator {
   private Optional<Map<String, Object>> lastReportOf(
       final String userTaskId) {
 
-    return getIfKnown(simulatorApi, "/usertask/{userTaskId}/report", userTaskId);
+    try {
+      return Optional.ofNullable(simulatorApi().getLastReportOfUserTask(userTaskId));
+    } catch (WebApplicationException e) {
+      if (e
+          .getResponse()
+          .getStatus() != Response.Status.NOT_FOUND.getStatusCode()) {
+        throw e;
+      }
+      // Nobody reported the user task yet.
+      return Optional.empty();
+    }
+
+  }
+
+  /**
+   * The client of the simulator's own paths. The REST client of Quarkus is made in the test, not
+   * while the simulator starts, because the simulator starts before the application. The paths
+   * in the OpenAPI file of the simulator are complete, so the client takes the address of the
+   * simulator as it is.
+   *
+   * @return The client.
+   */
+  private synchronized SimulatorApi simulatorApi() {
+
+    if (simulatorApi == null) {
+      simulatorApi = QuarkusRestClientBuilder
+          .newBuilder()
+          .baseUri(URI.create(baseUrl))
+          .build(SimulatorApi.class);
+    }
+    return simulatorApi;
 
   }
 
@@ -263,35 +291,17 @@ public final class CockpitSimulator {
 
     try {
       return Optional.ofNullable(tasklist.getUserTask(userTaskId, null));
-    } catch (NotFoundException e) {
+    } catch (WebApplicationException e) {
+      // The REST client of Quarkus answers 404 with a WebApplicationException, not with the
+      // subclass NotFoundException. So the status decides.
+      if (e
+          .getResponse()
+          .getStatus() != Response.Status.NOT_FOUND.getStatusCode()) {
+        throw e;
+      }
       // Nobody reported the user task yet.
       return Optional.empty();
     }
-
-  }
-
-  /**
-   * Sends a GET request. The simulator answers 404 for a user task nobody reported yet.
-   *
-   * @param api        The API to ask.
-   * @param path       The path below the API.
-   * @param userTaskId The id of the user task in the path.
-   * @return The answer, or nothing if the simulator does not know the user task yet.
-   */
-  private static Optional<Map<String, Object>> getIfKnown(
-      final RequestSpecification api,
-      final String path,
-      final String userTaskId) {
-
-    final var response = given(api).get(path, userTaskId);
-    return response.statusCode() == Response.Status.NOT_FOUND.getStatusCode()
-        ? Optional.empty()
-        : Optional.of(response
-            .then()
-            .statusCode(Response.Status.OK.getStatusCode())
-            .extract()
-            .jsonPath()
-            .getMap("$"));
 
   }
 

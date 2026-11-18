@@ -116,8 +116,8 @@
             </goals>
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/loan-repayment.yaml</inputSpec>
-              <apiPackage>blueprint.workflowmodule.loanrepayment.api</apiPackage>
-              <modelPackage>blueprint.workflowmodule.loanrepayment.api.model</modelPackage>
+              <apiPackage>blueprint.workflowmodule.loanapproval.loanrepayment.api</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.loanrepayment.api.model</modelPackage>
             </configuration>
           </execution>
         </executions>

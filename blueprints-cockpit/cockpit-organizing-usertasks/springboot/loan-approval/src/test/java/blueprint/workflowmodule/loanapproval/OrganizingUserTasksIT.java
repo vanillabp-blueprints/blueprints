@@ -14,6 +14,7 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -52,6 +53,7 @@ import jakarta.persistence.EntityManagerFactory;
  * {@link CockpitSimulator}.
  * </p>
  */
+@Import(StoredLoanApprovals.class)
 public class OrganizingUserTasksIT extends WorkflowModuleTest {
 
   private static final String CUSTOMER = "Jane Roe";

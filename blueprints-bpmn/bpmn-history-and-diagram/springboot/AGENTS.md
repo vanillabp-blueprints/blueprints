@@ -15,6 +15,7 @@ coordinates, which carry the name of the blueprint.
 |                         Placeholder                          |                                                                                 Meaning                                                                                 |
 |--------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `blueprint.workflowmodule`                                   | base package                                                                                                                                                            |
+| `blueprint.application`                                      | package of the application, not above the workflow module                                                                                                               |
 | `loanapproval`                                               | use case identifier, Java package                                                                                                                                       |
 | `loan-approval`                                              | use case identifier, kebab case: workflow module ID, resource directory, REST path, Maven module, configuration file name                                               |
 | `loan_approval`                                              | BPMN process ID                                                                                                                                                         |
@@ -42,21 +43,22 @@ Blueprint-specific names, each occurring in more than one place:
 
 ## Boilerplate files
 
-|                                  File                                   |                                             Purpose                                             |
-|-------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                              | the BPMS profiles and the VanillaBP BOM import                                                  |
-| `loan-approval/pom.xml`                                                 | `vanillabp-spring-boot-support`, never an adapter                                               |
-| `application/pom.xml`                                                   | the BPMS adapter, the only place a BPMS is named                                                |
-| `application/src/main/java/.../Application.java`                        | the Spring Boot application, in the parent package of the module                                |
-| `application/src/main/resources/application.yaml`                       | the datasource, and the profile the Maven build filters in                                      |
-| `application/src/main/resources/application-camunda7.yaml`              | the Camunda 7 settings: the name-clash-avoidance mode and the demo user of its web applications |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java` | the tasks of the process, including the `@TaskId` one the workflow waits at                     |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`     | the workflow aggregate, holding the id of the task waited at                                    |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`     | the two numbers the business code uses                                                          |
-| `loan-approval/src/test/java/.../TestApplication.java`                  | the minimal application the module's test boots                                                 |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`               | base class of the integration test: waits for workflow progress                                 |
-| `application/src/test/java/.../ApplicationSmokeTest.java`               | boots the application, which validates the BPMN-to-code wiring                                  |
-| `docs/loan_approval.png`                                                | the picture of the process the README shows, rendered from the BPMN model                       |
+|                                    File                                     |                                                                            Purpose                                                                             |
+|-----------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                                  | the BPMS profiles and the VanillaBP BOM import                                                                                                                 |
+| `loan-approval/pom.xml`                                                     | `vanillabp-spring-boot-support`, never an adapter                                                                                                              |
+| `application/pom.xml`                                                       | the BPMS adapter, the only place a BPMS is named                                                                                                               |
+| `application/src/main/java/.../Application.java`                            | the Spring Boot application, in `blueprint.application`, which is not above the module. It names nothing of the module                                         |
+| `loan-approval/src/main/java/.../config/LoanApprovalAutoConfiguration.java` | the module wires itself: a component scan of its own package, registered in `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` |
+| `application/src/main/resources/application.yaml`                           | the datasource, and the profile the Maven build filters in                                                                                                     |
+| `application/src/main/resources/application-camunda7.yaml`                  | the Camunda 7 settings: the name-clash-avoidance mode and the demo user of its web applications                                                                |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`     | the tasks of the process, including the `@TaskId` one the workflow waits at                                                                                    |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`         | the workflow aggregate, holding the id of the task waited at                                                                                                   |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`         | the two numbers the business code uses                                                                                                                         |
+| `loan-approval/src/test/java/.../TestApplication.java`                      | the minimal application the module's test boots. It scans nothing and gets the module from its auto-configuration                                              |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`                   | base class of the integration test: waits for workflow progress                                                                                                |
+| `application/src/test/java/.../ApplicationSmokeTest.java`                   | boots the application, which validates the BPMN-to-code wiring                                                                                                 |
+| `docs/loan_approval.png`                                                    | the picture of the process the README shows, rendered from the BPMN model                                                                                      |
 
 `TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
 blueprint. Copy them unchanged.

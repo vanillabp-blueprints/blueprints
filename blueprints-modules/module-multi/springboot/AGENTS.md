@@ -74,10 +74,10 @@ Names this blueprint adds, because it has more than one of everything:
 | `docs/loan_approval.png`, `docs/loan_repayment.png`                 | the pictures of the two processes the README shows, rendered from the BPMN models            |
 
 `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every blueprint. Copy them
-unchanged. Here the application's tests are next to the application class. The reason is that
-its package is no longer above the modules, and a `@SpringBootTest` finds its configuration by
-walking up from its own package. `ModuleTestApplication` replaces the shared `TestApplication`
-of the other blueprints. Its Javadoc gives the reason.
+unchanged. The application's tests are next to the application class. Its package is not above
+the modules, and a `@SpringBootTest` finds its configuration by walking up from its own package.
+`ModuleTestApplication` does what the shared `TestApplication` of the other blueprints does: it
+scans nothing, and the auto-configuration wires the module.
 
 ## Adding this blueprint to an existing project
 

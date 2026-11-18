@@ -9,6 +9,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { after, before, describe, it } from 'node:test';
 import { build } from 'esbuild';
 import { chromium } from 'playwright';
@@ -22,11 +23,14 @@ const hostBundle = join(projectDir, 'build', 'test-host.js');
 /** The cockpit asks the entry Header with the user who is logged in. */
 const jane = { id: 'jane' };
 
+/** The id of the build, which the last `npm run build` wrote into src/bc-build.js. Every name carries it. */
+const { BUILD_ID } = await import(pathToFileURL(join(projectDir, 'src', 'bc-build.js')).href);
+
 /** The web component of the button, as the data entry names it. */
-const BUTTON = 'loan-approval-request-loan-button';
+const BUTTON = `loan-approval-${BUILD_ID}-request-loan-button`;
 
 /** The web component of the start form, which the cockpit shows in a dialog. */
-const FORM = 'loan-approval-request-loan-form';
+const FORM = `loan-approval-${BUILD_ID}-request-loan-form`;
 
 let server;
 let browser;

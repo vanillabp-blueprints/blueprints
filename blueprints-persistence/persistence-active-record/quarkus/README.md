@@ -60,7 +60,7 @@ what it found, one line per aggregate:
 Using VanillaBP's Hibernate ORM Panache active record persistence for workflow aggregate
 'blueprint.workflowmodule.loanapproval.model.Aggregate'
 Using VanillaBP's MongoDB Panache active record persistence for workflow aggregate
-'blueprint.workflowmodule.credithistory.model.Aggregate'
+'blueprint.workflowmodule.loanapproval.credithistory.model.Aggregate'
 ```
 
 The two lines differ, and that is what this blueprint claims. **The idiom is resolved per
@@ -208,6 +208,10 @@ Start the application:
 ```bash
 mvn -pl application quarkus:dev
 ```
+
+`quarkus:dev` opens a debug port, 5005. If a second application runs in dev mode on the same
+machine, both want that port. Start the second one with `-Ddebug=false`, or give it a port of
+its own with `-Ddebug=5006`.
 
 You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
 `name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every

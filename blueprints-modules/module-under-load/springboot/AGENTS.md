@@ -17,6 +17,7 @@ coordinates, which carry the name of the blueprint.
 |                      Placeholder                      |                                                                                 Meaning                                                                                 |
 |-------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `blueprint.workflowmodule`                            | base package                                                                                                                                                            |
+| `blueprint.application`                               | package of the application, not above the workflow module                                                                                                               |
 | `loanapproval`                                        | use case identifier, Java package                                                                                                                                       |
 | `loan-approval`                                       | use case identifier, kebab case: workflow module ID, resource directory, REST path, Maven module, configuration file name                                               |
 | `loan_approval`                                       | BPMN process ID                                                                                                                                                         |
@@ -60,28 +61,29 @@ Blueprint-specific names, each occurring in more than one place:
 
 ## Boilerplate files
 
-|                                File                                 |                                                       Purpose                                                       |
-|---------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                          | the modules, the shared settings of the OpenAPI generator, the VanillaBP BOM import                                 |
-| `loan-approval/pom.xml`                                             | `vanillabp-spring-boot-support` and the generated server interface, never an adapter                                |
-| `loan-approval-api/pom.xml`                                         | the API module with its `client` and `server`                                                                       |
-| `load-run-api/pom.xml`                                              | the API module of the load run with its `client` and `server`                                                       |
-| `external-systems/credit-bureau/credit-bureau-api/pom.xml`          | the API module of the credit bureau with its `client` and `server`                                                  |
-| `external-systems/credit-bureau/rest-adapter/pom.xml`               | the module, the generated client and the REST client of Spring                                                      |
-| `simulator/pom.xml`                                                 | the generated clients and interfaces, SnakeYAML, and the load profile copied in; no load testing tool               |
-| `application/pom.xml`                                               | the BPMS adapter, the REST adapter, the actuator with Prometheus, JMX for `spring-boot:run`, starting the simulator |
-| `application/src/main/java/.../Application.java`                    | the application class, in the parent package of the module                                                          |
-| `simulator/src/main/java/.../SimulatorApplication.java`             | the simulator, an application of its own                                                                            |
-| `simulator/src/main/java/.../loadrun/LoadRunController.java`        | the two URLs of a run; `load-run-api/load-run.yaml` describes them                                                  |
-| `simulator/src/main/java/.../config/LoadRunConfiguration.java`      | wires the driver and checks its settings at startup                                                                 |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java` | the shared `isApproved()` and `payoutRunAt`, and the documents which give the aggregate its size                    |
-| `loan-approval/src/test/java/.../ScriptedCreditBureau.java`         | the credit bureau of the module test, which can stay silent                                                         |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`               | each path of the process, one loan at a time                                                                        |
-| `simulator/src/test/java/.../loadrun/StoppingTheRunTest.java`       | a call the end of a run cuts off is no failure of the application, a refused call is                                |
-| `loan-approval/src/test/java/.../TestApplication.java`              | the minimal application the module's test boots                                                                     |
-| `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of the integration test: waits for workflow progress                                                     |
-| `application/src/test/java/.../ApplicationSmokeTest.java`           | boots the application, which validates the BPMN-to-code wiring                                                      |
-| `docs/loan_approval.png`                                            | the picture of the process the README shows                                                                         |
+|                                    File                                     |                                                                            Purpose                                                                             |
+|-----------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                                  | the modules, the shared settings of the OpenAPI generator, the VanillaBP BOM import                                                                            |
+| `loan-approval/pom.xml`                                                     | `vanillabp-spring-boot-support` and the generated server interface, never an adapter                                                                           |
+| `loan-approval-api/pom.xml`                                                 | the API module with its `client` and `server`                                                                                                                  |
+| `load-run-api/pom.xml`                                                      | the API module of the load run with its `client` and `server`                                                                                                  |
+| `external-systems/credit-bureau/credit-bureau-api/pom.xml`                  | the API module of the credit bureau with its `client` and `server`                                                                                             |
+| `external-systems/credit-bureau/rest-adapter/pom.xml`                       | the module, the generated client and the REST client of Spring                                                                                                 |
+| `simulator/pom.xml`                                                         | the generated clients and interfaces, SnakeYAML, and the load profile copied in; no load testing tool                                                          |
+| `application/pom.xml`                                                       | the BPMS adapter, the REST adapter, the actuator with Prometheus, JMX for `spring-boot:run`, starting the simulator                                            |
+| `application/src/main/java/.../Application.java`                            | the Spring Boot application, in `blueprint.application`, which is not above the module. It names nothing of the module                                         |
+| `loan-approval/src/main/java/.../config/LoanApprovalAutoConfiguration.java` | the module wires itself: a component scan of its own package, registered in `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` |
+| `simulator/src/main/java/.../SimulatorApplication.java`                     | the simulator, an application of its own                                                                                                                       |
+| `simulator/src/main/java/.../loadrun/LoadRunController.java`                | the two URLs of a run; `load-run-api/load-run.yaml` describes them                                                                                             |
+| `simulator/src/main/java/.../config/LoadRunConfiguration.java`              | wires the driver and checks its settings at startup                                                                                                            |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`         | the shared `isApproved()` and `payoutRunAt`, and the documents which give the aggregate its size                                                               |
+| `loan-approval/src/test/java/.../ScriptedCreditBureau.java`                 | the credit bureau of the module test, which can stay silent                                                                                                    |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                       | each path of the process, one loan at a time                                                                                                                   |
+| `simulator/src/test/java/.../loadrun/StoppingTheRunTest.java`               | a call the end of a run cuts off is no failure of the application, a refused call is                                                                           |
+| `loan-approval/src/test/java/.../TestApplication.java`                      | the minimal application the module's test boots. It scans nothing and gets the module from its auto-configuration                                              |
+| `loan-approval/src/test/java/.../WorkflowModuleTest.java`                   | base class of the integration test: waits for workflow progress                                                                                                |
+| `application/src/test/java/.../ApplicationSmokeTest.java`                   | boots the application, which validates the BPMN-to-code wiring                                                                                                 |
+| `docs/loan_approval.png`                                                    | the picture of the process the README shows                                                                                                                    |
 
 `TestApplication`, `WorkflowModuleTest` and `ApplicationSmokeTest` are identical in every
 blueprint. Copy them unchanged.

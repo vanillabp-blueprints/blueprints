@@ -40,14 +40,14 @@ public class MigrationIT extends WorkflowModuleTest {
   Service loanApproval;
 
   @Inject
-  blueprint.workflowmodule.loanrepayment.RepaymentService loanRepayment;
+  blueprint.workflowmodule.loanapproval.loanrepayment.RepaymentService loanRepayment;
 
   @Inject
   AggregateRepository loanApprovals;
 
   // both packages of this module carry a class of that name, so one of the two is spelled out
   @Inject
-  blueprint.workflowmodule.loanrepayment.model.RepaymentRepository repayments;
+  blueprint.workflowmodule.loanapproval.loanrepayment.model.RepaymentRepository repayments;
 
   @Test
   @DisplayName("A new workflow starts in the first adapter of the priority list")

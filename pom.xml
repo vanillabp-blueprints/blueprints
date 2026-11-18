@@ -197,6 +197,12 @@
               -->
               <exclude>**/docker-compose.yaml</exclude>
               <exclude>blueprints-cockpit/*/*/docker/**</exclude>
+              <!--
+                A frontend may keep a copy of an OpenAPI file another project publishes, such as
+                the official API of the cockpit. The copy stays as it came, so the next version
+                of the file replaces it without a difference only the formatter made.
+              -->
+              <exclude>blueprints-cockpit/*/*/openapi/**</exclude>
             </excludes>
             <jackson>
               <yamlFeatures>

@@ -5,19 +5,22 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
-import blueprint.workflowmodule.loanapproval.api.model.Answer;
+import blueprint.workflowmodule.loanapproval.client.LoanApprovalApi;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
-import io.restassured.specification.RequestSpecification;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 
@@ -46,6 +49,26 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Inject
   AggregateRepository loanApprovals;
+
+  /** The address of the application under test, which Quarkus chose for this test run. */
+  @TestHTTPResource("/")
+  URI application;
+
+  /**
+   * The API of the module, through the client the build generates from its OpenAPI file. The
+   * paths in the file are complete, so the client only needs the address of the application.
+   */
+  private LoanApprovalApi loanApproval;
+
+  @BeforeEach
+  public void createClient() {
+
+    loanApproval = QuarkusRestClientBuilder
+        .newBuilder()
+        .baseUri(application)
+        .build(LoanApprovalApi.class);
+
+  }
 
   @Test
   public void aLoanRequestGoesThroughAllThreeSystems() {
@@ -76,9 +99,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
             WorkflowTaskHandler.CREDIT_SCORE, 720));
 
     // Somebody prepares the contract, and the module hands it to the e-signature service.
-    assertThat(api()
-        .get("/{loanRequestId}/prepare-contract/{taskId}?interestRate=3.5", loanRequestId, prepareContractTaskId)
-        .asString()).contains("prepared");
+    assertThat(loanApproval.prepareContract(loanRequestId, prepareContractTaskId, new BigDecimal("3.5")))
+        .contains("prepared");
     final var sent = awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
@@ -111,9 +133,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var customerId = simulator().nextCustomerId();
     simulator().createRating(customerId, 480);
 
-    final var answer = api()
-        .get("/request?customerId={customerId}&amount=5000", customerId)
-        .as(Answer.class);
+    final var answer = loanApproval.request(customerId, 5000);
 
     assertThat(answer.getOutcome()).isEqualTo("declined");
     assertThat(loanApprovals.findByIdOptional(answer.getLoanRequestId())).isEmpty();
@@ -126,9 +146,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // A reserved id the credit rating was never told about.
     final var customerId = simulator().nextCustomerId();
 
-    final var answer = api()
-        .get("/request?customerId={customerId}&amount=5000", customerId)
-        .as(Answer.class);
+    final var answer = loanApproval.request(customerId, 5000);
 
     assertThat(answer.getOutcome()).isEqualTo("declined");
     assertThat(loanApprovals.findByIdOptional(answer.getLoanRequestId())).isEmpty();
@@ -146,10 +164,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         loanRequest -> loanRequest.getPrepareContractTaskId() != null)
         .getPrepareContractTaskId();
-    api()
-        .get("/{loanRequestId}/prepare-contract/{taskId}?interestRate=4", loanRequestId, taskId)
-        .then()
-        .statusCode(Response.Status.OK.getStatusCode());
+    loanApproval.prepareContract(loanRequestId, taskId, new BigDecimal("4"));
     awaitAggregate(
         loanApprovals::findByIdOptional,
         loanRequestId,
@@ -185,23 +200,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
       final String customerId,
       final int amount) {
 
-    final var answer = api()
-        .get("/request?customerId={customerId}&amount={amount}", customerId, amount)
-        .as(Answer.class);
+    final var answer = loanApproval.request(customerId, amount);
 
     assertThat(answer.getOutcome()).isEqualTo("started");
     return answer.getLoanRequestId();
-
-  }
-
-  /**
-   * The API of the module. Quarkus points RestAssured at the application under test.
-   *
-   * @return A request to the API.
-   */
-  private static RequestSpecification api() {
-
-    return given().basePath("/loan-approval/api");
 
   }
 

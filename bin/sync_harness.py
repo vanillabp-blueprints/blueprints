@@ -9,10 +9,10 @@ price is duplication, and this script is what makes the price affordable.
   templates/test-harness/<platform>/workflow-module/*.java   -> a workflow module's tests
   templates/test-harness/<platform>/application/*.java       -> the application's tests
 
-Both are copied below '<maven-module>/src/test/java/', usually into
-'blueprint/workflowmodule/'. A copy may sit in another package - an application whose own
-package is not above its workflow modules keeps its tests next to itself - and the package
-declaration is rewritten to wherever the copy lives. Which files belong where is decided by
+Both are copied below '<maven-module>/src/test/java/': the files of a workflow module usually
+into 'blueprint/workflowmodule/', those of an application into 'blueprint/application/', next
+to the application class. A copy may sit in another package, and the package declaration is
+rewritten to wherever the copy lives. Which files belong where is decided by
 what is already there: the script REFRESHES existing copies, it never decides that a
 blueprint needs one. Adding the first copy is part of creating a blueprint.
 

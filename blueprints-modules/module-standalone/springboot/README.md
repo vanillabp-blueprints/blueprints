@@ -42,7 +42,13 @@ What is worth looking at:
   The properties keep their names, and `LoanApprovalProperties` keeps reading them. You only
   give up the line between what the module needs and what the deployment provides.
 
-- **Nothing else changes.** Same packages, same four classes per direction of the BPMN wiring,
+- **The application class is above the use case**, in `blueprint.workflowmodule`. Its component
+  scan finds the beans, the aggregate and the repository, and the module brings no
+  auto-configuration. In the other blueprints the application is in `blueprint.application` and
+  each module wires itself, because a scan must not reach into a module of somebody else. Here
+  the application is the module, so the scan stays inside it.
+
+- **Nothing else changes.** Same packages for the use case, same four classes per direction of the BPMN wiring,
   same aggregate, same tests. Splitting the use case into a JAR of its own later means moving
   files and adding a second POM, not a rewrite. It then becomes `module-multi`.
 

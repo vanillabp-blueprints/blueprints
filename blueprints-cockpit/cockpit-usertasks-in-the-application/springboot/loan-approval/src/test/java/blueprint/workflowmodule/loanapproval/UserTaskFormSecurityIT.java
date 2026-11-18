@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -24,6 +25,7 @@ import io.vanillabp.cockpit.support.usertask.BcUnknownTaskException;
  * bean, as a user with given authorities. So it proves the check of the module itself, without
  * the login of an application in front of it.
  */
+@Import(StoredLoanApprovals.class)
 public class UserTaskFormSecurityIT extends WorkflowModuleTest {
 
   @Autowired

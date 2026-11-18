@@ -83,6 +83,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 |---------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
 | `.../loanapproval/model/Aggregate.java`                                               | a document in a collection instead of an entity in a table, and no column declarations                                         |
 | `.../loanapproval/model/AggregateRepository.java`                                     | a MongoDB repository. It also moves the other two stores to MongoDB                                                            |
+| `.../loanapproval/config/LoanApprovalAutoConfiguration.java`                          | `@EnableMongoRepositories` instead of the entity scan and the JPA repositories                                                 |
 | `.../loanapproval/config/MongoTransactions.java`                                      | new: the transaction manager MongoDB needs and the platform does not define                                                    |
 | `application/src/main/resources/application.yaml`                                     | a MongoDB URI instead of a data source                                                                                         |
 | `application/src/main/resources/application-camunda8.yaml`                            | new: the address of the cluster, loaded by the profile of that engine                                                          |
@@ -206,9 +207,10 @@ engine and writes the result back, on a thread of its own where it opens a trans
 Both of those transactions are now the MongoDB one. So the outbox keeps its promise of all or
 nothing in a MongoDB application as well. The second test holds this in place.
 
-A detail worth copying: the container of the tests is a plain `@Configuration` class in the
-base package. So component scanning hands it to every test of its Maven module. The shared
-harness classes know nothing about MongoDB, and they do not have to.
+A detail worth copying: the container of the tests is a plain `@Configuration` class. The test
+of the workflow module names it with `@Import`, because the test application of a module scans
+nothing. The application finds its copy with its component scan. The shared harness classes
+know nothing about MongoDB, and they do not have to.
 
 ## Documentation
 

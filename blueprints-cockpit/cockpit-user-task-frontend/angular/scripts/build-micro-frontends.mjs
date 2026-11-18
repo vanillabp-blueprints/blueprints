@@ -14,6 +14,7 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { transformAsync } from '@babel/core';
 import { ConsoleLogger, LogLevel, NodeJSFileSystem } from '@angular/compiler-cli';
 import { needsLinking } from '@angular/compiler-cli/linker';
@@ -25,6 +26,11 @@ const projectDir = resolve(import.meta.dirname, '..');
 const outdir = join(projectDir, 'dist', 'micro-frontends');
 const metafilePath = join(projectDir, 'build', 'meta.json');
 const { version } = JSON.parse(readFileSync(join(projectDir, 'package.json'), 'utf8'));
+// The time of this build. scripts/write-bc-build.mjs wrote it into src/bc-build.js as BUILD_ID, the
+// names of the web components carry it, and the manifest gets the same time. So the manifest and
+// the names speak of one build.
+const { BUILD_ID } = await import(pathToFileURL(join(projectDir, 'src', 'bc-build.js')).href);
+const buildTime = new Date(Number.parseInt(BUILD_ID, 36));
 
 /** Entry name -> file written by ngc from src. The data entries have the names the kit fixes. */
 const entries = {
@@ -60,6 +66,9 @@ const pathAliases = {
   name: 'path-aliases',
   setup(esbuild) {
     esbuild.onResolve({ filter: /^@[a-z-]+$/ }, ({ path }) => (compiled[path] ? { path: compiled[path] } : undefined));
+    // src/bc-build.js is JavaScript already, so ngc does not copy it to build/ngc. The import of
+    // it goes to the file in src, which scripts/write-bc-build.mjs wrote for this build.
+    esbuild.onResolve({ filter: /^\.\/bc-build\.js$/ }, () => ({ path: join(projectDir, 'src', 'bc-build.js') }));
   },
 };
 
@@ -94,7 +103,7 @@ for (const [output, { entryPoint }] of Object.entries(bundle.metafile.outputs)) 
   const name = Object.keys(entryPoints).find((key) => join(projectDir, entryPoint) === entryPoints[key]);
   if (name) files[name] = relative(outdir, join(projectDir, output)).split('\\').join('/');
 }
-const manifest = createManifest({ entries: files, buildVersion: version, buildTimestamp: new Date() });
+const manifest = createManifest({ entries: files, buildVersion: version, buildTimestamp: buildTime });
 writeFileSync(join(outdir, 'bc-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 // The list of inputs goes next to the build, not into it: bc-check-entries reads it, the cockpit does not.
 writeFileSync(metafilePath, JSON.stringify(bundle.metafile));

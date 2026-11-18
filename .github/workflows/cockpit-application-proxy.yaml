@@ -23,9 +23,14 @@ name: Build the cockpit application with the user interface behind a proxy
       - "blueprints-cockpit/cockpit-user-task-frontend/**"
       - "blueprints-cockpit/cockpit-user-task-application-proxy/**"
       - ".github/workflows/cockpit-application-proxy.yaml"
+  # Its night, every engine, as in cockpit-applications.yaml: the nightly build does not reach
+  # this application.
+  schedule:
+    - cron: "47 2 * * *"
   workflow_dispatch:
 concurrency:
-  group: cockpit-application-proxy-${{ github.head_ref || github.ref }}
+  # the event is part of it, so a push to main does not cancel the run of the night
+  group: cockpit-application-proxy-${{ github.event_name }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 permissions:
   contents: read
@@ -49,11 +54,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bpms:
-          - camunda7
-          - camunda8
-          - operaton
-          - cibseven
+        # Camunda 7 only for a pull request, every engine on main and at night, as in build.yaml
+        bpms: >-
+          ${{ github.event_name == 'pull_request' && fromJSON('["camunda7"]')
+          || fromJSON('["camunda7","camunda8","operaton","cibseven"]') }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6

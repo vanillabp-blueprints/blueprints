@@ -7,8 +7,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.config.CibSevenDatabase;
+import blueprint.workflowmodule.config.OperatonDatabase;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
 /**
@@ -20,6 +23,9 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * the subject; here the aggregate is, as everywhere else.
  * </p>
  */
+@Import({
+    OperatonDatabase.class, CibSevenDatabase.class
+})
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Autowired

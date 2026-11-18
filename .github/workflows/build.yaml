@@ -45,6 +45,8 @@ jobs:
   # 'bpms' list of its entry in the index. A blueprint which cannot run on an engine
   # therefore says so where it declares everything else, and a reader of the index sees
   # what the CI does.
+  #
+  # A pull request takes one engine of that list, Camunda 7. A push to main takes all of them.
   discover:
     runs-on: ubuntu-latest
     # The combinations come in three parts, one per matrix job below, because GitHub starts
@@ -92,12 +94,18 @@ jobs:
           cat changed.txt
       - id: list
         name: Collect blueprint and BPMS combinations
+        # A pull request builds on Camunda 7 only, about a quarter of the jobs. A push to main
+        # and the nightly run build every engine, so a blueprint which breaks on another engine
+        # is known the next morning at the latest. bin/build_matrix.py says what happens to a
+        # blueprint which does not run on Camunda 7.
+        env:
+          ENGINE: "${{ github.event_name == 'pull_request' && '--engine camunda7' || '' }}"
         run: |
           # an empty list means no comparison was possible, and then everything is built
           if [ -s changed.txt ]; then
-            parts=$(python bin/build_matrix.py blueprints.yaml changed.txt)
+            parts=$(python bin/build_matrix.py ${ENGINE} blueprints.yaml changed.txt)
           else
-            parts=$(python bin/build_matrix.py blueprints.yaml)
+            parts=$(python bin/build_matrix.py ${ENGINE} blueprints.yaml)
           fi
           # one JSON list per line, one line per part
           number=0

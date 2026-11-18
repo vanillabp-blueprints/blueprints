@@ -25,9 +25,12 @@ Replace all of these consistently. They are the same in every blueprint.
 
 `loan-approval` is in `src/loan-approval.ts` and in `package.json` (`config`).
 
-The web component names start with the workflow module id. Web components share one registry
-per page, and the header of a cockpit holds the buttons of several modules. Two modules which
-define the same name break each other.
+The names of the web components come from `elementName` in `src/loan-approval.ts`, which is
+`createElementNames` of the kit. A name is the prefix of the workflow module id, the id of the
+build and a short name of its own, because the button and the start form show no workflow and no user task, for example `loan-approval-<build id>-request-loan-button`. Never write a name by hand. Web components
+share one registry per page, so two modules which define the same name break each other, and
+the browser defines a name only once, so a new build needs new names to load without a reload of
+the page. `npm run build` writes the module id and the build id into `src/bc-build.js` first.
 
 Blueprint-specific names:
 
@@ -60,6 +63,8 @@ extension point differently. Then its types library says so, and these two names
 | `src/shared/index.ts`                 | what the other directories import as `@shared`                                                                            |
 | `scripts/check-imports.mjs`           | fails `npm run build` on an import with `../`; import through an alias instead                                            |
 | `scripts/fetch-openapi.mjs`           | copies the OpenAPI file from the submodule and checks that it names a server                                              |
+| `scripts/write-bc-build.mjs`          | writes `src/bc-build.js`, the module id from `package.json` and the build id, before the type check                       |
+| `src/bc-build.d.ts`                   | the types of `src/bc-build.js`, which is written for every build and not checked in                                       |
 | `openapi-ts.config.mjs`               | the options of `@hey-api/openapi-ts`, the generator of the API client                                                     |
 | `.gitmodules`                         | the submodule `backend`, the backend repository which owns the OpenAPI file                                               |
 | `scripts/build-ui-jar.mjs`            | the UI jar and its pom                                                                                                    |

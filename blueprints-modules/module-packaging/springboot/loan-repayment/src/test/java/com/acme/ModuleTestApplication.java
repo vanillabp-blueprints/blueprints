@@ -5,8 +5,8 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 
 /**
  * A workflow module is a JAR and cannot be started on its own, so testing it means bringing
- * a minimal application along. This is that application, and it is deliberately smaller than
- * the one the other blueprints use: it scans nothing.
+ * a minimal application along. This is that application, and like the
+ * {@code TestApplication} of the other blueprints it scans nothing.
  *
  * <p>
  * A module which publishes itself brings an auto-configuration, and that is how a consumer

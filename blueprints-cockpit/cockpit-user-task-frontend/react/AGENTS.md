@@ -28,8 +28,12 @@ coordinates, which carry the name of the blueprint.
 wrong, the build does not fail. The data entry returns `undefined`, and the cockpit says that the
 task has no form.
 
-The web component names start with the workflow module id. Web components share one registry
-per page. Two modules which define the same name break each other.
+The names of the web components come from `elementName` in `src/loan-approval.ts`, which is
+`createElementNames` of the kit. A name is the prefix of the workflow module id, the id of the
+build and the BPMN process id, the task definition and the part, `form` for the area `all` and the name of the area for the others, for example `loan-approval-<build id>-loan-approval--assess-risk--form`. Never write a name by hand. Web components
+share one registry per page, so two modules which define the same name break each other, and
+the browser defines a name only once, so a new build needs new names to load without a reload of
+the page. `npm run build` writes the module id and the build id into `src/bc-build.js` first.
 
 ## Core files
 
@@ -54,6 +58,8 @@ per page. Two modules which define the same name break each other.
 | `src/shared/index.ts`          | what the other directories import as `@shared`                                                                            |
 | `scripts/check-imports.mjs`    | fails `npm run build` on an import with `../`; import through an alias instead                                            |
 | `scripts/fetch-openapi.mjs`    | copies the OpenAPI file from the submodule and checks that it names a server                                              |
+| `scripts/write-bc-build.mjs`   | writes `src/bc-build.js`, the module id from `package.json` and the build id, before the type check                       |
+| `src/bc-build.d.ts`            | the types of `src/bc-build.js`, which is written for every build and not checked in                                       |
 | `openapi-ts.config.mjs`        | the options of `@hey-api/openapi-ts`, the generator of the API client                                                     |
 | `.gitmodules`                  | the submodule `backend`, the backend repository which owns the OpenAPI file                                               |
 | `scripts/build-ui-jar.mjs`     | the UI jar and its pom                                                                                                    |

@@ -107,6 +107,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 |---------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
 | `.../loanapproval/model/Aggregate.java`                                               | a plain class: no entity, no column, nothing naming a database                             |
 | `.../loanapproval/model/AggregateRepository.java`                                     | deleted, together with the persistence dependency of the workflow module                   |
+| `.../loanapproval/config/LoanApprovalAutoConfiguration.java`                          | only the component scan, because there is no entity and no repository to find              |
 | `.../loanapproval/persistence/UnitOfWork.java`                                        | new: the transaction VanillaBP runs its work in, and the hooks the stores enlist with      |
 | `.../loanapproval/persistence/AggregateStore.java`                                    | new: how the aggregate is saved and loaded                                                 |
 | `.../loanapproval/persistence/PhaseTwoStore.java`                                     | new: the outbox for the second phase of a workflow start                                   |

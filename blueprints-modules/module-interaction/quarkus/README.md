@@ -101,7 +101,7 @@ nothing of each other:
 | `LoanApprovalProperties.java`, `loan-approval/src/main/resources/loan-approval/*.yaml`       | as in `module-multi`: `rating-provider`, and a module file per environment                                  |
 | `application-camunda8.yaml`                                                                  | as in `module-multi`: `name-clash-avoidance: use-prefix`                                                    |
 | `application/src/main/resources/application.yaml`                                            | as in `module-multi`: logs everything below `blueprint` at INFO                                             |
-| `application/src/test/.../ApplicationSmokeTest.java`, `ModuleConfigurationPerProfileIT.java` | as in `module-multi`: moved to `blueprint.application`, and the module file of the active profile is tested |
+| `application/src/test/.../ApplicationSmokeTest.java`, `ModuleConfigurationPerProfileIT.java` | as in `module-multi`: the module file of the active profile is tested                                       |
 
 Everything else is `module-multi`: the auto-configurations, the bean naming, the module
 configuration per environment, the way the BPMS is chosen.
@@ -145,6 +145,10 @@ Start the application:
 ```bash
 mvn -pl application quarkus:dev
 ```
+
+`quarkus:dev` opens a debug port, 5005. If a second application runs in dev mode on the same
+machine, both want that port. Start the second one with `-Ddebug=false`, or give it a port of
+its own with `-Ddebug=5006`.
 
 One URL starts something, and it is the only one:
 

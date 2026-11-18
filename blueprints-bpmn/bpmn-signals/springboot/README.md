@@ -34,6 +34,9 @@ A second process in the same workflow module does nothing else: it starts, waits
 `InterestRatePublished`, and records that the signal arrived. It belongs to a use case of its
 own, `ratewatch`, with its own aggregate, its own API, and no line of code shared with the loan
 approval.
+Its Java package is `loanapproval.ratewatch`, below the package of the workflow module, because
+both processes belong to that module. A workflow module `rate-watch` could then never clash
+with it.
 
 One broadcast reaches both processes. That is what "a signal is broadcast per workflow module"
 means, and it is easy to get wrong in either direction. Nobody has to send the signal once per

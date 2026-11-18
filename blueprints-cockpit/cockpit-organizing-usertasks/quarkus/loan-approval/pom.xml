@@ -176,6 +176,13 @@
             <dateLibrary>java8</dateLibrary>
           </configOptions>
         </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>io.vanillabp.businesscockpit</groupId>
+            <artifactId>dev-shell-simulator-api-client</artifactId>
+            <version>${businesscockpit.version}</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <id>user-task-forms-api</id>
@@ -197,6 +204,28 @@
               <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/loan-approval.yaml</inputSpec>
               <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
               <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
+            </configuration>
+          </execution>
+          <!--
+            The client of the paths only the dev shell simulator answers, for the integration test
+            only. The cockpit publishes their OpenAPI file in the JAR of its Spring client, so the
+            file comes from the class path of the plugin, and the REST client of Quarkus implements
+            the interface of Jakarta REST generated from it. The test reads with it the last
+            report about a user task, which the official GUI API does not show.
+          -->
+          <execution>
+            <id>dev-shell-simulator-test-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <inputSpec>dev-shell-simulator-api.yaml</inputSpec>
+              <output>${project.build.directory}/generated-test-sources/openapi</output>
+              <addCompileSourceRoot>false</addCompileSourceRoot>
+              <addTestCompileSourceRoot>true</addTestCompileSourceRoot>
+              <apiPackage>blueprint.workflowmodule.loanapproval.simulator.client</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.simulator.client.model</modelPackage>
             </configuration>
           </execution>
         </executions>
