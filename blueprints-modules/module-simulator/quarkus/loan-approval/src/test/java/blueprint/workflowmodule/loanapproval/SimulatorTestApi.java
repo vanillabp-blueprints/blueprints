@@ -14,6 +14,7 @@ import org.awaitility.core.ConditionTimeoutException;
 import blueprint.simulator.testapi.client.CreditRatingTestApi;
 import blueprint.simulator.testapi.client.ESignatureTestApi;
 import blueprint.simulator.testapi.client.model.Envelope;
+import blueprint.simulator.testapi.client.model.SentCallback;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
@@ -33,7 +34,7 @@ import jakarta.ws.rs.core.Response.Status;
  *
  * <p>
  * The client of the test API is generated from
- * {@code simulator-test-api/simulator-test-api.yaml}, the file the simulator implements, and
+ * {@code simulator/api/simulator-test-api.yaml}, the file the simulator implements, and
  * the REST client of Quarkus implements it. The REST client exists only while Quarkus runs, so
  * a client is made for each call and not when this class is made: {@link SimulatorExtension}
  * asks {@link #isRunning()} before Quarkus starts. That is why the status is asked with
@@ -45,7 +46,7 @@ import jakarta.ws.rs.core.Response.Status;
  * Where the simulator runs comes from the system property {@code simulator.base-url}. The build
  * sets it when it starts the simulator. Without it, the simulator is expected at
  * {@code http://localhost:8079}, where
- * {@code java -jar simulator/target/simulator-1.0.0-SNAPSHOT-runnable.jar} starts it.
+ * {@code java -jar simulator/application/target/simulator-application-1.0.0-SNAPSHOT-runnable.jar} starts it.
  * </p>
  */
 public final class SimulatorTestApi {
@@ -164,26 +165,28 @@ public final class SimulatorTestApi {
    * Makes the e-signature service sign a contract and report it to the application.
    *
    * @param contractId The id the application gave the contract.
-   * @return What the simulator answered: its status and its text, which names the status the
-   *         application answered the callback with.
+   * @return The report, and the status the application answered it with.
    */
-  public String sign(
+  public SentCallback sign(
       final String contractId) {
 
-    try {
-      return Status.OK.getStatusCode()
-          + " "
-          + testApi(ESignatureTestApi.class).sign(contractId);
-    } catch (WebApplicationException e) {
-      // 404 and 502 are answers of the simulator as well. Their text says what went wrong.
-      return e
-          .getResponse()
-          .getStatus()
-          + " "
-          + e
-              .getResponse()
-              .readEntity(String.class);
-    }
+    return testApi(ESignatureTestApi.class).sign(contractId);
+
+  }
+
+  /**
+   * Makes the e-signature service report a signature to an address, also of a contract it does
+   * not hold.
+   *
+   * @param contractId  The id the report names.
+   * @param callbackUrl Where the report goes: the callback address of the application.
+   * @return The report, and the status the application answered it with.
+   */
+  public SentCallback sendCallback(
+      final String contractId,
+      final String callbackUrl) {
+
+    return testApi(ESignatureTestApi.class).sendCallback(contractId, callbackUrl);
 
   }
 

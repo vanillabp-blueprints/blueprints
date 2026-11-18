@@ -1,6 +1,6 @@
 # Every system around the application is the simulator, started with
 #
-#   java -jar simulator/target/simulator-1.0.0-SNAPSHOT-runnable.jar
+#   java -jar simulator/application/target/simulator-application-1.0.0-SNAPSHOT-runnable.jar
 #
 # It answers on one port and plays each system below a path of its own. The adapters are the
 # same as in the profile 'real'. Only these addresses differ.

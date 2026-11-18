@@ -309,7 +309,7 @@ python3 bin/check_scoping_modes.py
 ```
 
 A Maven module which runs no BPMS has no BPMS profile to compare. The simulator of
-`module-simulator` is such a module, and `MODULES_WITHOUT_A_BPMS` in the script names it.
+`module-under-load` is such a module, and `MODULES_WITHOUT_A_BPMS` in the script names it.
 
 It found `module-bpms-migration`, whose `camunda7` profile set `use-prefix` while its
 `camunda8` profile named nothing. So the migration the blueprint shows lost the message of
@@ -539,7 +539,7 @@ templates/test-harness/<platform>/
 │   ├── WorkflowModuleTest.java  base class: waiting for a workflow to make progress
 │   ├── Simulator.java           base class of a stand-in for a surrounding system
 │   └── SuppressOutputExtension.java
-│                                shows the output of a test only if it fails (Spring Boot only)
+│                                shows the output of a test only if it fails
 └── application/             -> <maven-module>/src/test/java/blueprint/application/
     └── ApplicationSmokeTest.java
 ```
@@ -594,7 +594,9 @@ not belong into a green build log, for example the stack trace of a surrounding 
 test makes fail on purpose. It collects the output instead of lowering a log level, and shows it
 with a test which fails. A log level would drop the lines, and a red test would then say
 nothing. Register it before every other extension which prints, so that their lines are part of
-what a failing test shows.
+what a failing test shows. The Quarkus copy does one thing more: Quarkus logs through JBoss
+LogManager, whose console handler keeps the `System.out` it found at the start. So the copy
+points every stream handler of that log manager at the current `System.out`.
 
 Everything else in a blueprint's tests is specific to it, and nothing compares it. The
 integration test *is* the proof of the aspect, and it is supposed to differ.

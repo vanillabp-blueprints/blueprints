@@ -22,7 +22,7 @@ A loan approval which needs three systems around it. Each one is connected in an
    and the application correlates the message the workflow waits for in "Contract signed".
 3. The Business Cockpit. The cockpit adapter reports the user task "Prepare contract" there.
 
-All three are played by the simulator in `simulator/`, an application of its own. It plays
+All three are played by the simulator in `simulator/application/`, an application of its own. It plays
 the cockpit by extending the dev shell simulator of the Business Cockpit, so the cockpit
 adapter reports to it as to a real cockpit. The two other systems it plays itself.
 
@@ -144,17 +144,18 @@ Every simulated system has two interfaces. The first is the API of the real syst
 adapters talk to. Its controllers implement the interfaces generated from the OpenAPI files in
 `external-systems/*/*-api/`. The second is the test API below
 `/simulator/test-api/{system}/{action}`. Tests and people use it to prepare data and to make a
-system act. It is an OpenAPI file as well, in the Maven module `simulator-test-api`. The
+system act. It is an OpenAPI file as well, in the Maven module `simulator/api`. The
 simulator implements the interfaces of its `server` module, and the tests call it through its
 `client` module:
 
-|                                    URL                                     |                   What it does                    |
-|----------------------------------------------------------------------------|---------------------------------------------------|
-| `/simulator/test-api/credit-rating/next-id`                                | reserves a customer id nobody used before         |
-| `/simulator/test-api/credit-rating/create-rating?customerId=...&score=...` | makes the credit rating know a customer           |
-| `/simulator/test-api/e-signature/envelope?contractId=...`                  | shows what the e-signature service was given      |
-| `/simulator/test-api/e-signature/sign?contractId=...`                      | signs the contract and calls the application back |
-| `/simulator/test-api/status`                                               | says that the simulator runs                      |
+|                                      URL                                       |                                What it does                                 |
+|--------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| `/simulator/test-api/credit-rating/next-id`                                    | reserves a customer id nobody used before                                   |
+| `/simulator/test-api/credit-rating/create-rating?customerId=...&score=...`     | makes the credit rating know a customer                                     |
+| `/simulator/test-api/e-signature/envelope?contractId=...`                      | shows what the e-signature service was given                                |
+| `/simulator/test-api/e-signature/sign?contractId=...`                          | signs the contract, calls the application back, and shows its answer        |
+| `/simulator/test-api/e-signature/send-callback?contractId=...&callbackUrl=...` | reports a signature to an address, also of a contract the service never got |
+| `/simulator/test-api/status`                                                   | says that the simulator runs                                                |
 
 The test API creates data in a system and makes the system do what the real one does. It
 knows nothing about loans or workflows. Which steps a loan approval needs, and in which order,
@@ -194,41 +195,55 @@ API, the cockpit and the two systems around it. A system without a user interfac
 than that. These integration tests are its end-to-end tests. Where a module has a user
 interface, the tests of that interface come on top.
 
-What the simulator could also do, and this blueprint leaves out: switch a system to errors or
-to slow answers on request, to try out how the application behaves then.
+### The simulator acts like the real system
+
+The simulator plays the environment, and the test plays the people. The application talks only
+to the simulator, is called back by it, and is used by the test through its API. A simulated
+system answers the way the real one does. The test API only adds what a test cannot reach
+through the application. A test which wants to see a report about a contract the application
+never sent asks for it with `send-callback`. It does not call the callback of the application
+itself. The report comes from the simulator, the same way it later comes from the real service.
+
+There are two ways to control a simulated system: the data the application sends it, and calls
+of the test API. This blueprint needs only the test API. The blueprint `module-process-driver`
+shows the other way as well: there the name of the signer decides whether the e-signature
+service signs, declines, fails or never answers. That way a test also shows how the application
+copes with a system which misbehaves.
 
 ## Delta to the base blueprint
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                                                File                                                |                                                                                      What is different                                                                                       |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `external-systems/*/port/`                                                                         | new: one Maven module per system, the interface named after its role and its types                                                                                                           |
-| `external-systems/*/rest-adapter/`                                                                 | new: one Maven module per system, the REST client and the producer of its bean                                                                                                               |
-| `external-systems/*/*-api/`                                                                        | new: the OpenAPI files of each system, and the client and server code generated from them                                                                                                    |
-| `simulator-test-api/`                                                                              | new: the OpenAPI file of the test API, and the client and server code generated from it                                                                                                      |
-| `simulator/`                                                                                       | new: the simulator, an application of its own which extends the dev shell simulator                                                                                                          |
-| `pom.xml`                                                                                          | the new modules, the versions of the cockpit adapters, and the OpenAPI generator managed for all of them                                                                                     |
-| `loan-approval/pom.xml`                                                                            | the ports instead of adapters, the support library of the cockpit, the start of the simulator, the cockpit adapters, and the client of the module API which the build generates for the test |
-| `loan_approval.bpmn`                                                                               | a user task which prepares the contract, a service task which sends it for signing, and a message event for the signature                                                                    |
-| `.../loanapproval/WorkflowTaskHandler.java`                                                        | the methods of the new tasks, and the details of the user task for the cockpit                                                                                                               |
-| `.../loanapproval/Workflow.java`                                                                   | completes the user task and correlates the signature                                                                                                                                         |
-| `.../loanapproval/model/Aggregate.java`                                                            | the customer, the credit score, the open task, the interest rate and the state of the contract                                                                                               |
-| `.../loanapproval/Service.java`                                                                    | asks the credit rating before the workflow starts, and hands the contract over                                                                                                               |
-| `.../loanapproval/SignedContractsHandler.java`                                                     | new: the way back from the e-signature service into the module                                                                                                                               |
-| `.../loanapproval/ApiController.java`                                                              | answers 503 with the role of the system when the credit rating does not answer                                                                                                               |
-| `.../openapi/loan-approval.yaml`                                                                   | the API of the module, with the answer and the 503, as an OpenAPI file                                                                                                                       |
-| `LoanApprovalProperties.java`, `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | `minimum-credit-score` instead of `rating-scale`, and the settings of the cockpit for the module                                                                                             |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                                   | a loan request through all three systems, the early declines and a signature which arrives twice. It calls the module API with the generated client                                          |
-| `loan-approval/src/test/.../SimulatorTestApi.java`                                                 | new: the generated client of the test API, and a client of the cockpit API the simulator plays                                                                                               |
-| `loan-approval/src/test/.../SimulatorExtension.java`                                               | new: skips without a simulator, and prints its log when a test fails                                                                                                                         |
-| `loan-approval/src/test/resources/application.yaml`                                                | a short outbox poll interval, and logs everything below `blueprint`                                                                                                                          |
-| `loan-approval/src/test/.../EverySystemIsTheSimulator.java`                                        | new: points every adapter at the simulator before the application under test starts                                                                                                          |
-| `application/src/main/resources/application-local.yaml`                                            | new: every adapter talks to the simulator                                                                                                                                                    |
-| `application/src/main/resources/application-real.yaml`                                             | new: every adapter talks to the real system, addresses from the environment                                                                                                                  |
-| `application/pom.xml`                                                                              | the two REST adapters, the cockpit adapter of each BPMS, and the profile `local` for the unit tests and `real` for the integration tests                                                     |
-| `application/src/main/resources/application.yaml`                                                  | activates the profile of the external systems next to the BPMS, and logs everything below `blueprint`                                                                                        |
-| `application/src/test/.../ExternalSystemUnavailableIT.java`                                        | new: the 503 a user gets when the credit rating is missing                                                                                                                                   |
+|                                                File                                                |                                                                                                What is different                                                                                                |
+|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `external-systems/*/port/`                                                                         | new: one Maven module per system, the interface named after its role and its types                                                                                                                              |
+| `external-systems/*/rest-adapter/`                                                                 | new: one Maven module per system, the REST client and the producer of its bean                                                                                                                                  |
+| `external-systems/*/*-api/`                                                                        | new: the OpenAPI files of each system, and the client and server code generated from them                                                                                                                       |
+| `simulator/pom.xml`                                                                                | new: groups the test API and the application of the simulator                                                                                                                                                   |
+| `simulator/api/`                                                                                   | new: the OpenAPI file of the test API, and the client and server code generated from it                                                                                                                         |
+| `simulator/application/`                                                                           | new: the simulator, an application of its own which extends the dev shell simulator                                                                                                                             |
+| `pom.xml`                                                                                          | the new modules, `simulator` with `api` and `application`, the versions of the cockpit adapters, and the OpenAPI generator managed for all of them                                                              |
+| `loan-approval/pom.xml`                                                                            | the ports instead of adapters, the support library of the cockpit, the start of the simulator, the cockpit adapters, and the client of the module API which the build generates for the test                    |
+| `loan_approval.bpmn`                                                                               | a user task which prepares the contract, a service task which sends it for signing, and a message event for the signature                                                                                       |
+| `.../loanapproval/WorkflowTaskHandler.java`                                                        | the methods of the new tasks, and the details of the user task for the cockpit                                                                                                                                  |
+| `.../loanapproval/Workflow.java`                                                                   | completes the user task and correlates the signature                                                                                                                                                            |
+| `.../loanapproval/model/Aggregate.java`                                                            | the customer, the credit score, the open task, the interest rate and the state of the contract                                                                                                                  |
+| `.../loanapproval/Service.java`                                                                    | asks the credit rating before the workflow starts, and hands the contract over                                                                                                                                  |
+| `.../loanapproval/SignedContractsHandler.java`                                                     | new: the way back from the e-signature service into the module                                                                                                                                                  |
+| `.../loanapproval/ApiController.java`                                                              | answers 503 with the role of the system when the credit rating does not answer                                                                                                                                  |
+| `.../openapi/loan-approval.yaml`                                                                   | the API of the module, with the answer and the 503, as an OpenAPI file                                                                                                                                          |
+| `LoanApprovalProperties.java`, `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | `minimum-credit-score` instead of `rating-scale`, and the settings of the cockpit for the module                                                                                                                |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                                   | a loan request through all three systems, the early declines, a signature which arrives twice, and a report of an unknown contract which the simulator sends. It calls the module API with the generated client |
+| `loan-approval/src/test/.../SimulatorTestApi.java`                                                 | new: the generated client of the test API, and a client of the cockpit API the simulator plays                                                                                                                  |
+| `loan-approval/src/test/.../SimulatorExtension.java`                                               | new: skips without a simulator, and prints its log when a test fails                                                                                                                                            |
+| `loan-approval/src/test/.../SuppressOutputExtension.java`                                          | new: shows the output of a test only when it fails, together with the log of the simulator                                                                                                                      |
+| `loan-approval/src/test/resources/application.yaml`                                                | a short outbox poll interval, and logs everything below `blueprint`                                                                                                                                             |
+| `loan-approval/src/test/.../EverySystemIsTheSimulator.java`                                        | new: points every adapter at the simulator before the application under test starts                                                                                                                             |
+| `application/src/main/resources/application-local.yaml`                                            | new: every adapter talks to the simulator                                                                                                                                                                       |
+| `application/src/main/resources/application-real.yaml`                                             | new: every adapter talks to the real system, addresses from the environment                                                                                                                                     |
+| `application/pom.xml`                                                                              | the two REST adapters, the cockpit adapter of each BPMS, and the profile `local` for the unit tests and `real` for the integration tests                                                                        |
+| `application/src/main/resources/application.yaml`                                                  | activates the profile of the external systems next to the BPMS, and logs everything below `blueprint`                                                                                                           |
+| `application/src/test/.../ExternalSystemUnavailableIT.java`                                        | new: the 503 a user gets when the credit rating is missing                                                                                                                                                      |
 
 ## Running it
 
@@ -284,7 +299,7 @@ terminal of its own:
 
 ```bash
 mvn install -DskipTests
-java -jar simulator/target/simulator-1.0.0-SNAPSHOT-runnable.jar
+java -jar simulator/application/target/simulator-application-1.0.0-SNAPSHOT-runnable.jar
 mvn -pl application quarkus:dev
 ```
 
@@ -336,21 +351,21 @@ the message names the key in `application-real.yaml` which has no value then.
 
 ## How it works
 
-|                                           File                                            |                                         Role                                         |
-|-------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| `.../loanapproval/ApiController.java`                                                     | the GET request which asks for a loan, and the 503 when the credit rating is missing |
-| `.../loanapproval/Service.java`                                                           | asks `creditRating`, starts the workflow, hands the contract to `contractSigning`    |
-| `external-systems/credit-rating/rest-adapter/.../CreditRatingRestAdapter.java`            | calls the generated client, and turns its answer into a `CreditScore`                |
-| `.../loanapproval/WorkflowTaskHandler.java`                                               | the user task, the service task, and the details the cockpit shows                   |
-| `external-systems/e-signature/rest-adapter/.../ContractSigningRestAdapter.java`           | hands the contract over with the generated client, and the address for the callback  |
-| `simulator/src/main/java/blueprint/simulator/esignature/ESignatureTestApiController.java` | signs on request and calls the application back with the generated callback client   |
-| `external-systems/e-signature/rest-adapter/.../CallbackController.java`                   | implements the generated callback interface and calls `SignedContracts`              |
-| `.../loanapproval/SignedContractsHandler.java`                                            | implements `SignedContracts` and calls `Service`                                     |
-| `.../loanapproval/Workflow.java`                                                          | starts the workflow, completes the user task, correlates "Contract signed"           |
-| `simulator/src/main/java/blueprint/simulator/SimulatorApplication.java`                   | the simulator, which extends the dev shell simulator of the cockpit                  |
-| `loan-approval/src/test/.../EverySystemIsTheSimulator.java`                               | the addresses of the simulator and the port of the application, before it starts     |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                          | the whole loan approval against the simulator, and the cases where it is declined    |
-| `application/src/test/.../ExternalSystemUnavailableIT.java`                               | the profile `real` with no system there, and the 503 a user gets                     |
+|                                                 File                                                  |                                         Role                                         |
+|-------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| `.../loanapproval/ApiController.java`                                                                 | the GET request which asks for a loan, and the 503 when the credit rating is missing |
+| `.../loanapproval/Service.java`                                                                       | asks `creditRating`, starts the workflow, hands the contract to `contractSigning`    |
+| `external-systems/credit-rating/rest-adapter/.../CreditRatingRestAdapter.java`                        | calls the generated client, and turns its answer into a `CreditScore`                |
+| `.../loanapproval/WorkflowTaskHandler.java`                                                           | the user task, the service task, and the details the cockpit shows                   |
+| `external-systems/e-signature/rest-adapter/.../ContractSigningRestAdapter.java`                       | hands the contract over with the generated client, and the address for the callback  |
+| `simulator/application/src/main/java/blueprint/simulator/esignature/ESignatureTestApiController.java` | signs on request and calls the application back with the generated callback client   |
+| `external-systems/e-signature/rest-adapter/.../CallbackController.java`                               | implements the generated callback interface and calls `SignedContracts`              |
+| `.../loanapproval/SignedContractsHandler.java`                                                        | implements `SignedContracts` and calls `Service`                                     |
+| `.../loanapproval/Workflow.java`                                                                      | starts the workflow, completes the user task, correlates "Contract signed"           |
+| `simulator/application/src/main/java/blueprint/simulator/SimulatorApplication.java`                   | the simulator, which extends the dev shell simulator of the cockpit                  |
+| `loan-approval/src/test/.../EverySystemIsTheSimulator.java`                                           | the addresses of the simulator and the port of the application, before it starts     |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                                      | the whole loan approval against the simulator, and the cases where it is declined    |
+| `application/src/test/.../ExternalSystemUnavailableIT.java`                                           | the profile `real` with no system there, and the 503 a user gets                     |
 
 The order of events: the API asks `Service` for a loan. `Service` asks the credit rating through
 its port. Like every method of `Service`, this runs in a transaction, so a database connection

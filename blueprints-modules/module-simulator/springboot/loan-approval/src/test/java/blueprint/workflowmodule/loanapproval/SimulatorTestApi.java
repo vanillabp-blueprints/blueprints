@@ -20,6 +20,7 @@ import blueprint.simulator.testapi.client.CreditRatingTestApi;
 import blueprint.simulator.testapi.client.ESignatureTestApi;
 import blueprint.simulator.testapi.client.StatusApi;
 import blueprint.simulator.testapi.client.model.Envelope;
+import blueprint.simulator.testapi.client.model.SentCallback;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
 
@@ -36,7 +37,7 @@ import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
  *
  * <p>
  * The client of the test API is generated from
- * {@code simulator-test-api/simulator-test-api.yaml}, the file the simulator implements. The
+ * {@code simulator/api/simulator-test-api.yaml}, the file the simulator implements. The
  * official GUI API of the cockpit the simulator plays is read with the client of the cockpit's
  * library, which the test injects and hands to {@link #awaitUserTask}.
  * </p>
@@ -44,7 +45,7 @@ import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
  * <p>
  * Where the simulator runs comes from the system property {@code simulator.base-url}. The build
  * sets it when it starts the simulator. Without it, the simulator is expected at
- * {@code http://localhost:8079}, where {@code mvn -pl simulator spring-boot:run} starts it.
+ * {@code http://localhost:8079}, where {@code mvn -pl simulator/application spring-boot:run} starts it.
  * </p>
  */
 public final class SimulatorTestApi {
@@ -167,24 +168,28 @@ public final class SimulatorTestApi {
    * Makes the e-signature service sign a contract and report it to the application.
    *
    * @param contractId The id the application gave the contract.
-   * @return What the simulator answered: its status and its text, which names the status the
-   *         application answered the callback with.
+   * @return The report, and the status the application answered it with.
    */
-  public String sign(
+  public SentCallback sign(
       final String contractId) {
 
-    try {
-      return HttpStatus.OK.value()
-          + " "
-          + eSignature.sign(contractId);
-    } catch (RestClientResponseException e) {
-      // 404 and 502 are answers of the simulator as well. Their text says what went wrong.
-      return e
-          .getStatusCode()
-          .value()
-          + " "
-          + e.getResponseBodyAsString();
-    }
+    return eSignature.sign(contractId);
+
+  }
+
+  /**
+   * Makes the e-signature service report a signature to an address, also of a contract it does
+   * not hold.
+   *
+   * @param contractId  The id the report names.
+   * @param callbackUrl Where the report goes: the callback address of the application.
+   * @return The report, and the status the application answered it with.
+   */
+  public SentCallback sendCallback(
+      final String contractId,
+      final String callbackUrl) {
+
+    return eSignature.sendCallback(contractId, callbackUrl);
 
   }
 

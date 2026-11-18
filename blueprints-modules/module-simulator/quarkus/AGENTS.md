@@ -51,8 +51,10 @@ Names this blueprint adds:
    simulator it extends. No WireMock, no mock beans, no switch which turns the cockpit off.
 4. The test API of the simulator lives below `/simulator/test-api/{system}/{action}` and knows
    nothing about the workflow. The caller gives the ids, or reserves one with `next-id`. It is
-   an OpenAPI file in the module `simulator-test-api`, with `client` for the tests and `server`
-   for the simulator, like the API of a system.
+   an OpenAPI file in the module `simulator/api`, with `client` for the tests and `server`
+   for the simulator, like the API of a system. The simulator itself is `simulator/application`.
+   A simulated system acts like the real one. The test API only adds what a test cannot reach
+   through the application, for example a report about a contract nobody sent.
 5. A test waits for the state of the workflow aggregate, never for a fixed time.
 6. The service class says `@Transactional`, also where a workflow task already brings the
    transaction of VanillaBP.
@@ -85,12 +87,12 @@ Names this blueprint adds:
 | `loan-approval/src/main/java/.../ApiController.java`                                         | the 503 with the role of the system, as a problem detail                                                                                                                                                                           |
 | `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`                  | the API of the module as an OpenAPI file. The build generates `LoanApprovalApi` and its classes, `ApiController` implements it                                                                                                     |
 | `loan-approval/src/main/resources/.../loan_approval.bpmn`                                    | user task, service task, message catch event "Contract signed"                                                                                                                                                                     |
-| `simulator/src/main/java/blueprint/simulator/SimulatorApplication.java`                      | extends `DevShellSimulator` and scans both packages; an application of its own, not of this platform                                                                                                                               |
-| `simulator/src/main/java/blueprint/simulator/*/*ApiController.java`                          | the API of a system: implements the generated server interface, and adds what the system does                                                                                                                                      |
-| `simulator/src/main/java/blueprint/simulator/*/*TestApiController.java`                      | the test API, one controller per simulated system. Implements the interface generated from `simulator-test-api.yaml`                                                                                                               |
-| `simulator-test-api/simulator-test-api.yaml`                                                 | the test API as an OpenAPI file; `client` and `server` generate the Java code                                                                                                                                                      |
+| `simulator/application/src/main/java/blueprint/simulator/SimulatorApplication.java`          | extends `DevShellSimulator` and scans both packages; an application of its own, not of this platform                                                                                                                               |
+| `simulator/application/src/main/java/blueprint/simulator/*/*ApiController.java`              | the API of a system: implements the generated server interface, and adds what the system does                                                                                                                                      |
+| `simulator/application/src/main/java/blueprint/simulator/*/*TestApiController.java`          | the test API, one controller per simulated system. Implements the interface generated from `simulator-test-api.yaml`                                                                                                               |
+| `simulator/api/simulator-test-api.yaml`                                                      | the test API as an OpenAPI file; `client` and `server` generate the Java code                                                                                                                                                      |
 | `loan-approval/pom.xml`                                                                      | the support library of the cockpit, which brings its SPI; the start of the simulator: free port, runnable JAR, start, log file, and the client of the module API which the build generates for the test from the same OpenAPI file |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                        | the whole case against the simulator, with all three systems                                                                                                                                                                       |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                        | the whole case against the simulator, with all three systems; a report of an unknown contract comes from the simulator, too                                                                                                        |
 | `loan-approval/src/test/java/.../SimulatorExtension.java`                                    | skips without a simulator, fails when the build started one which does not answer, prints its log on a red test                                                                                                                    |
 | `loan-approval/src/test/java/.../SimulatorTestApi.java`                                      | the client of the test API, which the REST client of Quarkus implements, and of the cockpit API                                                                                                                                    |
 | `loan-approval/src/test/java/.../EverySystemIsTheSimulator.java`                             | points every adapter at the simulator and picks the port of the application, before it starts                                                                                                                                      |
@@ -103,18 +105,20 @@ Names this blueprint adds:
 |                                File                                 |                                                   Purpose                                                   |
 |---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
 | `pom.xml` (blueprint root)                                          | the Maven modules in build order, the versions, the enforcer rule and the settings of the OpenAPI generator |
+| `simulator/pom.xml`                                                 | groups `api` and `application`, no code of its own                                                          |
 | `external-systems/*/*-api/client/pom.xml`                           | the generated Jakarta REST interfaces, and the index Quarkus finds them in                                  |
 | `external-systems/*/*-api/server/pom.xml`                           | the generated interfaces of the simulator, with the parent and the generator settings of its platform       |
 | `external-systems/*/*-api/pom.xml`                                  | groups `client` and `server`, no code of its own                                                            |
 | `external-systems/credit-rating/credit-rating-api/*/pom.xml`        | one generator execution each, `client` or `server`                                                          |
 | `external-systems/*/port/pom.xml`                                   | no dependencies at all                                                                                      |
 | `external-systems/*/rest-adapter/pom.xml`                           | the port, the generated `client`, the REST client of Quarkus, and the index                                 |
-| `simulator/pom.xml`                                                 | its own parent, `dev-shell-simulator`, the `server` modules, and the JAR with the classifier `runnable`     |
-| `simulator/src/main/resources/application.yaml`                     | port 8079, the users of the simulated cockpit, the start data                                               |
+| `simulator/application/pom.xml`                                     | its own parent, `dev-shell-simulator`, the `server` modules, and the JAR with the classifier `runnable`     |
+| `simulator/application/src/main/resources/application.yaml`         | port 8079, the users of the simulated cockpit, the start data                                               |
 | `application/pom.xml`                                               | the module, the adapters, and the BPMS and cockpit adapters per BPMS profile                                |
 | `application/src/main/resources/application.yaml`                   | the database, and the two parent profiles: the BPMS and `local` or `real`                                   |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | the module's own configuration, including what the cockpit has to know                                      |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`           | base class of the integration test, identical in every blueprint                                            |
+| `loan-approval/src/test/java/.../SuppressOutputExtension.java`      | shows the output of a test only when it fails, identical in every blueprint which has it                    |
 | `application/src/test/java/.../ApplicationSmokeTest.java`           | boots the application with the parent profile `local`, identical in every blueprint                         |
 | `docs/loan_approval.png`                                            | the picture of the process the README shows                                                                 |
 
