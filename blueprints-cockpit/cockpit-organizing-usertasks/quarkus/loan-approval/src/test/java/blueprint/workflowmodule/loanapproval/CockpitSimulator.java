@@ -27,7 +27,7 @@ import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
 import io.vanillabp.cockpit.gui.api.v1.client.model.Workflow;
 import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowRetrieveMode;
 import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowsRequest;
-import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 /**
@@ -263,7 +263,14 @@ public final class CockpitSimulator {
 
     try {
       return Optional.ofNullable(tasklist.getUserTask(userTaskId, null));
-    } catch (NotFoundException e) {
+    } catch (WebApplicationException e) {
+      // The REST client of Quarkus answers 404 with a WebApplicationException, not with the
+      // subclass NotFoundException. So the status decides.
+      if (e
+          .getResponse()
+          .getStatus() != Response.Status.NOT_FOUND.getStatusCode()) {
+        throw e;
+      }
       // Nobody reported the user task yet.
       return Optional.empty();
     }
