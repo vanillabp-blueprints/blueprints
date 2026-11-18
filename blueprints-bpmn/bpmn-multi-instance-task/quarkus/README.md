@@ -60,21 +60,61 @@ Anything computed over all iterations belongs after the multi-instance task. `ch
 is a plain service task which runs once, when the last instance has finished. It reads the rows
 the iterations left.
 
+### A number of iterations instead of a collection
+
+After the choice, the contract goes out: one copy to the customer, one to the partner chosen.
+The second multi-instance task, `sendContractCopy`, loops over a NUMBER, not over a collection.
+Its instances run one after the other. The aggregate shares the number through a getter,
+`getContractCopies()`, annotated `@SyncWithBPMS`. The recipients stay in the application.
+
+There is no element to hand over. So the method asks for the index only, and the business code
+fetches the recipient from the aggregate by that index:
+
+```java
+@WorkflowTask
+public void sendContractCopy(
+    final Aggregate loanRequest,
+    @MultiInstanceIndex(SEND_CONTRACT_COPY) final int index) {
+
+  loanApproval.sendContractCopy(loanRequest, index);
+
+}
+```
+
+The engines say "a number" in different words. Camunda 7 and its forks read it as
+`loopCardinality`:
+
+```xml
+<bpmn:multiInstanceLoopCharacteristics isSequential="true">
+  <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">${contractCopies}</bpmn:loopCardinality>
+</bpmn:multiInstanceLoopCharacteristics>
+```
+
+Camunda 8 has no `loopCardinality`. Its model needs a collection, so a FEEL expression builds a
+list of that length:
+
+```xml
+<zeebe:loopCharacteristics inputCollection="=for copy in 1..contractCopies return copy" />
+```
+
+Camunda 8 hands every instance its element anyway. The method does not ask for it, so the same
+Java code serves both.
+
 ## Delta to the base blueprint
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                                         File                                          |                                                                                What is different                                                                                |
-|---------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`                                                                  | a multi-instance service task iterating over an attribute of the aggregate, and a task after it                                                                                 |
-| `Aggregate.java`                                                                      | `partnerIds`, which the model loops over and which is therefore shared with the BPMS, and `offers`, one row per iteration                                                       |
-| `PartnerOffer.java`                                                                   | new: what one iteration found                                                                                                                                                   |
-| `WorkflowTaskHandler.java`                                                            | `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`                                                                                                        |
-| `Service.java`                                                                        | a method taking ONE partner, and a second one choosing between the results                                                                                                      |
-| `loan-approval.yaml`, `LoanApprovalProperties.java`                                   | the partners, which is what decides how many iterations there are, and that the iterations were reviewed for writing at the same time                                           |
-| `LoanApprovalIT.java`                                                                 | asserts the rows of all iterations, without relying on the order they arrived in                                                                                                |
-| `pom.xml`, `application/pom.xml`, `loan-approval/pom.xml`                             | the engine versions, and the SPIN plugin with its JSON format in each BPMS profile of the Camunda 7 family                                                                      |
-| `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | JSON as the serialization format and the SPIN plugin, in the application and in the test resources. Without them the web applications cannot show the list the model loops over |
+|                                         File                                          |                                                                                              What is different                                                                                              |
+|---------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                                                  | a multi-instance service task iterating over an attribute of the aggregate, a task after it, and a second multi-instance task based on a number                                                             |
+| `Aggregate.java`                                                                      | `partnerIds`, which the model loops over and which is therefore shared with the BPMS, `offers`, one row per iteration, and the number of contract copies                                                    |
+| `PartnerOffer.java`                                                                   | new: what one iteration found                                                                                                                                                                               |
+| `WorkflowTaskHandler.java`                                                            | `@MultiInstanceElement`, `@MultiInstanceIndex` and `@MultiInstanceTotal`                                                                                                                                    |
+| `Service.java`                                                                        | a method taking ONE partner, a second one choosing between the results, and a third one sending one copy of the contract                                                                                    |
+| `loan-approval.yaml`, `LoanApprovalProperties.java`                                   | the partners, which is what decides how many iterations there are, that the iterations were reviewed for writing at the same time, and `partnerIds` and `contractCopies` declared as values the model reads |
+| `LoanApprovalIT.java`                                                                 | asserts the rows of all iterations, without relying on the order they arrived in, and the copies of the contract                                                                                            |
+| `pom.xml`, `application/pom.xml`, `loan-approval/pom.xml`                             | the engine versions, and the SPIN plugin with its JSON format in each BPMS profile of the Camunda 7 family                                                                                                  |
+| `application-camunda7.yaml`, `application-operaton.yaml`, `application-cibseven.yaml` | JSON as the serialization format and the SPIN plugin, in the application and in the test resources. Without them the web applications cannot show the list the model loops over                             |
 
 ## Running it
 
@@ -194,16 +234,18 @@ That is why the list lives in configuration.
 |                                            File                                            |                                                                           Role                                                                            |
 |--------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the multi-instance task, what it loops over and what each instance gets                                                                                   |
-| `.../loanapproval/WorkflowTaskHandler.java`                                                | turns the element, the index and the total into a call naming one partner                                                                                 |
+| `.../loanapproval/WorkflowTaskHandler.java`                                                | turns the element, the index and the total into a call naming one partner, and the index alone into a call sending one copy                               |
 | `.../loanapproval/Service.java`                                                            | asks one partner, and picks the best offer once all of them answered                                                                                      |
-| `.../loanapproval/model/Aggregate.java`                                                    | the collection the model iterates over, and the offers written into it                                                                                    |
+| `.../loanapproval/model/Aggregate.java`                                                    | the collection the model iterates over, the offers written into it, and the number of contract copies                                                     |
 | `.../loanapproval/model/PartnerOffer.java`                                                 | one row per iteration, which is what makes concurrent instances harmless                                                                                  |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | the partners, so the number of iterations is configuration, not model; and `concurrent-branches-reviewed`, because each iteration writes a row of its own |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                           | asserts the rows of all iterations and the choice made from them                                                                                          |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                           | asserts the rows of all iterations, the choice made from them and the copies sent                                                                         |
 
 The order of events: `retrieveCreditRating` writes the rating and the partners. The engine
 evaluates the collection and creates one instance per element. Each instance runs the handler
-in a transaction of its own. `chooseBestOffer` runs when the last of them has finished.
+in a transaction of its own. `chooseBestOffer` runs when the last of them has finished. Then
+the engine reads `contractCopies` and runs `sendContractCopy` that many times, one after the
+other.
 
 The test says `containsExactlyInAnyOrder`, and that is not laziness. The instances have no
 order among themselves. A test which expects one passes on an embedded engine and fails on a
