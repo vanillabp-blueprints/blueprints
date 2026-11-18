@@ -198,6 +198,14 @@ The file applies because the Maven profile `camunda8` makes the profile of the s
 parent of the profile the application runs in. So you choose the engine once, on the Maven
 command line, and the build, the tests and the run all follow it.
 
+The application keeps its data in a file, `target/loan-approval`. VanillaBP's delivery log is in
+that file too, and the file outlives the cluster. A new cluster, for example after
+`docker compose down`, hands out the job keys of the old one again. So at every start VanillaBP
+compares the cluster with the one the delivery log was written with. If the cluster is new and
+the log still holds records of the old one, the start ends, and the message says how to go on.
+In this blueprint the simple way is `mvn clean`, which deletes the file. The
+[wiki of the Camunda 8 adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#the-identity-of-the-cluster) explains the check.
+
 [Operaton](https://operaton.org), the open source successor of Camunda 7, is embedded as well
 and needs nothing else either. The BPMN files are the ones of Camunda 7, because Operaton reads
 their `camunda:` attributes:
