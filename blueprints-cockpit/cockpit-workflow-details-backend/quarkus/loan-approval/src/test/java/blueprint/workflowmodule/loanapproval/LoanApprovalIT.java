@@ -226,7 +226,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   public void everyOperationOfTheOpenApiHasAnEndpoint() {
 
     final Map<String, Object> openApi = new Yaml().load(
-        LoanApprovalIT.class.getResourceAsStream("/openapi/loan-approval.yaml"));
+        LoanApprovalIT.class.getResourceAsStream("/loan-approval/openapi/loan-approval.yaml"));
 
     // The browser calls the cockpit below /wm/loan-approval. The cockpit forwards to the
     // workflow module below /loan-approval, the path of its workflow-module-uri.

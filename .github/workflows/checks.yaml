@@ -72,6 +72,10 @@ jobs:
       # workflow module. An old copy fails nothing, so it is not noticed otherwise.
       - name: Check that every copy of the adapter rule is the same
         run: python bin/check_enforcer_rule.py
+      # Workflow modules share one classpath, so a file at the same path in two modules
+      # clashes. A module keeps its resources below its ID, next to 'META-INF/' only.
+      - name: Check that every module keeps its resources in the directory of its ID
+        run: python bin/check_module_resources.py
       # Active since the first platform twin exists (2026-08-15). It keeps the two twins of
       # a blueprint saying the same thing: every difference between their Java sources is
       # either the platform, and then it is approved with a reason, or a mistake. The index

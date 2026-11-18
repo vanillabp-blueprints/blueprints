@@ -169,7 +169,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `Workflow.java`                                     | `riskAssessed` completes the user task                                                                                                       |
 | `WorkflowTaskHandler.java`                          | a `@WorkflowTask` method for the user task and one for the payout                                                                            |
 | `ApiController.java`                                | the start names who requested; new endpoints to assess the risk and to show the trail, each run with `ChangeBeingMade.attributeTo`           |
-| `openapi/loan-approval.yaml`                        | `requestedBy` at the start, and the endpoints `assessRisk` and `trail`                                                                       |
+| `loan-approval/openapi/loan-approval.yaml`          | `requestedBy` at the start, and the endpoints `assessRisk` and `trail`                                                                       |
 | `ComplianceArchive.java`                            | the port to the archive, so a test can put a simulator in its place                                                                          |
 | `LocalComplianceArchive.java`                       | new: the stand-in for the archive, which writes the notice into the log and turns the first attempt down                                     |
 | `LoanApprovalIT.java`                               | decides, waits for the payout, and asserts on what the archive was told                                                                      |

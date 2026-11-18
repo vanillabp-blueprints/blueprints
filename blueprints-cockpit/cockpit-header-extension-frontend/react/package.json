@@ -12,8 +12,8 @@
   "config": {
     "workflowModuleId": "loan-approval",
     "uiJar": "io.vanillabp.blueprint:cockpit-header-extension-ui",
-    "openapi": "backend/loan-approval/src/main/resources/openapi/loan-approval.yaml",
-    "openapiInMonorepo": "../../cockpit-header-extension-backend/springboot/loan-approval/src/main/resources/openapi/loan-approval.yaml",
+    "openapi": "backend/loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml",
+    "openapiInMonorepo": "../../cockpit-header-extension-backend/springboot/loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml",
     "image": "vanillabp-blueprints/cockpit-header-extension-ui"
   },
   "scripts": {

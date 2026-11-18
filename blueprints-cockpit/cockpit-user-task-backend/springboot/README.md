@@ -44,10 +44,10 @@ and this is the reason.
 ### The API is a file
 
 The workflow module holds the OpenAPI of the four endpoints the forms call, at
-`loan-approval/src/main/resources/openapi/loan-approval.yaml`. A frontend reads this file through
-a git submodule of this repository, at a commit it pins, and generates its client from it. It
-needs no Maven repository and no Java for that. The React, the Angular and the Vue frontend read
-the same file. The build of the workflow module generates an interface from it, which
+`loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`. A frontend reads this
+file through a git submodule of this repository, at a commit it pins, and generates its client from
+it. It needs no Maven repository and no Java for that. The React, the Angular and the Vue frontend
+read the same file. The build of the workflow module generates an interface from it, which
 `UserTaskFormController` implements. Its test reads the file from the classpath and checks every
 operation against the endpoints. The file sits next to the code which implements it, so one pull
 request changes both.
@@ -155,7 +155,7 @@ Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user
 
 |                    File                    |                                                                                 What is different                                                                                 |
 |--------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `openapi/loan-approval.yaml`               | new: the four endpoints of the forms                                                                                                                                              |
+| `loan-approval/openapi/loan-approval.yaml` | new: the four endpoints of the forms                                                                                                                                              |
 | `loan-approval/loan-approval.yaml`         | the keys the cockpit needs, below `vanillabp.workflow-modules.loan-approval.cockpit`                                                                                              |
 | `loan_approval.bpmn`                       | two user tasks in a row, and no service task and no boundary event                                                                                                                |
 | `WorkflowTaskHandler.java`                 | a `@WorkflowTask` method per user task, and the `@UserTaskDetailsProvider` method                                                                                                 |
@@ -163,7 +163,7 @@ Compared to [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user
 | `Cockpit.java`                             | new: asks the cockpit whether somebody else took over a user task                                                                                                                 |
 | `ApiController.java`                       | only starts and shows a loan approval, below `/loan-approval/api/loan-requests`                                                                                                   |
 | `Workflow.java`                            | `documentsChecked` completes the second user task; no `loanRequestWithdrawn` and no BPMN error                                                                                    |
-| `openapi/loan-requests.yaml`               | new: the API of `ApiController`, from which the build generates `LoanRequestsApi`                                                                                                 |
+| `loan-approval/openapi/loan-requests.yaml` | new: the API of `ApiController`, from which the build generates `LoanRequestsApi`                                                                                                 |
 | `Service.java`                             | per user task: keep the id, give a form its data, complete the task with what the user entered                                                                                    |
 | `Aggregate.java`                           | per user task the id of the open task and what the user entered                                                                                                                   |
 | `LoanApprovalIT.java`                      | reports to the dev shell simulator and completes both tasks through their endpoints                                                                                               |
@@ -259,7 +259,7 @@ does. The frontend's README shows how.
 
 |                                          File                                          |                                                       Role                                                       |
 |----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract between the forms and the module: four operations, below the server `/wm/loan-approval`             |
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`            | the contract between the forms and the module: four operations, below the server `/wm/loan-approval`             |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: two user tasks, each carrying its task definition                                                   |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest                         |
 | `.../loanapproval/WorkflowTaskHandler.java`                                            | keeps the id of each user task, and says what the cockpit shows about a task                                     |
@@ -305,7 +305,7 @@ with a `@RequestMapping` of its own. The integration test reads the OpenAPI from
 and checks that every operation in it has its endpoint at that path.
 
 The GET endpoints a person uses to start a loan approval and to look at it are an OpenAPI file
-as well, `openapi/loan-requests.yaml`. `ApiController` implements the interface
+as well, `loan-approval/openapi/loan-requests.yaml`. `ApiController` implements the interface
 `LoanRequestsApi` generated from it. The frontends do not read this file.
 
 Completing a task is a POST, because a form calls it. The

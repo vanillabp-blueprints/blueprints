@@ -11,9 +11,9 @@ import blueprint.workflowmodule.loanapproval.api.model.LoanRequest;
 import blueprint.workflowmodule.loanapproval.api.model.StartedLoanRequest;
 
 /**
- * The endpoint the start form calls. It implements
- * {@code src/main/resources/openapi/loan-approval.yaml} of this module, which the frontend reads
- * to generate its client.
+ * The endpoint the start form calls. It implements {@code
+ * src/main/resources/loan-approval/openapi/loan-approval.yaml} of this module, which the frontend
+ * reads to generate its client.
  *
  * <p>
  * The form opens from a button in the header of the Business Cockpit. It runs in the browser,

@@ -60,7 +60,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `PartnerApprovalClient.java`                        | new: the port to the partner, so a test can replace it                                                    |
 | `LocalPartnerApprovalClient.java`                   | new: a stand-in partner, so the blueprint runs without one                                                |
 | `ApiController.java`                                | the callback carrying the partner's answer and the task id                                                |
-| `openapi/loan-approval.yaml`                        | the URL of that callback, `partner-approved/{taskId}`                                                     |
+| `loan-approval/openapi/loan-approval.yaml`          | the URL of that callback, `partner-approved/{taskId}`                                                     |
 | `Aggregate.java`                                    | `partnerApprovalTaskId`, `partnerApproved`, `timedOut`, and `partnerDeadline`, which the BPMS reads       |
 | `loan-approval.yaml`, `LoanApprovalProperties.java` | `partner-deadline: P3D`, the business value of the deadline                                               |
 | `application.yaml`                                  | `partner-deadline: PT3S` in the test and in the demo application, so nobody waits three days              |

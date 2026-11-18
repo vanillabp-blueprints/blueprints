@@ -28,12 +28,12 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * the Business Cockpit. Nothing is mocked.
  *
  * <p>
- * The simulator plays the environment, and the {@link ProcessDriver} plays the users. A test
- * brings a loan approval to a state with the driver. It does not know the steps on the way. Then
- * it acts like the people and systems around the application: through the API of the user
- * interface, with the client generated from {@code openapi/loan-approval.yaml}, and through the
- * test API of the simulator. At the end it checks the workflow aggregate and what the simulated
- * systems were told.
+ * The simulator plays the environment, and the {@link ProcessDriver} plays the users. A test brings
+ * a loan approval to a state with the driver. It does not know the steps on the way. Then it acts
+ * like the people and systems around the application: through the API of the user interface, with
+ * the client generated from {@code loan-approval/openapi/loan-approval.yaml}, and through the test
+ * API of the simulator. At the end it checks the workflow aggregate and what the simulated systems
+ * were told.
  * </p>
  *
  * <p>

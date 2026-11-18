@@ -103,21 +103,21 @@ dependency, and that is all. Its user interface comes from the UI jar.
 
 Compared to [`cockpit-workflow-details-backend`](https://github.com/vanillabp-blueprints/cockpit-workflow-details-backend-quarkus):
 
-|                File                |                                                            What is different                                                            |
-|------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| `openapi/loan-approval.yaml`       | the one endpoint of the start form instead of the two of the case page                                                                  |
-| `loan_approval.bpmn`               | the one user task, without the event subprocess                                                                                         |
-| `LoanApprovalModuleDetails.java`   | new: names the group `LOAN_OFFICERS`, the only users who see the module, and so the button, and holds the id of the module              |
-| `StartFormController.java`         | new, instead of `CasePageController.java`: starts a loan approval with what the user typed, below `/loan-approval/api`, and answers 201 |
-| `CasePageController.java`          | deleted, `StartFormController.java` takes its place                                                                                     |
-| `WorkflowTaskHandler.java`         | the `@WorkflowTask` method of the user task only, and no `@WorkflowDetailsProvider` method                                              |
-| `Service.java`                     | picks the id of a new loan request and starts the process. No withdrawal                                                                |
-| `Workflow.java`                    | `startWorkflow` and `completeUserTask`, no `correlateMessage`                                                                           |
-| `Aggregate.java`                   | the applicant, the amount and the id of the open user task, no status                                                                   |
-| `ApiController.java`               | the id of a loan request comes from the service                                                                                         |
-| `LoanApprovalIT.java`              | starts a loan approval through the start form, finds the case in the case list, and checks who sees the module                          |
-| `dev-shell-simulator.yaml` (test)  | two users: Jane is a loan officer, John is not                                                                                          |
-| `pom.xml`, `loan-approval/pom.xml` | the generator builds the interface `StartFormApi` and the test client of the start form, instead of `CasesApi`                          |
+|                    File                    |                                                            What is different                                                            |
+|--------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/openapi/loan-approval.yaml` | the one endpoint of the start form instead of the two of the case page                                                                  |
+| `loan_approval.bpmn`                       | the one user task, without the event subprocess                                                                                         |
+| `LoanApprovalModuleDetails.java`           | new: names the group `LOAN_OFFICERS`, the only users who see the module, and so the button, and holds the id of the module              |
+| `StartFormController.java`                 | new, instead of `CasePageController.java`: starts a loan approval with what the user typed, below `/loan-approval/api`, and answers 201 |
+| `CasePageController.java`                  | deleted, `StartFormController.java` takes its place                                                                                     |
+| `WorkflowTaskHandler.java`                 | the `@WorkflowTask` method of the user task only, and no `@WorkflowDetailsProvider` method                                              |
+| `Service.java`                             | picks the id of a new loan request and starts the process. No withdrawal                                                                |
+| `Workflow.java`                            | `startWorkflow` and `completeUserTask`, no `correlateMessage`                                                                           |
+| `Aggregate.java`                           | the applicant, the amount and the id of the open user task, no status                                                                   |
+| `ApiController.java`                       | the id of a loan request comes from the service                                                                                         |
+| `LoanApprovalIT.java`                      | starts a loan approval through the start form, finds the case in the case list, and checks who sees the module                          |
+| `dev-shell-simulator.yaml` (test)          | two users: Jane is a loan officer, John is not                                                                                          |
+| `pom.xml`, `loan-approval/pom.xml`         | the generator builds the interface `StartFormApi` and the test client of the start form, instead of `CasesApi`                          |
 
 ## Running it
 
@@ -175,8 +175,8 @@ form posts to `/loan-approval/api/loan-requests`, which a browser cannot do from
 
 |                                          File                                          |                                                                              Role                                                                               |
 |----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                          | the contract between the start form and the module: one operation, below the server `/wm/loan-approval`                                                         |
-| `loan-approval/src/main/resources/openapi/loan-requests.yaml`                          | the GET endpoints for a person with a browser                                                                                                                   |
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`            | the contract between the start form and the module: one operation, below the server `/wm/loan-approval`                                                         |
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-requests.yaml`            | the GET endpoints for a person with a browser                                                                                                                   |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: one user task                                                                                                                                      |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest                                                                        |
 | `.../loanapproval/config/LoanApprovalModuleDetails.java`                               | names the group whose members see the module in the cockpit                                                                                                     |

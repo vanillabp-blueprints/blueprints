@@ -58,7 +58,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `Workflow.java`                                     | the three viewer methods next to `startWorkflow` and `completeTask`                                                           |
 | `Service.java`                                      | passes them through, and its log says where to look                                                                           |
 | `ApiController.java`                                | `/definitions`, `/diagram` and `/history`                                                                                     |
-| `openapi/loan-approval.yaml`                        | the three endpoints, and the JSON of the VanillaBP types they return                                                          |
+| `loan-approval/openapi/loan-approval.yaml`          | the three endpoints, and the JSON of the VanillaBP types they return                                                          |
 | `Aggregate.java`                                    | the id of the task the workflow waits at, so the wait can be answered                                                         |
 | `loan-approval.yaml`, `LoanApprovalProperties.java` | `minimum-rating`, from which a loan is approved once the waiting task is answered                                             |
 | `WorkflowTaskHandler.java`                          | the `@TaskId` handler of that task                                                                                            |

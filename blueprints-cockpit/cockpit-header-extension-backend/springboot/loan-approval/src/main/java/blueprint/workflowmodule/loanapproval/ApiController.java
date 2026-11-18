@@ -17,9 +17,9 @@ import blueprint.workflowmodule.loanapproval.api.LoanRequestsApi;
  * </p>
  *
  * <p>
- * The paths, the parameters and the answers come from {@link LoanRequestsApi}, the interface
- * the build generates from {@code src/main/resources/openapi/loan-requests.yaml}. This class
- * only implements it.
+ * The paths, the parameters and the answers come from {@link LoanRequestsApi}, the interface the
+ * build generates from {@code src/main/resources/loan-approval/openapi/loan-requests.yaml}. This
+ * class only implements it.
  * </p>
  */
 @RestController

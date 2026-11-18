@@ -13,12 +13,12 @@
     "workflowModuleId": "loan-approval",
     "uiJar": "io.vanillabp.blueprint:cockpit-process-driver-ui",
     "openapi": {
-      "loan-approval": "backend/loan-approval/workflow-module/src/main/resources/openapi/loan-approval.yaml",
-      "process-driver": "backend/loan-approval/test-driver/src/main/resources/openapi/process-driver.yaml"
+      "loan-approval": "backend/loan-approval/workflow-module/src/main/resources/loan-approval/openapi/loan-approval.yaml",
+      "process-driver": "backend/loan-approval/test-driver/src/main/resources/loan-approval/openapi/process-driver.yaml"
     },
     "openapiInMonorepo": {
-      "loan-approval": "../../../blueprints-modules/module-process-driver/springboot/loan-approval/workflow-module/src/main/resources/openapi/loan-approval.yaml",
-      "process-driver": "../../../blueprints-modules/module-process-driver/springboot/loan-approval/test-driver/src/main/resources/openapi/process-driver.yaml"
+      "loan-approval": "../../../blueprints-modules/module-process-driver/springboot/loan-approval/workflow-module/src/main/resources/loan-approval/openapi/loan-approval.yaml",
+      "process-driver": "../../../blueprints-modules/module-process-driver/springboot/loan-approval/test-driver/src/main/resources/loan-approval/openapi/process-driver.yaml"
     },
     "image": "vanillabp-blueprints/cockpit-process-driver-ui"
   },

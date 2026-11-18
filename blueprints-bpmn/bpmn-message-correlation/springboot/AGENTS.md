@@ -43,7 +43,7 @@ correlation reaches no waiting event. The call then fails at runtime, not at sta
 | `loan-approval/src/main/java/.../loanapproval/Service.java`                                | writes the message's content onto the aggregate BEFORE correlating, and returns early on a repeat                          |
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | the attributes the message brings. The payload stops here                                                                  |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java`                          | the endpoint the message arrives at                                                                                        |
-| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                              | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`                | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | waiting, continuing, and a message arriving twice                                                                          |
 
 ## Boilerplate files

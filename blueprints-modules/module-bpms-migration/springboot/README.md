@@ -77,31 +77,31 @@ has no reason to ask.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|                            File                             |                                                       What is different                                                        |
-|-------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| `application/pom.xml`                                       | the profiles `camunda8`, `operaton` and `cibseven` bring BOTH adapters, because during a migration the old BPMS is still there |
-| `loan-approval/pom.xml`                                     | the Camunda 7 adapter next to the new one in the test profiles, and the code generated from `openapi/loan-repayment.yaml`      |
-| `pom.xml`                                                   | nothing but the order of the adapter versions                                                                                  |
-| `application-camunda7.yaml`                                 | the state before the migration: one adapter, nothing to prioritize                                                             |
-| `application-camunda8.yaml`                                 | the state during it: the priority list, both adapters, and the workflow which stays behind                                     |
-| `application-operaton.yaml`                                 | the same state for the migration to Operaton, with a database of its own for Operaton                                          |
-| `application-cibseven.yaml`                                 | the same state for the migration to CIB seven, with a database of its own for CIB seven                                        |
-| `config/OperatonDatabase.java`                              | the database of Operaton, under the `operaton` profile only                                                                    |
-| `config/CibSevenDatabase.java`                              | the database of CIB seven, under the `cibseven` profile only                                                                   |
-| `application.yaml`                                          | a FILE database, because the scenario restarts the application                                                                 |
-| `loan_approval.bpmn`                                        | a user task and a message catch event, the two wait states the election is shown with                                          |
-| `WorkflowTaskHandler.java`                                  | the methods of the user task, for `CREATED` and `CANCELED`, and of the payout                                                  |
-| `Workflow.java`                                             | completes the user task, correlates the message and reads the process definitions of a workflow                                |
-| `Service.java`                                              | opens, closes and answers the risk assessment, takes the signed contract, pays out and says which BPMS holds a workflow        |
-| `ApiController.java`                                        | the URLs of the two wait states, and one which shows the BPMS of a workflow                                                    |
-| `openapi/loan-approval.yaml`, `openapi/loan-repayment.yaml` | those three URLs, and new: the API of the repayment                                                                            |
-| `Aggregate.java`                                            | the open task, the risk decision, who signed and the payout; an entity name, because the repayment has an `Aggregate` as well  |
-| `loan-approval.yaml`                                        | `message-time-to-live`, because the engine may not yet wait at the message event when the contract arrives                     |
-| `loan_repayment.bpmn`                                       | the second workflow, whose priority list names the old BPMS alone                                                              |
-| `loanrepayment/`                                            | its use case: the classes carry its name, because otherwise two use cases in one application would collide                     |
-| `LoanApprovalIT.java`                                       | runs one loan approval through both wait states                                                                                |
-| `MigrationIT.java`                                          | starts, routes and finishes workflows in both BPMS                                                                             |
-| `MigrationRestartIT.java`                                   | the migration itself: two boots, one database, the workflows of the first boot finished in the second                          |
+|                                          File                                           |                                                            What is different                                                            |
+|-----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `application/pom.xml`                                                                   | the profiles `camunda8`, `operaton` and `cibseven` bring BOTH adapters, because during a migration the old BPMS is still there          |
+| `loan-approval/pom.xml`                                                                 | the Camunda 7 adapter next to the new one in the test profiles, and the code generated from `loan-approval/openapi/loan-repayment.yaml` |
+| `pom.xml`                                                                               | nothing but the order of the adapter versions                                                                                           |
+| `application-camunda7.yaml`                                                             | the state before the migration: one adapter, nothing to prioritize                                                                      |
+| `application-camunda8.yaml`                                                             | the state during it: the priority list, both adapters, and the workflow which stays behind                                              |
+| `application-operaton.yaml`                                                             | the same state for the migration to Operaton, with a database of its own for Operaton                                                   |
+| `application-cibseven.yaml`                                                             | the same state for the migration to CIB seven, with a database of its own for CIB seven                                                 |
+| `config/OperatonDatabase.java`                                                          | the database of Operaton, under the `operaton` profile only                                                                             |
+| `config/CibSevenDatabase.java`                                                          | the database of CIB seven, under the `cibseven` profile only                                                                            |
+| `application.yaml`                                                                      | a FILE database, because the scenario restarts the application                                                                          |
+| `loan_approval.bpmn`                                                                    | a user task and a message catch event, the two wait states the election is shown with                                                   |
+| `WorkflowTaskHandler.java`                                                              | the methods of the user task, for `CREATED` and `CANCELED`, and of the payout                                                           |
+| `Workflow.java`                                                                         | completes the user task, correlates the message and reads the process definitions of a workflow                                         |
+| `Service.java`                                                                          | opens, closes and answers the risk assessment, takes the signed contract, pays out and says which BPMS holds a workflow                 |
+| `ApiController.java`                                                                    | the URLs of the two wait states, and one which shows the BPMS of a workflow                                                             |
+| `loan-approval/openapi/loan-approval.yaml`, `loan-approval/openapi/loan-repayment.yaml` | those three URLs, and new: the API of the repayment                                                                                     |
+| `Aggregate.java`                                                                        | the open task, the risk decision, who signed and the payout; an entity name, because the repayment has an `Aggregate` as well           |
+| `loan-approval.yaml`                                                                    | `message-time-to-live`, because the engine may not yet wait at the message event when the contract arrives                              |
+| `loan_repayment.bpmn`                                                                   | the second workflow, whose priority list names the old BPMS alone                                                                       |
+| `loanrepayment/`                                                                        | its use case: the classes carry its name, because otherwise two use cases in one application would collide                              |
+| `LoanApprovalIT.java`                                                                   | runs one loan approval through both wait states                                                                                         |
+| `MigrationIT.java`                                                                      | starts, routes and finishes workflows in both BPMS                                                                                      |
+| `MigrationRestartIT.java`                                                               | the migration itself: two boots, one database, the workflows of the first boot finished in the second                                   |
 
 The user task alone is [`bpmn-user-task`](https://github.com/vanillabp-blueprints/bpmn-user-task-springboot),
 the message alone is [`bpmn-message-correlation`](https://github.com/vanillabp-blueprints/bpmn-message-correlation-springboot).

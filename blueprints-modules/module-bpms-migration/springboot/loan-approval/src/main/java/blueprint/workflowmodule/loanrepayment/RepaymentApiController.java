@@ -12,9 +12,9 @@ import lombok.extern.slf4j.Slf4j;
  * The API of the repayment use case, GET only like every other one in this repository.
  *
  * <p>
- * The paths, the parameters and the answers come from {@link LoanRepaymentApi}, the interface
- * the build generates from {@code src/main/resources/openapi/loan-repayment.yaml}. This class
- * only implements it.
+ * The paths, the parameters and the answers come from {@link LoanRepaymentApi}, the interface the
+ * build generates from {@code src/main/resources/loan-approval/openapi/loan-repayment.yaml}. This
+ * class only implements it.
  * </p>
  */
 @Slf4j

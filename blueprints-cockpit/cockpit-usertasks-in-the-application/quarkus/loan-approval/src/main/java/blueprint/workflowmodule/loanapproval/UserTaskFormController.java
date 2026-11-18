@@ -54,8 +54,9 @@ import jakarta.ws.rs.core.Response.Status;
  *
  * <p>
  * The paths and the classes of the requests and answers come from {@link UserTaskFormsApi}, the
- * interface the build generates from {@code src/main/resources/openapi/user-task-forms.yaml}.
- * This class only implements it, and adds the permission of each endpoint.
+ * interface the build generates from {@code
+ * src/main/resources/loan-approval/openapi/user-task-forms.yaml}. This class only implements it,
+ * and adds the permission of each endpoint.
  * </p>
  */
 @ApplicationScoped

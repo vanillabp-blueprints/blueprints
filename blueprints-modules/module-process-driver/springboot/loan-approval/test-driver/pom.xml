@@ -57,9 +57,9 @@
     <plugins>
       <!--
         The REST API of the driver is written as the OpenAPI file
-        'src/main/resources/openapi/process-driver.yaml'. Only a browser, the dev shell and the
-        tests of a user interface call it, so it has no client module. 'ProcessDriverController'
-        implements the interface generated from it.
+        'src/main/resources/loan-approval/openapi/process-driver.yaml'. Only a browser, the dev
+        shell and the tests of a user interface call it, so it has no client module.
+        'ProcessDriverController' implements the interface generated from it.
       -->
       <plugin>
         <groupId>org.openapitools</groupId>
@@ -71,7 +71,7 @@
               <goal>generate</goal>
             </goals>
             <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/openapi/process-driver.yaml</inputSpec>
+              <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/process-driver.yaml</inputSpec>
               <apiPackage>blueprint.testdriver.loanapproval.api</apiPackage>
               <modelPackage>blueprint.testdriver.loanapproval.api.model</modelPackage>
               <configOptions>
@@ -95,7 +95,7 @@
               <goal>generate</goal>
             </goals>
             <configuration>
-              <inputSpec>${project.basedir}/../workflow-module/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <inputSpec>${project.basedir}/../workflow-module/src/main/resources/loan-approval/openapi/loan-approval.yaml</inputSpec>
               <apiPackage>blueprint.testdriver.loanapproval.gui</apiPackage>
               <modelPackage>blueprint.testdriver.loanapproval.gui.model</modelPackage>
               <!-- A Spring HTTP interface. The driver turns it into a client with a RestClient. -->

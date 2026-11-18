@@ -50,7 +50,7 @@ controllers in line, or the start form reaches nothing.
 
 |                                      File                                       |                                                            Why it matters                                                            |
 |---------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/openapi/loan-approval.yaml`                   | the contract with the frontend: one operation, `servers: /wm/loan-approval`. Change it together with `StartFormController`           |
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`     | the contract with the frontend: one operation, `servers: /wm/loan-approval`. Change it together with `StartFormController`           |
 | `loan-approval/src/main/java/.../config/LoanApprovalModuleDetails.java`         | the `WorkflowModuleDetailsProvider` of the module: its id and the group `LOAN_OFFICERS`, the only users who see the module           |
 | `loan-approval/src/main/java/.../StartFormController.java`                      | the endpoint of the start form, below `/loan-approval/api/loan-requests`. POST, 400 for an empty applicant or an amount below 1, 201 |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`             | `vanillabp.workflow-modules.loan-approval.cockpit.*`: `workflow-module-uri`, `ui-uri-type: ES_MODULES`, `ui-uri-path`                |
@@ -68,7 +68,7 @@ controllers in line, or the start form reaches nothing.
 |----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
 | `pom.xml` (blueprint root)                                                             | the VanillaBP BOM import, the versions of the BPMS adapters and of the cockpit adapters, the rule which keeps every adapter in the test scope |
 | `loan-approval/pom.xml`                                                                | `vanillabp-spring-boot-support` and the cockpit `support`, the generator of the two APIs, per BPMS profile both adapters for the test         |
-| `loan-approval/src/main/resources/openapi/loan-requests.yaml`                          | the GET endpoints for a human: start, approve, show                                                                                           |
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-requests.yaml`            | the GET endpoints for a human: start, approve, show                                                                                           |
 | `loan-approval/src/main/java/.../ApiController.java`                                   | implements them                                                                                                                               |
 | `loan-approval/src/main/java/.../model/Aggregate.java`                                 | the loan request and the id of the open task                                                                                                  |
 | `loan-approval/src/main/java/.../model/AggregateRepository.java`                       | the repository of the aggregate                                                                                                               |
@@ -90,7 +90,7 @@ controllers in line, or the start form reaches nothing.
    scope, the keys below `vanillabp.workflow-modules.<workflow-module-id>.cockpit`, and the
    auto-configuration.
 2. Put the OpenAPI of the start form into the workflow module, at
-   `src/main/resources/openapi/<workflow-module-id>.yaml`, with the server
+   `src/main/resources/loan-approval/openapi/<workflow-module-id>.yaml`, with the server
    `/wm/<workflow-module-id>`. One POST operation which takes what the form asks for and answers
    201 with the id of the new workflow aggregate. Generate the interface with the
    `openapi-generator-maven-plugin`, as `loan-approval/pom.xml` does.

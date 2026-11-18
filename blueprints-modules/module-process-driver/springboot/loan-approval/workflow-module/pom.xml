@@ -133,10 +133,10 @@
     <plugins>
       <!--
         The API of this module is written as the OpenAPI file
-        'src/main/resources/openapi/loan-approval.yaml'. This plugin generates the Java interface
-        'LoanApprovalApi' and the records of its answers from it. 'ApiController' implements the
-        interface and holds nothing but the code of each call. The settings all generated code
-        shares are in the POM of the blueprint.
+        'src/main/resources/loan-approval/openapi/loan-approval.yaml'. This plugin generates the
+        Java interface 'LoanApprovalApi' and the records of its answers from it. 'ApiController'
+        implements the interface and holds nothing but the code of each call. The settings all
+        generated code shares are in the POM of the blueprint.
       -->
       <plugin>
         <groupId>org.openapitools</groupId>
@@ -148,7 +148,7 @@
               <goal>generate</goal>
             </goals>
             <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/openapi/loan-approval.yaml</inputSpec>
+              <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/loan-approval.yaml</inputSpec>
               <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
               <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
               <configOptions>
@@ -174,7 +174,7 @@
             </goals>
             <phase>generate-test-sources</phase>
             <configuration>
-              <inputSpec>${project.basedir}/../test-driver/src/main/resources/openapi/process-driver.yaml</inputSpec>
+              <inputSpec>${project.basedir}/../test-driver/src/main/resources/loan-approval/openapi/process-driver.yaml</inputSpec>
               <output>${project.build.directory}/generated-test-sources/openapi</output>
               <addCompileSourceRoot>false</addCompileSourceRoot>
               <addTestCompileSourceRoot>true</addTestCompileSourceRoot>

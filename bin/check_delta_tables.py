@@ -31,7 +31,7 @@ file below such a directory, '.../loanapproval/*.java' every file the pattern ma
 'LoanApprovalIT' the file of that name with any extension. A README which groups files in
 one row keeps doing so. The one exception is a file below 'openapi/': the OpenAPI file of a
 module and the configuration of the module are both called 'loan-approval.yaml', and they
-are different things. A row names the first one as 'openapi/loan-approval.yaml'.
+are different things. A row names the first one as 'loan-approval/openapi/loan-approval.yaml'.
 The other exception is 'pom.xml': every module has one, so a bare 'pom.xml' names only the
 POM of the blueprint root, and a row names the POM of a module as 'loan-approval/pom.xml'.
 

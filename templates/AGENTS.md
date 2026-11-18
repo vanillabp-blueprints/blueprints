@@ -63,13 +63,13 @@ The files carrying the aspect. Read these, adapt them, keep their structure.
 They are here so that the blueprint runs on its own. Copy them unchanged, or use what the
 target project already has.
 
-|                     File                     |                                         Purpose                                          |
-|----------------------------------------------|------------------------------------------------------------------------------------------|
-| `pom.xml`                                    | dependencies, the BPMS profiles, the platform build                                      |
-| `src/main/resources/application.yaml`        | datasource and VanillaBP configuration                                                   |
-| `src/main/java/.../ApiController.java`       | the GET endpoints operating the process                                                  |
-| `src/main/resources/openapi/<use-case>.yaml` | the API as an OpenAPI file. The build generates the interface `ApiController` implements |
-| `docs/<process-id>.png`                      | the picture of the process the README shows                                              |
+|                               File                                |                                         Purpose                                          |
+|-------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `pom.xml`                                                         | dependencies, the BPMS profiles, the platform build                                      |
+| `src/main/resources/application.yaml`                             | datasource and VanillaBP configuration                                                   |
+| `src/main/java/.../ApiController.java`                            | the GET endpoints operating the process                                                  |
+| `src/main/resources/<workflow-module-id>/openapi/<use-case>.yaml` | the API as an OpenAPI file. The build generates the interface `ApiController` implements |
+| `docs/<process-id>.png`                                           | the picture of the process the README shows                                              |
 
 ## Adding this blueprint to an existing project
 

@@ -61,7 +61,7 @@ taking the error path.
 | `loan-approval/src/main/java/.../loanapproval/LocalCreditRatingClient.java` | stand-in provider, so the blueprint runs alone. Replace it with the real client                                            |
 | `loan-approval/src/main/java/.../loanapproval/Workflow.java`                | what the application tells the process. Unchanged from the base blueprint                                                  |
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java`           | GET endpoints operating the process                                                                                        |
-| `loan-approval/src/main/resources/openapi/loan-approval.yaml`               | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml` | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it |
 | `loan-approval/src/test/java/.../TestApplication.java`                      | the minimal application the module's test boots                                                                            |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`                   | base class of the integration test: waits for workflow progress                                                            |
 | `loan-approval/src/test/java/.../Simulator.java`                            | base class of a stand-in for a surrounding system                                                                          |
