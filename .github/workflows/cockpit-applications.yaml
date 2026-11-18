@@ -33,9 +33,15 @@ name: Build the cockpit applications
       - "bin/build_matrix.py"
       - "bin/camunda8_cluster.sh"
       - ".github/workflows/cockpit-applications.yaml"
+  # build.yaml leaves these parts out, so the nightly build does not reach them either. This
+  # run is their night: every engine, against the platform snapshot of the day. Half an hour
+  # after nightly.yaml, so the two do not ask Maven Central for the same artifacts at once.
+  schedule:
+    - cron: "37 2 * * *"
   workflow_dispatch:
 concurrency:
-  group: cockpit-applications-${{ github.head_ref || github.ref }}
+  # the event is part of it, so a push to main does not cancel the run of the night
+  group: cockpit-applications-${{ github.event_name }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 permissions:
   contents: read
@@ -70,8 +76,11 @@ jobs:
           "https://raw.githubusercontent.com/vanillabp-blueprints/.github/${INDEX_REF}/blueprints.yaml"
       - id: list
         name: Collect the frontends, and the parts crossed with frontend and BPMS
+        # Camunda 7 only for a pull request, every engine on main and at night, as in build.yaml
+        env:
+          ENGINE: "${{ github.event_name == 'pull_request' && '--engine camunda7' || '' }}"
         run: |
-          chain="$(python bin/build_matrix.py --chain blueprints.yaml)"
+          chain="$(python bin/build_matrix.py ${ENGINE} --chain blueprints.yaml)"
           echo "frontends=$(jq -c .frontends <<< "${chain}")" >> "$GITHUB_OUTPUT"
           echo "builds=$(jq -c .builds <<< "${chain}")" >> "$GITHUB_OUTPUT"
           jq . <<< "${chain}"

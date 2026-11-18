@@ -890,6 +890,29 @@ and for
 [Quarkus](https://github.com/vanillabp/adapter-platform-integration/wiki/Quarkus-integration#overriding-configuration-via-environment-variables).
 No CI-specific address is checked in anywhere.
 
+### What a pull request builds, and what only the night builds
+
+A full run on all four engines has more than 300 jobs and takes about an hour. Camunda 7 alone
+has about 80. So the engines are split by event:
+
+|             Event              |                                       Engines                                       |
+|--------------------------------|-------------------------------------------------------------------------------------|
+| pull request                   | Camunda 7. A blueprint which does not run on it builds on the first engine it names |
+| push to `main`                 | every engine of each blueprint the change touches                                   |
+| nightly build (`nightly.yaml`) | every engine of every blueprint                                                     |
+| cockpit applications at night  | every engine, `cockpit-applications.yaml` and `cockpit-application-proxy.yaml`      |
+
+The jobs without an engine, `checks.yaml`, `frontend.yaml` and the aggregator `monorepo`, run on
+every pull request as before. `bin/build_matrix.py --engine camunda7` is what narrows the list.
+A pull request which is green on Camunda 7 can still break another engine. The push to `main`
+or the next night shows it, and the night opens the issue described under
+`When the night goes red`.
+
+The applications and bundles of the cockpit blueprints are not part of `nightly.yaml`, because
+`build.yaml` leaves them out. Their two workflows have a schedule of their own, half an hour
+after the nightly build. A red night of these two shows in the list of workflow runs, not in the
+nightly issue.
+
 ### Reading the VanillaBP snapshots
 
 Until 2.0.0 is released, `spi-for-java`, the platform and the BPMS adapters publish their
