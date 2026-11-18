@@ -32,11 +32,12 @@ spring:
 loan-approval:
   user-interface:
     address: http://localhost:8081
-  # Where the module asks the cockpit who took over a user task: the official GUI API of the
-  # cockpit of docker-compose.yaml. The module refuses a form with 409 if somebody else has the
-  # task. The key is the module's, like the one above.
+  # Where the module asks the cockpit who took over a user task: the cockpit of
+  # docker-compose.yaml, without /gui/api/v1, the path of its official GUI API, which the clients
+  # add themselves. The module refuses a form with 409 if somebody else has the task. The key is
+  # the module's, like the one above.
   cockpit:
-    base-url: http://localhost:8090/gui/api/v1
+    base-url: http://localhost:8090
 
 vanillabp:
   cockpit:

@@ -61,17 +61,17 @@ public final class CockpitGuiApi {
   }
 
   /**
-   * The address of the official GUI API, which is {@code loan-approval.cockpit.base-url}.
+   * The address of this cockpit, which is {@code loan-approval.cockpit.base-url}. It leaves out
+   * the path of the official GUI API, because the clients add it themselves.
    *
-   * @return The address of this server, with the path of the API.
+   * @return The address of this server.
    */
   public String baseUrl() {
 
     return "http://localhost:"
         + server
             .getAddress()
-            .getPort()
-        + "/gui/api/v1";
+            .getPort();
 
   }
 

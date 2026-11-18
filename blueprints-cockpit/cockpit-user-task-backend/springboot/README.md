@@ -95,12 +95,13 @@ sends the form, is completed as before.
 call is written by hand. `CockpitClientAutoConfiguration` imports the two interfaces into an HTTP
 service group of the module, and the support library of the cockpit builds the clients from the
 keys below `loan-approval.cockpit`. The clients send the cookie of the request along on their own.
-The application sets the address of the API:
+The application sets the address of the cockpit. It leaves out `/gui/api/v1`, the path of the
+API, because the clients add it themselves, and an address which ends with it stops the start:
 
 ```yaml
 loan-approval:
   cockpit:
-    base-url: http://localhost:9080/gui/api/v1
+    base-url: http://localhost:9080
 ```
 
 The module asks only if the application sets `base-url`. Without it there is no client, the

@@ -16,6 +16,9 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.awaitility.core.ConditionTimeoutException;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
@@ -44,9 +47,8 @@ import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowsRequest;
  *
  * <p>
  * The simulator serves the official GUI API of the cockpit below {@code /official-api/v1}. The
- * test reads it with the client generated from the OpenAPI file of that API. Spring builds the
- * client from the key {@code spring.http.serviceclient.official-gui-api.base-url}, which the test
- * sets to {@link #officialGuiApi()}, and the test hands it to the methods which read.
+ * test reads it with the client generated from the OpenAPI file of that API, which
+ * {@link #officialGuiApi(Class)} builds, and the test hands it to the methods which read.
  * </p>
  */
 public final class CockpitSimulator {
@@ -98,15 +100,24 @@ public final class CockpitSimulator {
   }
 
   /**
-   * The address of the official GUI API of the simulator. A user interface of the cockpit reads
-   * what the cockpit knows there.
+   * A client of the official GUI API of the simulator, where a user interface of the cockpit
+   * reads what the cockpit knows. The simulator serves the API below {@code /official-api/v1}
+   * and not below {@code /gui/api/v1}, the path the clients built by Spring add to their address.
+   * So the test builds its clients here.
    *
-   * @return The address, with the path of the API.
+   * @param <T> The type of the client.
+   * @param api One of the interfaces of the official GUI API, for example
+   *            {@code OfficialWorkflowlistApi}.
+   * @return The client.
    */
-  public String officialGuiApi() {
+  public <T> T officialGuiApi(
+      final Class<T> api) {
 
-    return baseUrl
-        + "/official-api/v1";
+    return HttpServiceProxyFactory
+        .builderFor(RestClientAdapter.create(RestClient.create(baseUrl
+            + "/official-api/v1")))
+        .build()
+        .createClient(api);
 
   }
 

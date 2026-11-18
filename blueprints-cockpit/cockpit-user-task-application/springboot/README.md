@@ -91,8 +91,9 @@ account the cockpit accepts reports from. Each BPMS profile adds two adapters: t
 and the cockpit adapter of the same BPMS, which reports the user tasks.
 
 The workflow module asks the cockpit who took over a user task before a form completes it. It
-asks the official GUI API of the cockpit, and the application names its address in
-`loan-approval.cockpit.base-url`. The key belongs to the module, so it is below the id of the
+asks the official GUI API of the cockpit, and the application names the address of the cockpit
+in `loan-approval.cockpit.base-url`, without `/gui/api/v1`, the path of the API, which the
+clients add themselves. The key belongs to the module, so it is below the id of the
 module and not below `vanillabp`. Without it the module does not ask, and a form completes the
 task whoever has it.
 

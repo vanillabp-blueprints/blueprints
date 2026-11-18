@@ -66,8 +66,9 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   private RequestMappingHandlerMapping endpoints;
 
   /** The case list of the cockpit, read from the simulator. */
-  @Autowired
-  private OfficialWorkflowlistApi workflowlist;
+  private final OfficialWorkflowlistApi workflowlist = CockpitSimulator
+      .start()
+      .officialGuiApi(OfficialWorkflowlistApi.class);
 
   @Value("${local.server.port}")
   private int port;
@@ -76,9 +77,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   /**
    * Starts the simulator before the application, and points the cockpit adapter at it. The
-   * client of the official GUI API, which the test reads what the cockpit knows with, gets the
-   * address of the simulator as well. It is the client of the library, with the keys where Spring
-   * Boot looks for them.
+   * clients of the official GUI API, which the test reads what the cockpit knows with, come from
+   * {@link CockpitSimulator#officialGuiApi(Class)}.
    *
    * @param properties The properties of the application under test.
    */
@@ -87,8 +87,6 @@ public class LoanApprovalIT extends WorkflowModuleTest {
       final DynamicPropertyRegistry properties) {
 
     properties.add("vanillabp.cockpit.rest.base-url", () -> CockpitSimulator.start().baseUrl());
-    properties.add("spring.http.serviceclient.official-gui-api.base-url",
-        () -> CockpitSimulator.start().officialGuiApi());
 
   }
 
