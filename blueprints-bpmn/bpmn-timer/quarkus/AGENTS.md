@@ -1,7 +1,8 @@
 # bpmn-timer
 
 Adds waiting to the process: a timer in the sequence flow which delays it, and an interrupting
-timer boundary event which ends a wait nobody answered. A delta on top of `module-single`.
+timer boundary event which ends a wait nobody answered. A change made while the workflow waits
+reaches the BPMS through `aggregateChanged`. A delta on top of `module-single`.
 
 Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
@@ -25,13 +26,14 @@ coordinates, which carry the name of the blueprint.
 
 Blueprint-specific names, each occurring in more than one place:
 
-|           Name           |                                                 Where it occurs                                                 |
-|--------------------------|-----------------------------------------------------------------------------------------------------------------|
-| `requestPartnerApproval` | the `@WorkflowTask` method, the Camunda 7 `camunda:delegateExpression` and the Camunda 8 `zeebe:taskDefinition` |
-| `informCustomer`         | the `@WorkflowTask` method behind the waiting task and the task definition of that service task                 |
-| `noteTimeout`            | the `@WorkflowTask` method on the path behind the timer and the task definition of that service task            |
-
+|           Name           |                                                  Where it occurs                                                  |
+|--------------------------|-------------------------------------------------------------------------------------------------------------------|
+| `requestPartnerApproval` | the `@WorkflowTask` method, the Camunda 7 `camunda:delegateExpression` and the Camunda 8 `zeebe:taskDefinition`   |
+| `informCustomer`         | the `@WorkflowTask` method behind the waiting task and the task definition of that service task                   |
+| `noteTimeout`            | the `@WorkflowTask` method on the path behind the timer and the task definition of that service task              |
+| `confirmWithdrawal`      | the `@WorkflowTask` method on the withdrawn branch and the task definition of that service task                   |
 | `partnerDeadline`        | the aggregate attribute, the expression of the timer boundary event, and the configuration key `partner-deadline` |
+| `withdrawn`              | the aggregate attribute and the condition of the gateway behind the cool-off timer                                |
 
 The cool-off duration is a literal in the model. The deadline on the waiting task is not: it is
 `partner-deadline` in `loan-approval.yaml`, copied into the aggregate when the loan is
@@ -39,19 +41,19 @@ requested, and read by the timer with an expression.
 
 ## Core files
 
-|                                            File                                            |                                                                         Why it matters                                                                          |
-|--------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the timer catch event, the waiting task and the INTERRUPTING timer boundary event on it                                                                         |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | the `@WorkflowTask` method of that task: aggregate, `@TaskId`, `@TaskEvent`. Returning does NOT complete the task                                               |
-| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                               | `completeTask`; nothing cancels the task from the application here, the timer does that                                                                         |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | sends the request once, keeps the task id, answers the task when the surrounding system replies                                                                 |
-| `loan-approval/src/main/java/.../loanapproval/PartnerApprovalClient.java`                  | the port to the surrounding system, so a test can put a simulator in its place                                                                                  |
-| `loan-approval/src/main/java/.../loanapproval/ApiController.java`                          | the callback the answer arrives at, carrying the task id                                                                                                        |
-| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`                | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it                                      |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `partnerApprovalTaskId`, the attributes the service tasks behind the waiting task write, and `partnerDeadline` with `@SyncWithBPMS`, because the timer reads it |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | `partner-deadline: P3D`, the business value of the deadline                                                                                                     |
-| `loan-approval/src/test/resources/application.yaml`                                        | `partner-deadline: PT3S`, which keeps the test of the deadline fast                                                                                             |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | one test per way the task ends: answered in time, taken away by the deadline                                                                                    |
+|                                            File                                            |                                                                                  Why it matters                                                                                   |
+|--------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn` | the timer catch event, the gateway behind it, the waiting task and the INTERRUPTING timer boundary event on it                                                                    |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                    | the `@WorkflowTask` method of that task: aggregate, `@TaskId`, `@TaskEvent`. Returning does NOT complete the task                                                                 |
+| `loan-approval/src/main/java/.../loanapproval/Workflow.java`                               | `aggregateChanged` after a withdrawal, because no sync point comes while the timer waits; `completeTask`; nothing cancels the task from the application here, the timer does that |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                | takes a withdrawal, sends the request once, keeps the task id, answers the task when the surrounding system replies                                                               |
+| `loan-approval/src/main/java/.../loanapproval/PartnerApprovalClient.java`                  | the port to the surrounding system, so a test can put a simulator in its place                                                                                                    |
+| `loan-approval/src/main/java/.../loanapproval/ApiController.java`                          | the withdrawal, and the callback the answer arrives at, carrying the task id                                                                                                      |
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`                | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it                                                        |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `partnerApprovalTaskId`, the attributes the service tasks write, and `partnerDeadline` and `withdrawn` with `@SyncWithBPMS`, because the model reads them                         |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | `partner-deadline: P3D`, the business value of the deadline                                                                                                                       |
+| `loan-approval/src/test/resources/application.yaml`                                        | `partner-deadline: PT3S`, which keeps the test of the deadline fast                                                                                                               |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | one test per way the workflow ends: answered in time, taken away by the deadline, withdrawn during the cool-off period                                                            |
 
 ## Boilerplate files
 
@@ -100,7 +102,11 @@ base class does not make the test a bean.
    the process may stay a literal.
 9. Add the callback endpoint which carries the task id. When the request goes out, log the URLs
    which continue the process.
-10. Copy `LoanApprovalIT` and write one test per way the task ends. Shorten the deadline in the
+10. If the business case may change while the workflow waits for a timer, and the model reads
+    the change behind the timer, call `aggregateChanged` in `Workflow` after the change. Mark
+    the attribute `@SyncWithBPMS`. Without the call the BPMS keeps the old value until the next
+    time VanillaBP talks to it.
+11. Copy `LoanApprovalIT` and write one test per way the task ends. Shorten the deadline in the
     test's `application.yaml`, as this blueprint does. Never change the model for a test.
 
 Do not build waiting yourself. A scheduler in the application repeats what the BPMS (business
@@ -127,10 +133,14 @@ you report a failure of that profile as a defect of the generated code.
   the one behind the timer has not,
 - without an answer the deadline takes the task away: the service task behind the timer has
   run, the one behind the answer has not, the aggregate holds the shortened deadline `PT3S`, and
-  on Camunda 7 the stored id is gone.
+  on Camunda 7 the stored id is gone,
+- a withdrawal during the cool-off period reaches the gateway behind it: the service task on the
+  withdrawn branch has run, and the partner was never asked.
 
 If the task is completed as soon as the handler returns, the model wires it in a way that does
 not let it stay open. On Camunda 7 that is `camunda:expression`. If the second test never sees
-the path behind the timer, the timer boundary event is missing from the waiting task.
+the path behind the timer, the timer boundary event is missing from the waiting task. If the
+third test sees the partner asked, `Workflow` does not call `aggregateChanged`, or `withdrawn`
+is not shared with the BPMS.
 
 Do not report success without having run this.

@@ -61,6 +61,26 @@ paths:
             text/plain:
               schema:
                 type: string
+  /loan-approval/api/{loanRequestId}/withdraw:
+    get:
+      tags:
+        - loan-approval
+      operationId: withdraw
+      summary: The customer withdraws the request, which the process notices only if it happens during the cool-off period
+      parameters:
+        - name: loanRequestId
+          in: path
+          required: true
+          description: The id returned by starting the process
+          schema:
+            type: string
+      responses:
+        '200':
+          description: What was done, for the browser to show
+          content:
+            text/plain:
+              schema:
+                type: string
   /loan-approval/api/{loanRequestId}:
     get:
       tags:

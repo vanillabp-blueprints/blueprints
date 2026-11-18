@@ -25,10 +25,11 @@ import lombok.NoArgsConstructor;
  *
  * <p>
  * The class carries {@code @NoSyncWithBPMS}, so its attributes are not shared with the BPMS
- * unless one says so. One does: {@link #partnerDeadline}. The deadline on the waiting task
- * is an expression which reads it, so the BPMS needs its value. The cool-off timer carries
- * the literal {@code PT1S} and reads nothing. Apart from that one attribute the BPMS holds
- * the aggregate's ID, because that is how VanillaBP finds the workflow again.
+ * unless one says so. Two do. The deadline on the waiting task is an expression which reads
+ * {@link #partnerDeadline}, and the gateway behind the cool-off timer reads
+ * {@link #withdrawn}. So the BPMS needs both values. The cool-off timer carries the literal
+ * {@code PT10S} and reads nothing. Apart from these two attributes the BPMS holds the
+ * aggregate's ID, because that is how VanillaBP finds the workflow again.
  * </p>
  *
  * @see <a href=
@@ -81,6 +82,25 @@ public class Aggregate {
   @SyncWithBPMS
   @Column
   private String partnerDeadline;
+
+  /**
+   * Whether the customer withdrew the request during the cool-off period. The gateway
+   * behind the cool-off timer reads it, so it is shared with the BPMS.
+   *
+   * <p>
+   * The customer withdraws while the workflow waits for the timer. At that moment VanillaBP
+   * does not talk to the BPMS for this workflow, so the BPMS still holds {@code false}.
+   * {@link blueprint.workflowmodule.loanapproval.Workflow#loanWithdrawn} tells it to read
+   * the aggregate again.
+   * </p>
+   */
+  @SyncWithBPMS
+  @Column
+  private boolean withdrawn;
+
+  /** Written by the service task the withdrawn branch leads to. */
+  @Column
+  private Boolean withdrawalConfirmed;
 
   /**
    * The id of the task waiting for the partner's answer, reported by the BPMS when the

@@ -13,14 +13,27 @@ aggregate and without an `if` in the business code.
 
 ![The loan approval process with the task whose behaviour changed](docs/loan_approval.png)
 
-One service task, `assessRisk`, and two methods serving it:
+One service task, `assessRisk`, and two methods serving it, each in a class of its own.
+`WorkflowTaskHandler` holds the current code, and its method names its range:
 
 ```java
-@WorkflowTask(taskDefinition = "assessRisk", version = "1")
-public void assessRiskManually(final Aggregate loanRequest) { ... }
-
 @WorkflowTask(taskDefinition = "assessRisk", version = ">1")
 public void assessRiskAutomatically(final Aggregate loanRequest) { ... }
+```
+
+`WorkflowTaskHandlerOfVersion1` holds the code of version 1. It names the range once, on the
+process, and its methods name none:
+
+```java
+@WorkflowService(
+    workflowAggregateClass = Aggregate.class,
+    bpmnProcess = @BpmnProcess(bpmnProcessId = "loan_approval", version = "1"))
+public class WorkflowTaskHandlerOfVersion1 {
+
+  @WorkflowTask(taskDefinition = "assessRisk")
+  public void assessRiskManually(final Aggregate loanRequest) { ... }
+
+}
 ```
 
 In version 1 of the process a person assessed the risk. Every version after it computes a
@@ -37,6 +50,14 @@ which has moved on, and a workflow which has not. See
 
 What is worth knowing beyond the annotation:
 
+- **A range on the class is the fallback of every method in it.** This blueprint has one task,
+  but a big change of the model often leaves a whole set of methods behind. Put them into a
+  class of their own and name the range there once. When the last workflow of that version has
+  ended, you delete the class as a whole. Two classes may declare the same process, one per
+  generation of the model, as long as their ranges do not overlap.
+- **A method which names its own range keeps it.** It is not intersected with the range of
+  its class, even if it reaches outside it. And a method which inherits a range is as
+  restricted as one which names it. A BPMS which reports no version reaches neither.
 - **Two methods may not serve overlapping versions.** VanillaBP reports that while the
   application starts, and names both methods. It does not let the first task of the wrong
   version find out.
@@ -69,7 +90,8 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 
 |                  File                   |                                 What is different                                  |
 |-----------------------------------------|------------------------------------------------------------------------------------|
-| `WorkflowTaskHandler.java`              | two methods for one task definition, each with the versions it serves              |
+| `WorkflowTaskHandler.java`              | the method of the versions after the first one, with the range on the method       |
+| `WorkflowTaskHandlerOfVersion1.java`    | new: the method of version 1, with the range on the class                          |
 | `Service.java`                          | one business method per version of the assessment, neither knowing about the other |
 | `model/Aggregate.java`                  | `assessedBy` from version 1 next to `riskScore` of the versions after it           |
 | `LoanApprovalProperties.java`           | `manualAssessor`, the name version 1 writes as the assessor                        |
@@ -182,7 +204,8 @@ says where they are served and how to log in.
 |                                          File                                          |                                           Role                                           |
 |----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: one service task, whose definition both methods refer to                    |
-| `.../loanapproval/WorkflowTaskHandler.java`                                            | `@WorkflowTask(taskDefinition = "assessRisk", version = ...)` twice, once per range      |
+| `.../loanapproval/WorkflowTaskHandler.java`                                            | `@WorkflowTask(taskDefinition = "assessRisk", version = ">1")`, the range on the method  |
+| `.../loanapproval/WorkflowTaskHandlerOfVersion1.java`                                  | `@BpmnProcess(version = "1")`, the range on the class for every method in it             |
 | `.../loanapproval/Service.java`                                                        | `assessRiskManually` for version 1, `assessRiskAutomatically` for the versions after it  |
 | `.../loanapproval/model/Aggregate.java`                                                | what both of them write, including the attribute only the older version fills            |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | starts a workflow and asserts which method served it                                     |
@@ -243,7 +266,8 @@ before. So there the older model would not be version 1.
 - [Defining a workflow module](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules-in-Spring-Boot#defining-a-workflow-module): the marker file, resource conventions and the module's own configuration files
 - [How name clashes are avoided](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-modules#how-name-clashes-are-avoided): the modes keeping two workflow modules apart, and what each of them costs
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why there are no process variables
-- [Wiring a process](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process) / [Wiring a task](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-task): the annotations used in `WorkflowTaskHandler.java`, including the version ranges
+- [Wiring a process](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-process) / [Wiring a task](https://github.com/vanillabp/spi-for-java/wiki/Wiring-a-task): the annotations used in `WorkflowTaskHandler.java` and `WorkflowTaskHandlerOfVersion1.java`, including the version ranges
+- [Versions of a process](https://github.com/vanillabp/spi-for-java/wiki/Versions-of-a-process): the formats of a range, and a range for a whole class
 - [BPMS adapters](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters): which engine reports a version, and which one can be asked about version tags
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: how a BPMN task has to be modelled for that engine
 

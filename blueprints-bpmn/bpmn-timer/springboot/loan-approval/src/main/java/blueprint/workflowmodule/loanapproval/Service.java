@@ -79,7 +79,11 @@ public class Service {
 
     workflow.loanRequested(loanApproval);
 
-    log.info("Loan approval '{}' started", loanRequestId);
+    log.info(
+        "Loan approval '{}' started. The customer may withdraw during the cool-off period:"
+            + "\n  Withdraw -> http://localhost:8080/loan-approval/api/{}/withdraw",
+        loanRequestId,
+        loanRequestId);
 
   }
 
@@ -102,6 +106,60 @@ public class Service {
         "Credit rating of loan approval '{}' is {}",
         loanApproval.getLoanRequestId(),
         rating);
+
+  }
+
+  /**
+   * The customer withdraws the request. This is allowed until the partner is asked, which
+   * happens after the cool-off period.
+   *
+   * <p>
+   * The business code only changes the aggregate. {@link Workflow#loanWithdrawn} tells the
+   * BPMS, because the gateway behind the cool-off timer has to see the change.
+   * </p>
+   *
+   * @param loanRequestId The natural id of the loan request.
+   */
+  public void withdraw(
+      final String loanRequestId) {
+
+    final var loanApproval = loanApprovals
+        .findById(loanRequestId)
+        .orElseThrow(() -> new IllegalArgumentException("Unknown loan request '"
+            + loanRequestId
+            + "'"));
+
+    if (loanApproval.getPartnerApprovalTaskId() != null || loanApproval.getPartnerApproved() != null || loanApproval
+        .getTimedOut() != null) {
+
+      throw new IllegalStateException("The partner was asked about loan approval '"
+          + loanRequestId
+          + "' already, it is too late to withdraw");
+
+    }
+
+    loanApproval.setWithdrawn(true);
+
+    workflow.loanWithdrawn(loanApproval);
+
+    log.info("The customer withdrew loan approval '{}'", loanRequestId);
+
+  }
+
+  /**
+   * Confirms the withdrawal to the customer, which is what the service task on the
+   * withdrawn branch triggers.
+   *
+   * @param loanApproval The workflow's aggregate.
+   */
+  public void confirmWithdrawal(
+      final Aggregate loanApproval) {
+
+    loanApproval.setWithdrawalConfirmed(true);
+
+    log.info(
+        "The withdrawal of loan approval '{}' was confirmed",
+        loanApproval.getLoanRequestId());
 
   }
 
