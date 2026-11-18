@@ -38,14 +38,15 @@ while starting.
 
 ## Core files
 
-|                                             File                                             |                                                           Why it matters                                                           |
-|----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn`   | the call activity, including what it has to pass to the called process on this engine                                              |
-| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/risk_assessment.bpmn` | the called process: a plain start event, its tasks, an end event which returns to the call activity                                |
-| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                      | one `@WorkflowService` naming both processes, `secondaryBpmnProcesses` for the called one, and the `@WorkflowTask` methods of both |
-| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                          | the single aggregate both processes work on                                                                                        |
-| `loan-approval/src/main/java/.../loanapproval/Service.java`                                  | the business code, which does not know that the model is split                                                                     |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                        | starts the calling process and asserts what the called one wrote                                                                   |
+|                                             File                                             |                                                                Why it matters                                                                 |
+|----------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/loan_approval.bpmn`   | the call activity, including what it has to pass to the called process on this engine                                                         |
+| `loan-approval/src/main/resources/loan-approval/processes/<adapter-id>/risk_assessment.bpmn` | the called process: a plain start event, its tasks, an end event which returns to the call activity                                           |
+| `loan-approval/src/main/java/.../loanapproval/riskassessment/WorkflowTaskHandler.java`       | the `@WorkflowTask` methods of the called process, in a second class which declares the same processes                                        |
+| `loan-approval/src/main/java/.../loanapproval/WorkflowTaskHandler.java`                      | one `@WorkflowService` naming both processes, `secondaryBpmnProcesses` for the called one, and the `@WorkflowTask` methods of the calling one |
+| `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                          | the single aggregate both processes work on                                                                                                   |
+| `loan-approval/src/main/java/.../loanapproval/Service.java`                                  | the business code, which does not know that the model is split                                                                                |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                                        | starts the calling process and asserts what the called one wrote                                                                              |
 
 ## Boilerplate files
 
@@ -86,8 +87,11 @@ blueprint. Copy them unchanged.
    makes sure the called instance finds that aggregate. On Camunda 7 the business key is passed
    on while the model is deployed. On Camunda 8 `propagateAllParentVariables` stays at its
    default (`true`), and that carries the variable which holds the aggregate's ID.
-5. Name the called process in `secondaryBpmnProcesses` of the existing `@WorkflowService`, and
-   add its `@WorkflowTask` methods to the same class. **Do not create a second class annotated
+5. Name the called process in `secondaryBpmnProcesses` of the existing `@WorkflowService`. Add
+   its `@WorkflowTask` methods to the same class, or to a class of their own in a package named
+   after the section, as `riskassessment` does. Such a class declares the same `bpmnProcess`
+   and the same `secondaryBpmnProcesses` as the main one. A class serves only the tasks of the
+   processes it declares. **Do not create a second class annotated
    with `@WorkflowService` which declares the called process as its `bpmnProcess`.** VanillaBP
    builds one `ProcessService` per aggregate class, so only one process can be the one
    `startWorkflow` starts. With two of them the boot fails and names both classes.
