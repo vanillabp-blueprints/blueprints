@@ -271,7 +271,7 @@ and `actions` and in a host which only knows `all`.
 
 ## Documentation
 
-- [Loading the parts of a workflow module](https://github.com/vanillabp/business-cockpit/blob/main/skills/business-cockpit-creator/references/module-loading.md): entries, the manifest, areas and the event protocol
+- [Loading the parts of a workflow module](https://github.com/vanillabp/business-cockpit/wiki/Loading-the-parts-of-a-workflow-module): entries, the manifest, areas and the event protocol
 - [The module kit](https://github.com/vanillabp/business-cockpit-module-kit): `@vanillabp/bc-module-kit` and `@vanillabp/bc-module-host`
 - [The dev shell simulator](https://github.com/vanillabp/business-cockpit/wiki/Developing-UI-components-locally#the-dev-shell-simulator): the simulated cockpit the dev shell reads from
 - [`@hey-api/openapi-ts`](https://heyapi.dev/openapi-ts/get-started): the generator of the API clients
