@@ -108,27 +108,28 @@ to an nginx. Its user interface comes from the UI jar.
 
 Compared to [`cockpit-user-task-backend`](https://github.com/vanillabp-blueprints/cockpit-user-task-backend-springboot):
 
-|                    File                    |                                                     What is different                                                      |
-|--------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/openapi/loan-approval.yaml` | the two endpoints of the case page instead of the four of the forms                                                        |
-| `loan_approval.bpmn`                       | one user task, and the interrupting event subprocess "Withdraw loan request" with a message start event and a service task |
-| `WorkflowTaskHandler.java`                 | two `@WorkflowTask` methods, and a `@WorkflowDetailsProvider` method instead of the `@UserTaskDetailsProvider` method      |
-| `CasePageController.java`                  | new, instead of `UserTaskFormController.java`: reads a case and withdraws it, below `/loan-approval/api/cases`             |
-| `UserTaskFormController.java`              | deleted, `CasePageController.java` takes its place                                                                         |
-| `Cockpit.java`                             | deleted: no form completes a user task here, so nothing asks the cockpit who took one over                                 |
-| `CockpitGuiApi.java`                       | deleted, together with `Cockpit.java`                                                                                      |
-| `ApiController.java`                       | starts a loan approval with an applicant, approves it and shows it                                                         |
-| `loan-approval/openapi/loan-requests.yaml` | the start takes an applicant, and a new endpoint approves a loan request                                                   |
-| `Service.java`                             | keeps the id of the user task, approves, withdraws by correlating the message, and records the withdrawal                  |
-| `Workflow.java`                            | `correlateMessage` next to `startWorkflow` and `completeUserTask`                                                          |
-| `Aggregate.java`                           | the applicant, the id of the open user task and the status                                                                 |
-| `AggregateRepository.java`                 | no finders: the page finds the case by its id                                                                              |
-| `LoanApprovalIT.java`                      | withdraws a loan request through the endpoint, and checks the user tasks of the case and the details for the case list     |
-| `CockpitSimulator.java`                    | reads a case by its business id, and the user tasks of a case                                                              |
-| `dev-shell-simulator.yaml` (test)          | the demo user is in the group `LOAN_APPROVAL` instead of `RISK_ASSESSMENT`                                                 |
-| `pom.xml`, `loan-approval/pom.xml`         | no Spring Cloud and no gateway                                                                                             |
-| `UserInterfaceRouteAutoConfiguration.java` | deleted, see below                                                                                                         |
-| `...AutoConfiguration.imports`             | names only `LoanApprovalAutoConfiguration`                                                                                 |
+|                          File                           |                                                     What is different                                                      |
+|---------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/openapi/loan-approval.yaml`              | the two endpoints of the case page instead of the four of the forms                                                        |
+| `loan_approval.bpmn`                                    | one user task, and the interrupting event subprocess "Withdraw loan request" with a message start event and a service task |
+| `WorkflowTaskHandler.java`                              | two `@WorkflowTask` methods, and a `@WorkflowDetailsProvider` method instead of the `@UserTaskDetailsProvider` method      |
+| `CasePageController.java`                               | new, instead of `UserTaskFormController.java`: reads a case and withdraws it, below `/loan-approval/api/cases`             |
+| `UserTaskFormController.java`                           | deleted, `CasePageController.java` takes its place                                                                         |
+| `Cockpit.java`                                          | deleted: no form completes a user task here, so nothing asks the cockpit who took one over                                 |
+| `CockpitGuiApi.java`, `WithoutTheCockpitAddressIT.java` | deleted, together with `Cockpit.java`                                                                                      |
+| `CockpitClientAutoConfiguration.java`                   | deleted, together with `Cockpit.java`: no client of the official GUI API                                                   |
+| `ApiController.java`                                    | starts a loan approval with an applicant, approves it and shows it                                                         |
+| `loan-approval/openapi/loan-requests.yaml`              | the start takes an applicant, and a new endpoint approves a loan request                                                   |
+| `Service.java`                                          | keeps the id of the user task, approves, withdraws by correlating the message, and records the withdrawal                  |
+| `Workflow.java`                                         | `correlateMessage` next to `startWorkflow` and `completeUserTask`                                                          |
+| `Aggregate.java`                                        | the applicant, the id of the open user task and the status                                                                 |
+| `AggregateRepository.java`                              | no finders: the page finds the case by its id                                                                              |
+| `LoanApprovalIT.java`                                   | withdraws a loan request through the endpoint, and checks the user tasks of the case and the details for the case list     |
+| `CockpitSimulator.java`                                 | reads a case by its business id, and the user tasks of a case                                                              |
+| `dev-shell-simulator.yaml` (test)                       | the demo user is in the group `LOAN_APPROVAL` instead of `RISK_ASSESSMENT`                                                 |
+| `pom.xml`, `loan-approval/pom.xml`                      | no Spring Cloud and no gateway                                                                                             |
+| `UserInterfaceRouteAutoConfiguration.java`              | deleted, see below                                                                                                         |
+| `...AutoConfiguration.imports`                          | names only `LoanApprovalAutoConfiguration`                                                                                 |
 
 There is no `UserInterfaceRouteAutoConfiguration`. The user interface comes from the UI jar, so
 the module needs no route to an nginx, and no Spring Cloud.

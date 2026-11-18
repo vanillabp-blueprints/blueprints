@@ -1,2 +1,3 @@
 blueprint.workflowmodule.loanapproval.config.LoanApprovalAutoConfiguration
 blueprint.workflowmodule.loanapproval.config.UserInterfaceRouteAutoConfiguration
+blueprint.workflowmodule.loanapproval.config.CockpitClientAutoConfiguration

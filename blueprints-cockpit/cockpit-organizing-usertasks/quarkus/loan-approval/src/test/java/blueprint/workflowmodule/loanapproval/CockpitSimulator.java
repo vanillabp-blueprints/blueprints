@@ -20,8 +20,14 @@ import java.util.function.Supplier;
 import org.awaitility.core.ConditionTimeoutException;
 
 import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
+import io.vanillabp.cockpit.gui.api.v1.client.model.Workflow;
+import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowRetrieveMode;
+import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowsRequest;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 
 /**
@@ -35,6 +41,15 @@ import jakarta.ws.rs.core.Response;
  * kind of notification of a user task, and these are what this blueprint is about. The simulator
  * keeps them anyway, and it shows the last report about a user task, as the module sent it, at
  * {@code GET /simulator-api/usertask/{id}/report}. The test reads the reports from there.
+ * </p>
+ *
+ * <p>
+ * The rest the test reads from the official GUI API of the cockpit, which the simulator serves
+ * below {@code /official-api/gui/api/v1}, with the clients generated from the OpenAPI file of
+ * that API. The support library of the cockpit builds them from the key
+ * {@code official-gui-api.base-url}, which the test sets to {@link #cockpitBaseUrl()}, and the
+ * test hands them to the methods which read. The report has no such file, so REST Assured reads
+ * it.
  * </p>
  *
  * <p>
@@ -61,8 +76,6 @@ public final class CockpitSimulator {
 
   private final RequestSpecification simulatorApi;
 
-  private final RequestSpecification officialApi;
-
   private CockpitSimulator(
       final String baseUrl) {
 
@@ -70,10 +83,6 @@ public final class CockpitSimulator {
     this.simulatorApi = new RequestSpecBuilder()
         .setBaseUri(baseUrl
             + "/simulator-api")
-        .build();
-    this.officialApi = new RequestSpecBuilder()
-        .setBaseUri(baseUrl
-            + "/official-api/v1")
         .build();
 
   }
@@ -104,6 +113,21 @@ public final class CockpitSimulator {
   }
 
   /**
+   * The address of the cockpit the simulator plays, which is the {@code base-url} of the clients
+   * of the official GUI API. The simulator answers each system it plays below a prefix of its
+   * own, the cockpit below {@code /official-api}, and the clients add the path
+   * {@code /gui/api/v1} of the API themselves.
+   *
+   * @return The address of the cockpit, without the path of the API.
+   */
+  public String cockpitBaseUrl() {
+
+    return baseUrl
+        + "/official-api";
+
+  }
+
+  /**
    * Waits for the last report about one user task, and for it to meet the condition. The report
    * is what the module sent when it created, updated or ended the task, with every field. The
    * cockpit adapter reports through the outbox, so a report arrives a moment after the event
@@ -130,19 +154,21 @@ public final class CockpitSimulator {
    * Waits until the cockpit knows a user task and the condition holds. This is the user task as
    * the official API of the cockpit shows it, for example with the reason it ended.
    *
+   * @param tasklist   The client of the official GUI API of the simulator.
    * @param userTaskId The id of the user task.
    * @param condition  What the cockpit is expected to know about the user task.
    * @return The user task, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitUserTask(
+  public UserTask awaitUserTask(
+      final OfficialTasklistApi tasklist,
       final String userTaskId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<UserTask> condition) {
 
     return awaitReport(
         "user task '"
             + userTaskId
             + "'",
-        () -> userTaskOf(userTaskId),
+        () -> userTaskOf(tasklist, userTaskId),
         condition);
 
   }
@@ -150,19 +176,21 @@ public final class CockpitSimulator {
   /**
    * Waits until the cockpit knows the workflow of a business case and the condition holds.
    *
-   * @param businessId The id of the workflow aggregate.
-   * @param condition  What the cockpit is expected to know about the workflow.
+   * @param workflowlist The client of the official GUI API of the simulator.
+   * @param businessId   The id of the workflow aggregate.
+   * @param condition    What the cockpit is expected to know about the workflow.
    * @return The workflow, as the official API of the cockpit returns it.
    */
-  public Map<String, Object> awaitWorkflow(
+  public Workflow awaitWorkflow(
+      final OfficialWorkflowlistApi workflowlist,
       final String businessId,
-      final Predicate<Map<String, Object>> condition) {
+      final Predicate<Workflow> condition) {
 
     return awaitReport(
         "workflow '"
             + businessId
             + "'",
-        () -> workflowOf(businessId),
+        () -> workflowOf(workflowlist, businessId),
         condition);
 
   }
@@ -225,13 +253,20 @@ public final class CockpitSimulator {
   /**
    * Reads a user task the way a cockpit user interface reads it.
    *
+   * @param tasklist   The client of the official GUI API of the simulator.
    * @param userTaskId The id of the user task.
    * @return The user task, if the cockpit knows it.
    */
-  private Optional<Map<String, Object>> userTaskOf(
+  private static Optional<UserTask> userTaskOf(
+      final OfficialTasklistApi tasklist,
       final String userTaskId) {
 
-    return getIfKnown(officialApi, "/usertask/{userTaskId}", userTaskId);
+    try {
+      return Optional.ofNullable(tasklist.getUserTask(userTaskId, null));
+    } catch (NotFoundException e) {
+      // Nobody reported the user task yet.
+      return Optional.empty();
+    }
 
   }
 
@@ -249,7 +284,7 @@ public final class CockpitSimulator {
       final String userTaskId) {
 
     final var response = given(api).get(path, userTaskId);
-    return response.statusCode() == 404
+    return response.statusCode() == Response.Status.NOT_FOUND.getStatusCode()
         ? Optional.empty()
         : Optional.of(response
             .then()
@@ -264,30 +299,24 @@ public final class CockpitSimulator {
    * Reads the workflow of a business id the way a cockpit user interface reads the list of
    * workflows, filtered by the business id.
    *
-   * @param businessId The id of the workflow aggregate.
+   * @param workflowlist The client of the official GUI API of the simulator.
+   * @param businessId   The id of the workflow aggregate.
    * @return The workflow, if the cockpit knows it.
    */
-  @SuppressWarnings("unchecked")
-  private Optional<Map<String, Object>> workflowOf(
+  private static Optional<Workflow> workflowOf(
+      final OfficialWorkflowlistApi workflowlist,
       final String businessId) {
 
-    final Map<String, Object> page = given(officialApi)
-        .contentType(ContentType.JSON)
-        .body(Map.of(
-            "mode", "All",
-            "businessIds", List.of(businessId),
-            "pageNumber", 0,
-            "pageSize", 10))
-        .post("/workflow")
-        .then()
-        .statusCode(Response.Status.OK.getStatusCode())
-        .extract()
-        .jsonPath()
-        .getMap("$");
-    final var workflows = (List<Map<String, Object>>) page.get("workflows");
-    return workflows == null
+    final var page = workflowlist
+        .getWorkflows(new WorkflowsRequest()
+            .mode(WorkflowRetrieveMode.ALL)
+            .businessIds(List.of(businessId))
+            .pageNumber(0)
+            .pageSize(10), null, null);
+    return (page == null) || (page.getWorkflows() == null)
         ? Optional.empty()
-        : workflows
+        : page
+            .getWorkflows()
             .stream()
             .findFirst();
 

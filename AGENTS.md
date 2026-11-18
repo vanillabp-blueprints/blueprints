@@ -54,6 +54,12 @@ only a browser or the module's own user interface calls keeps its file in
 Maven module `<name>-api` with the submodules `client` and `server`. Rule 7 in `CONTRIBUTING.md` has
 the generators and their settings for both platforms.
 
+A client is built from keys by the support library of the Business Cockpit: on Spring Boot the
+`client` module brings an auto-configuration with an HTTP service group, on Quarkus the adapter
+calls `RestClients`. Write no client configuration of your own, and put the keys below
+`<system>.client`, never below `vanillabp`. Call the cockpit's GUI API only through its generated
+clients, `official-gui-api-spring-boot-client` and `official-gui-api-quarkus-client`.
+
 Every path of a workflow module starts with the id of the module and then `api`:
 `/loan-approval/api/{loanRequestId}`, never `/api/loan-approval/{loanRequestId}`. Through the
 Business Cockpit the same endpoint is `/wm/loan-approval/api/{loanRequestId}`, because the

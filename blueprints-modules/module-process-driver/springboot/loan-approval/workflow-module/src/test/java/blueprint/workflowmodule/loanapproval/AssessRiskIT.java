@@ -36,10 +36,10 @@ public class AssessRiskIT extends ScenarioTest {
   @Test
   public void theCockpitShowsTheTaskWithTheAmount() {
 
-    final var userTask = simulator().awaitUserTask(taskId, task -> true);
+    final var userTask = awaitUserTask(taskId, task -> true);
 
-    assertThat(userTask.get("taskDefinition")).isEqualTo("assessRisk");
-    assertThat(userTask.get("details"))
+    assertThat(userTask.getTaskDefinition()).isEqualTo("assessRisk");
+    assertThat(userTask.getDetails())
         .isEqualTo(Map.of(
             WorkflowTaskHandler.AMOUNT, TestData.LARGE_AMOUNT,
             WorkflowTaskHandler.CREDIT_SCORE, TestData.GOOD_CREDIT_SCORE));
@@ -86,7 +86,7 @@ public class AssessRiskIT extends ScenarioTest {
           assertThat(envelope.document()).contains(String.valueOf(TestData.LARGE_AMOUNT));
         });
     // The task is done, so the cockpit took it off the list.
-    simulator().awaitUserTask(taskId, task -> task.get("endedAt") != null);
+    awaitUserTask(taskId, task -> task.getEndedAt() != null);
 
   }
 

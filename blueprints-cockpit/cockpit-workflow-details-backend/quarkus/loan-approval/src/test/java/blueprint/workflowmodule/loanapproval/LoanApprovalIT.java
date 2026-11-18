@@ -25,6 +25,10 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
+import io.vanillabp.cockpit.gui.api.v1.client.model.EndReason;
+import io.vanillabp.cockpit.gui.api.v1.client.model.Workflow;
+import io.vanillabp.cockpit.support.rest.restclient.RestClients;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -52,6 +56,12 @@ import jakarta.ws.rs.core.Response;
 @WithTestResource(LoanApprovalIT.ReportToTheSimulator.class)
 public class LoanApprovalIT extends WorkflowModuleTest {
 
+  /**
+   * Where the keys of the clients of the official GUI API are, for example
+   * {@code official-gui-api.base-url}.
+   */
+  private static final String OFFICIAL_GUI_API = "official-gui-api";
+
   @Inject
   Service loanApproval;
 
@@ -67,8 +77,17 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   private CasesApi casePage;
 
+  /** The builder of the support library of the cockpit, for the clients of its official GUI API. */
+  @Inject
+  RestClients restClients;
+
+  /** The case list of the cockpit, read from the simulator. */
+  private OfficialWorkflowlistApi workflowlist;
+
   /**
-   * Starts the simulator before the application, and points the cockpit adapter at it.
+   * Starts the simulator before the application, and points the cockpit adapter at it. The
+   * clients of the official GUI API, which the test reads what the cockpit knows with, get the
+   * address of the simulated cockpit as well, below the key {@code official-gui-api}.
    */
   public static class ReportToTheSimulator implements QuarkusTestResourceLifecycleManager {
 
@@ -76,7 +95,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     public Map<String, String> start() {
 
       return Map.of(
-          "vanillabp.cockpit.rest.base-url", CockpitSimulator.start().baseUrl());
+          "vanillabp.cockpit.rest.base-url", CockpitSimulator.start().baseUrl(),
+          OFFICIAL_GUI_API
+              + ".base-url",
+          CockpitSimulator.start().cockpitBaseUrl());
 
     }
 
@@ -96,6 +118,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .newBuilder()
         .baseUri(module)
         .build(CasesApi.class);
+    workflowlist = restClients.build(OfficialWorkflowlistApi.class, OFFICIAL_GUI_API);
 
   }
 
@@ -109,23 +132,23 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     // The user task is open, and the cockpit shows the case under the business id.
     final var reviewTaskId = awaitReviewTask(loanRequestId);
-    final var running = cockpit.awaitWorkflow(loanRequestId, workflow -> true);
-    assertThat(running.get("workflowModuleId")).isEqualTo("loan-approval");
-    assertThat(running.get("bpmnProcessId")).isEqualTo("loan_approval");
-    assertThat(running.get("businessId")).isEqualTo(loanRequestId);
-    assertThat(running.get("uiUriType")).isEqualTo("ES_MODULES");
-    assertThat(running.get("endedAt")).isNull();
+    final var running = cockpit.awaitWorkflow(workflowlist, loanRequestId, workflow -> true);
+    assertThat(running.getWorkflowModuleId()).isEqualTo("loan-approval");
+    assertThat(running.getBpmnProcessId()).isEqualTo("loan_approval");
+    assertThat(running.getBusinessId()).isEqualTo(loanRequestId);
+    assertThat(running.getUiUriType()).isEqualTo("ES_MODULES");
+    assertThat(running.getEndedAt()).isNull();
     assertThat(details(running))
         .containsEntry(WorkflowTaskHandler.APPLICANT, "Jane Doe")
         .containsEntry(WorkflowTaskHandler.STATUS, "REQUESTED");
 
     // What the case page shows: the open user task, from the cockpit ...
-    final var workflowId = (String) running.get("id");
-    final var userTasks = cockpit.awaitUserTasksOfWorkflow(workflowId, tasks -> !tasks.isEmpty());
+    final var workflowId = running.getId();
+    final var userTasks = cockpit.awaitUserTasksOfWorkflow(workflowlist, workflowId, tasks -> !tasks.isEmpty());
     assertThat(userTasks).hasSize(1);
-    assertThat(userTasks.getFirst().get("id")).isEqualTo(reviewTaskId);
-    assertThat(userTasks.getFirst().get("taskDefinition")).isEqualTo("reviewLoanRequest");
-    assertThat(userTasks.getFirst().get("endedAt")).isNull();
+    assertThat(userTasks.getFirst().getId()).isEqualTo(reviewTaskId);
+    assertThat(userTasks.getFirst().getTaskDefinition()).isEqualTo("reviewLoanRequest");
+    assertThat(userTasks.getFirst().getEndedAt()).isNull();
 
     // ... and the data of the loan request, from the module.
     assertThat(casePage.getCase(loanRequestId))
@@ -141,19 +164,21 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         aggregate -> aggregate.getStatus() == Status.WITHDRAWN);
     assertThat(loanRequest.getReviewTaskId()).isNull();
     cockpit.awaitUserTasksOfWorkflow(
+        workflowlist,
         workflowId,
-        tasks -> tasks.getFirst().get("endedAt") != null);
+        tasks -> tasks.getFirst().getEndedAt() != null);
 
     // The case list shows the case as ended, and the column says that it was withdrawn. For the
     // cockpit, the case ended normally: withdrawing is a business decision, and the process
     // reached an end event.
     final var withdrawn = cockpit.awaitWorkflow(
+        workflowlist,
         loanRequestId,
-        workflow -> workflow.get("endedAt") != null);
+        workflow -> workflow.getEndedAt() != null);
     assertThat(details(withdrawn))
         .containsEntry(WorkflowTaskHandler.APPLICANT, "Jane Doe")
         .containsEntry(WorkflowTaskHandler.STATUS, "WITHDRAWN");
-    assertThat(withdrawn.get("endReason")).isEqualTo("COMPLETED");
+    assertThat(withdrawn.getEndReason()).isEqualTo(EndReason.COMPLETED);
 
     assertThat(casePage.getCase(loanRequestId).getStatus()).isEqualTo(Case.StatusEnum.WITHDRAWN);
 
@@ -175,10 +200,11 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         aggregate -> aggregate.getStatus() == Status.APPROVED);
     final var approved = cockpit.awaitWorkflow(
+        workflowlist,
         loanRequestId,
-        workflow -> workflow.get("endedAt") != null);
+        workflow -> workflow.getEndedAt() != null);
     assertThat(details(approved)).containsEntry(WorkflowTaskHandler.STATUS, "APPROVED");
-    assertThat(approved.get("endReason")).isEqualTo("COMPLETED");
+    assertThat(approved.getEndReason()).isEqualTo(EndReason.COMPLETED);
 
     // An approved loan request cannot be withdrawn any more.
     assertThat(refusalOf(() -> casePage.withdrawLoanRequest(loanRequestId)))
@@ -276,12 +302,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   }
 
-  @SuppressWarnings("unchecked")
   private static Map<String, Object> details(
-      final Map<String, Object> workflow) {
+      final Workflow workflow) {
 
-    final var details = (Map<String, Object>) workflow.get("details");
-    return details == null ? Map.of() : details;
+    return workflow.getDetails() == null ? Map.of() : workflow.getDetails();
 
   }
 

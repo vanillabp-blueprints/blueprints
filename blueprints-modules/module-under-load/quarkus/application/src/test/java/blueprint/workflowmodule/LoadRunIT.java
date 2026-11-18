@@ -56,7 +56,7 @@ public class LoadRunIT {
 
       return Map.of(
           "quarkus.http.test-port", "${application.port:8080}",
-          "credit-bureau.base-url", "${simulator.base-url:http://localhost:8079}/credit-bureau",
+          "credit-bureau.client.base-url", "${simulator.base-url:http://localhost:8079}/credit-bureau",
           "credit-bureau.callback-url", "http://localhost:${application.port:8080}/credit-bureau/callback",
           // The drain waits for the payout run, so it comes more often here.
           "loan-approval.payout-run-every", "PT5S",

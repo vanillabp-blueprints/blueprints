@@ -3,14 +3,15 @@
 //
 // The simulated cockpit is the dev shell simulator of the Business Cockpit. The workflow module
 // reports its workflows and user tasks there, as it would to a real cockpit. The dev shell reads
-// them through the official API of the cockpit below /official-api/v1. That API belongs to the
-// cockpit and not to the module, so there is no OpenAPI file of it in this project, and the few
-// calls are written here by hand.
+// them through the official API of the cockpit below /official-api/gui/api/v1: the simulator
+// answers each system it plays below a prefix of its own, and below it the path of the system.
+// That API belongs to the cockpit and not to the module, so there is no OpenAPI file of it in
+// this project, and the few calls are written here by hand.
 
 import { createModuleHost } from '@vanillabp/bc-module-host';
 import { WORKFLOW_MODULE_ID } from '@loan-approval';
 
-const OFFICIAL_API = '/official-api/v1';
+const OFFICIAL_API = '/official-api/gui/api/v1';
 
 /** A workflow as the cockpit lists it, with the fields the dev shell shows. */
 export interface CockpitWorkflow {

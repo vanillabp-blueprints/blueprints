@@ -58,12 +58,13 @@ only from the modules in that list.
 
 Compared to [`cockpit-workflow-details-application`](https://github.com/vanillabp-blueprints/cockpit-workflow-details-application-springboot):
 
-|               File                |                                           What is different                                            |
-|-----------------------------------|--------------------------------------------------------------------------------------------------------|
-| `pom.xml`                         | the workflow module of `cockpit-header-extension-backend` and the UI JAR `cockpit-header-extension-ui` |
-| `UserInterfaceSmokeTest.java`     | the manifest lists `Header` and `StartForm`, and the endpoint of the start form starts a loan approval |
-| `docker-compose.yaml`             | other names of the containers                                                                          |
-| `docker/dev-shell-simulator.yaml` | two users: Jane is a loan officer, John is not                                                         |
+|               File                |                                              What is different                                              |
+|-----------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `pom.xml`                         | the workflow module of `cockpit-header-extension-backend` and the UI JAR `cockpit-header-extension-ui`      |
+| `UserInterfaceSmokeTest.java`     | the manifest lists `Header` and `StartForm`, and the endpoint of the start form starts a loan approval      |
+| `pom.xml`                         | the clients of `UserInterfaceSmokeTest`, generated from the OpenAPI files in the JAR of the workflow module |
+| `docker-compose.yaml`             | other names of the containers                                                                               |
+| `docker/dev-shell-simulator.yaml` | two users: Jane is a loan officer, John is not                                                              |
 
 ## Running it
 

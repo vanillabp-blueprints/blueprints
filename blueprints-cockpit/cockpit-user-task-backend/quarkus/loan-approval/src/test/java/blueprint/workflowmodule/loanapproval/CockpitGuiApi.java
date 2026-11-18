@@ -10,8 +10,8 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
 /**
- * The two answers of the interface of the Business Cockpit which {@link Cockpit} asks for: who
- * is logged in, and whom a user task is assigned to.
+ * The two answers of the official GUI API of the Business Cockpit which {@link Cockpit} asks
+ * for: who is logged in, and whom a user task is assigned to.
  *
  * <p>
  * The dev shell simulator has no such interface, so the test brings this small server. It knows
@@ -61,11 +61,12 @@ public final class CockpitGuiApi {
   }
 
   /**
-   * The address of the cockpit, which is {@code loan-approval.cockpit.address}.
+   * The address of this cockpit, which is {@code loan-approval.cockpit.base-url}. It leaves out
+   * the path of the official GUI API, because the clients add it themselves.
    *
    * @return The address of this server.
    */
-  public String address() {
+  public String baseUrl() {
 
     return "http://localhost:"
         + server

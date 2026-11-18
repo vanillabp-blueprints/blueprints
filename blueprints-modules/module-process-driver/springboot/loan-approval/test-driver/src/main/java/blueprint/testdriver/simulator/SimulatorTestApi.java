@@ -1,18 +1,11 @@
 package blueprint.testdriver.simulator;
 
-import static org.awaitility.Awaitility.await;
 
-import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 
-import org.awaitility.core.ConditionTimeoutException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 import blueprint.simulator.testapi.client.CreditRatingTestApi;
@@ -24,7 +17,7 @@ import blueprint.simulator.testapi.client.model.SignatureStatus;
 import blueprint.testdriver.GeneratedClients;
 
 /**
- * The client of the simulator's test API, and of the cockpit API the simulator plays.
+ * The client of the simulator's test API.
  *
  * <p>
  * The test API knows nothing about the workflow. It creates data in a simulated system and
@@ -37,9 +30,9 @@ import blueprint.testdriver.GeneratedClients;
  *
  * <p>
  * The client of the test API is generated from
- * {@code simulator/api/simulator-test-api.yaml}, the file the simulator implements. The
- * official API of the cockpit is read with a plain {@link RestClient}, because the cockpit
- * publishes no client of its own.
+ * {@code simulator/api/simulator-test-api.yaml}, the file the simulator implements. What the
+ * cockpit the simulator plays was told, a test reads through the client of the official GUI API
+ * of the cockpit.
  * </p>
  *
  * <p>
@@ -55,14 +48,6 @@ public final class SimulatorTestApi {
   /** Where a simulator started by hand answers. */
   private static final String DEFAULT_BASE_URL = "http://localhost:8079";
 
-  /**
-   * As long as {@code WorkflowModuleTest.TIMEOUT}. A report follows the engine command it is
-   * about, and that command may come one retry of the outbox late.
-   */
-  private static final Duration TIMEOUT = Duration.ofMinutes(1);
-
-  private static final Duration POLL_INTERVAL = Duration.ofMillis(200);
-
   private final String baseUrl;
 
   private final StatusApi status;
@@ -70,8 +55,6 @@ public final class SimulatorTestApi {
   private final CreditRatingTestApi creditRating;
 
   private final ESignatureTestApi eSignature;
-
-  private final RestClient cockpit;
 
   private SimulatorTestApi(
       final String baseUrl) {
@@ -81,8 +64,6 @@ public final class SimulatorTestApi {
     this.status = testApi.of(StatusApi.class);
     this.creditRating = testApi.of(CreditRatingTestApi.class);
     this.eSignature = testApi.of(ESignatureTestApi.class);
-    this.cockpit = RestClient.create(baseUrl
-        + "/official-api/v1");
 
   }
 
@@ -236,72 +217,6 @@ public final class SimulatorTestApi {
       final String contractId) {
 
     return eSignature.refusals(contractId);
-
-  }
-
-  /**
-   * Waits until the cockpit knows a user task and the condition holds. The cockpit adapter
-   * reports through the outbox, so a report arrives a moment after the event which caused it.
-   *
-   * @param userTaskId The id of the user task.
-   * @param condition  What the cockpit is expected to know about the task.
-   * @return The user task, as the official API of the cockpit returns it.
-   */
-  public Map<String, Object> awaitUserTask(
-      final String userTaskId,
-      final Predicate<Map<String, Object>> condition) {
-
-    final var lastSeen = new AtomicReference<Optional<Map<String, Object>>>(Optional.empty());
-
-    try {
-
-      await()
-          .atMost(TIMEOUT)
-          .pollDelay(Duration.ZERO)
-          .pollInterval(POLL_INTERVAL)
-          .until(() -> {
-            final var found = userTask(userTaskId);
-            lastSeen.set(found);
-            return found
-                .filter(condition)
-                .isPresent();
-          });
-
-    } catch (ConditionTimeoutException e) {
-
-      throw new AssertionError(
-          "The cockpit did not get the expected report of user task '"
-              + userTaskId
-              + "' within "
-              + TIMEOUT
-              + ". Last seen: "
-              + lastSeen
-                  .get()
-                  .map(Object::toString)
-                  .orElse("nothing - the task was never reported"), e);
-
-    }
-
-    return lastSeen
-        .get()
-        .orElseThrow();
-
-  }
-
-  @SuppressWarnings("unchecked")
-  private Optional<Map<String, Object>> userTask(
-      final String userTaskId) {
-
-    return cockpit
-        .get()
-        .uri("/usertask/{userTaskId}", userTaskId)
-        // The simulator answers a task it does not know with an error. That only means the
-        // report has not arrived yet.
-        .exchange((
-            request,
-            response) -> response.getStatusCode().is2xxSuccessful()
-                ? Optional.ofNullable((Map<String, Object>) response.bodyTo(Map.class))
-                : Optional.empty());
 
   }
 

@@ -410,9 +410,26 @@ Each platform has its own generator:
 | Spring Boot | `spring`, `interfaceOnly`, `requestMappingMode` `none`, `useResponseEntity` `false`     | a `@RestController` which implements the interface     |
 | Quarkus     | `jaxrs-spec`, `interfaceOnly`, `returnResponse` `false`, `sourceFolder` `src/main/java` | a bean which implements the interface, without `@Path` |
 
-A client is generated with the library `spring-http-interface`, and a `RestClient` turns it into
-a client. On Quarkus, Quarkus REST takes the paths and the parameters from the interface, so the
-resource class only carries its bean annotation. The paths in the file are complete and the
+A client is generated with the library `spring-http-interface`. On Quarkus, Quarkus REST takes
+the paths and the parameters from the interface, so the resource class only carries its bean
+annotation.
+
+A client is built by the support library of the Business Cockpit, from keys, and the blueprint
+writes no client configuration of its own: no check of the address, no timeouts, no
+`HttpServiceProxyFactory`, no properties class. On Spring Boot the `client` module brings an
+auto-configuration: an empty sub-interface of the generated one, imported with
+`@ImportHttpServices` into an HTTP service group, and an `HttpServiceGroupPrefix` bean for its
+keys. The application adds the dependency, sets the keys and injects the interface. On Quarkus
+the adapter builds the client with `RestClients`. The keys live below `<system>.client`, for
+example `credit-rating.client.base-url`, and never below `vanillabp`, so two workflow modules
+which call the same system keep values of their own. A key of the adapter itself, such as a
+callback address, is not below that prefix, because the support library stops the start for a
+key below it which no setting reads. `module-simulator` shows both platforms. The calls of the
+cockpit's GUI API, from a workflow module or from a test, go through the generated clients the
+cockpit publishes, `official-gui-api-spring-boot-client` and `official-gui-api-quarkus-client`.
+`cockpit-user-task-backend` shows them in its main code, the `CockpitSimulator` of every cockpit
+blueprint in a test. A test may still build a client of a generated interface for one address
+itself, because it runs outside of the application or next to it. The paths in the file are complete and the
 server is `http://localhost:8080`. So the file names the URL a person types into the browser
 (Rule 3), and the interface needs no path of its own.
 

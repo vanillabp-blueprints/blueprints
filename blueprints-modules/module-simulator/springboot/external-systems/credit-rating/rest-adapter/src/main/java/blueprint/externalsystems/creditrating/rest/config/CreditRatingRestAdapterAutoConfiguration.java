@@ -1,12 +1,7 @@
 package blueprint.externalsystems.creditrating.rest.config;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.support.RestClientAdapter;
-import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import blueprint.externalsystems.creditrating.CreditRating;
 import blueprint.externalsystems.creditrating.api.client.CreditRatingApi;
@@ -17,49 +12,30 @@ import blueprint.externalsystems.creditrating.rest.CreditRatingRestAdapter;
  * its classpath gets a {@link CreditRating} bean and does nothing else.
  *
  * <p>
+ * The client comes from {@code credit-rating-api-client}, which builds it from the keys below
+ * {@code credit-rating.client}. A missing address stops the start with a message which names the
+ * key, instead of failing the first loan request.
+ * </p>
+ *
+ * <p>
  * Registered in
  * {@code META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports}.
  * </p>
  */
 @AutoConfiguration
-@EnableConfigurationProperties(CreditRatingProperties.class)
 public class CreditRatingRestAdapterAutoConfiguration {
 
   /**
-   * The credit rating, over REST. Created while the application starts, so a missing address
-   * stops the start with a message instead of failing the first loan request.
+   * The credit rating, over REST.
    *
-   * @param restClients The REST client builder of Spring Boot, with its JSON converters.
-   * @param properties  Where the credit rating is.
+   * @param client The generated client of the credit rating.
    * @return The adapter.
    */
   @Bean
   public CreditRating creditRating(
-      final RestClient.Builder restClients,
-      final CreditRatingProperties properties) {
+      final CreditRatingApi client) {
 
-    if ((properties.baseUrl() == null) || properties.baseUrl().isBlank()) {
-      throw new IllegalStateException("""
-          The credit rating has no address. Set 'credit-rating.base-url' to where it answers. \
-          For the simulator of this blueprint that is http://localhost:8079/credit-rating, and \
-          the profile 'local' of the application sets it.""");
-    }
-
-    final var timeouts = new SimpleClientHttpRequestFactory();
-    timeouts.setConnectTimeout(properties.timeout());
-    timeouts.setReadTimeout(properties.timeout());
-
-    // The generated client is an interface. Spring implements it with a RestClient.
-    final var restClient = restClients
-        .baseUrl(properties.baseUrl())
-        .requestFactory(timeouts)
-        .build();
-    final var client = HttpServiceProxyFactory
-        .builderFor(RestClientAdapter.create(restClient))
-        .build()
-        .createClient(CreditRatingApi.class);
-
-    return new CreditRatingRestAdapter(client, properties.baseUrl());
+    return new CreditRatingRestAdapter(client);
 
   }
 

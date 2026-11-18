@@ -29,7 +29,15 @@
       <artifactId>credit-rating-api-client</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- The REST client of Quarkus, and JSON. -->
+    <!--
+      The support library of the Business Cockpit, which builds the client from keys with
+      RestClients, and the REST client of Quarkus with JSON, which it builds on.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>business-cockpit-quarkus-support</artifactId>
+      <version>${businesscockpit.version}</version>
+    </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-rest-client-jackson</artifactId>

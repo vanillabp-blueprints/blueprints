@@ -317,7 +317,7 @@ its `client` generates what the simulator calls. The same holds for the credit b
 The REST adapter of the credit bureau needs two types of the workflow module: the port
 `CreditBureau`, which it implements, and `Service`, which takes the score. So it depends on the
 module, and the module does not know it. To use a real credit bureau, point
-`credit-bureau.base-url` and `credit-bureau.callback-url` at it. Nothing else changes.
+`credit-bureau.client.base-url` and `credit-bureau.callback-url` at it. Nothing else changes.
 
 The driver brings no load testing tool. A blueprint is a template you copy, and the next
 dependency update has to be able to move every library in it. A large tool would hold that

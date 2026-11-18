@@ -47,9 +47,9 @@ public class CheckContractIT extends ScenarioTest {
 
     final var scenario = driver.advanceTo(ProcessState.CHECK_CONTRACT_USER_TASK);
 
-    final var userTask = simulator().awaitUserTask(driver.openUserTaskId(scenario), task -> true);
-    assertThat(userTask.get("workflowModuleId")).isEqualTo("loan-approval");
-    assertThat(userTask.get("taskDefinition")).isEqualTo("checkContract");
+    final var userTask = awaitUserTask(driver.openUserTaskId(scenario), task -> true);
+    assertThat(userTask.getWorkflowModuleId()).isEqualTo("loan-approval");
+    assertThat(userTask.getTaskDefinition()).isEqualTo("checkContract");
 
   }
 
@@ -83,7 +83,7 @@ public class CheckContractIT extends ScenarioTest {
         loanRequest -> Boolean.TRUE.equals(loanRequest.getContractChecked()))
         .getCheckContractTaskId()).isNull();
     // The workflow ended, so the cockpit took the user task off the list.
-    simulator().awaitUserTask(taskId, task -> task.get("endedAt") != null);
+    awaitUserTask(taskId, task -> task.getEndedAt() != null);
 
   }
 

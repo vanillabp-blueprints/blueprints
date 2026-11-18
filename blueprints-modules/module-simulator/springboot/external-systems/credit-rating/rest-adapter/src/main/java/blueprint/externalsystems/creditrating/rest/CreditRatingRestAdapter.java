@@ -24,27 +24,22 @@ import blueprint.externalsystems.creditrating.api.client.CreditRatingApi;
  *
  * <p>
  * The same class runs against the simulator and against the real system. Only
- * {@code credit-rating.base-url} differs.
+ * {@code credit-rating.client.base-url} differs.
  * </p>
  */
 public class CreditRatingRestAdapter implements CreditRating {
 
   private final CreditRatingApi creditRating;
 
-  private final String baseUrl;
-
   /**
    * Creates the adapter.
    *
    * @param creditRating The generated client, whose base address is the credit rating.
-   * @param baseUrl      The same address, for the messages of this class.
    */
   public CreditRatingRestAdapter(
-      final CreditRatingApi creditRating,
-      final String baseUrl) {
+      final CreditRatingApi creditRating) {
 
     this.creditRating = creditRating;
-    this.baseUrl = baseUrl;
 
   }
 
@@ -65,17 +60,14 @@ public class CreditRatingRestAdapter implements CreditRating {
 
     } catch (RestClientResponseException e) {
 
-      throw new CreditRatingUnavailableException("The credit rating at '"
-          + baseUrl
-          + "' answered "
+      throw new CreditRatingUnavailableException("The credit rating answered "
           + e.getStatusCode().value(), e);
 
     } catch (ResourceAccessException e) {
 
-      // Nothing answers at the address, or the answer took longer than the timeout.
-      throw new CreditRatingUnavailableException("The credit rating at '"
-          + baseUrl
-          + "' does not answer", e);
+      // Nothing answers at the address, or the answer took longer than the timeout. The message
+      // of the cause names the address.
+      throw new CreditRatingUnavailableException("The credit rating does not answer", e);
 
     }
 

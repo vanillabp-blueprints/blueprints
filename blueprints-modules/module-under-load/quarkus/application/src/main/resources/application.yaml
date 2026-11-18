@@ -56,5 +56,8 @@ vanillabp:
 # these are the addresses of the real bureau and of this application as the bureau reaches it,
 # and the adapter is the same.
 credit-bureau:
-  base-url: http://localhost:8079/credit-bureau
+  # The keys of the client of the credit bureau.
+  client:
+    base-url: http://localhost:8079/credit-bureau
+    read-timeout: 5s
   callback-url: http://localhost:8080/credit-bureau/callback

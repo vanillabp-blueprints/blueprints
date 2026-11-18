@@ -76,7 +76,9 @@ Blueprint-specific names, each occurring in more than one place:
 5. Check that the path of `workflow-module-uri` in the module's configuration is the address the
    application really runs at. Set it in the application if it differs.
 6. Copy `UserInterfaceSmokeTest` and adapt the module id, the entries and the endpoint to your
-   module.
+   module. The test calls the API of the module through
+   clients which `openapi-generator-maven-plugin` in `pom.xml` generates from the OpenAPI files in
+   the JAR of the module. Copy that plugin too, and write no path and no field of the API by hand.
 7. Nothing in the application says who sees the module. The workflow module brings its
    `WorkflowModuleDetailsProvider`.
 
