@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: Process driver of 'loan-approval'
+  description: >
+    Brings a new loan approval to a state of its process, for the dev shell and for the tests of
+    a user interface. It exists only where the module 'test-driver' is on the classpath and
+    'process-driver.enabled' is true. It has GET requests only, so a person can use it in a
+    browser.
+
+    The build generates the Java interface 'ProcessDriverApi' and the classes of the schemas below
+    from this file, and 'ProcessDriverController' implements it.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: process-driver
+    description: Bringing a loan approval to a state of its process
+paths:
+  /loan-approval/api/process-driver/states:
+    get:
+      tags:
+        - process-driver
+      operationId: states
+      summary: Lists the states a loan approval can be brought to
+      responses:
+        '200':
+          description: The names of the states
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /loan-approval/api/process-driver/advance-to:
+    get:
+      tags:
+        - process-driver
+      operationId: advanceTo
+      summary: Brings a new loan request to a state
+      description: >
+        The answer names the open user task. A state where the workflow ended, like
+        CONTRACT_DECLINED, has none.
+      parameters:
+        - name: state
+          in: query
+          required: true
+          description: The name of the state, one of those 'states' lists
+          schema:
+            type: string
+        - name: amount
+          in: query
+          description: The amount the customer asks for. Without it, a small amount is used.
+          schema:
+            type: integer
+        - name: creditScore
+          in: query
+          description: The score the credit rating answers. Without it, a good score is used.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: The loan request, once it reached the state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reached'
+        '400':
+          description: The state is unknown. The answer lists the known states.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: The loan request did not reach the state. The answer says why.
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  schemas:
+    Reached:
+      type: object
+      description: A loan request which reached a state of its process
+      required:
+        - state
+        - loanRequestId
+        - customerId
+      properties:
+        state:
+          type: string
+          description: The state it reached
+        loanRequestId:
+          type: string
+          description: The id of the loan request, which is the id of the workflow aggregate
+        customerId:
+          type: string
+          description: The customer the driver reserved at the simulated credit rating
+        userTaskId:
+          type: string
+          description: >
+            The id of the user task which is open in this state. It is missing in a state where
+            the workflow ended, like CONTRACT_DECLINED.

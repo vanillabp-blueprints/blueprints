@@ -1,0 +1,42 @@
+# The configuration of the module's own test: its database, and how fast the cockpit hears
+# about a user task. Where the BPMN files are is a convention VanillaBP knows.
+quarkus:
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:loan-approval-test;DB_CLOSE_DELAY=-1
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  log:
+    category:
+      "blueprint":
+        level: INFO
+  # Where the coverage of the tests goes, relative to this Maven module, and which classes it
+  # covers: those of this module, not those of the driver, the adapters or the simulator. The
+  # code generated from the OpenAPI file is left out, see the JaCoCo plugin of the POM, which
+  # checks the same file.
+  jacoco:
+    data-file: target/jacoco-it.exec
+    report-location: target/site/jacoco-it
+    includes: blueprint/workflowmodule/**
+    excludes: blueprint/workflowmodule/loanapproval/api/**
+# The addresses of the systems around the module are not here. The tests ask where the simulator
+# runs and set them before the application starts.
+process-driver:
+  # The tests bring loan approvals to the states of the process with the driver. It is a build
+  # property: Quarkus reads it while it builds the application under test.
+  enabled: true
+vanillabp:
+  # Every report to the cockpit goes through the outbox first. A short poll interval lets the
+  # test see the reports a moment after they were written. An application keeps the default.
+  outbox:
+    poll-interval: PT0.2S
+# The module reads no login token of the Business Cockpit. Its support library checks such a
+# token unless it is told not to, and then the start asks for the secret of the cockpit. So the
+# test leaves the check out. It is a build property: Quarkus reads it while it builds the
+# application. An application which runs this module and reads no token says the same.
+business-cockpit:
+  jwt:
+    enabled: false

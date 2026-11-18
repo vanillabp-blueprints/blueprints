@@ -626,14 +626,15 @@ script names such a category, today `cockpit`. There a twin may be missing while
 `planned` for it. Take the category out of the list when its twin phase starts.
 
 A single blueprint may also start on one platform, when it comes after the twin phase of its
-category. `BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE` names it, today `module-process-driver`. The rule is
-the same: the index says `planned` for the missing twin, and the blueprint leaves the list when
-its twin is written.
+category. `BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE` names it. The rule is the same: the index says
+`planned` for the missing twin, and the blueprint leaves the list when its twin is written. The
+list is empty today. `module-process-driver` was the first such blueprint, and its Quarkus twin
+is written.
 
 A twin may hold a Maven module of the other platform, when that module is not part of the
-application. The simulator of `module-simulator` is the one case. It extends the dev shell
-simulator of the Business Cockpit, which exists for Spring Boot only. So the Quarkus twin
-carries the same simulator, a Spring Boot application with the parent of Spring Boot, and
+application. The simulator of `module-simulator` is the first case, and `module-process-driver`
+takes it over. It extends the dev shell simulator of the Business Cockpit, which exists for
+Spring Boot only. So the Quarkus twin carries the same simulator, a Spring Boot application with the parent of Spring Boot, and
 starts it as a runnable JAR. The application and the tests talk to it over HTTP. Its Java
 sources are the same in both twins, so `check_twin_diff.py` finds no difference there. The
 README of the Quarkus twin calls it "an application of its own" and does not name the platform,
