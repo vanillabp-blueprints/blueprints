@@ -486,11 +486,15 @@ takes one object with all its parameters, and the body comes under the name of i
 It returns the data and throws when the answer is not a success. An error interceptor in
 `src/shared/api.ts` turns such an answer into a `ResponseError`, which keeps its status. Nobody
 writes a `fetch` call to the module API by hand. The generator is a Node program with no install
-scripts, so the build of a frontend needs Node and nothing else: no Java, no Maven, and no
-download during the build. `openapi-ts.config.mjs` of the frontend holds the options, and
-`package.json` pins the version exactly, because the 0.x line breaks things in minor versions.
-The code is written to `src/generated/`, which git ignores, as `target/` is ignored on the Java
-side.
+scripts, so the build of a frontend needs Node and nothing else: no Java and no Maven. A
+frontend which calls an API of the cockpit, such as the dev shell of
+`cockpit-process-driver-frontend`, keeps no copy of the cockpit's OpenAPI file. Its
+`scripts/fetch-openapi.mjs` downloads the jar of the cockpit from Maven Central, in the version
+the backend uses, and takes the file out of it. The skill `business-cockpit-creator` describes
+the same way for the user interface of a cockpit. `openapi-ts.config.mjs` of the frontend holds
+the options, and `package.json` pins the version exactly, because the 0.x line breaks things in
+minor versions. The code is written to `src/generated/`, which git ignores, as `target/` is
+ignored on the Java side.
 
 The sources of a frontend import from another directory through the path aliases of its
 `tsconfig.json`, never with `../`: `@loan-approval`, `@shared`, `@gui-client` (the client with
@@ -1145,11 +1149,6 @@ Two kinds of YAML are left out, both because the formatter drops comments. The f
 workflow files, where it also removes the quotes around version numbers and turns `"3.10"` into
 `3.1`. The second is everything below a blueprint's `src/`, where the comments are what the
 blueprint teaches.
-
-A copy of an OpenAPI file which another project publishes is left out as well. The frontend of
-`cockpit-process-driver-frontend` keeps the file of the cockpit's official API below `openapi/`.
-It stays as it came, so the next version of the file replaces it without a difference which only
-the formatter made.
 
 ## License
 

@@ -106,8 +106,8 @@ npm test
 |---------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
 | `npm run build`                 | all of the following, one after the other                                                                                                     |
 | `npm run check:imports`         | fails the build on an import with `../`, see [Imports through path aliases](#imports-through-path-aliases)                                    |
-| `npm run fetch:openapi`         | copies the two OpenAPI files of the backend into `build/openapi`                                                                              |
-| `npm run generate:client`       | generates the two API clients from them with `@hey-api/openapi-ts`                                                                            |
+| `npm run fetch:openapi`         | copies the two OpenAPI files of the backend into `build/openapi`, and takes the file of the cockpit's official API out of the cockpit's jar   |
+| `npm run generate:client`       | generates the three API clients from them with `@hey-api/openapi-ts`                                                                          |
 | `npm run write:bc-build`        | writes the module id and the id of this build into `src/bc-build.js`, see [The names of the web components](#the-names-of-the-web-components) |
 | `npm run typecheck`             | checks the types of the whole project, the dev shell included                                                                                 |
 | `npm run build:micro-frontends` | builds the entries and `bc-manifest.json` into `dist/micro-frontends`                                                                         |
@@ -150,7 +150,6 @@ simulated cockpit at `http://localhost:8079`. `APPLICATION_URL`, `COCKPIT_URL` a
 | `scripts/start.mjs`                     | serves the dev shell and the micro-frontends, and forwards the calls to the application and cockpit |
 | `src/shared/process-driver-api.ts`      | `processDriver`, the one instance of the generated `ProcessDriverApi`                               |
 | `src/shared/official-gui-api.ts`        | `tasklist` and `workflowlist`, the generated clients of the official API of the cockpit             |
-| `openapi/official-gui-api.yaml`         | the copy of the OpenAPI file of the official API of the cockpit                                     |
 | `src/shared/api.ts`                     | `loanApproval`, the one instance of the generated `LoanApprovalApi`, and `ResponseError`            |
 | `src/data/user-task-form.ts`            | data entry `UserTaskForm`: picks the form by process and task definition                            |
 | `src/shared/task-form.tsx`              | the three web components of a form: `all`, `body` and `actions`                                     |
@@ -189,10 +188,24 @@ simulated cockpit at `http://localhost:8079`. `APPLICATION_URL`, `COCKPIT_URL` a
 
 The official API of the cockpit belongs to the cockpit, not to the module. `cockpit.ts` calls it
 through the clients `@hey-api/openapi-ts` generates from the OpenAPI file of the cockpit, like the
-other two APIs. The cockpit publishes that file in no npm package, and the build of a frontend
-downloads nothing. So this project keeps a copy in `openapi/official-gui-api.yaml`: the file
-`apis/official-gui-api/openapi/v1.yaml` of the Business Cockpit, in the version the backend uses.
-When the backend moves to another version of the cockpit, take the file of that version.
+other two APIs. This project keeps no copy of that file. The cockpit ships it in its jar
+`io.vanillabp.businesscockpit:official-gui-api-server`, as `v1.yaml` at the root.
+`npm run fetch:openapi` downloads that jar from Maven Central and takes the file out of it. The
+version is the one the backend uses, the property `businesscockpit.version` in its `pom.xml`. So
+when the backend moves to another version of the cockpit, the client follows without a change
+here. That version of the cockpit must be deployed before this project builds.
+
+The jar comes from the path Maven uses,
+`<repository>/<group as path>/<artifactId>/<version>/<artifactId>-<version>.jar`. A snapshot has
+a time stamp in its name, so the script reads `maven-metadata.xml` first. These variables change
+what the script does:
+
+|            Variable             |                                    What it does                                    |
+|---------------------------------|------------------------------------------------------------------------------------|
+| `COCKPIT_REPOSITORY`            | a Maven repository of your own, for example a mirror of Maven Central              |
+| `COCKPIT_REPOSITORY_TOKEN`      | the token of that repository, if it asks for a login                               |
+| `BUSINESS_COCKPIT_VERSION`      | another version of the cockpit than the one of the backend                         |
+| `OPENAPI_FILE_OFFICIAL_GUI_API` | the path of an OpenAPI file of the official API. Then the script downloads nothing |
 
 ### The names of the web components
 
