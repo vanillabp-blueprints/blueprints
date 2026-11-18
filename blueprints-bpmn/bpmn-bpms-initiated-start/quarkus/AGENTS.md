@@ -26,14 +26,14 @@ coordinates, which carry the name of the blueprint.
 
 Blueprint-specific names, each occurring in more than one place:
 
-|                            Name                            |                                                   Where it occurs                                                   |
-|------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| `nightly_review`                                           | the BPMN process id of the second process and its model file                                                        |
-| `nightlyreview`                                            | the Java package of the second use case, `nightly-review` in its REST path                                          |
-| `ReviewRequested`                                          | the constant `Workflow.REVIEW_REQUESTED` and the `bpmn:signal` name in the model                                    |
-| `reviewPendingApprovals`                                   | the `@WorkflowTask` method and the task definition of the service task                                              |
-| `reviewedAt`                                               | the process variable the model fills by an expression and the `@TaskParam` reading it                               |
-| `StartEvent_ScheduledReview`, `StartEvent_ReviewRequested` | the BPMN ids of the two start events. The test asserts them, and `@WorkflowStartedByBpms(id = ...)` would name them |
+|                            Name                            |                                                                 Where it occurs                                                                 |
+|------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `nightly_review`                                           | the BPMN process id of the second process and its model file                                                                                    |
+| `nightlyreview`                                            | the Java package of the second use case, below `loanapproval` because it belongs to the same workflow module. `nightly-review` in its REST path |
+| `ReviewRequested`                                          | the constant `Workflow.REVIEW_REQUESTED` and the `bpmn:signal` name in the model                                                                |
+| `reviewPendingApprovals`                                   | the `@WorkflowTask` method and the task definition of the service task                                                                          |
+| `reviewedAt`                                               | the process variable the model fills by an expression and the `@TaskParam` reading it                                                           |
+| `StartEvent_ScheduledReview`, `StartEvent_ReviewRequested` | the BPMN ids of the two start events. The test asserts them, and `@WorkflowStartedByBpms(id = ...)` would name them                             |
 
 ## Core files
 

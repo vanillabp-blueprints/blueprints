@@ -201,8 +201,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `.../loanapproval/ApiController.java`                                                              | answers 503 with the role of the system when the credit rating does not answer                                                           |
 | `.../openapi/loan-approval.yaml`                                                                   | the API of the module, with the answer and the 503, as an OpenAPI file                                                                   |
 | `LoanApprovalProperties.java`, `loan-approval/src/main/resources/loan-approval/loan-approval.yaml` | `minimum-credit-score` instead of `rating-scale`, and the settings of the cockpit for the module                                         |
-| `.../loanapproval/config/LoanApprovalAutoConfiguration.java`                                       | new: the module wires itself, because the application is not above it                                                                    |
-| `META-INF/spring/...imports`                                                                       | new: the file which makes the auto-configuration one                                                                                     |
+| `.../loanapproval/config/LoanApprovalAutoConfiguration.java`                                       | enables the properties class of the module                                                                                               |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                                   | a loan request through all three systems, the early declines and a signature which arrives twice                                         |
 | `loan-approval/src/test/.../SimulatorTestApi.java`                                                 | new: the generated client of the test API, and a client of the cockpit API the simulator plays                                           |
 | `loan-approval/src/test/.../SimulatorExtension.java`                                               | new: skips without a simulator, and prints its log when a test fails                                                                     |
@@ -213,10 +212,9 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `application/src/main/resources/application-real.yaml`                                             | new: every adapter talks to the real system, addresses from the environment                                                              |
 | `application/pom.xml`                                                                              | the two REST adapters, the cockpit adapter of each BPMS, and the profile `local` for the unit tests and `real` for the integration tests |
 | `application/src/main/resources/application.yaml`                                                  | activates the profile of the external systems next to the BPMS, and logs everything below `blueprint`                                    |
-| `application/.../Application.java`                                                                 | moved to `blueprint.application`                                                                                                         |
+| `application/.../Application.java`                                                                 | the parameter of `main` is `final`                                                                                                       |
 | `application-camunda8.yaml`                                                                        | `name-clash-avoidance: use-prefix`                                                                                                       |
 | `application/src/test/.../ExternalSystemUnavailableIT.java`                                        | new: the 503 a user gets when the credit rating is missing                                                                               |
-| `application/src/test/.../ApplicationSmokeTest.java`                                               | moved to `blueprint.application`, because the application is not above the module                                                        |
 
 ## Running it
 

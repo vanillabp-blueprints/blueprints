@@ -126,8 +126,8 @@
             </goals>
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/credit-history.yaml</inputSpec>
-              <apiPackage>blueprint.workflowmodule.credithistory.api</apiPackage>
-              <modelPackage>blueprint.workflowmodule.credithistory.api.model</modelPackage>
+              <apiPackage>blueprint.workflowmodule.loanapproval.credithistory.api</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.credithistory.api.model</modelPackage>
             </configuration>
           </execution>
           <execution>

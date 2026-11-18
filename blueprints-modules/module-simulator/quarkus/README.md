@@ -229,7 +229,6 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `application/pom.xml`                                                                              | the two REST adapters, the cockpit adapter of each BPMS, and the profile `local` for the unit tests and `real` for the integration tests |
 | `application/src/main/resources/application.yaml`                                                  | activates the profile of the external systems next to the BPMS, and logs everything below `blueprint`                                    |
 | `application/src/test/.../ExternalSystemUnavailableIT.java`                                        | new: the 503 a user gets when the credit rating is missing                                                                               |
-| `application/src/test/.../ApplicationSmokeTest.java`                                               | moved to `blueprint.application`, because the application is not above the module                                                        |
 
 ## Running it
 

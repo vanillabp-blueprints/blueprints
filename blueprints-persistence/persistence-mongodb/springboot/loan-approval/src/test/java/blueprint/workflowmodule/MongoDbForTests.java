@@ -19,9 +19,9 @@ import com.mongodb.ConnectionString;
  * </p>
  *
  * <p>
- * The class is a plain {@code @Configuration} in the base package, so component scanning picks
- * it up for every test of this module without a test having to name it. That keeps the shared
- * harness classes untouched: they know nothing about MongoDB, and they do not have to.
+ * The class is a plain {@code @Configuration}. The test application of the module scans
+ * nothing, so a test names it with {@code @Import}. That keeps the shared harness classes
+ * untouched: they know nothing about MongoDB, and they do not have to.
  * </p>
  *
  * <p>

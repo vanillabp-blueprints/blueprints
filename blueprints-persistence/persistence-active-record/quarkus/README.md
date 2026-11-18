@@ -60,7 +60,7 @@ what it found, one line per aggregate:
 Using VanillaBP's Hibernate ORM Panache active record persistence for workflow aggregate
 'blueprint.workflowmodule.loanapproval.model.Aggregate'
 Using VanillaBP's MongoDB Panache active record persistence for workflow aggregate
-'blueprint.workflowmodule.credithistory.model.Aggregate'
+'blueprint.workflowmodule.loanapproval.credithistory.model.Aggregate'
 ```
 
 The two lines differ, and that is what this blueprint claims. **The idiom is resolved per

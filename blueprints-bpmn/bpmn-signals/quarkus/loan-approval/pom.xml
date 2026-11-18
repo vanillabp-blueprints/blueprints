@@ -129,8 +129,8 @@
             </goals>
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/rate-watch.yaml</inputSpec>
-              <apiPackage>blueprint.workflowmodule.ratewatch.api</apiPackage>
-              <modelPackage>blueprint.workflowmodule.ratewatch.api.model</modelPackage>
+              <apiPackage>blueprint.workflowmodule.loanapproval.ratewatch.api</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.ratewatch.api.model</modelPackage>
             </configuration>
           </execution>
         </executions>

@@ -129,8 +129,8 @@
             </goals>
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/nightly-review.yaml</inputSpec>
-              <apiPackage>blueprint.workflowmodule.nightlyreview.api</apiPackage>
-              <modelPackage>blueprint.workflowmodule.nightlyreview.api.model</modelPackage>
+              <apiPackage>blueprint.workflowmodule.loanapproval.nightlyreview.api</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.nightlyreview.api.model</modelPackage>
             </configuration>
           </execution>
         </executions>

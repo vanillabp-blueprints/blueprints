@@ -101,7 +101,7 @@ nothing of each other:
 | `LoanApprovalProperties.java`, `loan-approval/src/main/resources/loan-approval/*.yaml`       | as in `module-multi`: `rating-provider`, and a module file per environment                                  |
 | `application-camunda8.yaml`                                                                  | as in `module-multi`: `name-clash-avoidance: use-prefix`                                                    |
 | `application/src/main/resources/application.yaml`                                            | as in `module-multi`: logs everything below `blueprint` at INFO                                             |
-| `application/src/test/.../ApplicationSmokeTest.java`, `ModuleConfigurationPerProfileIT.java` | as in `module-multi`: moved to `blueprint.application`, and the module file of the active profile is tested |
+| `application/src/test/.../ApplicationSmokeTest.java`, `ModuleConfigurationPerProfileIT.java` | as in `module-multi`: the module file of the active profile is tested                                       |
 
 Everything else is `module-multi`: the auto-configurations, the bean naming, the module
 configuration per environment, the way the BPMS is chosen.

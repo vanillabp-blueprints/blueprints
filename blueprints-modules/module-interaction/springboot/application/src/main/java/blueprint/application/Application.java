@@ -8,9 +8,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * and decides, by its Maven dependencies, which BPMS adapter is loaded.
  *
  * <p>
- * Note the package. In the other blueprints the application sits above the workflow module,
- * so its component scan reaches the module's beans by accident of the package layout. Here
- * it does not, and that is the whole point: a workflow module is a JAR which may come from
+ * Note the package. It is not above the workflow modules, as in every blueprint. That is
+ * the whole point: a workflow module is a JAR which may come from
  * another team and live in a package this application never heard of. Each module brings
  * an auto-configuration and wires itself, so this class stays empty no matter how many
  * modules are added.

@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -35,6 +36,7 @@ import jakarta.persistence.EntityManagerFactory;
  * are read.
  * </p>
  */
+@Import(StoredLoanApprovals.class)
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   /** The documents of {@code loan-approval.yaml}, one user task "Check document" each. */

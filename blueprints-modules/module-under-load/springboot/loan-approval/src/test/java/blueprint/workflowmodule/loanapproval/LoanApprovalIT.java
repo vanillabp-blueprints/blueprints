@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
@@ -22,6 +23,7 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * when it comes.
  * </p>
  */
+@Import(ScriptedCreditBureau.class)
 public class LoanApprovalIT extends WorkflowModuleTest {
 
   @Autowired

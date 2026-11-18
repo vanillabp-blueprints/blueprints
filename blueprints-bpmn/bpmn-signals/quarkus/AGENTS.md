@@ -26,12 +26,12 @@ coordinates, which carry the name of the blueprint.
 
 Blueprint-specific names, each occurring in more than one place:
 
-|          Name           |                                     Where it occurs                                     |
-|-------------------------|-----------------------------------------------------------------------------------------|
-| `InterestRatePublished` | the constant `Workflow.INTEREST_RATE_PUBLISHED` and the `bpmn:signal` name in the model |
-| `applyInterestRate`     | the `@WorkflowTask` method behind the signal event and the task definition of that task |
-| `rate_watch`            | the BPMN process id of the second process and its model file                            |
-| `ratewatch`             | the Java package of the second use case, `rate-watch` in its REST path                  |
+|          Name           |                                                               Where it occurs                                                               |
+|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| `InterestRatePublished` | the constant `Workflow.INTEREST_RATE_PUBLISHED` and the `bpmn:signal` name in the model                                                     |
+| `applyInterestRate`     | the `@WorkflowTask` method behind the signal event and the task definition of that task                                                     |
+| `rate_watch`            | the BPMN process id of the second process and its model file                                                                                |
+| `ratewatch`             | the Java package of the second use case, below `loanapproval` because it belongs to the same workflow module. `rate-watch` in its REST path |
 
 The signal name is the contract between code and model. If the two drift apart, the broadcast
 reaches no waiting event, and nothing happens. There is no exception, because a signal nobody

@@ -8,9 +8,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import blueprint.workflowmodule.MongoDbForTests;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
@@ -25,6 +27,7 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * before the framework taught its MongoDB stores to join the session.
  * </p>
  */
+@Import(MongoDbForTests.class)
 @SpringBootTest
 public class LoanApprovalIT extends WorkflowModuleTest {
 

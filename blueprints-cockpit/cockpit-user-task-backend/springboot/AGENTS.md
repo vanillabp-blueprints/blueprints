@@ -81,9 +81,9 @@ controllers in line, or a form reaches nothing.
 | `loan-approval/src/test/java/.../LocalBackend.java`          | runs the module with `spring-boot:test-run` for the development of the forms                                                                  |
 | `docs/loan_approval.png`                                     | the picture of the process the README shows, rendered from the BPMN model                                                                     |
 
-`WorkflowModuleTest` is identical in every blueprint. Copy it unchanged. Do not take the
-`TestApplication` of other blueprints. Its component scan would register every bean of the
-module a second time, under another name.
+`WorkflowModuleTest` is identical in every blueprint. Copy it unchanged. `ModuleTestApplication`
+does what the shared `TestApplication` of the other blueprints does: it scans nothing, and the
+auto-configuration wires the module.
 
 ## Adding this blueprint to an existing project
 

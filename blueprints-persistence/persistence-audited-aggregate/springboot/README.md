@@ -163,6 +163,7 @@ Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-sin
 | `loan_approval.bpmn`                                | a decision by a person between the credit rating and the payout, so the aggregate is written three times                                     |
 | `model/Aggregate.java`                              | carries `@Audited`, and the attributes the three steps write                                                                                 |
 | `model/AggregateRepository.java`                    | also a `RevisionRepository`, which reads the trail                                                                                           |
+| `config/LoanApprovalAutoConfiguration.java`         | no `@EnableJpaRepositories`, because `AuditedRepositories` declares the repositories                                                         |
 | `config/AuditedRepositories.java`                   | switches on the repository factory that reads revisions                                                                                      |
 | `audit/AuditedChange.java`                          | the revision entity, so a change knows who made it                                                                                           |
 | `audit/ChangeBeingMade.java`                        | the id naming the change, the person making it, and how long each of them has to be there                                                    |

@@ -8,8 +8,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 
+import blueprint.workflowmodule.config.CibSevenDatabase;
+import blueprint.workflowmodule.config.OperatonDatabase;
 import blueprint.workflowmodule.loanapproval.Service;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
@@ -32,6 +35,9 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * adapter like any other operation. That the assertion works at all is the proof.
  * </p>
  */
+@Import({
+    OperatonDatabase.class, CibSevenDatabase.class
+})
 public class MigrationIT extends WorkflowModuleTest {
 
   @Autowired
@@ -41,14 +47,14 @@ public class MigrationIT extends WorkflowModuleTest {
   private Service loanApproval;
 
   @Autowired
-  private blueprint.workflowmodule.loanrepayment.RepaymentService loanRepayment;
+  private blueprint.workflowmodule.loanapproval.loanrepayment.RepaymentService loanRepayment;
 
   @Autowired
   private AggregateRepository loanApprovals;
 
   // both packages of this module carry a class of that name, so one of the two is spelled out
   @Autowired
-  private blueprint.workflowmodule.loanrepayment.model.RepaymentRepository repayments;
+  private blueprint.workflowmodule.loanapproval.loanrepayment.model.RepaymentRepository repayments;
 
   @Test
   @DisplayName("A new workflow starts in the first adapter of the priority list")

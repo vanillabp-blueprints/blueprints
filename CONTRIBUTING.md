@@ -100,6 +100,27 @@ such as `@ComponentScan`, `@EntityScan` or `@EnableJpaRepositories`, must name t
 use case, for example with `basePackageClasses = Service.class`. Without it, the scan only
 searches `config`.
 
+Every workflow of a module lives below the package of that module. A second process of the
+module gets a package of its own below it, for example `loanapproval.ratewatch` and not
+`ratewatch`. A package next to the module would clash with a workflow module of that name.
+
+A workflow module wires itself. On Spring Boot it brings an auto-configuration,
+`config/<UseCase>AutoConfiguration`, registered in
+`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`. It scans the
+package of the module for beans, and for the aggregate and its repository. The application is
+in `blueprint.application`, which is not above any module, so its own component scan never
+reaches one. In a real project a module comes from another team as a JAR, in a package the
+application does not know. A blueprint whose application scanned the module would teach a
+wiring which stops working there. On Quarkus nothing has to be done, because Quarkus finds the
+beans of every JAR with a bean index and scans no packages. The tests of a module boot it the
+same way: `TestApplication` scans nothing, and a test which needs a bean of its own test sources
+names it with `@Import`. `module-standalone` is the exception, because there the application is
+the workflow module.
+
+`bin/check_module_resources.py` checks both rules in CI, next to the rule for resources below.
+It reports a class of a workflow module outside the package of the module, and an application
+class whose package is above the package of a workflow module.
+
 Talking to a BPMS goes in both directions, and each direction gets its own class:
 
 ```
@@ -155,6 +176,7 @@ that blueprint:
 |                    Placeholder                     |                                Meaning                                |
 |----------------------------------------------------|-----------------------------------------------------------------------|
 | `blueprint.workflowmodule`                         | base package                                                          |
+| `blueprint.application`                            | package of the application, never above a workflow module             |
 | `loanapproval`                                     | use case identifier, Java package                                     |
 | `loan-approval`                                    | use case identifier, kebab case (workflow module ID, resources, REST) |
 | `loan_approval`                                    | BPMN process ID                                                       |
@@ -508,12 +530,13 @@ Every blueprint needs the same for that. So it is written once and copied:
 ```
 templates/test-harness/<platform>/
 ├── workflow-module/         -> <maven-module>/src/test/java/blueprint/workflowmodule/
-│   ├── TestApplication.java     boots the workflow module for its test (Spring Boot only)
+│   ├── TestApplication.java     boots the workflow module for its test through its
+│   │                            auto-configuration, and scans nothing (Spring Boot only)
 │   ├── WorkflowModuleTest.java  base class: waiting for a workflow to make progress
 │   ├── Simulator.java           base class of a stand-in for a surrounding system
 │   └── SuppressOutputExtension.java
 │                                shows the output of a test only if it fails (Spring Boot only)
-└── application/             -> <maven-module>/src/test/java/blueprint/workflowmodule/
+└── application/             -> <maven-module>/src/test/java/blueprint/application/
     └── ApplicationSmokeTest.java
 ```
 
@@ -1066,6 +1089,19 @@ only lists the wiki pages. `bin/check_spi_readme_links.py` rejects such a link:
 ```bash
 python3 bin/check_spi_readme_links.py
 ```
+
+## Decisions
+
+This repository keeps no `DECISIONS.md`. A decision is written down where it applies. A rule
+which every blueprint follows goes into this file. A choice which belongs to one blueprint goes
+into its `README.md` or `AGENTS.md`, where the reader of the blueprint finds it. A log next to
+them would say the same thing a second time, and the two would drift apart.
+
+A branch may still bring a file to `DECISIONS.pending/`, one per decision. It makes the decision
+easy to see in the review of the branch. The file lives until the next merge. Then the next
+change checks that the decision is in one of the files above, adds it there where it is
+missing, and deletes the file. Nothing cites such a file, and `DECISIONS.pending/README.md`
+says the same for whoever finds the directory.
 
 ## Formatting
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check that the resources of a workflow module live in a directory of its own.
+"""Check that the resources and the classes of a workflow module live in a namespace of their own.
 
 Spring Boot and Quarkus do not deploy a workflow module on its own. All modules of an
 application share one classpath, so two modules with a file at the same path clash, and one
@@ -21,8 +21,18 @@ the classpath, so 'application.yaml' and the other files of the application stay
 A module counts as an application when it has an 'application.yaml', 'application.yml' or
 'application.properties' at the top of its resources.
 
+Classes follow the same rule with a Java package (CONTRIBUTING.md, Rule 2). Two more checks:
+
+  - Every class in 'src/main/java' of a workflow module lies in the package of one of its
+    IDs, or below it: 'loan-approval' is the package 'loanapproval'. A second workflow of the
+    module goes below it, as 'loanapproval.ratewatch', never next to it.
+  - A Spring Boot application class ('@SpringBootApplication') is not in a package above the
+    package of a workflow module of its blueprint. Otherwise its component scan reaches into
+    the module, and the auto-configuration the module brings is never tested. A module which is
+    its own application, like 'module-standalone', is not compared with itself.
+
 Checked: every 'src/main/resources' below the 'blueprints-*' folders, outside of 'target' and
-'node_modules'.
+'node_modules', and the 'src/main/java' next to it.
 
 Usage: bin/check_module_resources.py
 """
@@ -78,12 +88,67 @@ def main() -> int:
                 f"into '{target}/'. Workflow modules share one classpath, so the same path in "
                 "two modules is a clash."
             )
+    problems += package_problems(root, all_resources)
     for problem in problems:
         print(problem)
     if problems:
         return 1
-    print(f"the resources of all {modules} modules live in the directory of their workflow module")
+    print(f"the resources and classes of all {modules} modules live in the namespace of their "
+          "workflow module")
     return 0
+
+
+def package_of(java: Path, sources: Path) -> list[str]:
+    return list(java.parent.relative_to(sources).parts)
+
+
+def is_application(resources: Path) -> bool:
+    return any((resources / name).is_file() for name in APPLICATION_FILES)
+
+
+def package_problems(root: Path, all_resources: list[Path]) -> list[str]:
+    """Classes outside the package of their module, and applications above a module."""
+
+    problems = []
+    module_packages: dict[tuple[str, ...], set[tuple[str, ...]]] = {}
+    for resources in all_resources:
+        ids = declared_ids(resources)
+        sources = resources.parent / "java"
+        if not ids or is_application(resources) or not sources.is_dir():
+            continue
+        names = {workflow_module_id.replace("-", "") for workflow_module_id in ids}
+        blueprint = resources.relative_to(root).parts[:3]
+        for java in sorted(sources.rglob("*.java")):
+            parts = package_of(java, sources)
+            below = [index for index, part in enumerate(parts) if part in names]
+            if not below:
+                problems.append(
+                    f"{java.relative_to(root)}: a class of the workflow module "
+                    f"'{'/'.join(sorted(ids))}' lies outside its package. Move it below "
+                    f"'{'/'.join(sorted(names))}'. A package next to the module clashes with a "
+                    "workflow module of that name."
+                )
+                continue
+            module_packages.setdefault(blueprint, set()).add(tuple(parts[:below[0] + 1]))
+    for resources in all_resources:
+        sources = resources.parent / "java"
+        if not is_application(resources) or declared_ids(resources) or not sources.is_dir():
+            continue
+        blueprint = resources.relative_to(root).parts[:3]
+        for java in sorted(sources.rglob("*.java")):
+            if "@SpringBootApplication" not in java.read_text(encoding="utf-8"):
+                continue
+            parts = tuple(package_of(java, sources))
+            for module in sorted(module_packages.get(blueprint, ())):
+                if module[:len(parts)] == parts:
+                    problems.append(
+                        f"{java.relative_to(root)}: the package of the application is above the "
+                        f"workflow module in '{'.'.join(module)}', so its component scan reaches "
+                        "into the module. Put the application into a package of its own, such as "
+                        "'blueprint.application', and let the module wire itself with an "
+                        "auto-configuration."
+                    )
+    return problems
 
 
 if __name__ == "__main__":
