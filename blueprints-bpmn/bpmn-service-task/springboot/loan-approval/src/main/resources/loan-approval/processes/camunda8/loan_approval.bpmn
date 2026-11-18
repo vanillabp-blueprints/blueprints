@@ -18,7 +18,7 @@
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_ToRetrieveCreditRating</bpmn:incoming>
-      <bpmn:outgoing>Flow_ToLoanAssessed</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToSendApprovalLetter</bpmn:outgoing>
     </bpmn:serviceTask>
     <!--
       The error path. A TaskException carrying this error code leaves the handler, and the
@@ -27,14 +27,39 @@
       about it.
     -->
     <bpmn:boundaryEvent id="BoundaryEvent_LoanRejected" name="Rating too low" attachedToRef="ServiceTask_RetrieveCreditRating">
-      <bpmn:outgoing>Flow_ToLoanRejected</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToSendRejectionLetter</bpmn:outgoing>
       <bpmn:errorEventDefinition id="ErrorEventDefinition_LoanRejected" errorRef="Error_LoanRejected" />
     </bpmn:boundaryEvent>
-    <bpmn:sequenceFlow id="Flow_ToLoanRejected" sourceRef="BoundaryEvent_LoanRejected" targetRef="EndEvent_LoanRejected" />
+    <bpmn:sequenceFlow id="Flow_ToSendRejectionLetter" sourceRef="BoundaryEvent_LoanRejected" targetRef="ServiceTask_SendRejectionLetter" />
+    <!--
+      This one is wired by its id, ServiceTask_SendRejectionLetter. The job type is still
+      needed by the BPMS, but no method names it.
+    -->
+    <bpmn:serviceTask id="ServiceTask_SendRejectionLetter" name="Send rejection letter">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="sendRejectionLetter" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToSendRejectionLetter</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanRejected</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanRejected" sourceRef="ServiceTask_SendRejectionLetter" targetRef="EndEvent_LoanRejected" />
     <bpmn:endEvent id="EndEvent_LoanRejected" name="Loan rejected">
       <bpmn:incoming>Flow_ToLoanRejected</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_ToLoanAssessed" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="EndEvent_LoanAssessed" />
+    <bpmn:sequenceFlow id="Flow_ToSendApprovalLetter" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="ServiceTask_SendApprovalLetter" />
+    <!--
+      The two letters come from a model which existed first. Their task definitions are
+      not method names, and one method serves both: @WorkflowTask is repeatable. This one
+      is wired by its job type.
+    -->
+    <bpmn:serviceTask id="ServiceTask_SendApprovalLetter" name="Send approval letter">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="sendApprovalLetter" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToSendApprovalLetter</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoanAssessed</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToLoanAssessed" sourceRef="ServiceTask_SendApprovalLetter" targetRef="EndEvent_LoanAssessed" />
     <bpmn:endEvent id="EndEvent_LoanAssessed" name="Loan assessed">
       <bpmn:incoming>Flow_ToLoanAssessed</bpmn:incoming>
     </bpmn:endEvent>
@@ -52,10 +77,16 @@
       <bpmndi:BPMNShape id="ServiceTask_RetrieveCreditRating_di" bpmnElement="ServiceTask_RetrieveCreditRating">
         <dc:Bounds x="240" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_SendApprovalLetter_di" bpmnElement="ServiceTask_SendApprovalLetter">
+        <dc:Bounds x="392" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_SendRejectionLetter_di" bpmnElement="ServiceTask_SendRejectionLetter">
+        <dc:Bounds x="392" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_LoanAssessed_di" bpmnElement="EndEvent_LoanAssessed">
-        <dc:Bounds x="392" y="102" width="36" height="36" />
+        <dc:Bounds x="544" y="102" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="379" y="145" width="66" height="14" />
+          <dc:Bounds x="531" y="145" width="66" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BoundaryEvent_LoanRejected_di" bpmnElement="BoundaryEvent_LoanRejected">
@@ -65,23 +96,31 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_LoanRejected_di" bpmnElement="EndEvent_LoanRejected">
-        <dc:Bounds x="392" y="252" width="36" height="36" />
+        <dc:Bounds x="544" y="252" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="381" y="295" width="62" height="14" />
+          <dc:Bounds x="533" y="295" width="62" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_ToRetrieveCreditRating_di" bpmnElement="Flow_ToRetrieveCreditRating">
         <di:waypoint x="188" y="120" />
         <di:waypoint x="240" y="120" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_ToLoanAssessed_di" bpmnElement="Flow_ToLoanAssessed">
+      <bpmndi:BPMNEdge id="Flow_ToSendApprovalLetter_di" bpmnElement="Flow_ToSendApprovalLetter">
         <di:waypoint x="340" y="120" />
         <di:waypoint x="392" y="120" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_ToLoanRejected_di" bpmnElement="Flow_ToLoanRejected">
+      <bpmndi:BPMNEdge id="Flow_ToLoanAssessed_di" bpmnElement="Flow_ToLoanAssessed">
+        <di:waypoint x="492" y="120" />
+        <di:waypoint x="544" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSendRejectionLetter_di" bpmnElement="Flow_ToSendRejectionLetter">
         <di:waypoint x="290" y="178" />
         <di:waypoint x="290" y="270" />
         <di:waypoint x="392" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoanRejected_di" bpmnElement="Flow_ToLoanRejected">
+        <di:waypoint x="492" y="270" />
+        <di:waypoint x="544" y="270" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

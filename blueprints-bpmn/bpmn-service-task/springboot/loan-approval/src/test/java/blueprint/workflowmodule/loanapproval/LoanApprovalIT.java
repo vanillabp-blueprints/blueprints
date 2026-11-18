@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Primary;
 
 import blueprint.workflowmodule.SuppressOutputExtension;
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.loanapproval.model.Aggregate;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
 /**
@@ -70,12 +71,14 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequest = awaitAggregate(
         loanApprovals,
         loanRequestId,
-        aggregate -> aggregate.getCreditRating() != null);
+        aggregate -> aggregate.getLetterSent() != null);
 
     assertThat(loanRequest.getCreditRating()).isEqualTo(50);
     // Nobody compiled the provider in: it comes from the input mapping of the BPMN task.
     assertThat(loanRequest.getRatedBy()).isEqualTo("acme-rating");
     assertThat(loanRequest.getRejectionReason()).isNull();
+    // The approval letter is wired by its task definition.
+    assertThat(loanRequest.getLetterSent()).isEqualTo(Aggregate.APPROVAL_LETTER);
 
   }
 
@@ -110,11 +113,13 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var loanRequest = awaitAggregate(
         loanApprovals,
         loanRequestId,
-        aggregate -> aggregate.getRejectionReason() != null);
+        aggregate -> aggregate.getLetterSent() != null);
 
     // The handler threw a TaskException, and everything it wrote before is still here.
     assertThat(loanRequest.getCreditRating()).isEqualTo(5);
     assertThat(loanRequest.getRejectionReason()).contains("below the minimum");
+    // The rejection letter is wired by its BPMN id, to the same method as the approval.
+    assertThat(loanRequest.getLetterSent()).isEqualTo(Aggregate.REJECTION_LETTER);
 
   }
 

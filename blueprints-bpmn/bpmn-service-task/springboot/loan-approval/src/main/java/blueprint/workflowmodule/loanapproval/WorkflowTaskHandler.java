@@ -64,4 +64,28 @@ public class WorkflowTaskHandler {
 
   }
 
+  /**
+   * Called for both letters of the model, the approval and the rejection. The model existed
+   * before the code, and its two tasks carry the task definitions {@code sendApprovalLetter}
+   * and {@code sendRejectionLetter}. Neither is the name of this method. The work is the same
+   * for both, so one method serves both, because {@code @WorkflowTask} is repeatable.
+   *
+   * <p>
+   * The first annotation names the task definition of the element. The second names its BPMN
+   * id. An id is unique within the process, so it picks exactly one element, even where a
+   * model uses one task definition for several elements. Both ways may be mixed on one method.
+   * Wiring by task definition stays the usual way.
+   * </p>
+   *
+   * @param loanRequest The workflow's aggregate.
+   */
+  @WorkflowTask(taskDefinition = "sendApprovalLetter")
+  @WorkflowTask(id = "ServiceTask_SendRejectionLetter")
+  public void informCustomer(
+      final Aggregate loanRequest) {
+
+    loanApproval.informCustomer(loanRequest);
+
+  }
+
 }
