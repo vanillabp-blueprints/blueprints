@@ -17,7 +17,9 @@
       "@gui-client": ["./src/shared/api.ts"],
       "@process-driver-client": ["./src/shared/process-driver-api.ts"],
       "@generated": ["./src/generated/loan-approval/index.ts"],
-      "@generated-process-driver": ["./src/generated/process-driver/index.ts"]
+      "@generated-process-driver": ["./src/generated/process-driver/index.ts"],
+      "@official-gui-client": ["./src/shared/official-gui-api.ts"],
+      "@generated-official-gui-api": ["./src/generated/official-gui-api/index.ts"]
     }
   },
   "include": ["src", "dev-shell/src"]

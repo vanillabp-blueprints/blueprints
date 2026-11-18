@@ -140,6 +140,8 @@ simulated cockpit at `http://localhost:8079`. `APPLICATION_URL`, `COCKPIT_URL` a
 | `dev-shell/src/main.tsx`                | the three views of the dev shell, chosen by the part of the address after `#`                       |
 | `scripts/start.mjs`                     | serves the dev shell and the micro-frontends, and forwards the calls to the application and cockpit |
 | `src/shared/process-driver-api.ts`      | `processDriver`, the one instance of the generated `ProcessDriverApi`                               |
+| `src/shared/official-gui-api.ts`        | `tasklist` and `workflowlist`, the generated clients of the official API of the cockpit             |
+| `openapi/official-gui-api.yaml`         | the copy of the OpenAPI file of the official API of the cockpit                                     |
 | `src/shared/api.ts`                     | `loanApproval`, the one instance of the generated `LoanApprovalApi`, and `ResponseError`            |
 | `src/data/user-task-form.ts`            | data entry `UserTaskForm`: picks the form by process and task definition                            |
 | `src/shared/task-form.tsx`              | the three web components of a form: `all`, `body` and `actions`                                     |
@@ -176,23 +178,29 @@ simulated cockpit at `http://localhost:8079`. `APPLICATION_URL`, `COCKPIT_URL` a
    the loan request is the business id of the user task. The amount and the credit score come with
    the user task, from the details the module reported.
 
-The official API of the cockpit belongs to the cockpit, not to the module. So this project has
-no OpenAPI file of it, and `cockpit.ts` writes the three calls the dev shell needs by hand.
+The official API of the cockpit belongs to the cockpit, not to the module. `cockpit.ts` calls it
+through the clients `@hey-api/openapi-ts` generates from the OpenAPI file of the cockpit, like the
+other two APIs. The cockpit publishes that file in no npm package, and the build of a frontend
+downloads nothing. So this project keeps a copy in `openapi/official-gui-api.yaml`: the file
+`apis/official-gui-api/openapi/v1.yaml` of the Business Cockpit, in the version the backend uses.
+When the backend moves to another version of the cockpit, take the file of that version.
 
 ### Imports through path aliases
 
 A file imports from another directory through a path alias, never with `../`. The aliases are
-the `paths` of `tsconfig.json`, the same as in the other frontends, and one more for each of the
-two parts of the process driver:
+the `paths` of `tsconfig.json`, the same as in the other frontends, one more for each of the
+two parts of the process driver, and two for the official API of the cockpit:
 
-|            Alias            |                Points to                |                           What it is                            |
-|-----------------------------|-----------------------------------------|-----------------------------------------------------------------|
-| `@loan-approval`            | `src/loan-approval.ts`                  | the names the module shares with its backend and the cockpit    |
-| `@shared`                   | `src/shared/index.ts`                   | what the forms take from `src/shared`                           |
-| `@gui-client`               | `src/shared/api.ts`                     | the client of the module API, and `ResponseError`               |
-| `@process-driver-client`    | `src/shared/process-driver-api.ts`      | the client of the process driver; only the dev shell imports it |
-| `@generated`                | `src/generated/loan-approval/index.ts`  | what the generator writes; only `src/shared/api.ts` imports it  |
-| `@generated-process-driver` | `src/generated/process-driver/index.ts` | likewise; only `src/shared/process-driver-api.ts` imports it    |
+|             Alias             |                 Points to                 |                                   What it is                                    |
+|-------------------------------|-------------------------------------------|---------------------------------------------------------------------------------|
+| `@loan-approval`              | `src/loan-approval.ts`                    | the names the module shares with its backend and the cockpit                    |
+| `@shared`                     | `src/shared/index.ts`                     | what the forms take from `src/shared`                                           |
+| `@gui-client`                 | `src/shared/api.ts`                       | the client of the module API, and `ResponseError`                               |
+| `@process-driver-client`      | `src/shared/process-driver-api.ts`        | the client of the process driver; only the dev shell imports it                 |
+| `@generated`                  | `src/generated/loan-approval/index.ts`    | what the generator writes; only `src/shared/api.ts` imports it                  |
+| `@generated-process-driver`   | `src/generated/process-driver/index.ts`   | likewise; only `src/shared/process-driver-api.ts` imports it                    |
+| `@official-gui-client`        | `src/shared/official-gui-api.ts`          | the clients of the official API of the cockpit; only the dev shell imports them |
+| `@generated-official-gui-api` | `src/generated/official-gui-api/index.ts` | likewise; only `src/shared/official-gui-api.ts` imports it                      |
 
 The driver has an alias of its own so that a form, which imports `@gui-client`, never carries
 the client of the driver. esbuild reads the same `paths` from `tsconfig.json`. `npm run build`

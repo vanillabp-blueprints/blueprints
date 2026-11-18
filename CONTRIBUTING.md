@@ -1123,6 +1123,11 @@ workflow files, where it also removes the quotes around version numbers and turn
 `3.1`. The second is everything below a blueprint's `src/`, where the comments are what the
 blueprint teaches.
 
+A copy of an OpenAPI file which another project publishes is left out as well. The frontend of
+`cockpit-process-driver-frontend` keeps the file of the cockpit's official API below `openapi/`.
+It stays as it came, so the next version of the file replaces it without a difference which only
+the formatter made.
+
 ## License
 
 By contributing you agree that your contribution is licensed under the

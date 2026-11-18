@@ -18,9 +18,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
-import blueprint.workflowmodule.loanapproval.api.model.Answer;
+import blueprint.workflowmodule.loanapproval.client.LoanApprovalApi;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
 
@@ -59,9 +61,15 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @Autowired
   private OfficialTasklistApi tasklist;
 
-  private final RestClient api = RestClient.create("http://localhost:"
-      + PORT
-      + "/loan-approval/api");
+  /**
+   * The API of the module, through the client the build generates from its OpenAPI file. The
+   * paths in the file are complete, so the client only needs the address of the application.
+   */
+  private final LoanApprovalApi loanApproval = HttpServiceProxyFactory
+      .builderFor(RestClientAdapter.create(RestClient.create("http://localhost:"
+          + PORT)))
+      .build()
+      .createClient(LoanApprovalApi.class);
 
   /**
    * Points every adapter at the simulator, before the application starts. The application does
@@ -118,11 +126,8 @@ public class LoanApprovalIT extends WorkflowModuleTest {
             WorkflowTaskHandler.CREDIT_SCORE, 720));
 
     // Somebody prepares the contract, and the module hands it to the e-signature service.
-    assertThat(api
-        .get()
-        .uri("/{loanRequestId}/prepare-contract/{taskId}?interestRate=3.5", loanRequestId, prepareContractTaskId)
-        .retrieve()
-        .body(String.class)).contains("prepared");
+    assertThat(loanApproval.prepareContract(loanRequestId, prepareContractTaskId, new BigDecimal("3.5")))
+        .contains("prepared");
     final var sent = awaitAggregate(
         loanApprovals,
         loanRequestId,
@@ -155,11 +160,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     final var customerId = simulator().nextCustomerId();
     simulator().createRating(customerId, 480);
 
-    final var answer = api
-        .get()
-        .uri("/request?customerId={customerId}&amount=5000", customerId)
-        .retrieve()
-        .body(Answer.class);
+    final var answer = loanApproval.request(customerId, 5000);
 
     assertThat(answer.outcome()).isEqualTo("declined");
     assertThat(loanApprovals.findById(answer.loanRequestId())).isEmpty();
@@ -172,11 +173,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // A reserved id the credit rating was never told about.
     final var customerId = simulator().nextCustomerId();
 
-    final var answer = api
-        .get()
-        .uri("/request?customerId={customerId}&amount=5000", customerId)
-        .retrieve()
-        .body(Answer.class);
+    final var answer = loanApproval.request(customerId, 5000);
 
     assertThat(answer.outcome()).isEqualTo("declined");
     assertThat(loanApprovals.findById(answer.loanRequestId())).isEmpty();
@@ -194,11 +191,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         loanRequestId,
         loanRequest -> loanRequest.getPrepareContractTaskId() != null)
         .getPrepareContractTaskId();
-    api
-        .get()
-        .uri("/{loanRequestId}/prepare-contract/{taskId}?interestRate=4", loanRequestId, taskId)
-        .retrieve()
-        .toBodilessEntity();
+    loanApproval.prepareContract(loanRequestId, taskId, new BigDecimal("4"));
     awaitAggregate(
         loanApprovals,
         loanRequestId,
@@ -239,11 +232,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
       final String customerId,
       final int amount) {
 
-    final var answer = api
-        .get()
-        .uri("/request?customerId={customerId}&amount={amount}", customerId, amount)
-        .retrieve()
-        .body(Answer.class);
+    final var answer = loanApproval.request(customerId, amount);
 
     assertThat(answer.outcome()).isEqualTo("started");
     return answer.loanRequestId();

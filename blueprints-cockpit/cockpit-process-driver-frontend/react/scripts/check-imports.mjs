@@ -1,7 +1,7 @@
 // Fails the build if a source file imports across a directory with '../'. Such a path breaks
 // when a file moves, and it does not say what it imports. The path aliases of tsconfig.json say
-// it: '@loan-approval', '@shared', '@gui-client', '@process-driver-client', '@generated' and
-// '@generated-process-driver'. An import from the same directory, './', stays allowed. The
+// it: '@loan-approval', '@shared', '@gui-client', '@process-driver-client', '@official-gui-client',
+// '@generated', '@generated-process-driver' and '@generated-official-gui-api'. An import from the same directory, './', stays allowed. The
 // script reads src and dev-shell/src. The generated clients in src/generated are left out,
 // because this module does not write them.
 //

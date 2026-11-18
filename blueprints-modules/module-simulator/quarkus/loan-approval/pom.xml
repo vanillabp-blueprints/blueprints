@@ -200,6 +200,31 @@
               </configOptions>
             </configuration>
           </execution>
+          <!--
+            The client of the API, for the integration test only. It comes from the same OpenAPI
+            file, as an interface of Jakarta REST which the REST client of Quarkus implements. So
+            the test calls the API the way a person in the browser does, and writes no path and
+            no parameter by hand.
+          -->
+          <execution>
+            <id>loan-approval-test-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/loan-approval.yaml</inputSpec>
+              <output>${project.build.directory}/generated-test-sources/openapi</output>
+              <addCompileSourceRoot>false</addCompileSourceRoot>
+              <addTestCompileSourceRoot>true</addTestCompileSourceRoot>
+              <apiPackage>blueprint.workflowmodule.loanapproval.client</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.client.model</modelPackage>
+              <configOptions>
+                <!-- The method returns the body. An error status comes as an exception of the REST client. -->
+                <returnResponse>false</returnResponse>
+              </configOptions>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <!--

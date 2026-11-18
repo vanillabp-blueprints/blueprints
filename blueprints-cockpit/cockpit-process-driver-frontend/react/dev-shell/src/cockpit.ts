@@ -5,33 +5,18 @@
 // reports its workflows and user tasks there, as it would to a real cockpit. The dev shell reads
 // them through the official API of the cockpit below /official-api/gui/api/v1: the simulator
 // answers each system it plays below a prefix of its own, and below it the path of the system.
-// That API belongs to the cockpit and not to the module, so there is no OpenAPI file of it in
-// this project, and the few calls are written here by hand.
+// The calls go through the clients generated from the OpenAPI file of that API, see
+// @official-gui-client.
 
 import { createModuleHost } from '@vanillabp/bc-module-host';
 import { WORKFLOW_MODULE_ID } from '@loan-approval';
+import { ResponseError, tasklist, workflowlist, type UserTask, type Workflow } from '@official-gui-client';
 
-const OFFICIAL_API = '/official-api/gui/api/v1';
-
-/** A workflow as the cockpit lists it, with the fields the dev shell shows. */
-export interface CockpitWorkflow {
-  id: string;
-  businessId?: string;
-  title?: Record<string, string>;
-  endedAt?: string;
-}
+/** A workflow as the cockpit lists it. */
+export type CockpitWorkflow = Workflow;
 
 /** A user task as the cockpit lists it. The host hands all of it to the form. */
-export interface CockpitUserTask {
-  id: string;
-  workflowId?: string;
-  businessId?: string;
-  bpmnProcessId?: string;
-  taskDefinition?: string;
-  title?: Record<string, string>;
-  endedAt?: string;
-  details?: Record<string, unknown>;
-}
+export type CockpitUserTask = UserTask;
 
 /** The simulated cockpit answered, but not with a success. */
 export class CockpitError extends Error {
@@ -42,33 +27,31 @@ export class CockpitError extends Error {
 }
 
 /** One call to the official API. 404 means that the cockpit does not know the item (yet). */
-async function call<T>(path: string, body?: unknown): Promise<T | undefined> {
-  const response = await fetch(`${OFFICIAL_API}${path}`, body === undefined
-    ? undefined
-    : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
-  if (response.status === 404) return undefined;
-  if (!response.ok) throw new CockpitError(response.status);
-  return (await response.json()) as T;
+async function call<T>(answer: Promise<T>): Promise<T | undefined> {
+  try {
+    return await answer;
+  } catch (error) {
+    if (!(error instanceof ResponseError)) throw error;
+    if (error.response.status === 404) return undefined;
+    throw new CockpitError(error.response.status);
+  }
 }
 
 export const cockpit = {
   /** The workflow of a business id. The business id of a loan approval is its loan request id. */
   workflowOf: async (businessId: string) => {
-    const answer = await call<{ workflows?: CockpitWorkflow[] }>('/workflow', {
-      businessIds: [businessId],
-      mode: 'All',
-      pageNumber: 0,
-      pageSize: 1,
-    });
+    const answer = await call(workflowlist.getWorkflows({
+      workflowsRequest: { businessIds: [businessId], mode: 'All', pageNumber: 0, pageSize: 1 },
+    }));
     return answer?.workflows?.[0];
   },
-  workflow: (workflowId: string) => call<CockpitWorkflow>(`/workflow/${encodeURIComponent(workflowId)}`),
-  userTasksOf: (workflowId: string) => call<CockpitUserTask[]>(`/workflow/${encodeURIComponent(workflowId)}/usertasks?llatcup=false`, {
-    mode: 'All',
-    pageNumber: 0,
-    pageSize: 50,
-  }),
-  userTask: (userTaskId: string) => call<CockpitUserTask>(`/usertask/${encodeURIComponent(userTaskId)}`),
+  workflow: (workflowId: string) => call(workflowlist.getWorkflow({ workflowId })),
+  userTasksOf: (workflowId: string) => call(workflowlist.getUserTasksOfWorkflow({
+    workflowId,
+    llatcup: false,
+    userTasksRequest: { mode: 'All', pageNumber: 0, pageSize: 50 },
+  })),
+  userTask: (userTaskId: string) => call(tasklist.getUserTask({ userTaskId })),
 };
 
 /**

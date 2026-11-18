@@ -17,10 +17,12 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.awaitility.core.ConditionTimeoutException;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
+import io.vanillabp.cockpit.devshell.simulator.api.client.SimulatorApi;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
@@ -46,8 +48,9 @@ import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowsRequest;
  * below {@code /official-api/gui/api/v1}, with the clients generated from the OpenAPI file of
  * that API. Spring builds them from the key
  * {@code spring.http.serviceclient.official-gui-api.base-url}, which the test sets to
- * {@link #cockpitBaseUrl()}, and the test hands them to the methods which read. The report has
- * no such file, so a plain RestClient reads it.
+ * {@link #cockpitBaseUrl()}, and the test hands them to the methods which read. The report comes
+ * through the client generated from the OpenAPI file of the simulator's own paths, from
+ * {@code dev-shell-simulator-api-client}.
  * </p>
  *
  * <p>
@@ -72,14 +75,18 @@ public final class CockpitSimulator {
 
   private final String baseUrl;
 
-  private final RestClient simulatorApi;
+  private final SimulatorApi simulatorApi;
 
   private CockpitSimulator(
       final String baseUrl) {
 
     this.baseUrl = baseUrl;
-    this.simulatorApi = RestClient.create(baseUrl
-        + "/simulator-api");
+    // The paths in the OpenAPI file of the simulator are complete, so the client takes the
+    // address of the simulator as it is.
+    this.simulatorApi = HttpServiceProxyFactory
+        .builderFor(RestClientAdapter.create(RestClient.create(baseUrl)))
+        .build()
+        .createClient(SimulatorApi.class);
 
   }
 
@@ -242,7 +249,14 @@ public final class CockpitSimulator {
   private Optional<Map<String, Object>> lastReportOf(
       final String userTaskId) {
 
-    return getIfKnown(simulatorApi, "/usertask/{userTaskId}/report", userTaskId);
+    try {
+      return Optional.ofNullable(simulatorApi
+          .getLastReportOfUserTask(userTaskId)
+          .getBody());
+    } catch (HttpClientErrorException.NotFound e) {
+      // Nobody reported the user task yet.
+      return Optional.empty();
+    }
 
   }
 
@@ -263,31 +277,6 @@ public final class CockpitSimulator {
       // Nobody reported the user task yet.
       return Optional.empty();
     }
-
-  }
-
-  /**
-   * Sends a GET request. The simulator answers 404 for a user task nobody reported yet.
-   *
-   * @param api        The API to ask.
-   * @param path       The path below the API.
-   * @param userTaskId The id of the user task in the path.
-   * @return The answer, or nothing if the simulator does not know the user task yet.
-   */
-  @SuppressWarnings("unchecked")
-  private static Optional<Map<String, Object>> getIfKnown(
-      final RestClient api,
-      final String path,
-      final String userTaskId) {
-
-    return api
-        .get()
-        .uri(path, userTaskId)
-        .exchange((
-            request,
-            response) -> response.getStatusCode() == HttpStatus.NOT_FOUND
-                ? Optional.empty()
-                : Optional.of((Map<String, Object>) response.bodyTo(Map.class)));
 
   }
 
