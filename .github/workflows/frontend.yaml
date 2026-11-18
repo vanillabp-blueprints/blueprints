@@ -14,13 +14,13 @@ name: Build the cockpit frontends
       - main
     paths:
       - "blueprints-cockpit/*-frontend/**"
-      - "blueprints-cockpit/*-backend/*/*/src/main/resources/openapi/**"
+      - "blueprints-cockpit/*-backend/*/*/src/main/resources/*/openapi/**"
       - "blueprints-modules/module-process-driver/**/openapi/**"
       - ".github/workflows/frontend.yaml"
   pull_request:
     paths:
       - "blueprints-cockpit/*-frontend/**"
-      - "blueprints-cockpit/*-backend/*/*/src/main/resources/openapi/**"
+      - "blueprints-cockpit/*-backend/*/*/src/main/resources/*/openapi/**"
       - "blueprints-modules/module-process-driver/**/openapi/**"
       - ".github/workflows/frontend.yaml"
   workflow_dispatch:
