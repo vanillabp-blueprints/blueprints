@@ -8,6 +8,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { after, before, describe, it } from 'node:test';
 import { build } from 'esbuild';
 import { chromium } from 'playwright';
@@ -21,7 +22,17 @@ const hostBundle = join(projectDir, 'build', 'test-host.js');
 const assessRisk = { id: 'task-1', businessId: 'LR-4711', title: 'Assess risk', bpmnProcessId: 'loan_approval', taskDefinition: 'assessRisk' };
 const checkDocuments = { id: 'task-2', businessId: 'LR-4711', title: 'Check documents', bpmnProcessId: 'loan_approval', taskDefinition: 'checkDocuments' };
 
-const AREAS = { body: 'body', information: 'information', actions: 'actions' };
+/**
+ * The web components of a form, as the built data entry has to name them. Every name carries the
+ * id of the build, which the last `npm run build` wrote into src/bc-build.js.
+ */
+const { BUILD_ID } = await import(pathToFileURL(join(projectDir, 'src', 'bc-build.js')).href);
+const formElements = (task) => ({
+  all: `loan-approval-${BUILD_ID}-loan-approval--${task}--form`,
+  body: `loan-approval-${BUILD_ID}-loan-approval--${task}--body`,
+  information: `loan-approval-${BUILD_ID}-loan-approval--${task}--information`,
+  actions: `loan-approval-${BUILD_ID}-loan-approval--${task}--actions`,
+});
 
 /** The two kinds of cockpit: with the areas of the default convention, and with 'all' only. */
 const COCKPITS = [
@@ -95,21 +106,11 @@ describe('the data entries', () => {
     assert.deepEqual(forms, [
       {
         entry: 'AssessRiskForm',
-        element: {
-          all: 'loan-approval-assess-risk',
-          body: 'loan-approval-assess-risk-body',
-          information: 'loan-approval-assess-risk-information',
-          actions: 'loan-approval-assess-risk-actions',
-        },
+        element: formElements('assess-risk'),
       },
       {
         entry: 'CheckDocumentsForm',
-        element: {
-          all: 'loan-approval-check-documents',
-          body: 'loan-approval-check-documents-body',
-          information: 'loan-approval-check-documents-information',
-          actions: 'loan-approval-check-documents-actions',
-        },
+        element: formElements('check-documents'),
       },
       undefined,
       undefined,
@@ -158,7 +159,7 @@ for (const cockpit of COCKPITS) {
 
       const elements = await page.evaluate(() => [...document.querySelectorAll('#user-task-page [data-bc-area] > *, #user-task-page > :not([data-bc-area])')]
         .map((element) => [element.localName, element.shadowRoot?.mode]));
-      const expected = cockpit.areas.map((area) => [area === 'all' ? 'loan-approval-assess-risk' : `loan-approval-assess-risk-${AREAS[area]}`, 'open']);
+      const expected = cockpit.areas.map((area) => [formElements('assess-risk')[area], 'open']);
       assert.deepEqual(elements, expected);
 
       await assertText(page.getByTestId('assess-risk-loan-request'), 'LR-4711');

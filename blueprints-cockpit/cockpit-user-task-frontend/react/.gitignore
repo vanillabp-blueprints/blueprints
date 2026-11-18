@@ -65,3 +65,5 @@ dist/
 build/
 # the API client, which @hey-api/openapi-ts writes from the OpenAPI file
 src/generated/
+# the module id and the build id, which scripts/write-bc-build.mjs writes for every build
+src/bc-build.js

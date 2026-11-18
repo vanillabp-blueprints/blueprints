@@ -6,9 +6,11 @@
 // Run `npm run build` before; the tests read dist/dev-shell and dist/micro-frontends.
 
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { after, before, describe, it } from 'node:test';
+import { build } from 'esbuild';
 import { chromium } from 'playwright';
 import { startServer } from './server.js';
 
@@ -200,6 +202,67 @@ describe('the pages of a case and of a user task', () => {
     await assertText(page.getByTestId('user-task-error'), 'The simulated cockpit does not know the user task unknown.');
     assert.deepEqual(pageErrors, []);
     await page.close();
+  });
+});
+
+describe('the names of the web components', () => {
+  it('a name without the prefix of the module is not drawn, and the dev shell says why', async () => {
+    const { entries } = JSON.parse(readFileSync(join(microFrontends, 'bc-manifest.json'), 'utf8'));
+    const page = await browser.newPage();
+    const pageErrors = [];
+    const consoleErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    page.on('console', (message) => message.type() === 'error' && consoleErrors.push(message.text()));
+    const { calls } = await playBackend(page);
+    // A data entry which names its form by hand, without the prefix of its module.
+    await page.route(`**/wm/loan-approval/${entries.UserTaskForm}`, (route) => route.fulfill({
+      contentType: 'text/javascript',
+      body: "export const userTaskForm = () => ({ entry: 'AssessRiskForm', element: { body: 'assess-risk-body', actions: 'assess-risk-actions' } });",
+    }));
+    await page.goto(`${server.url}/#/user-task/task-1`);
+
+    const note = "The module 'loan-approval' names the web component 'assess-risk-body', but its names have to start with 'loan-approval-'.";
+    await assertText(page.getByTestId('user-task-error'), note);
+    assert.ok(consoleErrors.includes(note), consoleErrors.join('\n'));
+    // Nothing of the form was loaded, and nothing was drawn.
+    const loaded = await page.evaluate(() => performance.getEntriesByType('resource').map(({ name }) => new URL(name).pathname));
+    assert.ok(!loaded.includes(`/wm/loan-approval/${entries.AssessRiskForm}`), loaded.join('\n'));
+    assert.equal(await page.locator('[data-testid="user-task-form"] [data-bc-area] > *').count(), 0);
+    assert.ok(!calls.some((call) => call.includes('/assess-risk/')), calls.join('\n'));
+    assert.deepEqual(pageErrors, []);
+    await page.close();
+  });
+
+  it('the names of this build are drawn', async () => {
+    const { BUILD_ID } = await import(pathToFileURL(join(projectDir, 'src', 'bc-build.js')).href);
+    const { page, pageErrors } = await openDevShell({}, '#/user-task/task-1');
+    await assertText(page.getByTestId('assess-risk-loan-request'), 'LR-4711');
+    const drawn = await page.evaluate(() => [...document.querySelectorAll('[data-testid="user-task-form"] [data-bc-area] > *')].map((element) => element.localName));
+    assert.deepEqual(drawn, [
+      `loan-approval-${BUILD_ID}-loan-approval--assess-risk--body`,
+      `loan-approval-${BUILD_ID}-loan-approval--assess-risk--actions`,
+    ]);
+    assert.equal(await page.getByTestId('user-task-error').count(), 0);
+    assert.deepEqual(pageErrors, []);
+    await page.close();
+  });
+
+  it('the check refuses what a cockpit refuses, and accepts a name without a build id', async () => {
+    const bundle = join(projectDir, 'build', 'element-names.test.js');
+    await build({ entryPoints: [join(projectDir, 'dev-shell', 'src', 'element-names.ts')], bundle: true, format: 'esm', outfile: bundle, logLevel: 'warning' });
+    const { refusedElementName } = await import(pathToFileURL(bundle).href);
+    const modules = ['taxi', 'taxi-ride', 'loan-approval'];
+
+    assert.equal(refusedElementName('taxi', 'taxi-mvaro4w0-confirm', modules), undefined);
+    // The check does not ask for a build id.
+    assert.equal(refusedElementName('taxi-ride', 'taxi-ride-taxi-ride--confirm--form', modules), undefined);
+    // The prefix comes from the module id by the rules of the kit.
+    assert.equal(refusedElementName('TaxiRide', 'taxi-ride-mvaro4w0-confirm', modules), undefined);
+    assert.match(refusedElementName('taxi', 'taxi-ride-confirm', modules), /starts with 'taxi-ride-', the prefix of another module/);
+    assert.match(refusedElementName('taxi', 'taxiride-confirm', modules), /have to start with 'taxi-'/);
+    assert.match(refusedElementName('taxi', 'taxi', modules), /not a valid name of a custom element/);
+    assert.match(refusedElementName('taxi', 'Taxi-confirm', modules), /not a valid name of a custom element/);
+    assert.match(refusedElementName('font', 'font-face', ['font']), /not a valid name of a custom element/);
   });
 });
 

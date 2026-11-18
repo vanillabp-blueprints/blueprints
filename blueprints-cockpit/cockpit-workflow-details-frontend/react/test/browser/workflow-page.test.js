@@ -9,6 +9,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { after, before, describe, it } from 'node:test';
 import { build } from 'esbuild';
 import { chromium } from 'playwright';
@@ -18,6 +19,18 @@ import { startServer } from './server.js';
 const projectDir = resolve(import.meta.dirname, '..', '..');
 const microFrontends = join(projectDir, 'dist', 'micro-frontends');
 const hostBundle = join(projectDir, 'build', 'test-host.js');
+
+/**
+ * The web components of the case page, as the built data entry has to name them. Every name
+ * carries the id of the build, which the last `npm run build` wrote into src/bc-build.js.
+ */
+const { BUILD_ID } = await import(pathToFileURL(join(projectDir, 'src', 'bc-build.js')).href);
+const PAGE_ELEMENTS = {
+  all: `loan-approval-${BUILD_ID}-loan-approval--page`,
+  body: `loan-approval-${BUILD_ID}-loan-approval--body`,
+  information: `loan-approval-${BUILD_ID}-loan-approval--information`,
+  actions: `loan-approval-${BUILD_ID}-loan-approval--actions`,
+};
 
 /** A case as the cockpit hands it to the page: the id of the cockpit, and the business id. */
 const loanApproval = { id: 'wf-1', businessId: 'LR-4711', bpmnProcessId: 'loan_approval', title: { en: 'Loan approval' } };
@@ -111,12 +124,7 @@ describe('the data entries', () => {
     assert.deepEqual(pages, [
       {
         entry: 'LoanApprovalPage',
-        element: {
-          all: 'loan-approval-case',
-          body: 'loan-approval-case-body',
-          information: 'loan-approval-case-information',
-          actions: 'loan-approval-case-actions',
-        },
+        element: PAGE_ELEMENTS,
       },
       undefined,
     ]);
@@ -162,7 +170,7 @@ for (const cockpit of COCKPITS) {
       await cockpitHasUserTasks(page, [reviewLoanRequest]);
       assert.deepEqual(await show(page), cockpit.areas);
 
-      const expected = cockpit.areas.map((area) => [area === 'all' ? 'loan-approval-case' : `loan-approval-case-${area}`, 'open']);
+      const expected = cockpit.areas.map((area) => [PAGE_ELEMENTS[area], 'open']);
       assert.deepEqual(await drawnElements(page), expected);
 
       await assertText(page.getByTestId('case-loan-request'), 'LR-4711');

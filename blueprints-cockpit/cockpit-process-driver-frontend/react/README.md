@@ -52,6 +52,13 @@ it, and the workflow module reports to it, as it would to a real cockpit. The fo
 is drawn by `createModuleHost` of `@vanillabp/bc-module-host`. So the dev shell shows the forms
 the way a cockpit with the areas `body` and `actions` shows them.
 
+Before it draws a form, the dev shell checks the names of its web components the way a cockpit
+does (`dev-shell/src/element-names.ts`). A name which does not start with the prefix of the module
+and a hyphen, or which starts with the longer prefix of another module, is not loaded and not
+drawn. The page shows the same note a cockpit shows instead, with the module, the name and the
+prefix, and writes it to the console. So a wrong name shows up during development and not only in
+the cockpit.
+
 `npm run start` serves the dev shell and forwards the calls to the application and to the
 simulated cockpit. So the page calls the same paths as in production, `/wm/loan-approval/...`,
 and does not need to know any port.
@@ -95,20 +102,21 @@ npm run build
 npm test
 ```
 
-|             Script              |                                                What it does                                                |
-|---------------------------------|------------------------------------------------------------------------------------------------------------|
-| `npm run build`                 | all of the following, one after the other                                                                  |
-| `npm run check:imports`         | fails the build on an import with `../`, see [Imports through path aliases](#imports-through-path-aliases) |
-| `npm run fetch:openapi`         | copies the two OpenAPI files of the backend into `build/openapi`                                           |
-| `npm run generate:client`       | generates the two API clients from them with `@hey-api/openapi-ts`                                         |
-| `npm run typecheck`             | checks the types of the whole project, the dev shell included                                              |
-| `npm run build:micro-frontends` | builds the entries and `bc-manifest.json` into `dist/micro-frontends`                                      |
-| `npm run check:entries`         | runs `bc-check-entries` of the kit: no bare import, no framework in a data entry, every file there         |
-| `npm run build:dev-shell`       | builds the dev shell into `dist/dev-shell`                                                                 |
-| `npm run build:jar`             | builds the UI jar `io.vanillabp.blueprint:cockpit-process-driver-ui` and its pom into `dist`               |
-| `npm run build:image`           | builds the nginx image. `npm run build` skips it with a warning where Docker does not run                  |
-| `npm test`                      | the browser tests, see [How it works](#how-it-works)                                                       |
-| `npm run start`                 | the dev shell at `http://localhost:4200`                                                                   |
+|             Script              |                                                                 What it does                                                                  |
+|---------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| `npm run build`                 | all of the following, one after the other                                                                                                     |
+| `npm run check:imports`         | fails the build on an import with `../`, see [Imports through path aliases](#imports-through-path-aliases)                                    |
+| `npm run fetch:openapi`         | copies the two OpenAPI files of the backend into `build/openapi`                                                                              |
+| `npm run generate:client`       | generates the two API clients from them with `@hey-api/openapi-ts`                                                                            |
+| `npm run write:bc-build`        | writes the module id and the id of this build into `src/bc-build.js`, see [The names of the web components](#the-names-of-the-web-components) |
+| `npm run typecheck`             | checks the types of the whole project, the dev shell included                                                                                 |
+| `npm run build:micro-frontends` | builds the entries and `bc-manifest.json` into `dist/micro-frontends`                                                                         |
+| `npm run check:entries`         | runs `bc-check-entries` of the kit: no bare import, no framework in a data entry, every file there                                            |
+| `npm run build:dev-shell`       | builds the dev shell into `dist/dev-shell`                                                                                                    |
+| `npm run build:jar`             | builds the UI jar `io.vanillabp.blueprint:cockpit-process-driver-ui` and its pom into `dist`                                                  |
+| `npm run build:image`           | builds the nginx image. `npm run build` skips it with a warning where Docker does not run                                                     |
+| `npm test`                      | the browser tests, see [How it works](#how-it-works)                                                                                          |
+| `npm run start`                 | the dev shell at `http://localhost:4200`                                                                                                      |
 
 ### The dev shell with the backend
 
@@ -136,6 +144,7 @@ simulated cockpit at `http://localhost:8079`. `APPLICATION_URL`, `COCKPIT_URL` a
 | `dev-shell/src/process-driver-page.tsx` | the page "Process driver": states, test data, advance-to, the links and the messages                |
 | `dev-shell/src/cockpit.ts`              | the host of the module kit, and the calls to the simulated cockpit                                  |
 | `dev-shell/src/user-task-page.tsx`      | reads a user task from the simulated cockpit and lets the host draw its form                        |
+| `dev-shell/src/element-names.ts`        | checks the names of the web components before they are drawn, the way a cockpit does                |
 | `dev-shell/src/workflow-page.tsx`       | a case and its user tasks                                                                           |
 | `dev-shell/src/main.tsx`                | the three views of the dev shell, chosen by the part of the address after `#`                       |
 | `scripts/start.mjs`                     | serves the dev shell and the micro-frontends, and forwards the calls to the application and cockpit |
@@ -178,6 +187,26 @@ simulated cockpit at `http://localhost:8079`. `APPLICATION_URL`, `COCKPIT_URL` a
 
 The official API of the cockpit belongs to the cockpit, not to the module. So this project has
 no OpenAPI file of it, and `cockpit.ts` writes the three calls the dev shell needs by hand.
+
+### The names of the web components
+
+All modules of a cockpit define their web components in the one registry of the page. A name
+can be defined only once there, and the cockpit refuses a name which does not start with the
+prefix of its module. So every name has three parts, built by `createElementNames` of the kit:
+
+1. the prefix of the workflow module id, `loan-approval`,
+2. the id of the build, the time of the build in milliseconds in base 36,
+3. the BPMN process id, the task definition and the part, `form` for the area `all` and the name of the area for the others.
+
+`elementName.userTask(BPMN_PROCESS_ID, ASSESS_RISK, 'form')` in `src/loan-approval.ts` gives `loan-approval-<build id>-loan-approval--assess-risk--form`. A new build gets new names, so the
+cockpit loads it while somebody has the cockpit open, without a reload of the page.
+
+`npm run write:bc-build` (`scripts/write-bc-build.mjs`) writes `src/bc-build.js` before the type
+check: `WORKFLOW_MODULE_ID` from `config.workflowModuleId` in `package.json`, and `BUILD_ID`.
+`scripts/build-micro-frontends.mjs` passes the same time to `createManifest`, so the manifest and
+the names speak of one build. The file is written for every build and not checked in, its types
+are in `src/bc-build.d.ts`. The browser tests read the build id from it, and
+`test/build-id.test.js` proves that two builds give different names.
 
 ### Imports through path aliases
 
@@ -225,7 +254,10 @@ starts with `npm run check:imports`. `scripts/check-imports.mjs` fails the build
 tests answer the process driver, the official API of the cockpit and the module API inside the
 browser, at the network level. One test chooses a state, creates the case, follows the link and
 completes the user task in its form. Others check the message for a driver which is switched off,
-for an application which does not answer, and for a case which does not reach its state. The
+for an application which does not answer, and for a case which does not reach its state. Three
+check the names of the web components: a data entry which names its form without the prefix of
+the module gets the note and no form, the names of this build are drawn, and the check refuses
+what a cockpit refuses. The
 tests of the forms load the build through `createModuleHost`, in a host with the areas `body`
 and `actions` and in a host which only knows `all`.
 
