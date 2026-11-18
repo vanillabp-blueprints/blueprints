@@ -154,7 +154,7 @@ http://localhost:8080/loan-approval/api/loan-requests/start?amount=5000
 
 The process stops at "Assess risk", and the application reports the task to the cockpit. The
 cockpit of the compose file has no user interface of its own. Your organisation builds one with
-the skill `business-cockpit-user-interface`. You can still follow the way a form takes. Open the
+the skill `business-cockpit-creator`. You can still follow the way a form takes. Open the
 manifest through the cockpit, and log in as `test` with the password `test`:
 
 ```

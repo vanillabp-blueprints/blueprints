@@ -75,7 +75,7 @@ entries, and `bc-manifest.json` lists them. There are two kinds:
 
 The project builds against `@vanillabp/bc-module-kit`. The kit holds the minimum every cockpit
 understands: the names of the entries, the manifest, the event protocol and `defineBcElement`.
-A cockpit generated with the skill `business-cockpit-user-interface` brings its own types library
+A cockpit generated with the skill `business-cockpit-creator` brings its own types library
 with the same minimum. It may offer more, for example more areas or more entries. If you start
 from this blueprint, replace the kit with the types library of your cockpit later. The code
 stays the same where it uses the minimum.
@@ -239,7 +239,7 @@ sources. The dev shell is a small cockpit for development. It shows the forms of
 from its sources, forwards `/wm/` to the backend, and simulates users, so you can try the forms
 with different permissions.
 
-The dev shell comes from a cockpit generated with the skill `business-cockpit-user-interface`.
+The dev shell comes from a cockpit generated with the skill `business-cockpit-creator`.
 Such a cockpit publishes it as the package `@acme/bc-dev-shell-angular`, with the scope of the
 organisation instead of `@acme`. None of them publishes it yet. Until one does, `npm run start`
 only says so, and the browser tests are the way to see the forms.
