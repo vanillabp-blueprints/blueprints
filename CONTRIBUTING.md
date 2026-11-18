@@ -119,22 +119,34 @@ All four classes exist even where a blueprint only forwards through them, as in
 asynchronous tasks, then only add methods. They do not have to restructure. That is why several
 deltas can be combined.
 
-The same applies to resources, and there it is not a matter of taste. Workflow modules share
-one classpath. So **all** resources of a module belong in one subdirectory named after the
-workflow module ID. Only the marker file is outside it.
+The same applies to resources, and there it is not a matter of taste. Spring Boot and Quarkus
+do not deploy a workflow module on its own, as a Java EE server can. All modules of an
+application share one classpath, so two files at the same path clash, and one of them is never
+read. Classes avoid this with a Java package per module. Resources avoid it with a directory
+per module. So `src/main/resources` of a workflow module, and of a library which belongs to one,
+holds only two entries: `META-INF/` and a directory named after the workflow module ID.
+Everything else goes into that directory.
 
 ```
 src/main/resources/
-├── META-INF/workflow-module              <- contains 'loan-approval'
-├── openapi/loan-approval.yaml            <- the API of the use case (Rule 7)
+├── META-INF/
+│   └── workflow-module                   <- contains 'loan-approval'
 └── loan-approval/
     ├── loan-approval.yaml                <- the module's own configuration
+    ├── openapi/loan-approval.yaml        <- the API of the use case (Rule 7)
+    ├── business-cockpit-templates/       <- the templates of the Business Cockpit, if any
     └── processes/<adapter-id>/*.bpmn     <- one directory per adapter id
 ```
 
-The OpenAPI file is the second file outside that directory. Its name is the use case, so it does
-not clash with the file of another module. The frontends of the cockpit blueprints read it from
-this path to generate their client.
+The frontends of the cockpit blueprints read the OpenAPI file from this path to generate their
+client.
+
+The application module is not a workflow module. It holds the modules together and has no
+neighbours on the classpath, so its `application.yaml` and its other files stay at the top.
+`module-standalone` counts as an application, because there the application is the workflow
+module. `bin/check_module_resources.py` checks the rule in CI. It reports every other entry at
+the top of the resources of a module which has no `application.yaml` or
+`application.properties`.
 
 Placeholders are the same in every blueprint, so a tool can replace them. Only the Maven
 coordinates name the blueprint. Every `AGENTS.md` lists them in its table, with the values of
@@ -382,9 +394,9 @@ frontend and an agent read it without reading Java.
 Where the file lives depends on who calls the API:
 
 - An API which only people in a browser call, or only the TypeScript of the module's own user
-  interface: `src/main/resources/openapi/<use-case>.yaml` in the module whose controller
-  implements it. Its tag is the use case, so the interface is called `LoanApprovalApi` and is
-  generated into the package `<use case package>.api`. Every `ApiController` is such an API.
+  interface: `src/main/resources/<workflow-module-id>/openapi/<use-case>.yaml` in the module whose
+  controller implements it. Its tag is the use case, so the interface is called `LoanApprovalApi`
+  and is generated into the package `<use case package>.api`. Every `ApiController` is such an API.
 - An API with a Java client, such as a system around the application, its simulator or another
   module: a Maven module `<name>-api` with the file and two submodules. `client` generates what
   the caller uses, `server` generates the interface the other side implements.
