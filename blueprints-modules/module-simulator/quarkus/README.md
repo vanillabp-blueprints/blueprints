@@ -288,6 +288,10 @@ java -jar simulator/target/simulator-1.0.0-SNAPSHOT-runnable.jar
 mvn -pl application quarkus:dev
 ```
 
+`quarkus:dev` opens a debug port, 5005. If a second application runs in dev mode on the same
+machine, both want that port. Start the second one with `-Ddebug=false`, or give it a port of
+its own with `-Ddebug=5006`.
+
 The config profile `local` is a parent of the profile the application runs in, so every
 adapter talks to the simulator. Request a
 loan for a customer the simulated credit rating knows from the start:

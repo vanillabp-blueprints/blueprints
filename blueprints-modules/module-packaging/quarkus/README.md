@@ -258,6 +258,10 @@ Start the application:
 mvn -pl application quarkus:dev
 ```
 
+`quarkus:dev` opens a debug port, 5005. If a second application runs in dev mode on the same
+machine, both want that port. Start the second one with `-Ddebug=false`, or give it a port of
+its own with `-Ddebug=5006`.
+
 Two URLs start something, one per workflow module:
 
 ```

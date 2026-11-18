@@ -151,6 +151,10 @@ Start the application:
 mvn -pl application quarkus:dev
 ```
 
+`quarkus:dev` opens a debug port, 5005. If a second application runs in dev mode on the same
+machine, both want that port. Start the second one with `-Ddebug=false`, or give it a port of
+its own with `-Ddebug=5006`.
+
 You see nothing about identifiers at startup. The BPMS profiles of this blueprint set
 `name-clash-avoidance: use-prefix`. So VanillaBP puts the workflow module ID in front of every
 identifier before it reaches the engine, and takes it off again on the way back. The BPMN

@@ -25,6 +25,7 @@
       Naming them keeps a build reproducible.
     -->
     <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
+    <maven-resources-plugin.version>3.5.0</maven-resources-plugin.version>
     <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
     <maven-failsafe-plugin.version>3.6.1</maven-failsafe-plugin.version>
     <!-- Not part of the Quarkus BOM, so this blueprint says which version it uses. -->
@@ -203,6 +204,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
+        <version>${maven-resources-plugin.version}</version>
         <configuration>
           <delimiters>
             <delimiter>@</delimiter>
