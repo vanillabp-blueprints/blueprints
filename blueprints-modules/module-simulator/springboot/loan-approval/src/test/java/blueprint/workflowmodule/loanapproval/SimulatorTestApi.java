@@ -38,8 +38,7 @@ import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
  * The client of the test API is generated from
  * {@code simulator-test-api/simulator-test-api.yaml}, the file the simulator implements. The
  * official GUI API of the cockpit the simulator plays is read with the client of the cockpit's
- * library, built here as well. The simulator serves that API below {@code /official-api/v1} and
- * not below {@code /gui/api/v1}, the path a client built by Spring adds to its address.
+ * library, which the test injects and hands to {@link #awaitUserTask}.
  * </p>
  *
  * <p>
@@ -69,8 +68,6 @@ public final class SimulatorTestApi {
 
   private final ESignatureTestApi eSignature;
 
-  private final OfficialTasklistApi tasklist;
-
   private SimulatorTestApi(
       final String baseUrl) {
 
@@ -81,11 +78,6 @@ public final class SimulatorTestApi {
     this.status = testApi.createClient(StatusApi.class);
     this.creditRating = testApi.createClient(CreditRatingTestApi.class);
     this.eSignature = testApi.createClient(ESignatureTestApi.class);
-    this.tasklist = HttpServiceProxyFactory
-        .builderFor(RestClientAdapter.create(RestClient.create(baseUrl
-            + "/official-api/v1")))
-        .build()
-        .createClient(OfficialTasklistApi.class);
 
   }
 
@@ -200,11 +192,13 @@ public final class SimulatorTestApi {
    * Waits until the cockpit knows a user task and the condition holds. The cockpit adapter
    * reports through the outbox, so a report arrives a moment after the event which caused it.
    *
+   * @param tasklist   The client of the official GUI API of the simulator.
    * @param userTaskId The id of the user task.
    * @param condition  What the cockpit is expected to know about the task.
    * @return The user task, as the official API of the cockpit returns it.
    */
   public UserTask awaitUserTask(
+      final OfficialTasklistApi tasklist,
       final String userTaskId,
       final Predicate<UserTask> condition) {
 
@@ -217,7 +211,7 @@ public final class SimulatorTestApi {
           .pollDelay(Duration.ZERO)
           .pollInterval(POLL_INTERVAL)
           .until(() -> {
-            final var found = userTask(userTaskId);
+            final var found = userTask(tasklist, userTaskId);
             lastSeen.set(found);
             return found
                 .filter(condition)
@@ -245,7 +239,8 @@ public final class SimulatorTestApi {
 
   }
 
-  private Optional<UserTask> userTask(
+  private static Optional<UserTask> userTask(
+      final OfficialTasklistApi tasklist,
       final String userTaskId) {
 
     try {

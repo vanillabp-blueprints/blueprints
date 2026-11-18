@@ -41,10 +41,11 @@ import io.vanillabp.cockpit.gui.api.v1.client.model.UserTask;
  * </p>
  *
  * <p>
- * The simulator serves the official GUI API of the cockpit below {@code /official-api/v1}. The
- * test reads it with the client generated from the OpenAPI file of that API. The client is built
- * here and not by Spring: the module imports the same API with keys of its own, which point at
- * {@link CockpitGuiApi}, and the simulator outlives every application context of the test run.
+ * The simulator serves the official GUI API of the cockpit below
+ * {@code /official-api/gui/api/v1}. The test reads it with the client generated from the
+ * OpenAPI file of that API. The client is built here and not by Spring: the module imports the
+ * same API with keys of its own, which point at {@link CockpitGuiApi}, and the simulator
+ * outlives every application context of the test run.
  * </p>
  */
 public final class CockpitSimulator {
@@ -71,7 +72,7 @@ public final class CockpitSimulator {
     this.baseUrl = baseUrl;
     this.tasklist = HttpServiceProxyFactory
         .builderFor(RestClientAdapter.create(RestClient.create(baseUrl
-            + "/official-api/v1")))
+            + "/official-api/gui/api/v1")))
         .build()
         .createClient(OfficialTasklistApi.class);
 

@@ -82,20 +82,20 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
   private BcUserTaskExceptionHandler userTaskExceptionHandler;
 
   /** The task list of the cockpit, read from the simulator. */
-  private final OfficialTasklistApi tasklist = CockpitSimulator
-      .start()
-      .officialGuiApi(OfficialTasklistApi.class);
+  @Autowired
+  private OfficialTasklistApi tasklist;
 
   /** The list of workflows of the cockpit, read from the simulator. */
-  private final OfficialWorkflowlistApi workflowlist = CockpitSimulator
-      .start()
-      .officialGuiApi(OfficialWorkflowlistApi.class);
+  @Autowired
+  private OfficialWorkflowlistApi workflowlist;
 
   @DynamicPropertySource
   static void reportToTheSimulator(
       final DynamicPropertyRegistry properties) {
 
     properties.add("vanillabp.cockpit.rest.base-url", () -> CockpitSimulator.start().baseUrl());
+    properties.add("spring.http.serviceclient.official-gui-api.base-url",
+        () -> CockpitSimulator.start().cockpitBaseUrl());
 
   }
 

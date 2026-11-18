@@ -241,7 +241,10 @@ public final class SimulatorTestApi {
       final String userTaskId) {
 
     try {
-      return Optional.ofNullable(testApi(OfficialTasklistApi.class, "/official-api/v1").getUserTask(userTaskId, null));
+      // The simulator answers the cockpit below a prefix of its own, and below it the path of
+      // the official GUI API, which only the support library of the cockpit adds by itself.
+      return Optional.ofNullable(testApi(OfficialTasklistApi.class, "/official-api/gui/api/v1")
+          .getUserTask(userTaskId, null));
     } catch (NotFoundException e) {
       // The report has not arrived yet.
       return Optional.empty();

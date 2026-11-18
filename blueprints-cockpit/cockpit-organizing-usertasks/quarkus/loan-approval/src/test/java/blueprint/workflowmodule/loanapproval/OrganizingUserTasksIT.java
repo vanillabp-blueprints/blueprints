@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.assertj.core.api.Assertions.within;
 
-import java.net.URI;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -31,7 +30,6 @@ import blueprint.workflowmodule.loanapproval.model.usertask.CallCustomerTaskData
 import blueprint.workflowmodule.loanapproval.model.usertask.TaskData;
 import io.quarkus.arc.All;
 import io.quarkus.narayana.jta.QuarkusTransaction;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -46,6 +44,7 @@ import io.smallrye.mutiny.Uni;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.model.EndReason;
+import io.vanillabp.cockpit.support.rest.restclient.RestClients;
 import io.vanillabp.cockpit.support.usertask.BcTaskNotOpenException;
 import io.vanillabp.cockpit.support.usertask.BcUserTaskExceptionMapper;
 import jakarta.inject.Inject;
@@ -65,6 +64,12 @@ import jakarta.persistence.EntityManagerFactory;
 @QuarkusTest
 @WithTestResource(OrganizingUserTasksIT.ReportToTheSimulator.class)
 public class OrganizingUserTasksIT extends WorkflowModuleTest {
+
+  /**
+   * Where the keys of the clients of the official GUI API are, for example
+   * {@code official-gui-api.base-url}.
+   */
+  private static final String OFFICIAL_GUI_API = "official-gui-api";
 
   private static final String CUSTOMER = "Jane Roe";
 
@@ -100,14 +105,20 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
   List<SecurityIdentityAugmentor> augmentors;
 
   /**
-   * Starts the simulator before the application, and points the cockpit adapter at it.
+   * Starts the simulator before the application, and points the cockpit adapter at it. The
+   * clients of the official GUI API, which the test reads what the cockpit knows with, get the
+   * address of the simulated cockpit as well, below the key {@code official-gui-api}.
    */
   public static class ReportToTheSimulator implements QuarkusTestResourceLifecycleManager {
 
     @Override
     public Map<String, String> start() {
 
-      return Map.of("vanillabp.cockpit.rest.base-url", CockpitSimulator.start().baseUrl());
+      return Map.of(
+          "vanillabp.cockpit.rest.base-url", CockpitSimulator.start().baseUrl(),
+          OFFICIAL_GUI_API
+              + ".base-url",
+          CockpitSimulator.start().cockpitBaseUrl());
 
     }
 
@@ -120,6 +131,10 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
 
   }
 
+  /** The builder of the support library of the cockpit, for the clients of its official GUI API. */
+  @Inject
+  RestClients restClients;
+
   /** The task list of the cockpit, read from the simulator. */
   private OfficialTasklistApi tasklist;
 
@@ -129,15 +144,8 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
   @BeforeEach
   public void createClients() {
 
-    final var officialGuiApi = URI.create(CockpitSimulator.start().officialGuiApi());
-    tasklist = QuarkusRestClientBuilder
-        .newBuilder()
-        .baseUri(officialGuiApi)
-        .build(OfficialTasklistApi.class);
-    workflowlist = QuarkusRestClientBuilder
-        .newBuilder()
-        .baseUri(officialGuiApi)
-        .build(OfficialWorkflowlistApi.class);
+    tasklist = restClients.build(OfficialTasklistApi.class, OFFICIAL_GUI_API);
+    workflowlist = restClients.build(OfficialWorkflowlistApi.class, OFFICIAL_GUI_API);
 
   }
 

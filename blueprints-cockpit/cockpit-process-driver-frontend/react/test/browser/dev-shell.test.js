@@ -79,17 +79,17 @@ async function playBackend(page, { driver = 'on', advance = { status: 200 }, coc
     const reached = { state, loanRequestId: 'LR-4711', customerId: 'C-1' };
     return route.fulfill({ json: state === ENDED ? reached : { ...reached, userTaskId: 'task-1' } });
   });
-  await page.route('**/official-api/v1/**', async (route) => {
+  await page.route('**/official-api/gui/api/v1/**', async (route) => {
     const url = record(route);
     if (route.request().method() === 'POST') bodies.push(route.request().postDataJSON());
     cockpitCalls += 1;
     if (cockpitCalls <= cockpitKnowsAfter) {
-      return url.pathname === '/official-api/v1/workflow' ? route.fulfill({ json: { workflows: [] } }) : route.fulfill({ status: 404 });
+      return url.pathname === '/official-api/gui/api/v1/workflow' ? route.fulfill({ json: { workflows: [] } }) : route.fulfill({ status: 404 });
     }
-    if (url.pathname === '/official-api/v1/workflow') return route.fulfill({ json: { workflows: [workflow] } });
-    if (url.pathname === '/official-api/v1/workflow/wf-1') return route.fulfill({ json: workflow });
-    if (url.pathname === '/official-api/v1/workflow/wf-1/usertasks') return route.fulfill({ json: [assessRisk] });
-    if (url.pathname === '/official-api/v1/usertask/task-1') return route.fulfill({ json: assessRisk });
+    if (url.pathname === '/official-api/gui/api/v1/workflow') return route.fulfill({ json: { workflows: [workflow] } });
+    if (url.pathname === '/official-api/gui/api/v1/workflow/wf-1') return route.fulfill({ json: workflow });
+    if (url.pathname === '/official-api/gui/api/v1/workflow/wf-1/usertasks') return route.fulfill({ json: [assessRisk] });
+    if (url.pathname === '/official-api/gui/api/v1/usertask/task-1') return route.fulfill({ json: assessRisk });
     return route.fulfill({ status: 404 });
   });
   return { calls, bodies };

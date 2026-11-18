@@ -307,8 +307,8 @@ Loan approval '0f7c…' waits for its contract. Continue with:
 ```
 
 The cockpit shows the same user task. The simulator answers the official API of the cockpit,
-for example `http://localhost:8079/official-api/v1/usertask/4711`. Open the URL which prepares
-the contract. The application hands it to the e-signature service, and now the simulator logs
+for example `http://localhost:8079/official-api/gui/api/v1/usertask/4711`. Open the URL which
+prepares the contract. The application hands it to the e-signature service, and now the simulator logs
 where to go on:
 
 ```

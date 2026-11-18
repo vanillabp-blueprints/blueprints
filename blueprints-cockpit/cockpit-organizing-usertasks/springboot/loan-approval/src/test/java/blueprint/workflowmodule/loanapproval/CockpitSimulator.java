@@ -20,8 +20,6 @@ import org.awaitility.core.ConditionTimeoutException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.support.RestClientAdapter;
-import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
@@ -45,9 +43,11 @@ import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowsRequest;
  *
  * <p>
  * The rest the test reads from the official GUI API of the cockpit, which the simulator serves
- * below {@code /official-api/v1}, with the clients generated from the OpenAPI file of that API.
- * {@link #officialGuiApi(Class)} builds them, and the test hands them to the methods which
- * read. The report has no such file, so a plain RestClient reads it.
+ * below {@code /official-api/gui/api/v1}, with the clients generated from the OpenAPI file of
+ * that API. Spring builds them from the key
+ * {@code spring.http.serviceclient.official-gui-api.base-url}, which the test sets to
+ * {@link #cockpitBaseUrl()}, and the test hands them to the methods which read. The report has
+ * no such file, so a plain RestClient reads it.
  * </p>
  *
  * <p>
@@ -109,24 +109,17 @@ public final class CockpitSimulator {
   }
 
   /**
-   * A client of the official GUI API of the simulator, where a user interface of the cockpit
-   * reads what the cockpit knows. The simulator serves the API below {@code /official-api/v1}
-   * and not below {@code /gui/api/v1}, the path the clients built by Spring add to their address.
-   * So the test builds its clients here.
+   * The address of the cockpit the simulator plays, which is the {@code base-url} of the clients
+   * of the official GUI API. The simulator answers each system it plays below a prefix of its
+   * own, the cockpit below {@code /official-api}, and the clients add the path
+   * {@code /gui/api/v1} of the API themselves.
    *
-   * @param <T> The type of the client.
-   * @param api One of the interfaces of the official GUI API, for example
-   *            {@code OfficialWorkflowlistApi}.
-   * @return The client.
+   * @return The address of the cockpit, without the path of the API.
    */
-  public <T> T officialGuiApi(
-      final Class<T> api) {
+  public String cockpitBaseUrl() {
 
-    return HttpServiceProxyFactory
-        .builderFor(RestClientAdapter.create(RestClient.create(baseUrl
-            + "/official-api/v1")))
-        .build()
-        .createClient(api);
+    return baseUrl
+        + "/official-api";
 
   }
 

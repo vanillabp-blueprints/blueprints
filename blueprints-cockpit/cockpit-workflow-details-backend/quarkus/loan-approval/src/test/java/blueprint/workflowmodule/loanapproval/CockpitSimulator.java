@@ -43,9 +43,11 @@ import io.vanillabp.cockpit.gui.api.v1.client.model.WorkflowsRequest;
  * </p>
  *
  * <p>
- * The simulator serves the official GUI API of the cockpit below {@code /official-api/v1}. The
- * test reads it with the client generated from the OpenAPI file of that API. The test builds the
- * client for {@link #officialGuiApi()} and hands it to the methods which read.
+ * The simulator serves the official GUI API of the cockpit below
+ * {@code /official-api/gui/api/v1}. The test reads it with the client generated from the
+ * OpenAPI file of that API. The support library of the cockpit builds the client from the key
+ * {@code official-gui-api.base-url}, which the test sets to {@link #cockpitBaseUrl()}, and the
+ * test hands it to the methods which read.
  * </p>
  */
 public final class CockpitSimulator {
@@ -97,15 +99,17 @@ public final class CockpitSimulator {
   }
 
   /**
-   * The address of the official GUI API of the simulator. A user interface of the cockpit reads
-   * what the cockpit knows there.
+   * The address of the cockpit the simulator plays, which is the {@code base-url} of the clients
+   * of the official GUI API. The simulator answers each system it plays below a prefix of its
+   * own, the cockpit below {@code /official-api}, and the clients add the path
+   * {@code /gui/api/v1} of the API themselves.
    *
-   * @return The address, with the path of the API.
+   * @return The address of the cockpit, without the path of the API.
    */
-  public String officialGuiApi() {
+  public String cockpitBaseUrl() {
 
     return baseUrl
-        + "/official-api/v1";
+        + "/official-api";
 
   }
 

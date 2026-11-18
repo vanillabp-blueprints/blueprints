@@ -160,9 +160,9 @@ simulated cockpit at `http://localhost:8079`. `APPLICATION_URL`, `COCKPIT_URL` a
    the answer names none.
 3. The workflow module reports the workflow and the user task to the simulated cockpit after its
    transaction committed. So the page asks the cockpit again, every quarter of a second, until it
-   knows both: `POST /official-api/v1/workflow` with the id of the loan request as business id, and
-   `GET /official-api/v1/usertask/{id}`. Without an open task, the page asks only for the workflow
-   and says that no user task is open.
+   knows both: `POST /official-api/gui/api/v1/workflow` with the id of the loan request as business
+   id, and `GET /official-api/gui/api/v1/usertask/{id}`. Without an open task, the page asks only
+   for the workflow and says that no user task is open.
 4. The page links to `#/user-task/{id}` and to `#/workflow/{id}`. The view of the user task reads
    it from the cockpit and calls `showUserTask` of the host. The host loads `bc-manifest.json` and
    the data entry `UserTaskForm` from `/wm/loan-approval/`, then the form, and draws its web

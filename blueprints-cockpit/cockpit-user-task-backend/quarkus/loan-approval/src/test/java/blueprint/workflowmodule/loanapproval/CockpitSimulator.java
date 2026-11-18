@@ -40,10 +40,11 @@ import jakarta.ws.rs.NotFoundException;
  * </p>
  *
  * <p>
- * The simulator serves the official GUI API of the cockpit below {@code /official-api/v1}. The
- * test reads it with the client generated from the OpenAPI file of that API. The client is built
- * here and not from keys: the module builds the same API from keys of its own, which point at
- * {@link CockpitGuiApi}, and the simulator outlives the application of the test.
+ * The simulator serves the official GUI API of the cockpit below
+ * {@code /official-api/gui/api/v1}. The test reads it with the client generated from the
+ * OpenAPI file of that API. The client is built here and not from keys: the module builds the
+ * same API from keys of its own, which point at {@link CockpitGuiApi}, and the simulator
+ * outlives the application of the test.
  * </p>
  */
 public final class CockpitSimulator {
@@ -71,7 +72,7 @@ public final class CockpitSimulator {
 
     this.baseUrl = baseUrl;
     this.officialApi = baseUrl
-        + "/official-api/v1";
+        + "/official-api/gui/api/v1";
 
   }
 

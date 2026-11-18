@@ -22,6 +22,7 @@ import org.springframework.web.client.RestClient;
 import blueprint.workflowmodule.WorkflowModuleTest;
 import blueprint.workflowmodule.loanapproval.api.model.Answer;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
+import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
 
 /**
  * The integration test of this workflow module. It runs the module with its real adapters, and
@@ -54,6 +55,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   @Autowired
   private AggregateRepository loanApprovals;
 
+  /** The task list of the cockpit the simulator plays. */
+  @Autowired
+  private OfficialTasklistApi tasklist;
+
   private final RestClient api = RestClient.create("http://localhost:"
       + PORT
       + "/loan-approval/api");
@@ -78,6 +83,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         + PORT
         + "/e-signature/callback");
     properties.add("vanillabp.cockpit.rest.base-url", () -> simulator);
+    // The client of the cockpit's library, with the keys where Spring Boot looks for them. The
+    // simulator answers the cockpit below a prefix of its own, and the client adds /gui/api/v1.
+    properties.add("spring.http.serviceclient.official-gui-api.base-url", () -> simulator
+        + "/official-api");
 
   }
 
@@ -100,7 +109,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(awaitAggregate(loanApprovals, loanRequestId).getCreditScore()).isEqualTo(720);
 
     // The cockpit shows the user task, with the details the module reported.
-    final var userTask = simulator().awaitUserTask(prepareContractTaskId, task -> true);
+    final var userTask = simulator().awaitUserTask(tasklist, prepareContractTaskId, task -> true);
     assertThat(userTask.getWorkflowModuleId()).isEqualTo("loan-approval");
     assertThat(userTask.getTaskDefinition()).isEqualTo("prepareContract");
     assertThat(userTask.getDetails())
@@ -136,7 +145,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .isNotNull();
 
     // The cockpit took the user task off the list.
-    simulator().awaitUserTask(prepareContractTaskId, task -> task.getEndedAt() != null);
+    simulator().awaitUserTask(tasklist, prepareContractTaskId, task -> task.getEndedAt() != null);
 
   }
 

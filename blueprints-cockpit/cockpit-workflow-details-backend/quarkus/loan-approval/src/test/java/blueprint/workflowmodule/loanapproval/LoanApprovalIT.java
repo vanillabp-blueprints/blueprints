@@ -28,6 +28,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.model.EndReason;
 import io.vanillabp.cockpit.gui.api.v1.client.model.Workflow;
+import io.vanillabp.cockpit.support.rest.restclient.RestClients;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -55,6 +56,12 @@ import jakarta.ws.rs.core.Response;
 @WithTestResource(LoanApprovalIT.ReportToTheSimulator.class)
 public class LoanApprovalIT extends WorkflowModuleTest {
 
+  /**
+   * Where the keys of the clients of the official GUI API are, for example
+   * {@code official-gui-api.base-url}.
+   */
+  private static final String OFFICIAL_GUI_API = "official-gui-api";
+
   @Inject
   Service loanApproval;
 
@@ -70,11 +77,17 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
   private CasesApi casePage;
 
+  /** The builder of the support library of the cockpit, for the clients of its official GUI API. */
+  @Inject
+  RestClients restClients;
+
   /** The case list of the cockpit, read from the simulator. */
   private OfficialWorkflowlistApi workflowlist;
 
   /**
-   * Starts the simulator before the application, and points the cockpit adapter at it.
+   * Starts the simulator before the application, and points the cockpit adapter at it. The
+   * clients of the official GUI API, which the test reads what the cockpit knows with, get the
+   * address of the simulated cockpit as well, below the key {@code official-gui-api}.
    */
   public static class ReportToTheSimulator implements QuarkusTestResourceLifecycleManager {
 
@@ -82,7 +95,10 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     public Map<String, String> start() {
 
       return Map.of(
-          "vanillabp.cockpit.rest.base-url", CockpitSimulator.start().baseUrl());
+          "vanillabp.cockpit.rest.base-url", CockpitSimulator.start().baseUrl(),
+          OFFICIAL_GUI_API
+              + ".base-url",
+          CockpitSimulator.start().cockpitBaseUrl());
 
     }
 
@@ -102,10 +118,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
         .newBuilder()
         .baseUri(module)
         .build(CasesApi.class);
-    workflowlist = QuarkusRestClientBuilder
-        .newBuilder()
-        .baseUri(URI.create(CockpitSimulator.start().officialGuiApi()))
-        .build(OfficialWorkflowlistApi.class);
+    workflowlist = restClients.build(OfficialWorkflowlistApi.class, OFFICIAL_GUI_API);
 
   }
 

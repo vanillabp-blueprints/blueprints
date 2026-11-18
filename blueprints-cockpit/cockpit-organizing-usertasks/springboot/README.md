@@ -328,9 +328,9 @@ http://localhost:8080/loan-approval/api/0f7c…/change-advisor?advisor=erin
 ```
 
 What the cockpit got is in the log of the simulator, and in its API at
-`http://localhost:8079/official-api/v1/usertask/{taskId}`. The last report about a task, with the
-excluded candidates, the admitted users and the kind of notification which that API does not
-show, is at `http://localhost:8079/simulator-api/usertask/{taskId}/report`.
+`http://localhost:8079/official-api/gui/api/v1/usertask/{taskId}`. The last report about a task,
+with the excluded candidates, the admitted users and the kind of notification which that API does
+not show, is at `http://localhost:8079/simulator-api/usertask/{taskId}/report`.
 
 ## How it works
 

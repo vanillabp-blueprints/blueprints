@@ -18,7 +18,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.HttpClientErrorException;
 
-import blueprint.testdriver.GeneratedClients;
 import blueprint.testdriver.loanapproval.ProcessDriver;
 import blueprint.testdriver.loanapproval.gui.LoanApprovalApi;
 import blueprint.workflowmodule.SuppressOutputExtension;
@@ -94,14 +93,10 @@ public abstract class ScenarioTest extends WorkflowModuleTest {
 
   /**
    * The task list of the cockpit the simulator plays, read through the client of the official
-   * GUI API of the cockpit. The simulator serves that API below {@code /official-api/v1} and not
-   * below {@code /gui/api/v1}, the path a client built by Spring adds to its address, so the test
-   * builds the client itself.
+   * GUI API of the cockpit.
    */
-  private final OfficialTasklistApi tasklist = GeneratedClients
-      .at(simulator().baseUrl()
-          + "/official-api/v1")
-      .of(OfficialTasklistApi.class);
+  @Autowired
+  private OfficialTasklistApi tasklist;
 
   /**
    * Points every adapter and the process driver at the simulator, and the driver at the
@@ -122,6 +117,10 @@ public abstract class ScenarioTest extends WorkflowModuleTest {
         + "/e-signature");
     properties.add("e-signature.callback-url", () -> CALLBACK_URL);
     properties.add("vanillabp.cockpit.rest.base-url", () -> simulator);
+    // The client of the cockpit's library, with the keys where Spring Boot looks for them. The
+    // simulator answers the cockpit below a prefix of its own, and the client adds /gui/api/v1.
+    properties.add("spring.http.serviceclient.official-gui-api.base-url", () -> simulator
+        + "/official-api");
     properties.add("process-driver.simulator-base-url", () -> simulator);
     properties.add("process-driver.application-base-url", () -> "http://localhost:"
         + PORT);
