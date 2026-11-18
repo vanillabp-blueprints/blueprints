@@ -223,7 +223,7 @@
             </goals>
             <phase>generate-test-sources</phase>
             <configuration>
-              <inputSpec>openapi/loan-requests.yaml</inputSpec>
+              <inputSpec>loan-approval/openapi/loan-requests.yaml</inputSpec>
             </configuration>
           </execution>
           <execution>
@@ -233,7 +233,7 @@
             </goals>
             <phase>generate-test-sources</phase>
             <configuration>
-              <inputSpec>openapi/loan-approval.yaml</inputSpec>
+              <inputSpec>loan-approval/openapi/loan-approval.yaml</inputSpec>
             </configuration>
           </execution>
         </executions>

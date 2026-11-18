@@ -188,7 +188,7 @@
             </goals>
             <phase>generate-test-sources</phase>
             <configuration>
-              <inputSpec>openapi/loan-approval.yaml</inputSpec>
+              <inputSpec>loan-approval/openapi/loan-approval.yaml</inputSpec>
             </configuration>
           </execution>
         </executions>

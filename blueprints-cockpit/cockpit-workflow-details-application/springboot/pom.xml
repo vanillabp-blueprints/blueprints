@@ -189,7 +189,7 @@
             </goals>
             <phase>generate-test-sources</phase>
             <configuration>
-              <inputSpec>openapi/loan-requests.yaml</inputSpec>
+              <inputSpec>loan-approval/openapi/loan-requests.yaml</inputSpec>
             </configuration>
           </execution>
           <execution>
@@ -199,7 +199,7 @@
             </goals>
             <phase>generate-test-sources</phase>
             <configuration>
-              <inputSpec>openapi/loan-approval.yaml</inputSpec>
+              <inputSpec>loan-approval/openapi/loan-approval.yaml</inputSpec>
               <!-- 'case' is a word of Java, and the generator would call the class 'ModelCase'. -->
               <modelNameMappings>Case=Case</modelNameMappings>
             </configuration>
