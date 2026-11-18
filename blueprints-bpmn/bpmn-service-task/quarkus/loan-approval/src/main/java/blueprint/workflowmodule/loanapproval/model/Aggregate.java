@@ -47,6 +47,12 @@ import lombok.NoArgsConstructor;
 @NoSyncWithBPMS
 public class Aggregate {
 
+  /** The value of {@link #letterSent} once the customer got the approval. */
+  public static final String APPROVAL_LETTER = "approval";
+
+  /** The value of {@link #letterSent} once the customer got the rejection. */
+  public static final String REJECTION_LETTER = "rejection";
+
   /**
    * The natural id of the use case. Using a business identifier instead of a generated
    * one makes a workflow started twice for the same business case a detectable
@@ -84,5 +90,12 @@ public class Aggregate {
    */
   @Column
   private String rejectionReason;
+
+  /**
+   * Which letter the customer got. It is written by the one method which serves both letter
+   * tasks of the model, and as long as it is null no letter was sent.
+   */
+  @Column
+  private String letterSent;
 
 }

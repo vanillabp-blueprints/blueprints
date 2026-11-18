@@ -13,12 +13,13 @@ import io.vanillabp.spi.process.ProcessService;
  * <p>
  * {@link Service} calls in, naming what happened in business terms
  * ({@code partnerApproved}), and this class translates that into whatever the process
- * needs: starting a workflow, correlating a message, completing a task.
+ * needs: starting a workflow, telling the BPMS that the aggregate changed, completing a
+ * task.
  * {@link ProcessService} is injected here and nowhere else.
  * </p>
  *
  * <p>
- * Both methods have to run in a transaction, which is why the class carries
+ * Every method has to run in a transaction, which is why the class carries
  * {@code @Transactional}: the aggregate is saved along with the answer, and on a remote
  * BPMS the answer is only sent after that transaction committed. A rollback therefore
  * takes the completion with it and leaves the task open, rather than completing a task
@@ -49,6 +50,32 @@ public class Workflow {
       final Aggregate loanApproval) {
 
     bpms.startWorkflow(loanApproval);
+
+  }
+
+  /**
+   * The customer withdrew the request during the cool-off period. Nothing has to be
+   * completed or correlated, because the workflow only waits for its timer. But the gateway
+   * behind the timer decides on {@code withdrawn}, and the BPMS still holds the value of
+   * the last time VanillaBP talked to it. {@code aggregateChanged} makes VanillaBP write the
+   * shared values of the aggregate again.
+   *
+   * <p>
+   * Without this call the gateway reads {@code false} and asks the partner, although the
+   * customer withdrew. The push is sent once the transaction has committed, like every
+   * other operation on the BPMS. It reads the values when it is sent, so sending it twice
+   * does no harm.
+   * </p>
+   *
+   * @param loanApproval The workflow's aggregate, already marked as withdrawn.
+   * @see <a href=
+   *      "https://github.com/vanillabp/spi-for-java/wiki/The-workflow-aggregate#tell-the-bpms-that-the-aggregate-changed">Tell
+   *      the BPMS that the aggregate changed</a>
+   */
+  public void loanWithdrawn(
+      final Aggregate loanApproval) {
+
+    bpms.aggregateChanged(loanApproval);
 
   }
 

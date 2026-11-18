@@ -75,6 +75,24 @@ public class ApiController implements LoanApprovalApi {
   }
 
   /**
+   * The customer withdraws the request during the cool-off period.
+   *
+   * @param loanRequestId The id returned by starting the process.
+   * @return What was done, for the browser to show.
+   */
+  @Override
+  public String withdraw(
+      final String loanRequestId) {
+
+    loanApproval.withdraw(loanRequestId);
+
+    return "The customer withdrew loan approval '"
+        + loanRequestId
+        + "'";
+
+  }
+
+  /**
    * Shows what the process did, which is the second half of operating it in a browser.
    *
    * @param loanRequestId The id returned by starting the process.

@@ -157,6 +157,43 @@ public class Service {
   }
 
   /**
+   * Tells the customer how the loan request ended. The approval and the rejection end up here
+   * alike, and the aggregate tells which letter to send: a loan with a rejection reason was
+   * rejected.
+   *
+   * <p>
+   * Like {@link #assessCreditRating}, it returns at once if the letter was sent already. The
+   * BPMS may deliver the task a second time.
+   * </p>
+   *
+   * @param loanApproval The loan approval whose customer is informed.
+   */
+  public void informCustomer(
+      final Aggregate loanApproval) {
+
+    if (loanApproval.getLetterSent() != null) {
+
+      log.info(
+          "Loan approval '{}' has its letter already, nothing to do",
+          loanApproval.getLoanRequestId());
+      return;
+
+    }
+
+    final var letter = loanApproval.getRejectionReason() == null
+        ? Aggregate.APPROVAL_LETTER
+        : Aggregate.REJECTION_LETTER;
+
+    loanApproval.setLetterSent(letter);
+
+    log.info(
+        "Loan approval '{}': the customer gets the {} letter",
+        loanApproval.getLoanRequestId(),
+        letter);
+
+  }
+
+  /**
    * The state of a loan approval, as far as the process has come.
    *
    * @param loanRequestId The natural id of the loan request.

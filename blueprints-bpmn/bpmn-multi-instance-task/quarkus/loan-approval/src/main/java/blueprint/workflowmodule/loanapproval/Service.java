@@ -193,6 +193,50 @@ public class Service {
   }
 
   /**
+   * Sends one copy of the contract. The model runs this once per copy, by a number and not by
+   * a collection. So the iteration brings only its index, and the recipient is read from the
+   * aggregate by that index.
+   *
+   * <p>
+   * The copies are sent one after the other. If the BPMS delivers an iteration a second time,
+   * the counter already covers it, and the method returns at once.
+   * </p>
+   *
+   * @param loanApproval The workflow's aggregate.
+   * @param index        Which copy this is, counted from zero.
+   */
+  public void sendContractCopy(
+      final Aggregate loanApproval,
+      final int index) {
+
+    final var sent = loanApproval.getContractCopiesSent() == null
+        ? 0
+        : loanApproval.getContractCopiesSent();
+    if (index < sent) {
+
+      log.info(
+          "Loan approval '{}' sent copy {} of the contract already, nothing to do",
+          loanApproval.getLoanRequestId(),
+          index + 1);
+      return;
+
+    }
+
+    final var recipient = loanApproval
+        .contractRecipients()
+        .get(index);
+
+    loanApproval.setContractCopiesSent(index + 1);
+
+    log.info(
+        "Loan approval '{}' sends copy {} of the contract to '{}'",
+        loanApproval.getLoanRequestId(),
+        index + 1,
+        recipient);
+
+  }
+
+  /**
    * The state of a loan approval, as far as the process has come.
    *
    * @param loanRequestId The natural id of the loan request.

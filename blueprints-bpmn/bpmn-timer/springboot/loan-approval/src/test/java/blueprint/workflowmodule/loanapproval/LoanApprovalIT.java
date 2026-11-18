@@ -20,7 +20,7 @@ import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
  * and lets the timers of the model decide what happens.
  *
  * <p>
- * Both tests wait for the aggregate rather than for a clock. A timer is the BPMS' business
+ * Every test waits for the aggregate rather than for a clock. A timer is the BPMS' business
  * and it fires when it fires; what the test asserts is what the workflow did about it.
  * </p>
  */
@@ -120,6 +120,39 @@ public class LoanApprovalIT extends WorkflowModuleTest {
       // depend on it for correctness. Completing a task that is gone is a no-op anyway.
       assertThat(loanRequest.getPartnerApprovalTaskId()).isNull();
     }
+
+  }
+
+  @Test
+  @DisplayName("A withdrawal during the cool-off period reaches the gateway behind it")
+  public void aWithdrawalDuringTheCoolOffPeriodIsSeenByTheGateway() {
+
+    final var loanRequestId = UUID.randomUUID().toString();
+
+    loanApproval.request(loanRequestId, 5000);
+
+    // The rating runs before the cool-off period. Once it is stored, the workflow waits for
+    // its timer, and the BPMS holds 'withdrawn' as false. No sync point of VanillaBP comes
+    // until the timer fires.
+    awaitAggregate(
+        loanApprovals,
+        loanRequestId,
+        aggregate -> aggregate.getCreditRating() != null);
+
+    loanApproval.withdraw(loanRequestId);
+
+    // The gateway behind the timer takes the withdrawn branch only if the change reached
+    // the BPMS. Without aggregateChanged it would read false and ask the partner.
+    final var loanRequest = awaitAggregate(
+        loanApprovals,
+        loanRequestId,
+        SCHEDULER_TIMEOUT,
+        aggregate -> Boolean.TRUE.equals(aggregate.getWithdrawalConfirmed()));
+
+    assertThat(loanRequest.getPartnerApprovalTaskId()).isNull();
+    assertThat(partner.invocations())
+        .describedAs("the partner is not asked about a withdrawn request")
+        .isEmpty();
 
   }
 

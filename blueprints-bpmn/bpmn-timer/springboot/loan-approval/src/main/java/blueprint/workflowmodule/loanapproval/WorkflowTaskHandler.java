@@ -54,6 +54,20 @@ public class WorkflowTaskHandler {
   }
 
   /**
+   * Called by VanillaBP when the gateway behind the cool-off period found the request
+   * withdrawn.
+   *
+   * @param loanRequest The workflow's aggregate.
+   */
+  @WorkflowTask
+  public void confirmWithdrawal(
+      final Aggregate loanRequest) {
+
+    loanApproval.confirmWithdrawal(loanRequest);
+
+  }
+
+  /**
    * Called by VanillaBP when the task waiting for the partner is reached. The
    * {@code @TaskId} parameter is what turns this into an asynchronous task: returning
    * from the method does NOT complete it, and the process stays here until the
