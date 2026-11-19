@@ -70,7 +70,7 @@ the page. `npm run build` writes the module id and the build id into `src/bc-bui
 | `src/shared/texts.ts`        | the texts in English and German                                                                                                                         |
 | `src/shared/style.ts`        | the style of `:host`, put into each shadow root before the styles of components                                                                         |
 | `docker/Dockerfile`          | the nginx image                                                                                                                                         |
-| `docker/nginx.conf`          | serves `/loan-approval/`, the manifest without caching                                                                                                  |
+| `docker/nginx.conf`          | serves `/loan-approval/`, the manifest without caching, JavaScript and JSON with gzip                                                                   |
 | `test/browser/page.js`       | the test page with `createModuleHost`                                                                                                                   |
 | `test/browser/server.js`     | serves the test page and `dist/micro-frontends` below `/wm/loan-approval/`                                                                              |
 

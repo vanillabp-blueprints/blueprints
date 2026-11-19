@@ -153,6 +153,8 @@ for (const cockpit of COCKPITS) {
       const complete = page.getByTestId('assess-risk-complete');
       // The styles of the page do not reach the button in the shadow DOM.
       assert.notEqual(await complete.evaluate((button) => getComputedStyle(button).backgroundColor), 'rgb(255, 0, 0)');
+      // The styles of the module stay in its shadow roots: the page keeps its one <style> element.
+      assert.equal(await page.evaluate(() => document.querySelectorAll('style').length), 1);
       await complete.click();
       await page.getByTestId('assess-risk-done').waitFor();
 

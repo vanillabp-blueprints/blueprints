@@ -312,6 +312,15 @@ the names speak of one build. The file is written for every build and not checke
 are in `src/bc-build.d.ts`. The browser tests read the build id from it, and
 `test/build-id.test.js` proves that two builds give different names.
 
+The build id changes the names of the web components, but not the name of the file with React.
+esbuild puts its own helpers, which React needs because it is CommonJS, into the one chunk every
+entry imports. If `src/bc-build.js` were in that chunk too, its name would change with every build,
+and so would the name of the chunk with React, which imports it. So
+`scripts/build-micro-frontends.mjs` adds one more entry which imports React only and deletes it
+after the build. Then the helpers have a chunk of their own and React keeps its name. After a new
+build the browser loads the entries and one small chunk again, and takes React from its cache.
+`test/framework-chunk.test.js` builds twice and checks that the name stays.
+
 ### Imports through path aliases
 
 A file imports from another directory through a path alias, never with `../`. The aliases are
@@ -415,7 +424,8 @@ mvn deploy:deploy-file -Dfile=dist/cockpit-user-task-ui-1.0.0-SNAPSHOT.jar \
 The nginx image serves the same files at the same paths, for an application which forwards to an
 nginx instead of serving the files itself. `bc-manifest.json` is sent with
 `Cache-Control: no-cache`. Every other file has the hash of its content in its name, so the image
-lets browsers keep it for good.
+lets browsers keep it for good. The JavaScript files and the manifest go out compressed with gzip
+when the browser asks for it, which is about a third of the bytes.
 
 ## Documentation
 

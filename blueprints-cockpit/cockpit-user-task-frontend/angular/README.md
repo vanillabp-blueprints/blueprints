@@ -385,7 +385,8 @@ The cockpit needs one ES module per entry and a manifest, not one application. `
 asks for no `index.html` and no polyfills, and its entry point `src/entries.ts` imports each entry
 with `import()`. The CLI writes each of these as a file of its own with the hash of its content
 in the name, the same way it writes a lazy loaded route, and puts Angular into a chunk the two
-forms share. The cockpit never loads `src/entries.ts` itself, it loads the entries. With
+forms share. The cockpit never loads `src/entries.ts` itself, it loads the entries, so
+`scripts/write-manifest.mjs` deletes the file the CLI writes for it, `main-<hash>.js`. With
 `statsJson` the CLI also writes its list of outputs. `scripts/write-manifest.mjs` takes the file of
 each entry from that list and writes `bc-manifest.json`. That script is the only part of the build
 which is not Angular's own.
@@ -416,9 +417,8 @@ label or the API call, comes in through the injection token `INPUT_FORM`. The da
 from a small component in each form file, drawn with `NgComponentOutlet`.
 
 The Angular compiler accepts one minor line of TypeScript only, so `package.json` pins TypeScript
-to it. `openapi-typescript` asks for TypeScript 5. An `overrides` entry in `package.json` lets it
-use the TypeScript of the project. It only generates types, and the newer TypeScript does that
-just as well.
+to it. `@hey-api/openapi-ts`, which generates the API client, accepts this TypeScript as well, so
+`package.json` needs no `overrides` entry.
 
 ### Three repositories, and the order of their releases
 
@@ -465,7 +465,8 @@ mvn deploy:deploy-file -Dfile=dist/cockpit-user-task-ui-1.0.0-SNAPSHOT.jar \
 The nginx image serves the same files at the same paths, for an application which forwards to an
 nginx instead of serving the files itself. `bc-manifest.json` is sent with
 `Cache-Control: no-cache`. Every other file has the hash of its content in its name, so the image
-lets browsers keep it for good.
+lets browsers keep it for good. The JavaScript files and the manifest go out compressed with gzip
+when the browser asks for it, which is about a third of the bytes.
 
 ## Documentation
 

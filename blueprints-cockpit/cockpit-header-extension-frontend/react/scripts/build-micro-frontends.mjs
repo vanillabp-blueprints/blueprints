@@ -2,19 +2,25 @@
 // with the hash of its content in the file name and no bare import, and bc-manifest.json, which
 // tells the cockpit which file holds which entry.
 //
-// The start form is the one visual entry, so React ends up in its file or in a chunk next to it.
+// The start form is the one visual entry. React goes into a chunk of its own next to it.
 // The data entry Header never imports it. `npm run check:entries --data-entry Header` proves that
 // afterwards. Header is not one of the four entries the kit names, so the name is written here.
+//
+// React keeps the name of its chunk from build to build, so a browser takes it from its cache after
+// a new build of the module. FRAMEWORK below says how; test/framework-chunk.test.js proves it.
+//
+// Usage: node scripts/build-micro-frontends.mjs [<outdir> <metafile>]
+//        (dist/micro-frontends and build/meta.json if not given; the test builds elsewhere)
 
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import { createManifest } from '@vanillabp/bc-module-kit';
 
 const projectDir = resolve(import.meta.dirname, '..');
-const outdir = join(projectDir, 'dist', 'micro-frontends');
-const metafilePath = join(projectDir, 'build', 'meta.json');
+const outdir = resolve(process.argv[2] ?? join(projectDir, 'dist', 'micro-frontends'));
+const metafilePath = resolve(process.argv[3] ?? join(projectDir, 'build', 'meta.json'));
 const { version } = JSON.parse(readFileSync(join(projectDir, 'package.json'), 'utf8'));
 // The time of this build. scripts/write-bc-build.mjs wrote it into src/bc-build.js as BUILD_ID, the
 // names of the web components carry it, and the manifest gets the same time. So the manifest and
@@ -31,13 +37,41 @@ const entries = {
   StartForm: 'src/start-form/start-form.tsx',
 };
 
+/**
+ * React is CommonJS, so the chunk with React calls two helpers of esbuild. esbuild puts its helpers
+ * into the chunk which every entry imports. Without more, that chunk also holds src/bc-build.js,
+ * which is new for every build. The hash in a chunk's name covers the names of the chunks it
+ * imports, so React would get a new name with every build and the browser would load it again.
+ *
+ * So the build gets one more entry, FRAMEWORK, which imports React and nothing of this module.
+ * Now React is a chunk of its own, the chunk which every entry imports holds the helpers of esbuild
+ * and nothing else, and src/bc-build.js goes into a chunk which the chunk with React does not
+ * import. A new build changes the names of the entries and of that one small chunk only. The extra
+ * entry is deleted after the build. No chunk imports an entry, so nothing refers to it.
+ */
+const FRAMEWORK = 'bc-framework';
+/** What the code of this module imports React from. JSX imports react/jsx-runtime. */
+const frameworkImports = ['react', 'react/jsx-runtime', 'react-dom/client'];
+const frameworkEntry = {
+  name: FRAMEWORK,
+  setup(builder) {
+    builder.onResolve({ filter: new RegExp(`^${FRAMEWORK}$`) }, () => ({ path: FRAMEWORK, namespace: FRAMEWORK }));
+    builder.onLoad({ filter: /.*/, namespace: FRAMEWORK }, () => ({
+      contents: frameworkImports.map((source) => `import ${JSON.stringify(source)};`).join('\n'),
+      resolveDir: projectDir,
+      loader: 'js',
+    }));
+  },
+};
+
 rmSync(outdir, { recursive: true, force: true });
 mkdirSync(outdir, { recursive: true });
-mkdirSync(join(projectDir, 'build'), { recursive: true });
+mkdirSync(dirname(metafilePath), { recursive: true });
 
 const entryPoints = Object.fromEntries(Object.entries(entries).map(([name, source]) => [name, join(projectDir, source)]));
 const bundle = await build({
-  entryPoints,
+  entryPoints: { ...entryPoints, [FRAMEWORK]: FRAMEWORK },
+  plugins: [frameworkEntry],
   absWorkingDir: projectDir,
   // The path aliases, such as '@shared', come from the paths of tsconfig.json. So the build, the
   // type check and the editor read them from one place.
@@ -61,6 +95,11 @@ const bundle = await build({
 const files = {};
 for (const [output, { entryPoint }] of Object.entries(bundle.metafile.outputs)) {
   if (!entryPoint) continue;
+  if (entryPoint === `${FRAMEWORK}:${FRAMEWORK}`) {
+    unlinkSync(join(projectDir, output));
+    delete bundle.metafile.outputs[output];
+    continue;
+  }
   const name = Object.keys(entryPoints).find((key) => join(projectDir, entryPoint) === entryPoints[key]);
   if (name) files[name] = relative(outdir, join(projectDir, output)).split('\\').join('/');
 }

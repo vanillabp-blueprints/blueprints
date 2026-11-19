@@ -171,6 +171,8 @@ for (const cockpit of COCKPITS) {
       await page.getByTestId('assess-risk-input').fill('low, a steady income');
       // The styles of the page do not reach the button in the shadow DOM.
       assert.notEqual(await complete.evaluate((button) => getComputedStyle(button).backgroundColor), 'rgb(255, 0, 0)');
+      // The styles of the module stay in its shadow roots: the page keeps its one <style> element.
+      assert.equal(await page.evaluate(() => document.querySelectorAll('style').length), 1);
       // click() waits until the button is enabled. That only happens when 'actions' got the value.
       await complete.click({ timeout: 5000 });
       await page.getByTestId('assess-risk-done').waitFor();

@@ -163,6 +163,13 @@ jobs:
           restore-keys: |
             maven-${{ hashFiles('**/pom.xml') }}-
             maven-
+      # A download which failed in an earlier run leaves a '*.lastUpdated' file, and the
+      # aggregator saves it with the cache. Maven then does not try that download again until
+      # the update interval has passed, and reports the artifact as missing although Central
+      # has it. One refused request of Central would keep a whole day of builds red. So the
+      # markers go, as in nightly.yaml; the files themselves stay.
+      - name: Forget the downloads which failed in an earlier run
+        run: find ~/.m2/repository -type f -name '*.lastUpdated' -delete 2>/dev/null || true
       # The aggregator of this run wrote the key above. When it is not found, GitHub has
       # already removed that cache, and this job got an older one which lacks what the
       # aggregator added in this run. The job still works, but it fetches the rest from
@@ -334,6 +341,13 @@ jobs:
           restore-keys: |
             maven-${{ hashFiles('**/pom.xml') }}-
             maven-
+      # A download which failed in an earlier run leaves a '*.lastUpdated' file, and the
+      # aggregator saves it with the cache. Maven then does not try that download again until
+      # the update interval has passed, and reports the artifact as missing although Central
+      # has it. One refused request of Central would keep a whole day of builds red. So the
+      # markers go, as in nightly.yaml; the files themselves stay.
+      - name: Forget the downloads which failed in an earlier run
+        run: find ~/.m2/repository -type f -name '*.lastUpdated' -delete 2>/dev/null || true
       # The cache above can hold a platform jar from yesterday. The step at the end of this
       # job reads what is newer than this marker, so it names what Maven fetched in this run
       # and not what the cache happened to carry in.
