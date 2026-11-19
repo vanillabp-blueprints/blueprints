@@ -34,6 +34,9 @@ const formElements = (task) => ({
   actions: `loan-approval-${BUILD_ID}-loan-approval--${task}--actions`,
 });
 
+/** The colour of a disabled button of the forms, from src/shared/style.ts. */
+const DISABLED_BUTTON_COLOR = 'rgb(182, 192, 202)';
+
 /** The two kinds of cockpit: with the areas of the default convention, and with 'all' only. */
 const COCKPITS = [
   { name: 'a cockpit with areas', query: '?areas=body,information,actions', areas: ['body', 'information', 'actions'] },
@@ -167,11 +170,16 @@ for (const cockpit of COCKPITS) {
       await assertText(page.getByTestId('assess-risk-amount'), '25,000');
       const complete = page.getByTestId('assess-risk-complete');
       assert.equal(await complete.isDisabled(), true);
+      // The style of the module reaches the button in the shadow DOM, and the style of the page does not.
+      assert.equal(await complete.evaluate((button) => getComputedStyle(button).backgroundColor), DISABLED_BUTTON_COLOR);
+      // It also reaches the data to read, which NgComponentOutlet draws.
+      assert.equal(await page.locator('dt').first().evaluate((term) => getComputedStyle(term).fontWeight), '600');
+      // No style reaches the page, which keeps its one style. Styles in an Angular component would
+      // land in the <head> as well, because of NgComponentOutlet.
+      assert.equal(await page.evaluate(() => document.querySelectorAll('style').length), 1);
       await page.getByTestId('assess-risk-input').fill('   ');
       assert.equal(await complete.isDisabled(), true);
       await page.getByTestId('assess-risk-input').fill('low, a steady income');
-      // The styles of the page do not reach the button in the shadow DOM.
-      assert.notEqual(await complete.evaluate((button) => getComputedStyle(button).backgroundColor), 'rgb(255, 0, 0)');
       // click() waits until the button is enabled. That only happens when 'actions' got the value.
       await complete.click({ timeout: 5000 });
       await page.getByTestId('assess-risk-done').waitFor();

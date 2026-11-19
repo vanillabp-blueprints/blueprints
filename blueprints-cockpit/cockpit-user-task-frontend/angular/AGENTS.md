@@ -90,8 +90,10 @@ the page. `npm run build` writes the module id and the build id into `src/bc-bui
    own, replace `@vanillabp/bc-module-kit` with it.
 5. Keep the data entries free of Angular. `npm run check:entries` fails otherwise.
 6. Never add zone.js, and never give a component `styles` or `styleUrl`. zone.js would patch the
-   page of the cockpit, and Angular puts component styles into the `<head>` of that page. Keep
-   state in signals, and put styles into `src/shared/style.ts`.
+   page of the cockpit. Keep state in signals. Angular writes the styles of a component into the
+   shadow root of its web component, but this module draws the data to read with
+   `NgComponentOutlet`. A component created that way makes Angular write every style of the
+   module into the `<head>` of the cockpit's page as well. Put styles into `src/shared/style.ts`.
 7. The selector of an Angular component must not be the name of a web component of this module.
    The host element would become that web component.
 

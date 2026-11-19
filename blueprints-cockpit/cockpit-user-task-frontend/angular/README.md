@@ -399,9 +399,13 @@ There is no zone.js. It would patch timers, promises and events of the whole pag
 change the cockpit too. The application runs with `provideZonelessChangeDetection()`, and the
 components keep their state in signals, which tell Angular when to draw again.
 
-Angular puts the styles of a component into the `<head>` of the page. From there they do not
-reach into a shadow root, but they do reach the cockpit. So the components have no styles of
-their own, and `angular-element.ts` puts one `<style>` element into each shadow root.
+The components have no styles of their own, and `angular-element.ts` puts one `<style>` element
+into each shadow root. Angular would write the styles of a component into the shadow root as
+well, because `angular-element.ts` puts the host element there before it creates the component.
+But the data to read are drawn with `NgComponentOutlet`, and Angular creates the host element of
+such a component outside the page first. From then on it writes every style of the module into
+the `<head>` of the page too, where it reaches the cockpit. The browser tests check that the page
+keeps its own style only.
 
 The host element of an Angular component gets the name of its selector. If that name is also the
 name of a web component, the browser turns the host element into that web component, and the
