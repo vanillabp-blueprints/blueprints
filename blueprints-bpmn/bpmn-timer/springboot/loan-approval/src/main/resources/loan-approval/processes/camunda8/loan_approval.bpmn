@@ -15,8 +15,9 @@
     <bpmn:sequenceFlow id="Flow_ToCoolOff" sourceRef="ServiceTask_RetrieveCreditRating" targetRef="CatchEvent_CoolOff" />
     <!--
       A timer in the sequence flow: the workflow waits here, and nothing in the application
-      runs meanwhile. The duration is part of the model, so changing it is a new process
-      version - put it in the model only if it belongs to the process, not to a customer.
+      runs meanwhile. The duration is not written here. It is the getter getCoolOffPeriod of
+      the workflow aggregate, which works it out from the amount. So the rule is Java, and
+      changing it needs no new process version.
       The customer may withdraw while the workflow waits. The application tells the BPMS
       with aggregateChanged, because the gateway behind the timer reads 'withdrawn'.
     -->
@@ -24,7 +25,7 @@
       <bpmn:incoming>Flow_ToCoolOff</bpmn:incoming>
       <bpmn:outgoing>Flow_ToWithdrawn</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_CoolOff">
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10S</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">=coolOffPeriod</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="Flow_ToWithdrawn" sourceRef="CatchEvent_CoolOff" targetRef="Gateway_Withdrawn" />

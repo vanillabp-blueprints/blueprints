@@ -2,6 +2,8 @@ package blueprint.workflowmodule.loanapproval;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +15,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.loanapproval.model.Aggregate;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 
 /**
@@ -153,6 +156,40 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     assertThat(partner.invocations())
         .describedAs("the partner is not asked about a withdrawn request")
         .isEmpty();
+
+  }
+
+  @Test
+  @DisplayName("A large loan waits for the cool-off period its getter works out")
+  public void theCoolOffPeriodComesFromTheGetter() {
+
+    final var loanRequestId = UUID.randomUUID().toString();
+    final var requestedAt = Instant.now();
+
+    loanApproval.request(loanRequestId, Aggregate.LARGE_LOAN);
+
+    final var taskId = awaitAggregate(
+        loanApprovals,
+        loanRequestId,
+        SCHEDULER_TIMEOUT,
+        aggregate -> aggregate.getPartnerApprovalTaskId() != null)
+        .getPartnerApprovalTaskId();
+
+    // A timer never fires before it is due, on any BPMS. So the partner cannot be asked
+    // earlier than the period the getter worked out for a large loan. If the timer read a
+    // literal or the period of a small loan, the partner would be asked after half the time,
+    // and this assertion fails.
+    assertThat(Duration.between(requestedAt, Instant.now()))
+        .describedAs("the time between the request and the question to the partner")
+        .isGreaterThanOrEqualTo(Duration.parse(Aggregate.COOL_OFF_PERIOD_OF_A_LARGE_LOAN));
+
+    // answer at once, so the workflow ends and leaves nothing behind for the next test
+    loanApproval.partnerApproved(loanRequestId, taskId);
+
+    awaitAggregate(
+        loanApprovals,
+        loanRequestId,
+        aggregate -> Boolean.TRUE.equals(aggregate.getCustomerInformed()));
 
   }
 
