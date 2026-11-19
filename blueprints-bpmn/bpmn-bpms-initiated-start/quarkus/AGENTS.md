@@ -64,7 +64,9 @@ Blueprint-specific names, each occurring in more than one place:
 1. Model the start event: a timer (`bpmn:timeCycle`, `bpmn:timeDate`) or a signal start event,
    or a conditional one where the BPMS (business process management system) supports it. A
    MESSAGE start event is something else entirely. `startWorkflowByMessage` triggers that one,
-   and it belongs to `bpmn-message-start`.
+   and it belongs to `bpmn-message-start`. Give a cycle no end (`R/P1D`, not `R1/P1D`) on
+   Camunda 8: a model deployed again without a change is no new version and keeps the
+   schedule it has, so a cycle which already ended starts nothing after a restart.
 2. Add a `@WorkflowStartedByBpms` method to the workflow service. It is **required** for a
    process the BPMS can start on its own, and the application does not boot without it. The
    method BUILDS the workflow aggregate and returns it. It may take a `BpmsStartTrigger` and

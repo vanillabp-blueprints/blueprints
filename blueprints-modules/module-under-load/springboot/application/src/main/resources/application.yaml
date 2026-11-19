@@ -25,6 +25,10 @@ spring:
       # When the report names the connections, this is the first setting to look at.
       maximum-pool-size: 10
   jpa:
+    # No database session stays open while a response is written, so every read of an
+    # aggregate happens inside a transaction of the service. Set on purpose, because Spring
+    # Boot warns at every start while it is not set.
+    open-in-view: false
     hibernate:
       ddl-auto: create-drop
 vanillabp:

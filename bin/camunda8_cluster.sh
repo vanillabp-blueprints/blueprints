@@ -17,13 +17,12 @@
 #   cd blueprints-bpmn/bpmn-service-task/springboot && mvn -Pcamunda8 install verify
 #   bin/camunda8_cluster.sh stop
 #
-# One cluster serves one run of one twin. A timer start event with a cycle of R1 fires
-# ONCE per model, and a cluster which already holds that model creates no new timer for
-# the next deployment of it. Running the Spring Boot twin and the Quarkus twin of
-# bpmn-bpms-initiated-start one after the other against the same cluster therefore lets
-# NightlyReviewIT.theTimerStartsAWorkflowNobodyAskedFor of the second run wait for a start
-# which happened during the first, and the test times out although nothing is broken. Stop
-# the cluster and start it again between the two twins.
+# One cluster may serve several runs, one after the other. The timer start events of the
+# blueprints use a cycle without an end, such as R/PT5S, for this reason. A cycle of R1 fires
+# ONCE per model, and a cluster which already holds that model creates no new timer for the
+# next deployment of it, because a model deployed again without a change is no new version.
+# With R1 the second run against the same cluster waited for a start which happened during
+# the first one, and its test timed out although nothing was broken.
 
 set -o errexit
 set -o nounset
