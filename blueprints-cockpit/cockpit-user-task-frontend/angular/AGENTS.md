@@ -46,39 +46,41 @@ the page. `npm run build` writes the module id and the build id into `src/bc-bui
 | `src/shared/input-form.ts`             | the four components of a form (`all`, `body`, `information`, `actions`) and the messages between them                                    |
 | `src/shared/angular-element.ts`        | an Angular component as a web component: one application, no zone.js, the style in each shadow root                                      |
 | `src/shared/api.ts`                    | `loanApproval`, the one instance of the generated `UserTasksApi` and `ResponseError`; base URL `/wm/loan-approval` from the OpenAPI file |
-| `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, the Angular linker, and `bc-manifest.json` from esbuild's outputs                                            |
+| `src/entries.ts`                       | the entry point of `ng build`: one `import()` per entry, so each entry becomes an ES module of its own                                   |
+| `scripts/write-manifest.mjs`           | `bc-manifest.json` from the list of outputs of the Angular CLI                                                                           |
 | `test/browser/user-task-forms.test.js` | the browser tests, with areas and with `all` only                                                                                        |
 
 ## Boilerplate files
 
-|             File             |                                                                                 Purpose                                                                                 |
-|------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `package.json`               | the scripts, and in `config` the module id, the jar coordinates and the image name                                                                                      |
-| `tsconfig.json`              | for `ngc`, which checks types and templates and writes JavaScript to `build/ngc`; `paths` holds the aliases `@loan-approval`, `@shared`, `@gui-client` and `@generated` |
-| `src/shared/index.ts`        | what the other directories import as `@shared`                                                                                                                          |
-| `scripts/check-imports.mjs`  | fails `npm run build` on an import with `../`; import through an alias instead                                                                                          |
-| `scripts/fetch-openapi.mjs`  | copies the OpenAPI file from the submodule and checks that it names a server                                                                                            |
-| `scripts/write-bc-build.mjs` | writes `src/bc-build.js`, the module id from `package.json` and the build id, before the type check                                                                     |
-| `src/bc-build.d.ts`          | the types of `src/bc-build.js`, which is written for every build and not checked in                                                                                     |
-| `openapi-ts.config.mjs`      | the options of `@hey-api/openapi-ts`, the generator of the API client                                                                                                   |
-| `.gitmodules`                | the submodule `backend`, the backend repository which owns the OpenAPI file                                                                                             |
-| `scripts/build-ui-jar.mjs`   | the UI jar and its pom                                                                                                                                                  |
-| `scripts/build-image.mjs`    | the nginx image                                                                                                                                                         |
-| `scripts/start.mjs`          | placeholder for the dev shell                                                                                                                                           |
-| `src/shared/texts.ts`        | the texts in English and German                                                                                                                                         |
-| `src/shared/style.ts`        | the styles, put into each shadow root                                                                                                                                   |
-| `docker/Dockerfile`          | the nginx image                                                                                                                                                         |
-| `docker/nginx.conf`          | serves `/loan-approval/`, the manifest without caching                                                                                                                  |
-| `test/browser/page.js`       | the test page with `createModuleHost`                                                                                                                                   |
-| `test/browser/server.js`     | serves the test page and `dist/micro-frontends` below `/wm/loan-approval/`                                                                                              |
+|             File             |                                                                 Purpose                                                                 |
+|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `package.json`               | the scripts, and in `config` the module id, the jar coordinates and the image name                                                      |
+| `angular.json`               | `ng build` with the `application` builder: no `index.html`, no polyfills, the list of outputs in `browser-stats.json`                   |
+| `tsconfig.json`              | for `ng build`, which checks types and templates; `paths` holds the aliases `@loan-approval`, `@shared`, `@gui-client` and `@generated` |
+| `src/shared/index.ts`        | what the other directories import as `@shared`                                                                                          |
+| `scripts/check-imports.mjs`  | fails `npm run build` on an import with `../`; import through an alias instead                                                          |
+| `scripts/fetch-openapi.mjs`  | copies the OpenAPI file from the submodule and checks that it names a server                                                            |
+| `scripts/write-bc-build.mjs` | writes `src/bc-build.js`, the module id from `package.json` and the build id, before the type check                                     |
+| `src/bc-build.d.ts`          | the types of `src/bc-build.js`, which is written for every build and not checked in                                                     |
+| `openapi-ts.config.mjs`      | the options of `@hey-api/openapi-ts`, the generator of the API client                                                                   |
+| `.gitmodules`                | the submodule `backend`, the backend repository which owns the OpenAPI file                                                             |
+| `scripts/build-ui-jar.mjs`   | the UI jar and its pom                                                                                                                  |
+| `scripts/build-image.mjs`    | the nginx image                                                                                                                         |
+| `scripts/start.mjs`          | placeholder for the dev shell                                                                                                           |
+| `src/shared/texts.ts`        | the texts in English and German                                                                                                         |
+| `src/shared/style.ts`        | the styles, put into each shadow root                                                                                                   |
+| `docker/Dockerfile`          | the nginx image                                                                                                                         |
+| `docker/nginx.conf`          | serves `/loan-approval/`, the manifest without caching                                                                                  |
+| `test/browser/page.js`       | the test page with `createModuleHost`                                                                                                   |
+| `test/browser/server.js`     | serves the test page and `dist/micro-frontends` below `/wm/loan-approval/`                                                              |
 
 ## Adding this blueprint to an existing project
 
 1. If the workflow module has no frontend project yet, copy this one and replace the placeholders.
    If it has one, take the files below `src`, the scripts it lacks and `openapi-ts.config.mjs`.
 2. Each user task gets a visual entry in `src/forms/` and a line in the table of
-   `src/data/user-task-form.ts`. Add the entry to the list in
-   `scripts/build-micro-frontends.mjs`. A form with one input field can use `defineInputForm`.
+   `src/data/user-task-form.ts`. Add the entry to `src/entries.ts` and to the list in
+   `scripts/write-manifest.mjs`. A form with one input field can use `defineInputForm`.
    A larger one writes its four web components itself, the same way.
 3. Each value for the task list needs a column in `src/data/user-task-list.ts`, and the backend
    has to put the value into `details` with its `@UserTaskDetailsProvider`.
