@@ -36,8 +36,9 @@ import com.github.dockerjava.api.exception.NotFoundException;
  * </p>
  *
  * <p>
- * The route is the workflow module's. So this test also proves that the module brings it. The
- * application has no route of its own and only names the address of the nginx.
+ * The route comes from the support library of the Business Cockpit, which the workflow module
+ * depends on. So this test also proves that the library brings it. The application has no route
+ * of its own and only names the address of the nginx.
  * </p>
  *
  * <p>

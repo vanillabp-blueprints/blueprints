@@ -1,10 +1,10 @@
 name: Build the cockpit application with the user interface behind a proxy
-# blueprints-cockpit/cockpit-user-task-application-proxy/springboot needs two things before its
-# own build: the workflow module of the backend in the Maven repository, and the nginx image of
-# the frontend in Docker. Its integration test starts that image. So this workflow builds the
-# three parts in their order, in one job: the backend with Maven, the frontend with npm, and then
-# the application with Maven again. The generic matrix of build.yaml cannot do that, which is why
-# it leaves this directory out.
+# blueprints-cockpit/cockpit-user-task-application-proxy/<platform> needs two things before its
+# own build: the workflow module of the backend of the same platform in the Maven repository, and
+# the nginx image of the frontend in Docker. Its integration test starts that image. So this
+# workflow builds the three parts in their order, in one job per platform and BPMS: the backend
+# with Maven, the frontend with npm, and then the application with Maven again. The generic
+# matrix of build.yaml cannot do that, which is why it leaves these directories out.
 #
 # After the split, each part is a repository of its own, and the application takes the released
 # workflow module and the published image. This job does by hand what the releases do there.
@@ -44,16 +44,18 @@ env:
   # of the run is enough, with 'packages: read' above.
   VBP_SNAPSHOTS_FROM: "${{ vars.VANILLABP_SNAPSHOTS_FROM == 'github-packages' && 'github-packages' || 'central' }}"
   VBP_PACKAGES_READ_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-  BACKEND: blueprints-cockpit/cockpit-user-task-backend/springboot
   FRONTEND: blueprints-cockpit/cockpit-user-task-frontend/react
-  APPLICATION: blueprints-cockpit/cockpit-user-task-application-proxy/springboot
 jobs:
   application-proxy:
-    name: ${{ matrix.bpms }}
+    name: ${{ matrix.platform }} (${{ matrix.bpms }})
     runs-on: ubuntu-latest
+    env:
+      BACKEND: blueprints-cockpit/cockpit-user-task-backend/${{ matrix.platform }}
+      APPLICATION: blueprints-cockpit/cockpit-user-task-application-proxy/${{ matrix.platform }}
     strategy:
       fail-fast: false
       matrix:
+        platform: [springboot, quarkus]
         # Camunda 7 only for a pull request, every engine on main and at night, as in build.yaml
         bpms: >-
           ${{ github.event_name == 'pull_request' && fromJSON('["camunda7"]')

@@ -624,8 +624,9 @@ Without it, a single directory is only reported.
 
 A new family of blueprints may start on one platform. Its twins then come in a phase of their
 own, as the Quarkus twins of the first families did. `CATEGORIES_BEFORE_THEIR_TWIN_PHASE` in the
-script names such a category, today `cockpit`. There a twin may be missing while the index says
-`planned` for it. Take the category out of the list when its twin phase starts.
+script names such a category. There a twin may be missing while the index says `planned` for it.
+Take the category out of the list when its twin phase starts. The list is empty today. `cockpit`
+was the last such category, and its Quarkus twins are written.
 
 A single blueprint may also start on one platform, when it comes after the twin phase of its
 category. `BLUEPRINTS_BEFORE_THEIR_TWIN_PHASE` names it. The rule is the same: the index says

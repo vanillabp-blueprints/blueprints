@@ -142,9 +142,11 @@ the package. So two workflow modules with a class `Service` each run in one appl
 side.
 
 The files of the user interface come from the UI jar. Quarkus serves the files below
-`META-INF/resources/` of every JAR, so they need nothing here. This module does not forward them
-to an nginx. The application which takes its user interface from an nginx exists for one
-platform only, and that platform has the route.
+`META-INF/resources/` of every JAR, so they need nothing here. An application may take them
+from an nginx instead. Then the support library of the cockpit forwards them, and the module
+needs no class for it either: the application adds `io.vertx:vertx-http-proxy` and sets
+`loan-approval.user-interface.address`
+([Connecting a workflow module](https://github.com/vanillabp/business-cockpit/wiki/Connecting-a-workflow-module)).
 
 The module reads the keys of its clients below `loan-approval.cockpit`, through `RestClients`.
 The keys are below the id of the module, like every key a module reads itself. The keys below `vanillabp` belong to VanillaBP and the cockpit adapter, and they refuse

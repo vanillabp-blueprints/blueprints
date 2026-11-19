@@ -6,13 +6,16 @@
       makes the process BPMS-initiated: there is no startWorkflow call anywhere in the code,
       and no aggregate exists before the engine decides to begin.
 
-      The cycle is short so that the blueprint can be watched: R1/PT5S fires once, five
-      seconds after the process was deployed. A real review would use a cron expression.
+      The cycle is short so that the blueprint can be watched: R/PT5S fires every five
+      seconds, without an end. A real review would use a cycle such as R/P1D. The cycle has
+      no end on purpose: a model deployed again without a change is no new version, so it
+      keeps the schedule it has, and a cycle which already ended would start nothing in the
+      next run.
     -->
     <bpmn:startEvent id="StartEvent_ScheduledReview" name="Review is due">
       <bpmn:outgoing>Flow_FromSchedule</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_ScheduledReview">
-        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R1/PT5S</bpmn:timeCycle>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/PT5S</bpmn:timeCycle>
       </bpmn:timerEventDefinition>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_FromSchedule" sourceRef="StartEvent_ScheduledReview" targetRef="ServiceTask_ReviewPendingApprovals" />

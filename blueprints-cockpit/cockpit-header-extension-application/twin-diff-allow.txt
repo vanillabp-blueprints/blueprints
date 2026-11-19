@@ -1,0 +1,8 @@
+# Approved differences between the platform twins of this blueprint, checked by
+# bin/check_twin_diff.py. One line per file: the hash of the difference, what kind of
+# difference it is, the file, and why it exists. Write the reason - the file is read by
+# people deciding whether a difference is the platform or a mistake.
+
+31120fb94c65de07  only-springboot  src/main/java/blueprint/application/Application.java  # one platform boots from a class of the application, the other one needs none
+b7bba06db566ef25  differs  src/test/java/blueprint/application/ApplicationSmokeTest.java  # asking the bean container whether a ProcessService exists is done in the container's own words
+281f005ee71e8a4d  differs  src/test/java/blueprint/application/UserInterfaceSmokeTest.java  # test annotations and injection, how each platform finds the free port of the application under test, makes a client of the interface generated from the OpenAPI file and reads the manifest with a plain client, reads the aggregate in a transaction of its own, and the generated classes, which are records on one platform and classes with getters on the other; the requests and the assertions are the same

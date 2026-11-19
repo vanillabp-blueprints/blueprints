@@ -1,0 +1,17 @@
+# The users of the cockpit in 'docker-compose.yaml'. The cockpit asks the dev shell simulator
+# for them when it starts, and the simulator refuses to start without any. Log in to the
+# cockpit as one of them, with the password 'test'. Jane is a loan officer, so the cockpit lists
+# the workflow module for her, and a cockpit user interface shows her the button "Request a
+# loan". John is not, so the cockpit leaves the module out of his list.
+dev-shell-simulator:
+  users:
+    - id: jane
+      email: jane@doe.com
+      first-name: Jane
+      last-name: Doe
+      groups: LOAN_OFFICERS
+    - id: john
+      email: john@doe.com
+      first-name: John
+      last-name: Doe
+      groups: CUSTOMER_SERVICE

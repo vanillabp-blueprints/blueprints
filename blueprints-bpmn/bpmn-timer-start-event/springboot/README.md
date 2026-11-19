@@ -226,7 +226,9 @@ again and again. `R3/PT5S` fires three times, `R/P1D` fires every day without an
 blueprint runs `R/PT5S`, without an end, for its tests. A model which is deployed again without a
 change is no new version, so the engine keeps the schedule it has. A cycle which already ended
 in an earlier run would start nothing in the next one. A date starts one workflow at that moment. Not every engine accepts a
-duration on a start event, so use a cycle with one repetition instead, such as `R1/PT5S`.
+duration on a start event. A cycle with one repetition, such as `R1/PT5S`, takes its place, but
+it has the same catch as every cycle with an end: on Camunda 8 it fires once per version of the
+model, not once per deployment.
 
 The value is written in the model and does not come from configuration, unlike the deadlines
 of `bpmn-timer`. A timer inside a workflow reads its value when the workflow reaches it, and

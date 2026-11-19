@@ -48,24 +48,23 @@ controllers in line, or a form reaches nothing.
 
 ## Core files
 
-|                                       File                                        |                                                                                                 Why it matters                                                                                                 |
-|-----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`       | the contract with the frontend: four operations, `servers: /wm/loan-approval`. Change it together with `UserTaskFormController`                                                                                |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`               | `vanillabp.workflow-modules.loan-approval.cockpit.*`: `workflow-module-uri`, `ui-uri-type: ES_MODULES`, `ui-uri-path`                                                                                          |
-| `loan-approval/src/main/java/.../WorkflowTaskHandler.java`                        | one `@WorkflowTask` method per user task, keeping `@TaskId`, and the `@UserTaskDetailsProvider` method filling `details`                                                                                       |
-| `loan-approval/src/main/java/.../UserTaskFormController.java`                     | the endpoints of the forms, below `/loan-approval/api/loan-requests/{loanRequestId}`, each with the task id. Implements the generated `UserTasksApi`. GET reads, POST completes, 404 if not open, 409 if taken |
-| `loan-approval/src/main/java/.../Cockpit.java`                                    | asks the cockpit, with the cookie of the request, who the user is and whom the task is assigned to, through the generated clients of the official GUI API                                                      |
-| `loan-approval/src/main/java/.../config/CockpitClientAutoConfiguration.java`      | imports the clients of the official GUI API into a group of the module, with the keys below `loan-approval.cockpit`                                                                                            |
-| `loan-approval/src/main/resources/loan-approval/openapi/loan-requests.yaml`       | the GET endpoints which start and show a loan approval. The build generates `LoanRequestsApi` from it, and `ApiController` implements it                                                                       |
-| `loan-approval/src/main/java/.../Service.java`                                    | finds the loan request by its id, checks that the task is open on it, writes the input, completes the task through `Workflow`                                                                                  |
-| `loan-approval/src/main/java/.../Workflow.java`                                   | `startWorkflow` and `completeUserTask`                                                                                                                                                                         |
-| `loan-approval/src/main/java/.../model/Aggregate.java`                            | per user task the id of the open task and the input of its form                                                                                                                                                |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                             | both tasks through the endpoints, what the cockpit was told, and every OpenAPI operation mapped                                                                                                                |
-| `loan-approval/src/test/java/.../CockpitSimulator.java`                           | starts the dev shell simulator as the cockpit of the test                                                                                                                                                      |
-| `loan-approval/src/test/java/.../CockpitGuiApi.java`                              | stands in for the two answers of the official GUI API which `Cockpit` asks for, because the simulator does not know who is logged in                                                                           |
-| `loan-approval/src/main/java/.../config/LoanApprovalAutoConfiguration.java`       | the module wires itself: component scan, `@EntityScan` and `@EnableJpaRepositories` of its own package, with fully qualified bean names                                                                        |
-| `loan-approval/src/main/java/.../config/UserInterfaceRouteAutoConfiguration.java` | the route `/loan-approval/**` without `/loan-approval/api/**` to `loan-approval.user-interface.address`, only with the gateway and the key                                                                     |
-| `loan-approval/src/main/resources/META-INF/spring/...AutoConfiguration.imports`   | names both auto-configurations                                                                                                                                                                                 |
+|                                      File                                       |                                                                                                 Why it matters                                                                                                 |
+|---------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`     | the contract with the frontend: four operations, `servers: /wm/loan-approval`. Change it together with `UserTaskFormController`                                                                                |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`             | `vanillabp.workflow-modules.loan-approval.cockpit.*`: `workflow-module-uri`, `ui-uri-type: ES_MODULES`, `ui-uri-path`                                                                                          |
+| `loan-approval/src/main/java/.../WorkflowTaskHandler.java`                      | one `@WorkflowTask` method per user task, keeping `@TaskId`, and the `@UserTaskDetailsProvider` method filling `details`                                                                                       |
+| `loan-approval/src/main/java/.../UserTaskFormController.java`                   | the endpoints of the forms, below `/loan-approval/api/loan-requests/{loanRequestId}`, each with the task id. Implements the generated `UserTasksApi`. GET reads, POST completes, 404 if not open, 409 if taken |
+| `loan-approval/src/main/java/.../Cockpit.java`                                  | asks the cockpit, with the cookie of the request, who the user is and whom the task is assigned to, through the generated clients of the official GUI API                                                      |
+| `loan-approval/src/main/java/.../config/CockpitClientAutoConfiguration.java`    | imports the clients of the official GUI API into a group of the module, with the keys below `loan-approval.cockpit`                                                                                            |
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-requests.yaml`     | the GET endpoints which start and show a loan approval. The build generates `LoanRequestsApi` from it, and `ApiController` implements it                                                                       |
+| `loan-approval/src/main/java/.../Service.java`                                  | finds the loan request by its id, checks that the task is open on it, writes the input, completes the task through `Workflow`                                                                                  |
+| `loan-approval/src/main/java/.../Workflow.java`                                 | `startWorkflow` and `completeUserTask`                                                                                                                                                                         |
+| `loan-approval/src/main/java/.../model/Aggregate.java`                          | per user task the id of the open task and the input of its form                                                                                                                                                |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                           | both tasks through the endpoints, what the cockpit was told, and every OpenAPI operation mapped                                                                                                                |
+| `loan-approval/src/test/java/.../CockpitSimulator.java`                         | starts the dev shell simulator as the cockpit of the test                                                                                                                                                      |
+| `loan-approval/src/test/java/.../CockpitGuiApi.java`                            | stands in for the two answers of the official GUI API which `Cockpit` asks for, because the simulator does not know who is logged in                                                                           |
+| `loan-approval/src/main/java/.../config/LoanApprovalAutoConfiguration.java`     | the module wires itself: component scan, `@EntityScan` and `@EnableJpaRepositories` of its own package, with fully qualified bean names                                                                        |
+| `loan-approval/src/main/resources/META-INF/spring/...AutoConfiguration.imports` | names both auto-configurations                                                                                                                                                                                 |
 
 ## Boilerplate files
 
@@ -127,13 +126,12 @@ auto-configuration wires the module.
    the server of the file is `http://localhost:8080/<workflow-module-id>`, its paths start with
    `/api`, and `ApiController` carries `@RequestMapping("/<workflow-module-id>")`. The URLs stay
    the server plus the path.
-8. Copy `LoanApprovalAutoConfiguration` and `UserInterfaceRouteAutoConfiguration` into the
-   sub-package `config` of your module, and the imports file. Set `WORKFLOW_MODULE_ID` to your
-   module id. The scans of `LoanApprovalAutoConfiguration` name the package of the module by its
-   `Service`, so they still find every class of the module. Add
-   `spring-cloud-gateway-server-webmvc` to the module as an optional dependency, with the
-   Spring Cloud BOM. The route class is the same for every module. The library
-   `business-cockpit-spring-boot-support` does not have it yet.
+8. Copy `LoanApprovalAutoConfiguration` into the sub-package `config` of your module, and the
+   imports file. Set `WORKFLOW_MODULE_ID` to your module id. The scans of
+   `LoanApprovalAutoConfiguration` name the package of the module by its `Service`, so they still
+   find every class of the module. Write no route to an nginx: the library
+   `business-cockpit-spring-boot-support` brings it for every module, once the application sets
+   `<workflow-module-id>.user-interface.address`.
 9. Copy `CockpitSimulator`, `CockpitGuiApi`, `dev-shell-simulator.yaml` and the dependency plugin execution of
    `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the tests
    which check every operation of both OpenAPI files against the endpoints.

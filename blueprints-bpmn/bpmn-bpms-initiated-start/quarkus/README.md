@@ -147,7 +147,8 @@ involved, which matters on a BPMS licensed per tenant.
 explains the modes and what each of them costs.
 
 Then do nothing. Five seconds after the model was deployed the timer fires, and a workflow
-exists which nobody asked for:
+exists which nobody asked for. It fires again every five seconds, so a new review shows up
+in the log again and again:
 
 ```
 A nightly review 'a41f…' was started by the BPMS: TIMER, from start event 'StartEvent_ScheduledReview'. Nobody called startWorkflow

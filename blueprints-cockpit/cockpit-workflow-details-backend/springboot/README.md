@@ -101,8 +101,8 @@ role, is the subject of a blueprint of its own about roles and permissions.
 `LoanApprovalAutoConfiguration` scans the package of the module for beans, entities and
 repositories, as in
 [`cockpit-user-task-backend`](https://github.com/vanillabp-blueprints/cockpit-user-task-backend-springboot#the-module-wires-itself).
-An application adds the module as a Maven dependency, and that is all. This module has no route
-to an nginx. Its user interface comes from the UI jar.
+An application adds the module as a Maven dependency, and that is all. Its user interface comes
+from the UI jar.
 
 ## Delta to the base blueprint
 
@@ -127,12 +127,8 @@ Compared to [`cockpit-user-task-backend`](https://github.com/vanillabp-blueprint
 | `LoanApprovalIT.java`                                   | withdraws a loan request through the endpoint, and checks the user tasks of the case and the details for the case list     |
 | `CockpitSimulator.java`                                 | reads a case by its business id, and the user tasks of a case                                                              |
 | `dev-shell-simulator.yaml` (test)                       | the demo user is in the group `LOAN_APPROVAL` instead of `RISK_ASSESSMENT`                                                 |
-| `pom.xml`, `loan-approval/pom.xml`                      | no Spring Cloud and no gateway                                                                                             |
-| `UserInterfaceRouteAutoConfiguration.java`              | deleted, see below                                                                                                         |
+| `loan-approval/pom.xml`                                 | the clients of the official GUI API only in the test scope, where the test reads what the simulator was told               |
 | `...AutoConfiguration.imports`                          | names only `LoanApprovalAutoConfiguration`                                                                                 |
-
-There is no `UserInterfaceRouteAutoConfiguration`. The user interface comes from the UI jar, so
-the module needs no route to an nginx, and no Spring Cloud.
 
 ## Running it
 
