@@ -264,6 +264,43 @@ for (const cockpit of COCKPITS) {
   });
 }
 
+describe('a new build of the module', () => {
+  it('loads without a reload of the page, because its web components have new names', async () => {
+    const { page, pageErrors } = await openPage('?recheck=100', { forms: { 'assess-risk': { loanRequestId: 'LR-4711', amount: 25000 } } });
+    assert.deepEqual(await page.evaluate((task) => window.bcTest.show(task), assessRisk), ['all']);
+
+    // The next build: the same files with another build id, below b2/. So every file has a new
+    // address, as the files of a new build have new hashes in their names.
+    const { entries, buildTimestamp } = manifest();
+    const nextBuildId = (Number.parseInt(BUILD_ID, 36) + 1000).toString(36);
+    const nextBuildTimestamp = new Date(Number.parseInt(nextBuildId, 36)).toISOString();
+    await page.route('**/wm/loan-approval/bc-manifest.json', (route) => route.fulfill({
+      json: {
+        ...manifest(),
+        buildTimestamp: nextBuildTimestamp,
+        entries: Object.fromEntries(Object.entries(entries).map(([entry, file]) => [entry, `b2/${file}`])),
+      },
+    }));
+    await page.route('**/wm/loan-approval/b2/**', (route) => route.fulfill({
+      contentType: 'text/javascript',
+      body: readFileSync(join(microFrontends, new URL(route.request().url()).pathname.split('/b2/')[1]), 'utf8').replaceAll(BUILD_ID, nextBuildId),
+    }));
+    // Longer than the 100 milliseconds after which the host reads the manifest again.
+    await page.waitForTimeout(200);
+    assert.deepEqual(await page.evaluate((task) => window.bcTest.show(task), assessRisk), ['all']);
+
+    // The form of the first build stays, and the form of the new build is drawn next to it.
+    const drawn = await page.evaluate(() => [...document.querySelectorAll('#user-task-page > :not([data-bc-area])')].map((element) => element.localName));
+    const firstName = formElements('assess-risk').all;
+    assert.deepEqual(drawn, [firstName, firstName.replace(BUILD_ID, nextBuildId)]);
+    assert.deepEqual(await page.evaluate(() => window.bcTest.newBuilds), [{ moduleId: 'loan-approval', from: buildTimestamp, to: nextBuildTimestamp }]);
+    assert.ok((await loadedFiles(page)).includes(`/wm/loan-approval/b2/${entries.AssessRiskForm}`));
+    assert.deepEqual(await page.evaluate(() => window.bcTest.errors), []);
+    assert.deepEqual(pageErrors, []);
+    await page.close();
+  });
+});
+
 /** Waits until a locator shows a text, at most five seconds. */
 async function assertText(locator, expected) {
   try {

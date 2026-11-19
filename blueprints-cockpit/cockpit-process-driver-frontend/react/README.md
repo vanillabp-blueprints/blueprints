@@ -52,12 +52,12 @@ it, and the workflow module reports to it, as it would to a real cockpit. The fo
 is drawn by `createModuleHost` of `@vanillabp/bc-module-host`. So the dev shell shows the forms
 the way a cockpit with the areas `body` and `actions` shows them.
 
-Before it draws a form, the dev shell checks the names of its web components the way a cockpit
-does (`dev-shell/src/element-names.ts`). A name which does not start with the prefix of the module
-and a hyphen, or which starts with the longer prefix of another module, is not loaded and not
-drawn. The page shows the same note a cockpit shows instead, with the module, the name and the
-prefix, and writes it to the console. So a wrong name shows up during development and not only in
-the cockpit.
+Before it draws a form, the host checks the names of its web components the way a cockpit does. A
+name which does not start with the prefix of the module and a hyphen, or which starts with the
+longer prefix of another module, is not loaded and not drawn. The host writes a note with the
+module, the name and the prefix to the console and throws an error with the code
+`WRONG_ELEMENT_NAME`, and the page shows that note. So a wrong name shows up during development
+and not only in the cockpit.
 
 `npm run start` serves the dev shell and forwards the calls to the application and to the
 simulated cockpit. So the page calls the same paths as in production, `/wm/loan-approval/...`,
@@ -144,7 +144,6 @@ simulated cockpit at `http://localhost:8079`. `APPLICATION_URL`, `COCKPIT_URL` a
 | `dev-shell/src/process-driver-page.tsx` | the page "Process driver": states, test data, advance-to, the links and the messages                |
 | `dev-shell/src/cockpit.ts`              | the host of the module kit, and the calls to the simulated cockpit                                  |
 | `dev-shell/src/user-task-page.tsx`      | reads a user task from the simulated cockpit and lets the host draw its form                        |
-| `dev-shell/src/element-names.ts`        | checks the names of the web components before they are drawn, the way a cockpit does                |
 | `dev-shell/src/workflow-page.tsx`       | a case and its user tasks                                                                           |
 | `dev-shell/src/main.tsx`                | the three views of the dev shell, chosen by the part of the address after `#`                       |
 | `scripts/start.mjs`                     | serves the dev shell and the micro-frontends, and forwards the calls to the application and cockpit |
