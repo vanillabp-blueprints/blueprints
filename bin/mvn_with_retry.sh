@@ -52,6 +52,14 @@ fi
 log="$(mktemp)"
 trap 'rm -f "${log}"' EXIT
 
+# The local repository this build uses: -Dmaven.repo.local if the caller names one.
+local_repository="${HOME}/.m2/repository"
+for argument in "$@"; do
+  case "${argument}" in
+    -Dmaven.repo.local=*) local_repository="${argument#-Dmaven.repo.local=}" ;;
+  esac
+done
+
 pause="${PAUSE_SECONDS}"
 for attempt in $(seq 1 "${ATTEMPTS}"); do
   if mvn "$@" 2>&1 | tee "${log}"; then
@@ -72,4 +80,11 @@ for attempt in $(seq 1 "${ATTEMPTS}"); do
   echo "A repository did not answer (attempt ${attempt} of ${ATTEMPTS}). Trying again in ${wait_for}s."
   sleep "${wait_for}"
   pause=$((pause * PAUSE_FACTOR))
+  # A download which failed leaves a '*.lastUpdated' marker, and Maven does not ask the
+  # repository again until its update interval has passed. Without this, every further
+  # attempt only reported "was not found ... during a previous attempt" and the repeat was
+  # worth nothing: io.vertx:vertx-uri-template, which Central has, failed a job four times
+  # in one day and passed when the whole job was started again. The markers go, so the next
+  # attempt asks the repository again.
+  find "${local_repository}" -type f -name '*.lastUpdated' -delete 2>/dev/null || true
 done
