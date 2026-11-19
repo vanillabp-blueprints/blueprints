@@ -1,0 +1,10 @@
+/home/vscode/worktrees/w-bp-s97/blueprints-modules/module-process-driver/quarkus/external-systems/credit-rating/credit-rating-api/client/src/main/java
+/home/vscode/worktrees/w-bp-s97/blueprints-modules/module-process-driver/quarkus/loan-approval/test-driver/src/main/java
+/home/vscode/worktrees/w-bp-s97/blueprints-modules/module-process-driver/quarkus/external-systems/e-signature/port/src/main/java
+/home/vscode/worktrees/w-bp-s97/blueprints-modules/module-process-driver/quarkus/external-systems/credit-rating/rest-adapter/src/main/java
+/home/vscode/worktrees/w-bp-s97/blueprints-modules/module-process-driver/quarkus/external-systems/e-signature/e-signature-api/client/src/main/java
+/home/vscode/worktrees/w-bp-s97/blueprints-modules/module-process-driver/quarkus/external-systems/credit-rating/port/src/main/java
+/home/vscode/worktrees/w-bp-s97/blueprints-modules/module-process-driver/quarkus/simulator/application/src/main/java
+/home/vscode/worktrees/w-bp-s97/blueprints-modules/module-process-driver/quarkus/loan-approval/workflow-module/src/main/java
+/home/vscode/worktrees/w-bp-s97/blueprints-modules/module-process-driver/quarkus/simulator/api/client/src/main/java
+/home/vscode/worktrees/w-bp-s97/blueprints-modules/module-process-driver/quarkus/external-systems/e-signature/rest-adapter/src/main/java

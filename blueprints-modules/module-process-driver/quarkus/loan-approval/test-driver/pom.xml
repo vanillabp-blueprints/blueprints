@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+    <artifactId>loan-approval</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>loan-approval-test-driver</artifactId>
+  <name>The process driver of 'loan-approval'</name>
+  <description>Brings a loan approval to a named point of its process. It plays the users through the API of the user interface of the workflow module, and it controls the systems around the application through the test API of the simulator. It is a module of its own, so the application in production never has it.</description>
+
+  <dependencies>
+    <!--
+      The driver does not depend on the workflow module. It is a user of the module, not a part
+      of it: it knows the module only through the API of its user interface, and it generates
+      the client of that API from the OpenAPI file of the module, see below. So the tests of the
+      workflow module can depend on the driver without a cycle.
+
+      The second thing the driver uses is the client of the simulator's test API, generated from
+      its OpenAPI file.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+      <artifactId>simulator-api-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-jackson</artifactId>
+    </dependency>
+    <!-- The REST client of Quarkus implements the generated interfaces of both clients. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-client-jackson</artifactId>
+    </dependency>
+    <!-- The driver waits for the application to reach a state. -->
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <!-- For the unit tests of the driver. The driver is tested with the workflow module. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        The REST API of the driver is written as the OpenAPI file
+        'src/main/resources/loan-approval/openapi/process-driver.yaml'. Only a browser, the dev
+        shell and the tests of a user interface call it, so it has no client module.
+        'ProcessDriverController' implements the interface generated from it. The settings all
+        generated code shares are in the POM of the blueprint.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>process-driver-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/process-driver.yaml</inputSpec>
+              <apiPackage>blueprint.testdriver.loanapproval.api</apiPackage>
+              <modelPackage>blueprint.testdriver.loanapproval.api.model</modelPackage>
+              <configOptions>
+                <!-- A method returns the answer itself. Quarkus turns it into the response. -->
+                <returnResponse>false</returnResponse>
+              </configOptions>
+            </configuration>
+          </execution>
+          <!--
+            The client of the API of the user interface of the workflow module, generated from
+            its OpenAPI file. The driver uses it like the browser of a person uses the API.
+          -->
+          <execution>
+            <id>loan-approval-api-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/../workflow-module/src/main/resources/loan-approval/openapi/loan-approval.yaml</inputSpec>
+              <apiPackage>blueprint.testdriver.loanapproval.gui</apiPackage>
+              <modelPackage>blueprint.testdriver.loanapproval.gui.model</modelPackage>
+              <configOptions>
+                <!-- The method returns the body. An error status comes as an exception of the REST client. -->
+                <returnResponse>false</returnResponse>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        The driver is a Maven module of its own, so the build of the application or of the tests
+        of the workflow module does not see its classes. The index is what makes them visible:
+        without it, Quarkus finds neither the beans of the driver nor its REST API, and the REST
+        client does not find the generated interfaces.
+      -->
+      <plugin>
+        <groupId>io.smallrye</groupId>
+        <artifactId>jandex-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>make-index</id>
+            <goals>
+              <goal>jandex</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

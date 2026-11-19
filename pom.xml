@@ -54,6 +54,7 @@
     <module>blueprints-modules/module-under-load/springboot</module>
     <module>blueprints-modules/module-under-load/quarkus</module>
     <module>blueprints-modules/module-process-driver/springboot</module>
+    <module>blueprints-modules/module-process-driver/quarkus</module>
     <module>blueprints-persistence/persistence-parallel-branches/springboot</module>
     <module>blueprints-persistence/persistence-parallel-branches/quarkus</module>
     <!-- Only one platform: the other one has no active record idiom, see blueprints.yaml. -->

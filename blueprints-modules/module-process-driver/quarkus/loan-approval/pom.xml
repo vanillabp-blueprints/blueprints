@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+    <artifactId>module-process-driver</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>loan-approval</artifactId>
+  <packaging>pom</packaging>
+  <name>Use case 'loan-approval'</name>
+  <description>The workflow module 'loan-approval' and the process driver its tests use.</description>
+
+  <!--
+    Two modules for one use case:
+
+      workflow-module  the code, the BPMN models, the API of the user interface, and all
+                       integration tests of the module
+      test-driver      the process driver, which plays the users. It is a module of its own, so
+                       the application in production never has it
+
+    The tests of the workflow module use the driver, so the workflow module depends on the
+    driver in the test scope. The driver does not depend on the workflow module. It knows the
+    module only from the outside: through the API of the user interface, whose client it
+    generates from the OpenAPI file of the module. So there is no cycle, and Maven builds the
+    driver first.
+  -->
+  <modules>
+    <module>workflow-module</module>
+    <module>test-driver</module>
+  </modules>
+</project>

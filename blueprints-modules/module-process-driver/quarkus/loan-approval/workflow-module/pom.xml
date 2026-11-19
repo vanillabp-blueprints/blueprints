@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+    <artifactId>loan-approval</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>loan-approval-workflow-module</artifactId>
+  <name>Workflow module 'loan-approval'</name>
+  <description>The workflow module: BPMN models and the code implementing them, packaged as a JAR. It knows the systems around it only through their ports. Its integration tests run it against the simulator, and the process driver plays its users.</description>
+
+  <properties>
+    <!-- '-DskipTests' starts no simulator either. -->
+    <skipTests>false</skipTests>
+  </properties>
+
+  <dependencies>
+    <!--
+      The workflow module knows the VanillaBP APIs, but no BPMS: 'vanillabp-quarkus-support'
+      deliberately does not expose any BPMS API, so the hexagonal architecture cannot be
+      broken by accident. The adapter is chosen by the application (see ../application).
+    -->
+    <dependency>
+      <groupId>io.vanillabp</groupId>
+      <artifactId>vanillabp-quarkus-support</artifactId>
+    </dependency>
+    <!--
+      The same for the Business Cockpit: its annotations, such as @UserTaskDetailsProvider. It
+      knows no BPMS either. The cockpit adapter of the BPMS is chosen by the application, next
+      to the BPMS adapter. The BOM of the cockpit is not imported, because it imports the BOM of
+      another platform. So the version is named here.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>business-cockpit-quarkus-support</artifactId>
+      <version>${businesscockpit.version}</version>
+    </dependency>
+    <!--
+      The systems around the module, as ports: interfaces named after the role each system
+      plays. Not the adapters. Which adapter implements a port is the choice of the
+      application, like the choice of the BPMS adapter.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+      <artifactId>credit-rating-port</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+      <artifactId>e-signature-port</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-jackson</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-hibernate-orm-panache</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <!--
+      Testing the workflow module means running it: the test sources add a database, a BPMS
+      adapter, a cockpit adapter and the REST adapters of the ports, and Quarkus boots the
+      module out of this Maven module. The adapters talk to the simulator, which the build
+      starts. Nothing is mocked.
+
+      The process driver plays the users. It brings a loan approval to a point of its process
+      through the API of the user interface and the test API of the simulator. It does not
+      depend on this module, so this dependency is no cycle.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+      <artifactId>loan-approval-test-driver</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+      <artifactId>credit-rating-rest-adapter</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+      <artifactId>e-signature-rest-adapter</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-client-jackson</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!--
+      Only for the order of the build: the simulator has to be built before these tests run.
+      Putting it first in the parent's <modules> is not enough. Maven sorts the modules by their
+      dependencies and keeps the order of <modules> only between modules which do not depend on
+      each other, and a parallel build ('-T') builds such modules at the same time. Only this
+      dependency makes Maven wait for the simulator's JAR, and only this dependency brings the
+      simulator into 'mvn -pl loan-approval/workflow-module -am'.
+
+      It puts nothing on a classpath: the type 'pom' adds no JAR, and the exclusion keeps the
+      simulator's own dependencies away. The tests talk to the simulator over HTTP, as the
+      application does.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+      <artifactId>simulator-application</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.vanillabp</groupId>
+      <artifactId>vanillabp-quarkus-integration</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- Measures which code of this module the tests run, see the JaCoCo plugin below. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jacoco</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jdbc-h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-config-yaml</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!--
+      The clients of the official GUI API of the cockpit, generated from its OpenAPI file. The
+      tests read with them what the cockpit the simulator plays was told.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>official-gui-api-quarkus-client</artifactId>
+      <version>${businesscockpit.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        The API of this module is written as the OpenAPI file
+        'src/main/resources/loan-approval/openapi/loan-approval.yaml'. This plugin generates the
+        Java interface 'LoanApprovalApi' and the classes of its answers from it. 'ApiController'
+        implements the interface and holds nothing but the code of each call. The settings all
+        generated code shares are in the POM of the blueprint.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>loan-approval-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/loan-approval.yaml</inputSpec>
+              <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
+              <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
+              <configOptions>
+                <!-- A method returns the answer itself. Quarkus turns it into the response. -->
+                <returnResponse>false</returnResponse>
+              </configOptions>
+            </configuration>
+          </execution>
+          <!--
+            The client of the REST API of the process driver, for its integration test only. The
+            dev shell and the tests of a user interface use the API from TypeScript, so the
+            driver brings no Java client of its own.
+          -->
+          <execution>
+            <id>process-driver-api-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <inputSpec>${project.basedir}/../test-driver/src/main/resources/loan-approval/openapi/process-driver.yaml</inputSpec>
+              <output>${project.build.directory}/generated-test-sources/openapi</output>
+              <addCompileSourceRoot>false</addCompileSourceRoot>
+              <addTestCompileSourceRoot>true</addTestCompileSourceRoot>
+              <apiPackage>blueprint.workflowmodule.processdriver.client</apiPackage>
+              <modelPackage>blueprint.workflowmodule.processdriver.client.model</modelPackage>
+              <configOptions>
+                <!-- The method returns the body. An error status comes as an exception of the REST client. -->
+                <returnResponse>false</returnResponse>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        A workflow module is a Maven module of its own, so the application's build does not
+        see its classes. The index is what makes them visible: without it, the
+        '@WorkflowService' class of this module is never found.
+      -->
+      <plugin>
+        <groupId>io.smallrye</groupId>
+        <artifactId>jandex-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>make-index</id>
+            <goals>
+              <goal>jandex</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        The next four plugins start the simulator before the integration tests, on a free port,
+        and tell the tests where it is. Its log goes to target/simulator.log, and a failing test
+        prints what the simulator logged meanwhile. The simulator ends with the build.
+
+        This is the plain build and not a profile which switches itself on. Such a profile
+        would switch off 'camunda7', the BPMS profile which is active by default, and a build
+        without '-P<bpms>' would have no BPMS adapter.
+
+        To run the tests against a simulator you started yourself, for example while you debug
+        it, name its address. The build still starts its own simulator, and the tests use yours:
+
+          java -jar simulator/application/target/simulator-application-1.0.0-SNAPSHOT-runnable.jar
+          mvn verify -Dsimulator.base-url=http://localhost:8079
+
+        A test run from the IDE has none of this. It looks for a simulator at
+        http://localhost:8079 and skips, with a message, when nobody answers.
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>${build-helper-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>simulator-port</id>
+            <goals>
+              <goal>reserve-network-port</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <portNames>
+                <portName>simulator.port</portName>
+              </portNames>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        The runnable JAR of the simulator, from this build, copied to target/. It is not a
+        dependency of the tests, because it is a whole application.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>${maven-dependency-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>simulator-jar</id>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+                  <artifactId>simulator-application</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>runnable</classifier>
+                  <destFileName>simulator.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        Starts the simulator and goes on at once. The tests wait until it answers. Maven
+        stops it when the build ends, also when the build fails. Its log goes to a file and
+        not to the console, so the build output stays readable.
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${exec-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>start-simulator</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <async>true</async>
+              <asyncDestroyOnShutdown>true</asyncDestroyOnShutdown>
+              <executable>${java.home}/bin/java</executable>
+              <arguments>
+                <argument>-jar</argument>
+                <argument>${project.build.directory}/simulator.jar</argument>
+                <argument>--server.port=${simulator.port}</argument>
+                <argument>--logging.file.name=${project.build.directory}/simulator.log</argument>
+                <argument>--logging.threshold.console=OFF</argument>
+                <argument>--spring.main.banner-mode=off</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        Checks which code of this module the integration tests run. Quarkus loads the classes of
+        the application under test its own way and changes some of them, so the agent of JaCoCo
+        would not recognise them. The Quarkus extension 'quarkus-jacoco', a test dependency above,
+        measures instead: it writes target/jacoco-it.exec and the report in target/site/jacoco-it/,
+        set in src/test/resources/application.yaml. The report covers the classes of this module
+        only, not those of the process driver or of the adapters. The check below reads the same
+        file and fails the build when less than 85 percent of the instructions run.
+
+        The classes generated from the OpenAPI file are left out of both. The generator of this
+        platform writes beans with setters, equals, hashCode and toString, which no test of the
+        process calls. They are not code of the module.
+      -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <execution>
+            <id>coverage-check</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>verify</phase>
+            <configuration>
+              <dataFile>${project.build.directory}/jacoco-it.exec</dataFile>
+              <excludes>
+                <exclude>blueprint/workflowmodule/loanapproval/api/**</exclude>
+              </excludes>
+              <haltOnFailure>true</haltOnFailure>
+              <rules>
+                <rule>
+                  <element>BUNDLE</element>
+                  <limits>
+                    <limit>
+                      <counter>INSTRUCTION</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.85</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <simulator.base-url>http://localhost:${simulator.port}</simulator.base-url>
+            <simulator.log>${project.build.directory}/simulator.log</simulator.log>
+            <!-- The build started the simulator, so a test which finds none fails instead of skipping. -->
+            <simulator.required>true</simulator.required>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <!--
+      One profile per BPMS. Each adds two adapters to the test: the BPMS adapter, which runs
+      the workflows, and the cockpit adapter of the same BPMS, which reports their user tasks
+      to the cockpit. The application declares the same two.
+    -->
+    <profile>
+      <id>camunda7</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <bpms>camunda7</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda7-adapter-quarkus</artifactId>
+          <version>${camunda7-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-camunda7-adapter-quarkus</artifactId>
+          <version>${businesscockpit.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>camunda8</id>
+      <properties>
+        <bpms>camunda8</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda8-adapter-quarkus</artifactId>
+          <version>${camunda8-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-camunda8-adapter-quarkus</artifactId>
+          <version>${businesscockpit-camunda8.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>operaton</id>
+      <properties>
+        <bpms>operaton</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>operaton-adapter-quarkus</artifactId>
+          <version>${operaton-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-operaton-adapter-quarkus</artifactId>
+          <version>${businesscockpit.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>cibseven</id>
+      <properties>
+        <bpms>cibseven</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>cibseven-adapter-quarkus</artifactId>
+          <version>${cibseven-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-cibseven-adapter-quarkus</artifactId>
+          <version>${businesscockpit.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>

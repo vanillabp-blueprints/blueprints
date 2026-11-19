@@ -1,0 +1,24 @@
+# Every system around the application is the simulator, started with
+#
+#   java -jar simulator/application/target/simulator-application-1.0.0-SNAPSHOT-runnable.jar
+#
+# It answers on one port and plays each system below a path of its own. The adapters are the
+# same as in the profile 'real'. Only these addresses differ.
+credit-rating:
+  # The keys of the client of the credit rating. The user waits for its answer, so the client
+  # gives up after two seconds.
+  client:
+    base-url: http://localhost:8079/credit-rating
+    read-timeout: 2s
+e-signature:
+  # The keys of the client of the e-signature service.
+  client:
+    base-url: http://localhost:8079/e-signature
+    read-timeout: 5s
+  # Where the e-signature service reaches this application.
+  callback-url: http://localhost:8080/e-signature/callback
+vanillabp:
+  cockpit:
+    # The simulator plays the Business Cockpit as well, so the cockpit adapter reports there.
+    rest:
+      base-url: http://localhost:8079
