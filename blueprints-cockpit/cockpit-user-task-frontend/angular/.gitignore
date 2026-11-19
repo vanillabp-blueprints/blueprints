@@ -67,3 +67,5 @@ build/
 src/generated/
 # the module id and the build id, which scripts/write-bc-build.mjs writes for every build
 src/bc-build.js
+# the cache of the Angular CLI
+.angular/
