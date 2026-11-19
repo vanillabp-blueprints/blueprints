@@ -197,14 +197,16 @@ jobs:
             maven-${{ hashFiles('**/pom.xml') }}-
             maven-
       # "Fresh" is about our own snapshots, and those must not come from the cache. So
-      # all VanillaBP artifacts go, and any other snapshot as well. Maven then has nothing old
-      # to fall back on and has to ask the snapshot repositories. The '*.lastUpdated' files go
-      # too: they record a download which failed in the run that wrote the cache, and Maven
-      # would not try that download again.
+      # every snapshot goes, ours and any other. Maven then has nothing old to fall back on
+      # and has to ask the snapshot repositories. Released VanillaBP artifacts stay, like
+      # io.vanillabp:release-parent:2.0.0, the parent of the snapshot BOM: a release never
+      # changes. This step used to remove all of io/vanillabp, so each of the 258 jobs asked
+      # Maven Central for those releases again, and Central answered with 429 three nights in
+      # a row. The '*.lastUpdated' files go too: they record a download which failed in the
+      # run that wrote the cache, and Maven would not try that download again.
       - name: Remove the snapshots the cache carried in
         run: |
           repository="${HOME}/.m2/repository"
-          rm -rf "${repository}/io/vanillabp"
           if [ -d "${repository}" ]; then
             find "${repository}" -type d -name '*-SNAPSHOT' -prune -exec rm -rf {} +
             find "${repository}" -type f -name '*.lastUpdated' -delete
