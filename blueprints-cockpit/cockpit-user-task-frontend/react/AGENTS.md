@@ -37,17 +37,17 @@ the page. `npm run build` writes the module id and the build id into `src/bc-bui
 
 ## Core files
 
-|                  File                  |                                                              Why it matters                                                              |
-|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| `src/loan-approval.ts`                 | module id, process id, task definitions, entry names and web component names, in one place                                               |
-| `src/data/user-task-form.ts`           | data entry `UserTaskForm`. Plain TypeScript, it must never import React or a form                                                        |
-| `src/data/user-task-list.ts`           | data entry `UserTaskList`, the column `details.riskAssessment`                                                                           |
-| `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`. It exports nothing, evaluating it defines the web components                                              |
-| `src/forms/check-documents-form.tsx`   | visual entry `CheckDocumentsForm`                                                                                                        |
-| `src/shared/input-form.tsx`            | the four web components of a form (`all`, `body`, `information`, `actions`) and the messages between them                                |
-| `src/shared/api.ts`                    | `loanApproval`, the one instance of the generated `UserTasksApi` and `ResponseError`; base URL `/wm/loan-approval` from the OpenAPI file |
-| `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                                                                |
-| `test/browser/user-task-forms.test.js` | the browser tests, with areas and with `all` only                                                                                        |
+|                  File                  |                                                              Why it matters                                                               |
+|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| `src/loan-approval.ts`                 | module id, process id, task definitions, entry names and web component names, in one place                                                |
+| `src/data/user-task-form.ts`           | data entry `UserTaskForm`. Plain TypeScript, it must never import React or a form                                                         |
+| `src/data/user-task-list.ts`           | data entry `UserTaskList`, the column `details.riskAssessment`                                                                            |
+| `src/forms/assess-risk-form.tsx`       | visual entry `AssessRiskForm`. It exports nothing, evaluating it defines the web components                                               |
+| `src/forms/check-documents-form.tsx`   | visual entry `CheckDocumentsForm`                                                                                                         |
+| `src/shared/input-form.tsx`            | the four web components of a form (`all`, `body`, `information`, `actions`) and the messages between them                                 |
+| `src/shared/api.ts`                    | `loanApproval`, the one instance of the generated `UserTasksApi` and `ResponseError`; base URL `/wm/loan-approval` from the OpenAPI file  |
+| `scripts/build-micro-frontends.mjs`    | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs; a new import from a React package goes into `frameworkImports` |
+| `test/browser/user-task-forms.test.js` | the browser tests, with areas and with `all` only                                                                                         |
 
 ## Boilerplate files
 
@@ -69,7 +69,7 @@ the page. `npm run build` writes the module id and the build id into `src/bc-bui
 | `src/shared/texts.ts`          | the texts in English and German                                                                                           |
 | `src/shared/style.ts`          | the styles, put into each shadow root                                                                                     |
 | `docker/Dockerfile`            | the nginx image                                                                                                           |
-| `docker/nginx.conf`            | serves `/loan-approval/`, the manifest without caching                                                                    |
+| `docker/nginx.conf`            | serves `/loan-approval/`, the manifest without caching, JavaScript and JSON with gzip                                     |
 | `test/browser/page.js`         | the test page with `createModuleHost`                                                                                     |
 | `test/browser/server.js`       | serves the test page and `dist/micro-frontends` below `/wm/loan-approval/`                                                |
 

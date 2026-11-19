@@ -51,7 +51,7 @@ extension point differently. Then its types library says so, and these two names
 | `src/data/header.ts`                | data entry `Header`: returns `[{ entry, element }]` of the button. Plain TypeScript, it must never import React or the form; checks no rights |
 | `src/start-form/start-form.tsx`     | visual entry `StartForm`: the button with `openDialog`, the form with `closeDialog`, the call of the module API                               |
 | `src/shared/api.ts`                 | `loanApproval`, the one instance of the generated `StartFormApi` and `ResponseError`; base URL `/wm/loan-approval` from the OpenAPI file      |
-| `scripts/build-micro-frontends.mjs` | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                                                                     |
+| `scripts/build-micro-frontends.mjs` | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs; a new import from a React package goes into `frameworkImports`     |
 | `package.json`                      | `check:entries` with `--data-entry Header`, without which `bc-check-entries` would not check the data entry                                   |
 | `test/browser/header.test.js`       | the browser tests, with a header and without, and next to a module without the entry                                                          |
 
@@ -74,7 +74,7 @@ extension point differently. Then its types library says so, and these two names
 | `src/shared/style.ts`                 | the styles, put into each shadow root                                                                                     |
 | `src/shared/texts.ts`                 | the texts in English and German                                                                                           |
 | `docker/Dockerfile`                   | the nginx image                                                                                                           |
-| `docker/nginx.conf`                   | serves `/loan-approval/`, the manifest without caching                                                                    |
+| `docker/nginx.conf`                   | serves `/loan-approval/`, the manifest without caching, JavaScript and JSON with gzip                                     |
 | `test/browser/page.js`                | the test page with `createModuleHost`, which draws the header like a cockpit                                              |
 | `test/browser/server.js`              | serves the test page, `dist/micro-frontends` and the second module                                                        |
 | `test/browser/module-without-header/` | the second module of the tests: a manifest without `Header`                                                               |
