@@ -416,9 +416,8 @@ label or the API call, comes in through the injection token `INPUT_FORM`. The da
 from a small component in each form file, drawn with `NgComponentOutlet`.
 
 The Angular compiler accepts one minor line of TypeScript only, so `package.json` pins TypeScript
-to it. `openapi-typescript` asks for TypeScript 5. An `overrides` entry in `package.json` lets it
-use the TypeScript of the project. It only generates types, and the newer TypeScript does that
-just as well.
+to it. `@hey-api/openapi-ts`, which generates the API client, accepts this TypeScript as well, so
+`package.json` needs no `overrides` entry.
 
 ### Three repositories, and the order of their releases
 

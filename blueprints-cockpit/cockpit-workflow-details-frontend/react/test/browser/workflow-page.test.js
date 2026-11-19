@@ -187,6 +187,8 @@ for (const cockpit of COCKPITS) {
       await assertEnabled(withdraw);
       // The styles of the page do not reach the button in the shadow DOM.
       assert.notEqual(await withdraw.evaluate((button) => getComputedStyle(button).backgroundColor), 'rgb(0, 128, 0)');
+      // The styles of the module stay in its shadow roots: the page keeps its one <style> element.
+      assert.equal(await page.evaluate(() => document.querySelectorAll('style').length), 1);
 
       const loaded = await loadedFiles(page);
       assert.ok(loaded.some((path) => path.includes('/LoanApprovalPage-')), loaded.join(', '));
