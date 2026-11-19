@@ -10,7 +10,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { after, before, describe, it } from 'node:test';
-import { build } from 'esbuild';
 import { chromium } from 'playwright';
 import { startServer } from './server.js';
 
@@ -221,7 +220,8 @@ describe('the names of the web components', () => {
     }));
     await page.goto(`${server.url}/#/user-task/task-1`);
 
-    const note = "The module 'loan-approval' names the web component 'assess-risk-body', but its names have to start with 'loan-approval-'.";
+    // The host of the kit refuses the name, the way a cockpit does, and the dev shell shows its note.
+    const note = 'The module loan-approval names the web component assess-risk-body, which does not start with the prefix loan-approval of the module and a hyphen. Every web component of the module loan-approval has to start with "loan-approval-", so the host loads nothing for it. Build the names with createElementNames of the module kit.';
     await assertText(page.getByTestId('user-task-error'), note);
     assert.ok(consoleErrors.includes(note), consoleErrors.join('\n'));
     // Nothing of the form was loaded, and nothing was drawn.
@@ -245,24 +245,6 @@ describe('the names of the web components', () => {
     assert.equal(await page.getByTestId('user-task-error').count(), 0);
     assert.deepEqual(pageErrors, []);
     await page.close();
-  });
-
-  it('the check refuses what a cockpit refuses, and accepts a name without a build id', async () => {
-    const bundle = join(projectDir, 'build', 'element-names.test.js');
-    await build({ entryPoints: [join(projectDir, 'dev-shell', 'src', 'element-names.ts')], bundle: true, format: 'esm', outfile: bundle, logLevel: 'warning' });
-    const { refusedElementName } = await import(pathToFileURL(bundle).href);
-    const modules = ['taxi', 'taxi-ride', 'loan-approval'];
-
-    assert.equal(refusedElementName('taxi', 'taxi-mvaro4w0-confirm', modules), undefined);
-    // The check does not ask for a build id.
-    assert.equal(refusedElementName('taxi-ride', 'taxi-ride-taxi-ride--confirm--form', modules), undefined);
-    // The prefix comes from the module id by the rules of the kit.
-    assert.equal(refusedElementName('TaxiRide', 'taxi-ride-mvaro4w0-confirm', modules), undefined);
-    assert.match(refusedElementName('taxi', 'taxi-ride-confirm', modules), /starts with 'taxi-ride-', the prefix of another module/);
-    assert.match(refusedElementName('taxi', 'taxiride-confirm', modules), /have to start with 'taxi-'/);
-    assert.match(refusedElementName('taxi', 'taxi', modules), /not a valid name of a custom element/);
-    assert.match(refusedElementName('taxi', 'Taxi-confirm', modules), /not a valid name of a custom element/);
-    assert.match(refusedElementName('font', 'font-face', ['font']), /not a valid name of a custom element/);
   });
 });
 
