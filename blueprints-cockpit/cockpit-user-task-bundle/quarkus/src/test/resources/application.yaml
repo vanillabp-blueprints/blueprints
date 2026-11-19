@@ -1,0 +1,32 @@
+# The configuration of the application in the test. An application which takes the bundle
+# writes the same: a database, and where the reports to the cockpit go. The bundle brings the
+# configuration of the module itself, in loan-approval/loan-approval.yaml.
+quarkus:
+  # A free port for the application under test, so it runs next to anything else on 8081.
+  http:
+    test-port: 0
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:loan-approval-bundle-test;DB_CLOSE_DELAY=-1
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO
+vanillabp:
+  cockpit:
+    # Where the reports go. Nothing listens there during the test. Every report goes through
+    # the outbox first, so it waits there and the test does not notice.
+    rest:
+      base-url: http://localhost:9080
+# The module reads no login token of the Business Cockpit. The support library of the cockpit
+# checks such a token unless it is told not to, and then the start asks for the secret of the
+# cockpit. So the test leaves the check out, as an application which takes the bundle does. It is
+# a build property: Quarkus reads it while it builds the application.
+business-cockpit:
+  jwt:
+    enabled: false

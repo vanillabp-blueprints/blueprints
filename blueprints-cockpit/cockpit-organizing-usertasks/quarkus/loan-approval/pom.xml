@@ -91,10 +91,15 @@
       <artifactId>quarkus-jdbc-h2</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- Runs a call as a user with given roles, to prove who may call an endpoint. -->
+    <!--
+      Runs a call as a user with given roles, to prove who may call an endpoint. 'TestLogin' of
+      the support library of the cockpit logs a user in the way a login of the application does,
+      with the permission checkers of the module. It brings quarkus-test-security.
+    -->
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-test-security</artifactId>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>business-cockpit-quarkus-support-test</artifactId>
+      <version>${businesscockpit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

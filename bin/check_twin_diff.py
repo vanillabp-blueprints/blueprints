@@ -54,8 +54,8 @@ ALLOW_FILE = "twin-diff-allow.txt"
 
 # The categories whose blueprints exist on one platform so far, because their twins come in a
 # phase of their own. A twin the index says 'planned' for may be missing there, nowhere else.
-# 'cockpit' started on Spring Boot. Its Quarkus twins follow in the Quarkus phase.
-CATEGORIES_BEFORE_THEIR_TWIN_PHASE = ("cockpit",)
+# None today: 'cockpit' started on Spring Boot, and its Quarkus twins are written.
+CATEGORIES_BEFORE_THEIR_TWIN_PHASE = ()
 
 # The blueprints which exist on one platform so far, in a category whose twin phase is over.
 # A twin the index says 'planned' for may be missing there. None today: 'module-process-driver'

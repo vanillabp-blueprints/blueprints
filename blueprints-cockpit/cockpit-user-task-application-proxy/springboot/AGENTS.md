@@ -1,8 +1,8 @@
 # cockpit-user-task-application-proxy
 
 Runs the workflow module `loan-approval` without a UI jar. The micro-frontends come from the nginx
-image of the frontend. The workflow module brings a route of Spring Cloud Gateway which forwards
-their paths to it, and the application only switches it on. A delta on top of
+image of the frontend. The support library of the Business Cockpit brings a route of Spring
+Cloud Gateway which forwards their paths to it, and the application only switches it on. A delta on top of
 `cockpit-user-task-application`.
 
 Read
@@ -37,19 +37,19 @@ coordinates, which carry the name of the blueprint.
 
 Blueprint-specific names, each occurring in more than one place:
 
-|                    Name                     |                                      Where it occurs                                      |
-|---------------------------------------------|-------------------------------------------------------------------------------------------|
-| `loan-approval.user-interface.address`      | `application.yaml`, `docker-compose.yaml` and `UserInterfaceProxyIT`. The module reads it |
-| `loan-approval.cockpit.base-url`            | `application.yaml` and `docker-compose.yaml`. The module asks the cockpit there           |
-| `user-interface.image`                      | the property in `pom.xml`, which failsafe hands to `UserInterfaceProxyIT`                 |
-| `vanillabp-blueprints/cockpit-user-task-ui` | the nginx image of the frontend, in `pom.xml` and `docker-compose.yaml`                   |
-| `cockpit-user-task-backend.version`         | the version of the workflow module in `pom.xml`                                           |
+|                    Name                     |                                     Where it occurs                                      |
+|---------------------------------------------|------------------------------------------------------------------------------------------|
+| `loan-approval.user-interface.address`      | `application.yaml`, `docker-compose.yaml` and `UserInterfaceProxyIT`. `support` reads it |
+| `loan-approval.cockpit.base-url`            | `application.yaml` and `docker-compose.yaml`. The module asks the cockpit there          |
+| `user-interface.image`                      | the property in `pom.xml`, which failsafe hands to `UserInterfaceProxyIT`                |
+| `vanillabp-blueprints/cockpit-user-task-ui` | the nginx image of the frontend, in `pom.xml` and `docker-compose.yaml`                  |
+| `cockpit-user-task-backend.version`         | the version of the workflow module in `pom.xml`                                          |
 
 ## Core files
 
 |                     File                      |                                                                  Why it matters                                                                  |
 |-----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| `src/main/resources/application.yaml`         | `loan-approval.user-interface.address`, which switches on the route of the module, the database, `vanillabp.cockpit.rest.*`                      |
+| `src/main/resources/application.yaml`         | `loan-approval.user-interface.address`, which switches on the route of `support`, the database, `vanillabp.cockpit.rest.*`                       |
 | `pom.xml`                                     | the workflow module and no UI jar, `spring-cloud-starter-gateway-server-webmvc`, the Spring Cloud BOM, the BPMS profiles with both adapters each |
 | `src/test/java/.../UserInterfaceProxyIT.java` | starts the nginx image, asks for the manifest and every file it names, and checks that the API stays in the application                          |
 | `docker-compose.yaml`                         | the application, the nginx, the Business Cockpit, its MongoDB and the dev shell simulator with its users                                         |
@@ -72,10 +72,10 @@ Blueprint-specific names, each occurring in more than one place:
 2. Remove the UI jar from the dependencies of the application.
 3. Add `spring-cloud-starter-gateway-server-webmvc` and import `spring-cloud-dependencies`. Take
    the train the cockpit takes. The comment in `pom.xml` says why it is not newer.
-4. Make sure the workflow module brings `UserInterfaceRouteAutoConfiguration`, as
-   `cockpit-user-task-backend` shows. Do not write a route in the application. The route class
-   is the same for every module. The library `business-cockpit-spring-boot-support` of the
-   Business Cockpit is the place for it, but it does not have it yet.
+4. Write no route, neither in the application nor in the workflow module. The library
+   `business-cockpit-spring-boot-support`, which the workflow module depends on, brings it for
+   every module. A module which still brings a route bean of its own, named
+   `<workflow-module-id>-user-interface`, keeps it, and the log says so. Remove that class.
 5. Add `<workflow-module-id>.user-interface.address` to `application.yaml`, once per module, and
    set it per stage, for example by an environment variable.
 6. Copy `UserInterfaceProxyIT` and the property `user-interface.image` in `pom.xml`. Point the

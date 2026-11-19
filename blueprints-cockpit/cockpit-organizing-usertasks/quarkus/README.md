@@ -372,8 +372,10 @@ a provider which changed something would compete with the writes of the workflow
 The integration test runs the module with its real cockpit adapter. It starts the dev shell
 simulator of the cockpit as a process of its own, and points `vanillabp.cockpit.rest.base-url`
 at it, in `OrganizingUserTasksIT.ReportToTheSimulator`, before Quarkus starts the module. It
-calls the beans of the module as different users. `TestIdentityAssociation` of
-`quarkus-test-security` stands in for the login of an application. The official API of the cockpit does not show the excluded candidates, the admitted users
+calls the beans of the module as different users. `TestLogin` of
+`business-cockpit-quarkus-support-test` stands in for the login of an application. Like such a
+login, it runs the permission checkers of the module for the user, and the test logs the user
+out after each test. The official API of the cockpit does not show the excluded candidates, the admitted users
 and the kind of notification. The simulator keeps them anyway, and it answers the last report
 about a user task, as the module sent it, at `/simulator-api/usertask/{id}/report`. The test
 asserts on that report. What a user of the cockpit sees, such as the end of a task or the

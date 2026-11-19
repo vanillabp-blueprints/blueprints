@@ -47,8 +47,8 @@ import blueprint.workflowmodule.loanapproval.Service;
  * {@code META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports},
  * which Spring Boot reads from every JAR on the class path. The files of the user interface
  * need nothing here, if they come from the UI jar. Spring Boot serves the files below
- * {@code META-INF/resources/} of every JAR. If they come from an nginx,
- * {@link UserInterfaceRouteAutoConfiguration} forwards them.
+ * {@code META-INF/resources/} of every JAR. If they come from an nginx, the support library of
+ * the cockpit forwards them.
  * </p>
  */
 @AutoConfiguration

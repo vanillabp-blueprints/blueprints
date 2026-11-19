@@ -8,10 +8,8 @@ import static org.assertj.core.api.Assertions.within;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,23 +26,16 @@ import blueprint.workflowmodule.loanapproval.model.usertask.ApproveLoanTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.AssessRiskTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.CallCustomerTaskData;
 import blueprint.workflowmodule.loanapproval.model.usertask.TaskData;
-import io.quarkus.arc.All;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.security.ForbiddenException;
-import io.quarkus.security.identity.AuthenticationRequestContext;
-import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.identity.SecurityIdentityAugmentor;
-import io.quarkus.security.runtime.QuarkusPrincipal;
-import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.security.TestIdentityAssociation;
-import io.smallrye.mutiny.Uni;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialTasklistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.OfficialWorkflowlistApi;
 import io.vanillabp.cockpit.gui.api.v1.client.model.EndReason;
 import io.vanillabp.cockpit.support.rest.restclient.RestClients;
+import io.vanillabp.cockpit.support.test.TestLogin;
 import io.vanillabp.cockpit.support.usertask.BcTaskNotOpenException;
 import io.vanillabp.cockpit.support.usertask.BcUserTaskExceptionMapper;
 import jakarta.inject.Inject;
@@ -92,17 +83,13 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
   @Inject
   EntityManagerFactory entityManagerFactory;
 
-  /** Who the calls of this test run as. It stands in for the login of an application. */
-  @Inject
-  TestIdentityAssociation identities;
-
   /**
-   * What Quarkus adds to every user who logs in, among it the permission checkers of
-   * {@link UserTaskAccess}. A login of the application runs them, so the test does as well.
+   * Who the calls of this test run as. It stands in for the login of an application, and like
+   * such a login it runs what Quarkus adds to every user, among it the permission checkers of
+   * {@link UserTaskAccess}.
    */
   @Inject
-  @All
-  List<SecurityIdentityAugmentor> augmentors;
+  TestLogin login;
 
   /**
    * Starts the simulator before the application, and points the cockpit adapter at it. The
@@ -152,7 +139,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
   @AfterEach
   public void logOut() {
 
-    identities.setTestIdentity(null);
+    login.logOut();
 
   }
 
@@ -222,7 +209,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var loanRequestId = requestLoanAs("alice");
     final var call = openTask(loanRequestId, CallCustomerTaskData.class);
 
-    logIn("alice", Permission.CALL_CUSTOMER);
+    login.logIn("alice", Permission.CALL_CUSTOMER);
     forms.customerNotReached(loanRequestId, call);
 
     final var report = cockpit().awaitUserTaskReport(call, found -> found.get("followUpDate") != null);
@@ -255,7 +242,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var loanRequestId = requestLoanAs("alice");
     final var firstCall = openTask(loanRequestId, CallCustomerTaskData.class);
 
-    logIn("lea", Permission.CHANGE_ADVISOR);
+    login.logIn("lea", Permission.CHANGE_ADVISOR);
     api.changeAdvisor(loanRequestId, "erin");
 
     final var loanRequest = awaitAggregate(
@@ -315,7 +302,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var loanRequestId = requestLoanAs("alice");
     callTheCustomer(loanRequestId, openTask(loanRequestId, CallCustomerTaskData.class), "alice");
     final var riskAssessment = openTask(loanRequestId, AssessRiskTaskData.class);
-    logIn("carol", Permission.ASSESS_RISK, Permission.APPROVE_LOAN);
+    login.logIn("carol", Permission.ASSESS_RISK, Permission.APPROVE_LOAN);
     forms.completeAssessRisk(loanRequestId, riskAssessment,
         new AssessRiskInput().riskAcceptable(true).comment("stable income"));
     final var approval = openTask(loanRequestId, ApproveLoanTaskData.class);
@@ -333,13 +320,13 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
         .isCloseTo(aggregate(loanRequestId).getAnswerPromisedBy(), within(1, ChronoUnit.SECONDS));
 
     // carol holds the authority, so she may read the form, but not decide.
-    logIn("carol", Permission.ASSESS_RISK, Permission.APPROVE_LOAN);
+    login.logIn("carol", Permission.ASSESS_RISK, Permission.APPROVE_LOAN);
     assertThat(forms.getApproveLoanForm(loanRequestId, approval).getEditable()).isFalse();
     assertThatThrownBy(() -> forms.completeApproveLoan(
         loanRequestId, approval, new ApproveLoanInput().approved(true).comment("fine")))
         .isInstanceOf(Service.FourEyesViolation.class);
 
-    logIn("dave", Permission.APPROVE_LOAN);
+    login.logIn("dave", Permission.APPROVE_LOAN);
     assertThat(forms.getApproveLoanForm(loanRequestId, approval).getEditable()).isTrue();
     forms.completeApproveLoan(loanRequestId, approval, new ApproveLoanInput().approved(true).comment("fine"));
 
@@ -372,13 +359,13 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     final var riskAssessment = openTask(loanRequestId, AssessRiskTaskData.class);
 
     // bob is in the risk team and opens the form to work on it.
-    logIn("bob", Permission.ASSESS_RISK);
+    login.logIn("bob", Permission.ASSESS_RISK);
     assertThat(forms.getAssessRiskForm(loanRequestId, riskAssessment).getEditable()).isTrue();
     cockpit().awaitUserTaskReport(
         riskAssessment, report -> List.of("bob").equals(report.get("admittedUsers")));
 
     // bob moved to another team and has no authority of this module any more.
-    logIn("bob");
+    login.logIn("bob");
     final var form = forms.getAssessRiskForm(loanRequestId, riskAssessment);
     assertThat(form.getEditable()).isFalse();
     assertThat(form.getCustomer()).isEqualTo(CUSTOMER);
@@ -387,7 +374,7 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
         .isInstanceOf(ForbiddenException.class);
 
     // mallory never worked on it.
-    logIn("mallory");
+    login.logIn("mallory");
     assertThatThrownBy(() -> forms.getAssessRiskForm(loanRequestId, riskAssessment))
         .isInstanceOf(ForbiddenException.class);
 
@@ -433,9 +420,9 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
   private String requestLoanAs(
       final String advisor) {
 
-    logIn(advisor, Permission.REQUEST_LOAN, Permission.CALL_CUSTOMER);
+    login.logIn(advisor, Permission.REQUEST_LOAN, Permission.CALL_CUSTOMER);
     final var loanRequestId = api.start(AMOUNT, CUSTOMER, PHONE);
-    logOut();
+    login.logOut();
     return loanRequestId;
 
   }
@@ -445,10 +432,10 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
       final String call,
       final String advisor) {
 
-    logIn(advisor, Permission.CALL_CUSTOMER);
+    login.logIn(advisor, Permission.CALL_CUSTOMER);
     forms.getCallCustomerForm(loanRequestId, call);
     forms.completeCallCustomer(loanRequestId, call, new CallCustomerInput().note("wants it soon"));
-    logOut();
+    login.logOut();
 
   }
 
@@ -485,32 +472,6 @@ public class OrganizingUserTasksIT extends WorkflowModuleTest {
     return stored
         .find(loanRequestId)
         .orElseThrow();
-
-  }
-
-  /** Logs the user in for the calls which follow, the way the login of an application would. */
-  private void logIn(
-      final String user,
-      final String... authorities) {
-
-    SecurityIdentity identity = QuarkusSecurityIdentity
-        .builder()
-        .setPrincipal(new QuarkusPrincipal(user))
-        .addRoles(Set.of(authorities))
-        .build();
-    final AuthenticationRequestContext inThisThread = blocking -> Uni
-        .createFrom()
-        .item(blocking);
-    for (final var augmentor : augmentors
-        .stream()
-        .sorted(Comparator.comparingInt(SecurityIdentityAugmentor::priority).reversed())
-        .toList()) {
-      identity = augmentor
-          .augment(identity, inThisThread)
-          .await()
-          .indefinitely();
-    }
-    identities.setTestIdentity(identity);
 
   }
 

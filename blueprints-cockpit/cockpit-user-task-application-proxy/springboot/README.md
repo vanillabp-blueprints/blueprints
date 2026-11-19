@@ -36,8 +36,7 @@ files below the same path, `/loan-approval/`.
 The cockpit loads `/wm/loan-approval/bc-manifest.json`. It forwards the request to the address the
 module reported, `http://localhost:8080/loan-approval`, and puts the path of that address in
 place of `/wm/loan-approval`. So the application gets `/loan-approval/bc-manifest.json`. It has no
-such file, so the route of the workflow module passes the request on to the nginx, with the path
-unchanged:
+such file, so a route passes the request on to the nginx, with the path unchanged:
 
 |                The browser asks the cockpit for                 |         The application gets         |            Who answers             |
 |-----------------------------------------------------------------|--------------------------------------|------------------------------------|
@@ -49,11 +48,13 @@ The browser sees one origin, the cockpit's. It never talks to the application or
 directly. And every file of the user interface passes through the application, so the security
 of the application covers those files as well.
 
-### The forwarding is a route of Spring Cloud Gateway, and the module brings it
+### The forwarding is a route of Spring Cloud Gateway, and the support library brings it
 
 An application is only a container for workflow modules. So the route is not in this
-application. The workflow module brings it, as `UserInterfaceRouteAutoConfiguration`. It is one
-route of
+application, and not in the workflow module either. The route is the same for every workflow
+module with a user interface, only the id differs. So the library
+`business-cockpit-spring-boot-support` of the Business Cockpit brings it, for every workflow
+module of the application. The workflow module depends on that library anyway. It is one route of
 [Spring Cloud Gateway](https://docs.spring.io/spring-cloud-gateway/reference/spring-cloud-gateway-server-webmvc.html),
 in the flavour for Spring MVC. It takes every GET below `/loan-approval/`, except the API below
 `/loan-approval/api/`. Spring MVC asks a route before it asks the controllers. So without that
@@ -63,11 +64,9 @@ The route is on when two things are true. This application has the starter of th
 it sets `loan-approval.user-interface.address`, the address of the nginx. Only its scheme, host
 and port count. The key is below the id of the module, so each module of an application gets an
 address of its own. An application which does not set it serves the user interface from the UI
-jar, as `cockpit-user-task-application` does.
-
-The route is the same for every workflow module with a user interface. Only the id differs. So
-the library `business-cockpit-spring-boot-support` of the Business Cockpit is the place for it. It
-does not have it yet. Once it does, the module will lose the class.
+jar, as `cockpit-user-task-application` does. An address which is no address, or a key which
+names a module the application does not have, ends the start
+([Connecting a workflow module](https://github.com/vanillabp/business-cockpit/wiki/Connecting-a-workflow-module)).
 
 The module also wires its beans, its entities and its repositories itself. So the package of
 `Application` is `blueprint.application`, which is not above the module. This application has
@@ -190,7 +189,7 @@ until one is there.
 
 `UserInterfaceProxyIT` runs against the image the frontend builds, not against a stand-in with test
 files. A stand-in would only prove that the route forwards something. The application has no
-route of its own, so the test also proves that the workflow module brings it. The real image proves that
+route of its own, so the test also proves that the support library brings it. The real image proves that
 the application and the frontend agree on the paths and on the manifest. The test asks for the
 manifest, then for every file the manifest names, and it checks that the API of the module is
 still answered by the application. The header `Cache-Control: no-cache` of the manifest comes from

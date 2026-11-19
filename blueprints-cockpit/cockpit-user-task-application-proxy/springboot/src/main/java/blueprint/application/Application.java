@@ -10,8 +10,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * <p>
  * Note the package. It is not above the package of the workflow module, and it does not need
  * to be. The module brings an auto-configuration, which wires its beans, its entities and its
- * repositories. It also brings the route which forwards its user interface to the nginx. This
- * class says nothing about the module, and adding another one is a line in the POM.
+ * repositories. The route which forwards its user interface to the nginx comes from the support
+ * library of the Business Cockpit, which the module depends on. This class says nothing about
+ * the module, and adding another one is a line in the POM.
  * </p>
  */
 @SpringBootApplication

@@ -1,0 +1,74 @@
+# Only what is truly cross-cutting belongs here. Everything the workflow module needs is
+# in its own configuration file (loan-approval/loan-approval.yaml inside the module JAR).
+#
+# Nothing about a BPMS is here either. That lives in a profile file per engine,
+# 'application-<bpms>.yaml', so switching engines is a profile and not an edit.
+quarkus:
+  # The BPMS is chosen by the Maven profile, and this is where that choice reaches the
+  # application: the build replaces the placeholder with the profile's name, and the profile
+  # file of that engine applies from then on - whichever profile the application itself runs
+  # in, because the BPMS profile is its PARENT. Nobody has to name the profile twice.
+  config:
+    profile:
+      parent: "@bpms@"
+  # A free port for the application under test, so a test runs next to anything else on 8081.
+  # The application itself answers on 8080.
+  http:
+    test-port: 0
+  datasource:
+    db-kind: h2
+    username: sa
+    jdbc:
+      url: jdbc:h2:mem:loan-approval;DB_CLOSE_DELAY=-1
+  hibernate-orm:
+    schema-management:
+      strategy: drop-and-create
+  log:
+    category:
+      "blueprint.workflowmodule":
+        level: INFO
+
+# Where the nginx of the frontend answers. It serves the micro-frontends of the workflow
+# module below '/loan-approval/'. The support library of the cockpit brings the route which
+# forwards those paths to it, for every workflow module. The route is on because this
+# application has the library io.vertx:vertx-http-proxy and sets this key. Only the scheme, the
+# host and the port count. The path of a request stays as it is.
+#
+# The key is below the id of the module, so every module of an application has its own. The
+# environment variable LOAN_APPROVAL_USER_INTERFACE_ADDRESS overrides it per stage.
+#
+# This address is for an nginx started on your machine:
+#   docker run --rm -p 8081:80 vanillabp-blueprints/cockpit-user-task-ui:1.0.0-SNAPSHOT
+# docker-compose.yaml sets the address of its own nginx.
+loan-approval:
+  user-interface:
+    address: http://localhost:8081
+  # Where the module asks the cockpit who took over a user task: the cockpit of
+  # docker-compose.yaml, without /gui/api/v1, the path of its official GUI API, which the clients
+  # add themselves. The module refuses a form with 409 if somebody else has the task. The key is
+  # the module's, like the one above.
+  cockpit:
+    base-url: http://localhost:8090
+
+vanillabp:
+  cockpit:
+    # Where the reports about workflows and user tasks go: the BPMS API of the Business Cockpit.
+    # The address is the cockpit of docker-compose.yaml, published on port 8090. A report the
+    # cockpit does not take stays in the outbox and is sent again later.
+    # https://github.com/vanillabp/business-cockpit/wiki/Connecting-a-workflow-module
+    rest:
+      base-url: http://localhost:8090
+      authentication:
+        # The account the cockpit of docker-compose.yaml expects, from its profile 'local'. A
+        # real cockpit has an account of its own, and its password does not belong in this file.
+        basic: true
+        username: abc
+        password: "123"
+
+# The module reads no login token of the Business Cockpit. It only hands the cookie on, and the
+# cockpit checks it. The support library of the cockpit checks such a token unless it is told
+# not to, and then the start asks for the secret of the cockpit. So the application leaves the
+# check out. It is a build property: Quarkus reads it while it builds the application.
+business-cockpit:
+  jwt:
+    enabled: false

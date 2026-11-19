@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.vanillabp.blueprint.cockpit-user-task-bundle-quarkus</groupId>
+  <artifactId>loan-approval-bundle</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <name>Blueprint: user tasks in the Business Cockpit, bundle</name>
+  <description>The workflow module and its user interface as one library, for an application which runs several workflow modules.</description>
+
+  <!--
+    The bundle takes the place of the application repository. It takes the workflow module of
+    the backend and the JAR of the user interface which the frontend built, and publishes them
+    as one library. An application which runs several workflow modules then adds one
+    dependency per module, and that dependency brings the module and its forms. The bundle has
+    no code. Quarkus finds the beans of the workflow module through the index in its JAR.
+  -->
+
+  <properties>
+    <!--
+      The name of the BPMS profile, set by every BPMS profile below. The tests get it as a
+      system property, so they read 'application-<bpms>.yaml'. That way the BPMS is named ONCE,
+      on the Maven command line.
+    -->
+    <bpms>none</bpms>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>21</maven.compiler.release>
+    <quarkus.version>3.40.1.2</quarkus.version>
+    <!--
+      Without a parent POM nothing manages the versions of the build plugins, and an
+      unversioned plugin is resolved to whatever the local repository last learned about.
+      Naming them keeps a build reproducible.
+    -->
+    <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
+    <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
+    <maven-enforcer-plugin.version>3.7.0</maven-enforcer-plugin.version>
+    <!-- Not part of the Quarkus BOM, so this blueprint says which version it uses. -->
+    <assertj.version>3.27.7</assertj.version>
+    <!-- All VanillaBP artifacts are version managed by the VanillaBP BOM. -->
+    <vanillabp.version>2.0.0-SNAPSHOT</vanillabp.version>
+    <!-- BPMS adapters are released independently of the platform, so they carry their own version. -->
+    <camunda7-adapter.version>2.0.0-SNAPSHOT</camunda7-adapter.version>
+    <camunda8-adapter.version>2.0.0-8.10-SNAPSHOT</camunda8-adapter.version>
+    <cibseven-adapter.version>2.0.0-2.2-SNAPSHOT</cibseven-adapter.version>
+    <operaton-adapter.version>2.0.0-SNAPSHOT</operaton-adapter.version>
+    <!--
+      The cockpit adapters are released with the Business Cockpit, not with VanillaBP. There
+      is one per BPMS. The one for Camunda 8 carries the Camunda 8 line in its version, like
+      the BPMS adapter it belongs to. The BOM of the cockpit is not imported, because it
+      imports the BOM of another platform. So the version is named here.
+    -->
+    <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
+    <businesscockpit-camunda8.version>0.9.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
+    <!-- Generates the clients of the smoke test from the OpenAPI files of the workflow module. -->
+    <openapi-generator.version>7.27.0</openapi-generator.version>
+    <!--
+      The two parts this bundle is made of. Each one has a release of its own: first the
+      backend, then the frontend, then this bundle. A bot such as Renovate moves these two
+      lines from a snapshot to a release.
+    -->
+    <cockpit-user-task-backend.version>1.0.0-SNAPSHOT</cockpit-user-task-backend.version>
+    <cockpit-user-task-ui.version>1.0.0-SNAPSHOT</cockpit-user-task-ui.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>${quarkus.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.vanillabp</groupId>
+        <artifactId>vanillabp-bom</artifactId>
+        <version>${vanillabp.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>${assertj.version}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!-- The workflow module, released by the backend. -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.cockpit-user-task-backend-quarkus</groupId>
+      <artifactId>loan-approval</artifactId>
+      <version>${cockpit-user-task-backend.version}</version>
+    </dependency>
+    <!--
+      The user interface of the workflow module, released by the frontend. Its files are below
+      'META-INF/resources/loan-approval/', so the application serves them at '/loan-approval/'.
+      The React, the Angular and the Vue frontend publish a JAR under these same coordinates.
+      Which one the bundle carries is decided by what the Maven repository holds.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint</groupId>
+      <artifactId>cockpit-user-task-ui</artifactId>
+      <version>${cockpit-user-task-ui.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!--
+      The test runs the bundle the way an application takes it. Quarkus boots the bundle as the
+      application under test. The VanillaBP extension, the database and the YAML configuration
+      belong to the application, so they are in the test scope here.
+    -->
+    <dependency>
+      <groupId>io.vanillabp</groupId>
+      <artifactId>vanillabp-quarkus-integration</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jdbc-h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-config-yaml</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven-compiler-plugin.version}</version>
+        <configuration>
+          <compilerArgs>
+            <!--
+              A blueprint must never show a deprecated API - it is copied, and what is
+              copied spreads. Making the compiler say so is cheaper than noticing it years
+              later.
+            -->
+            <arg>-Xlint:deprecation,removal</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-surefire-plugin.version}</version>
+        <configuration>
+          <systemPropertyVariables>
+            <!-- Quarkus brings its own log manager, and it has to be set before the JVM logs. -->
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <!--
+              The BPMS profile of the build. A test runs in the 'test' profile, so the BPMS
+              profile is its PARENT: what 'application-<bpms>.yaml' says applies as well.
+            -->
+            <quarkus.config.profile.parent>${bpms}</quarkus.config.profile.parent>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <!--
+        A workflow module never depends on an adapter, neither on a BPMS adapter nor on a
+        cockpit adapter, and neither does the bundle of one. Its tests may use one, so the
+        test scope is allowed. Outside the tests, the application brings the adapters. This
+        rule breaks the build if the bundle names an adapter outside the test scope, directly
+        or through another dependency.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${maven-enforcer-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>no-adapter-in-a-workflow-module</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>io.vanillabp*:*-adapter-spring-boot*</exclude>
+                    <exclude>io.vanillabp*:*-adapter-quarkus*</exclude>
+                    <!-- The Quarkus extension of VanillaBP belongs to the application, like an adapter. -->
+                    <exclude>io.vanillabp:vanillabp-quarkus-integration</exclude>
+                  </excludes>
+                  <includes>
+                    <include>io.vanillabp*:*-adapter-spring-boot*:*:*:test</include>
+                    <include>io.vanillabp*:*-adapter-quarkus*:*:*:test</include>
+                    <include>io.vanillabp:vanillabp-quarkus-integration:*:*:test</include>
+                  </includes>
+                  <message>A workflow module depends on an adapter or on vanillabp-quarkus-integration only in the test scope. The application brings them.</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        The clients of the smoke test, generated from the two OpenAPI files of the workflow
+        module: 'loan-requests.yaml' with the start of a loan approval, and 'loan-approval.yaml'
+        with the endpoints the user interface calls. The workflow module carries both files in
+        its JAR, below 'loan-approval/openapi/', so the generator reads them from there. Each is
+        an interface of Jakarta REST which the REST client of Quarkus implements, so the test
+        writes no path and no field by hand.
+      -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>${openapi-generator.version}</version>
+        <configuration>
+          <generatorName>jaxrs-spec</generatorName>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <output>${project.build.directory}/generated-test-sources/openapi</output>
+          <addCompileSourceRoot>false</addCompileSourceRoot>
+          <addTestCompileSourceRoot>true</addTestCompileSourceRoot>
+          <apiPackage>blueprint.application.client</apiPackage>
+          <modelPackage>blueprint.application.client.model</modelPackage>
+          <configOptions>
+            <useJakartaEe>true</useJakartaEe>
+            <sourceFolder>src/main/java</sourceFolder>
+            <useTags>true</useTags>
+            <interfaceOnly>true</interfaceOnly>
+            <returnResponse>false</returnResponse>
+            <useSwaggerAnnotations>false</useSwaggerAnnotations>
+            <useMicroProfileOpenAPIAnnotations>false</useMicroProfileOpenAPIAnnotations>
+            <useBeanValidation>false</useBeanValidation>
+            <openApiNullable>false</openApiNullable>
+            <generatePom>false</generatePom>
+            <hideGenerationTimestamp>true</hideGenerationTimestamp>
+          </configOptions>
+        </configuration>
+        <dependencies>
+          <!-- Where the generator finds the OpenAPI files. -->
+          <dependency>
+            <groupId>io.vanillabp.blueprint.cockpit-user-task-backend-quarkus</groupId>
+            <artifactId>loan-approval</artifactId>
+            <version>${cockpit-user-task-backend.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>loan-requests-test-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <inputSpec>loan-approval/openapi/loan-requests.yaml</inputSpec>
+            </configuration>
+          </execution>
+          <execution>
+            <id>user-interface-test-client</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <inputSpec>loan-approval/openapi/loan-approval.yaml</inputSpec>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!--
+    The BPMS is a Maven profile, never a code change: '-Pcamunda7' (the default),
+    '-Pcamunda8', '-Poperaton' or '-Pcibseven'. The bundle carries no adapter. The application
+    which takes it chooses the BPMS adapter and the cockpit adapter of the same BPMS, once for
+    all its workflow modules. So each profile adds both adapters to the test only.
+  -->
+  <profiles>
+    <profile>
+      <id>camunda7</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <bpms>camunda7</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda7-adapter-quarkus</artifactId>
+          <version>${camunda7-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-camunda7-adapter-quarkus</artifactId>
+          <version>${businesscockpit.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>camunda8</id>
+      <properties>
+        <bpms>camunda8</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>camunda8-adapter-quarkus</artifactId>
+          <version>${camunda8-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-camunda8-adapter-quarkus</artifactId>
+          <version>${businesscockpit-camunda8.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>operaton</id>
+      <properties>
+        <bpms>operaton</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>operaton-adapter-quarkus</artifactId>
+          <version>${operaton-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-operaton-adapter-quarkus</artifactId>
+          <version>${businesscockpit.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>cibseven</id>
+      <properties>
+        <bpms>cibseven</bpms>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.vanillabp</groupId>
+          <artifactId>cibseven-adapter-quarkus</artifactId>
+          <version>${cibseven-adapter.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.vanillabp.businesscockpit</groupId>
+          <artifactId>businesscockpit-cibseven-adapter-quarkus</artifactId>
+          <version>${businesscockpit.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>

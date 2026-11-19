@@ -36,9 +36,10 @@ vanillabp:
 #
 #   loan-approval.user-interface.address
 #
-# It is the address of an nginx which serves the user interface. An application which sets it
-# and has the starter of Spring Cloud Gateway (server-webmvc) forwards the files of the user
-# interface there. An application which does not set it serves them from the UI jar.
+# It is the address of an nginx which serves the user interface. The support library of the
+# cockpit reads it, not the module. An application which sets it and has the starter of Spring
+# Cloud Gateway (server-webmvc) forwards the files of the user interface there. An application
+# which does not set it serves them from the UI jar.
 #
 #   loan-approval.cockpit.base-url
 #
