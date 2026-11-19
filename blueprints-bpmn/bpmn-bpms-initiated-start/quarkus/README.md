@@ -39,6 +39,12 @@ name, and what listens for it is the engine's business. That is also why this bl
 combines with [`bpmn-signals`](https://github.com/vanillabp-blueprints/bpmn-signals-quarkus).
 That one shows the other half: a signal caught by workflows which already run.
 
+One method serves both start events here, because both lead to the same aggregate. When the
+start events need different aggregates, give each one a method of its own with
+`@WorkflowStartedByBpms(id = ...)`.
+[`bpmn-timer-start-event`](https://github.com/vanillabp-blueprints/bpmn-timer-start-event-quarkus)
+shows that.
+
 Message start events are **not** part of this. The application triggers those through
 `startWorkflowByMessage`, which carries your aggregate.
 [`bpmn-message-start`](https://github.com/vanillabp-blueprints/bpmn-message-start-quarkus)
