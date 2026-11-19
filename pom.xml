@@ -95,6 +95,8 @@
     <module>blueprints-bpmn/bpmn-bpms-initiated-start/quarkus</module>
     <module>blueprints-bpmn/bpmn-call-activity-decomposition/springboot</module>
     <module>blueprints-bpmn/bpmn-call-activity-decomposition/quarkus</module>
+    <module>blueprints-bpmn/bpmn-call-activity-reuse/springboot</module>
+    <module>blueprints-bpmn/bpmn-call-activity-reuse/quarkus</module>
     <module>blueprints-bpmn/bpmn-multi-instance-task/springboot</module>
     <module>blueprints-bpmn/bpmn-multi-instance-task/quarkus</module>
     <module>blueprints-bpmn/bpmn-multi-instance-subprocess/springboot</module>
