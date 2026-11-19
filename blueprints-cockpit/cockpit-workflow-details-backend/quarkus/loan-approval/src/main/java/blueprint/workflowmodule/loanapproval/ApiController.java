@@ -5,6 +5,7 @@ import java.util.UUID;
 import blueprint.workflowmodule.loanapproval.api.LoanRequestsApi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.Path;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -23,7 +24,17 @@ import lombok.extern.slf4j.Slf4j;
  * build generates from {@code src/main/resources/loan-approval/openapi/loan-requests.yaml}. This
  * class only implements it.
  * </p>
+ *
+ * <p>
+ * The server of that file is {@code http://localhost:8080/loan-approval}, so the file and the
+ * interface name the paths without the path of the module: the interface carries
+ * {@code @Path("/api/loan-requests")}. The {@code @Path} of this class puts {@code /loan-approval}
+ * in front. Jakarta REST takes the {@code @Path} of a class instead of the one of its interface,
+ * not in addition to it. So the class repeats the path of the interface after
+ * {@code /loan-approval}. The URLs stay the server of the file plus the path.
+ * </p>
  */
+@Path("/loan-approval/api/loan-requests")
 @Slf4j
 @ApplicationScoped
 public class ApiController implements LoanRequestsApi {

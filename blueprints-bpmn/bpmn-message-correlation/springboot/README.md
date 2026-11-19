@@ -196,6 +196,14 @@ message means in each state of the aggregate, before it correlates. The early re
 `Service` does that for a message which came already. A message which may come before the
 workflow waits needs a time-to-live, or an answer to its sender that it came too early.
 
+Choose the time-to-live as the longest time a message may come early. A message which may come
+days before the workflow waits, for example while a user task is still open, should rather be
+written to the aggregate. An exclusive gateway in front of the catch event then goes past the
+wait if the answer is there already. A message which comes after the workflow went another
+way, for example after the timer of an event-based gateway won, will never find a wait.
+`Service` should see that in the aggregate and not correlate it. The `AGENTS.md` of this
+blueprint has both cases.
+
 The test which correlates the message retries while the BPMS does not know the workflow yet. A
 remote engine answers "which workflow belongs to this aggregate?" from an index it fills in the
 background. So a message which arrives seconds after the start may find nothing, although the

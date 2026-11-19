@@ -231,14 +231,15 @@ You must be able to operate every blueprint with a browser alone:
    for each possible next step.
 3. No `curl`, no request body, no tool beyond the browser.
 
-So the API has GET requests where a human works with it directly. The logged URLs are
-convenient for humans. They also describe the state the process reached in a way an agent can
-read.
+So every endpoint is a GET request, also the ones which change something: the start, the
+completion of a user task and the callback which a surrounding system calls. A blueprint
+without a user interface has GET requests only. The logged URLs are convenient for humans. They
+also describe the state the process reached in a way an agent can read.
 
 ### Endpoints which a form calls
 
-A form sends what the user entered, and that needs a request body. So the endpoints which a form
-calls are the one exception to the list above:
+A form sends what the user entered, and that needs a request body. The user interface calls
+these endpoints, not the user, so they are the one exception to the list above:
 
 - The start and every view stay GET requests, and the handler logs their URLs.
 - A form saves a draft with PUT and completes its task with POST. Both send JSON.
@@ -250,7 +251,8 @@ calls are the one exception to the list above:
   in for one.
 
 The exception covers only endpoints which a form, or a button of a page, calls. Every other
-endpoint stays a GET request.
+endpoint stays a GET request, also in a blueprint which has a user interface. The callback of a
+surrounding system is one of them.
 
 ## Rule 4: no BPMS specifics
 
