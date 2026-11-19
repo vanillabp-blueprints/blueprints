@@ -143,6 +143,8 @@ describe('a cockpit with a header', () => {
     assert.equal(await page.locator(`#header ${BUTTON}`).evaluate((element) => element.shadowRoot?.mode), 'open');
     // The page makes every button green. The button of the module keeps its own colour.
     assert.notEqual(await button.evaluate((element) => getComputedStyle(element).backgroundColor), 'rgb(0, 128, 0)');
+    // The styles of the module stay in its shadow roots: the page keeps its one <style> element.
+    assert.equal(await page.evaluate(() => document.querySelectorAll('style').length), 1);
     assert.deepEqual(pageErrors, []);
     await page.close();
   });

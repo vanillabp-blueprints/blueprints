@@ -79,6 +79,13 @@ jobs:
           restore-keys: |
             maven-${{ hashFiles('**/pom.xml') }}-
             maven-
+      # A download which failed in an earlier run leaves a '*.lastUpdated' file, and the
+      # aggregator saves it with the cache. Maven then does not try that download again until
+      # the update interval has passed, and reports the artifact as missing although Central
+      # has it. One refused request of Central would keep a whole day of builds red. So the
+      # markers go, as in nightly.yaml; the files themselves stay.
+      - name: Forget the downloads which failed in an earlier run
+        run: find ~/.m2/repository -type f -name '*.lastUpdated' -delete 2>/dev/null || true
       - name: Start a Camunda 8 cluster
         if: matrix.bpms == 'camunda8'
         # The same as in build.yaml. The address is set here and not in the build step, so a
