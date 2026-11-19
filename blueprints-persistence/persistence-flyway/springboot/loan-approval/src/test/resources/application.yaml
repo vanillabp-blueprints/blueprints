@@ -13,6 +13,10 @@ spring:
     # Flyway keeps one timeline per history table and the module's versions are its own.
     locations: classpath:loan-approval/db/migration
   jpa:
+    # No database session stays open while a response is written, so every read of an
+    # aggregate happens inside a transaction of the service. Set on purpose, because Spring
+    # Boot warns at every start while it is not set.
+    open-in-view: false
     hibernate:
       # The module's own migration creates its table, Hibernate only checks the result.
       ddl-auto: validate

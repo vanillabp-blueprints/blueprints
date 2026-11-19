@@ -1,0 +1,4 @@
+# Python writes a cache of compiled bytecode next to the scripts here. It is not part of
+# the repository.
+__pycache__/
+*.pyc

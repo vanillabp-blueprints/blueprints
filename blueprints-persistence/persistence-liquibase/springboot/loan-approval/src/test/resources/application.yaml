@@ -13,6 +13,10 @@ spring:
     # module's changesets stay the module's either way: they carry their own logical path.
     change-log: classpath:loan-approval/db/changelog.xml
   jpa:
+    # No database session stays open while a response is written, so every read of an
+    # aggregate happens inside a transaction of the service. Set on purpose, because Spring
+    # Boot warns at every start while it is not set.
+    open-in-view: false
     hibernate:
       # The module's own changelog creates its table, Hibernate only checks the result.
       ddl-auto: validate
