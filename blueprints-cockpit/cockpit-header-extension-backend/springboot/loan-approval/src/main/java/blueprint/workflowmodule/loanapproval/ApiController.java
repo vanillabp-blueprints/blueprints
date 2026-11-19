@@ -1,6 +1,7 @@
 package blueprint.workflowmodule.loanapproval;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import blueprint.workflowmodule.loanapproval.api.LoanRequestsApi;
@@ -21,7 +22,15 @@ import blueprint.workflowmodule.loanapproval.api.LoanRequestsApi;
  * build generates from {@code src/main/resources/loan-approval/openapi/loan-requests.yaml}. This
  * class only implements it.
  * </p>
+ *
+ * <p>
+ * The server of that file is {@code http://localhost:8080/loan-approval}, so the file and the
+ * interface name the paths without the path of the module: {@code /api/loan-requests/...}. The
+ * {@code @RequestMapping} of this class puts {@code /loan-approval} in front. The URLs stay the
+ * server of the file plus the path.
+ * </p>
  */
+@RequestMapping("/loan-approval")
 @RestController
 public class ApiController implements LoanRequestsApi {
 

@@ -6,7 +6,6 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "strict": true,
     "rootDir": "src",
-    "outDir": "build/ngc",
     "rewriteRelativeImportExtensions": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,

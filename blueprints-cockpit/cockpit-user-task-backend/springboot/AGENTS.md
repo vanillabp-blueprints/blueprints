@@ -123,6 +123,10 @@ auto-configuration wires the module.
    application does not set `<workflow-module-id>.cockpit.base-url`, and `Cockpit` then asks
    nothing. Write no call of the cockpit by hand. Keep `WithoutTheCockpitAddressIT`, which starts
    the module without the key.
+   The GET endpoints for a person with a browser (`loan-requests.yaml`) follow the same pattern:
+   the server of the file is `http://localhost:8080/<workflow-module-id>`, its paths start with
+   `/api`, and `ApiController` carries `@RequestMapping("/<workflow-module-id>")`. The URLs stay
+   the server plus the path.
 8. Copy `LoanApprovalAutoConfiguration` and `UserInterfaceRouteAutoConfiguration` into the
    sub-package `config` of your module, and the imports file. Set `WORKFLOW_MODULE_ID` to your
    module id. The scans of `LoanApprovalAutoConfiguration` name the package of the module by its
@@ -131,8 +135,8 @@ auto-configuration wires the module.
    Spring Cloud BOM. The route class is the same for every module. The library
    `business-cockpit-spring-boot-support` does not have it yet.
 9. Copy `CockpitSimulator`, `CockpitGuiApi`, `dev-shell-simulator.yaml` and the dependency plugin execution of
-   `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the test
-   which checks every OpenAPI operation against the endpoints.
+   `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the tests
+   which check every operation of both OpenAPI files against the endpoints.
    The test calls the endpoints through the client which the execution `user-task-forms-test-client` of
    `loan-approval/pom.xml` generates from the OpenAPI file, and writes no path and no field by
    hand.

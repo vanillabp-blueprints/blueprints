@@ -248,16 +248,47 @@ public class LoanApprovalIT extends WorkflowModuleTest {
    * has an endpoint for, and names the methods of that path in the header {@code Allow}.
    */
   @Test
-  @SuppressWarnings("unchecked")
   public void everyOperationOfTheOpenApiHasAnEndpoint() {
-
-    final Map<String, Object> openApi = new Yaml().load(
-        LoanApprovalIT.class.getResourceAsStream("/loan-approval/openapi/loan-approval.yaml"));
 
     // The browser calls the cockpit below /wm/loan-approval. The cockpit forwards to the
     // workflow module below /loan-approval, the path of its workflow-module-uri.
+    assertEveryOperationHasAnEndpoint("/loan-approval/openapi/loan-approval.yaml", "/wm/loan-approval", 2);
+
+  }
+
+  /**
+   * The REST API for a person with a browser names the workflow module in its server, so its
+   * paths start with {@code /api}. The controller puts the path of the module in front. This
+   * checks that every operation in the file has its endpoint at the server plus the path, so the
+   * URLs a person types stay the same.
+   */
+  @Test
+  public void everyOperationOfTheRestApiHasAnEndpoint() {
+
+    assertEveryOperationHasAnEndpoint(
+        "/loan-approval/openapi/loan-requests.yaml",
+        "http://localhost:8080/loan-approval",
+        3);
+
+  }
+
+  /**
+   * Checks that every operation of an OpenAPI file has its endpoint below the path of the module.
+   *
+   * @param openApiFile The OpenAPI file on the classpath.
+   * @param server The server the file names.
+   * @param numberOfOperations How many operations the file has.
+   */
+  @SuppressWarnings("unchecked")
+  private void assertEveryOperationHasAnEndpoint(
+      final String openApiFile,
+      final String server,
+      final int numberOfOperations) {
+
+    final Map<String, Object> openApi = new Yaml().load(LoanApprovalIT.class.getResourceAsStream(openApiFile));
+
     final var servers = (List<Map<String, Object>>) openApi.get("servers");
-    assertThat(servers.getFirst().get("url")).isEqualTo("/wm/loan-approval");
+    assertThat(servers.getFirst().get("url")).isEqualTo(server);
     final var pathOfTheModule = "/loan-approval";
 
     final Set<String> offered = new HashSet<>();
@@ -286,7 +317,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
           });
     });
 
-    assertThat(specified).hasSize(2);
+    assertThat(specified).hasSize(numberOfOperations);
     assertThat(offered).containsAll(specified);
 
   }

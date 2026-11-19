@@ -140,7 +140,8 @@ describe('the data entries', () => {
     const { entries } = manifest();
     assert.ok(loaded.includes(`/wm/loan-approval/${entries.UserTaskForm}`), loaded.join(', '));
     assert.ok(loaded.includes(`/wm/loan-approval/${entries.UserTaskList}`), loaded.join(', '));
-    assert.ok(!loaded.some((path) => path.includes('Form-') && !path.includes('UserTaskForm')), loaded.join(', '));
+    assert.ok(!loaded.includes(`/wm/loan-approval/${entries.AssessRiskForm}`), loaded.join(', '));
+    assert.ok(!loaded.includes(`/wm/loan-approval/${entries.CheckDocumentsForm}`), loaded.join(', '));
     for (const path of loaded) {
       const source = readFileSync(join(microFrontends, path.slice('/wm/loan-approval/'.length)), 'utf8');
       assert.deepEqual(findFrameworkCode(source), [], path);
@@ -182,8 +183,9 @@ for (const cockpit of COCKPITS) {
 
       // Only the open form was loaded.
       const loaded = await loadedFiles(page);
-      assert.ok(loaded.some((path) => path.includes('/AssessRiskForm-')), loaded.join(', '));
-      assert.ok(!loaded.some((path) => path.includes('/CheckDocumentsForm-')), loaded.join(', '));
+      const { entries } = manifest();
+      assert.ok(loaded.includes(`/wm/loan-approval/${entries.AssessRiskForm}`), loaded.join(', '));
+      assert.ok(!loaded.includes(`/wm/loan-approval/${entries.CheckDocumentsForm}`), loaded.join(', '));
       assert.deepEqual(await page.evaluate(() => window.bcTest.errors), []);
       assert.deepEqual(pageErrors, []);
       await page.close();
@@ -204,7 +206,9 @@ for (const cockpit of COCKPITS) {
 
       assert.deepEqual(completed, [{ loanRequestId: 'LR-4711', taskId: 'task-2', form: 'check-documents', body: { documentsNote: 'all documents are there' } }]);
       const loaded = await loadedFiles(page);
-      assert.ok(!loaded.some((path) => path.includes('/AssessRiskForm-')), loaded.join(', '));
+      const { entries } = manifest();
+      assert.ok(loaded.includes(`/wm/loan-approval/${entries.CheckDocumentsForm}`), loaded.join(', '));
+      assert.ok(!loaded.includes(`/wm/loan-approval/${entries.AssessRiskForm}`), loaded.join(', '));
       assert.deepEqual(pageErrors, []);
       await page.close();
     });

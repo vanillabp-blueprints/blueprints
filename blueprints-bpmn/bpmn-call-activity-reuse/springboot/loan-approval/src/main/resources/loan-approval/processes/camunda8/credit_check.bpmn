@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_credit_check" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <!--
+    The process other processes reuse. It has a workflow aggregate of its own and knows none
+    of the processes which use it. It is started by the business code behind their service
+    task, and its last task reports the result back.
+  -->
+  <bpmn:process id="credit_check" name="Credit check" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_CreditCheckRequested" name="Credit check requested">
+      <bpmn:outgoing>Flow_ToAskCreditAgency</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToAskCreditAgency" sourceRef="StartEvent_CreditCheckRequested" targetRef="ServiceTask_AskCreditAgency" />
+    <bpmn:serviceTask id="ServiceTask_AskCreditAgency" name="Ask credit agency">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="askCreditAgency" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToAskCreditAgency</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToAwaitAgency</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToAwaitAgency" sourceRef="ServiceTask_AskCreditAgency" targetRef="CatchEvent_AgencyAnswered" />
+    <bpmn:intermediateCatchEvent id="CatchEvent_AgencyAnswered" name="Agency answered">
+      <bpmn:incoming>Flow_ToAwaitAgency</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToReportResult</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_AgencyAnswered" messageRef="Message_AgencyAnswered" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ToReportResult" sourceRef="CatchEvent_AgencyAnswered" targetRef="ServiceTask_ReportResult" />
+    <!-- Where the result leaves this process. A task, so the model shows where it happens. -->
+    <bpmn:serviceTask id="ServiceTask_ReportResult" name="Report result">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reportResult" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToReportResult</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToCreditChecked</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToCreditChecked" sourceRef="ServiceTask_ReportResult" targetRef="EndEvent_CreditChecked" />
+    <bpmn:endEvent id="EndEvent_CreditChecked" name="Credit checked">
+      <bpmn:incoming>Flow_ToCreditChecked</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <!-- The message name is the string the business code passes to 'correlateMessage'. -->
+  <bpmn:message id="Message_AgencyAnswered" name="AgencyAnswered" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="credit_check">
+      <bpmndi:BPMNShape id="StartEvent_CreditCheckRequested_di" bpmnElement="StartEvent_CreditCheckRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="128" y="145" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_AskCreditAgency_di" bpmnElement="ServiceTask_AskCreditAgency">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CatchEvent_AgencyAnswered_di" bpmnElement="CatchEvent_AgencyAnswered">
+        <dc:Bounds x="402" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="376" y="145" width="88" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ReportResult_di" bpmnElement="ServiceTask_ReportResult">
+        <dc:Bounds x="500" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_CreditChecked_di" bpmnElement="EndEvent_CreditChecked">
+        <dc:Bounds x="662" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="643" y="145" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToAskCreditAgency_di" bpmnElement="Flow_ToAskCreditAgency">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToAwaitAgency_di" bpmnElement="Flow_ToAwaitAgency">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="402" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToReportResult_di" bpmnElement="Flow_ToReportResult">
+        <di:waypoint x="438" y="120" />
+        <di:waypoint x="500" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToCreditChecked_di" bpmnElement="Flow_ToCreditChecked">
+        <di:waypoint x="600" y="120" />
+        <di:waypoint x="662" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

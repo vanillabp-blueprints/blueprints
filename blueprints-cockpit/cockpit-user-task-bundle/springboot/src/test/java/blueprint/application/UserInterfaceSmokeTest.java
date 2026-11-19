@@ -81,7 +81,10 @@ public class UserInterfaceSmokeTest {
         + port;
     module = RestClient.create(application
         + "/loan-approval");
-    loanRequests = clientOf(LoanRequestsApi.class, application);
+    // The server of 'loan-requests.yaml' ends with the path of the module, so its paths start with
+    // /api.
+    loanRequests = clientOf(LoanRequestsApi.class, application
+        + "/loan-approval");
     // The paths of 'loan-approval.yaml' are relative to its server, which the cockpit forwards to
     // the path of the module.
     userInterface = clientOf(UserTasksApi.class, application

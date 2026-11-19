@@ -103,8 +103,8 @@ controllers in line, or the start form reaches nothing.
    the button. It does not decide about tasks and cases, and it does not protect the endpoint.
 5. Keep the bean in the module, whose Jandex index makes Quarkus find it.
 6. Copy `CockpitSimulator`, `dev-shell-simulator.yaml` and the dependency plugin execution of
-   `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the test
-   which checks every OpenAPI operation against the endpoints.
+   `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the tests
+   which check every operation of both OpenAPI files against the endpoints.
    The test calls the endpoints through the client which the execution `start-form-test-client` of
    `loan-approval/pom.xml` generates from the OpenAPI file, and writes no path and no field by
    hand.

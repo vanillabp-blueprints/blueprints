@@ -113,8 +113,7 @@ npm test
 | `npm run fetch:openapi`         | copies the OpenAPI file of the backend into `build/openapi`                                                                                   |
 | `npm run generate:client`       | generates the API client from it with `@hey-api/openapi-ts`                                                                                   |
 | `npm run write:bc-build`        | writes the module id and the id of this build into `src/bc-build.js`, see [The names of the web components](#the-names-of-the-web-components) |
-| `npm run compile`               | the Angular compiler `ngc`: checks types and templates, writes JavaScript into `build/ngc`                                                    |
-| `npm run build:micro-frontends` | builds the entries and `bc-manifest.json` into `dist/micro-frontends`                                                                         |
+| `npm run build:micro-frontends` | `ng build`, the Angular CLI: checks types and templates, builds the entries into `dist/micro-frontends`, then writes `bc-manifest.json`       |
 | `npm run check:entries`         | runs `bc-check-entries` of the kit: no bare import, no framework in a data entry, every file there                                            |
 | `npm run build:jar`             | builds the UI jar and its pom into `dist`                                                                                                     |
 | `npm run build:image`           | builds the nginx image. `npm run build` skips it with a warning where Docker does not run                                                     |
@@ -256,7 +255,8 @@ only says so, and the browser tests are the way to see the forms.
 | `src/shared/input-form.ts`             | the four components of a form with one input field, and the messages between its areas                       |
 | `src/shared/angular-element.ts`        | makes an Angular component a web component with `defineBcElement` of the kit                                 |
 | `src/shared/api.ts`                    | `loanApproval`, the one instance of the generated `UserTasksApi` and `ResponseError`, which keeps the status |
-| `scripts/build-micro-frontends.mjs`    | bundles the output of `ngc` with esbuild and writes `bc-manifest.json` with `createManifest`                 |
+| `src/entries.ts`                       | the entry point of `ng build`: one `import()` per entry, so each entry becomes an ES module of its own       |
+| `scripts/write-manifest.mjs`           | writes `bc-manifest.json` with `createManifest` from the list of outputs of the Angular CLI                  |
 | `scripts/build-ui-jar.mjs`             | builds the UI jar with a zip library                                                                         |
 | `docker/Dockerfile`                    | the nginx image                                                                                              |
 | `test/browser/user-task-forms.test.js` | the browser tests in the host of the kit                                                                     |
@@ -309,7 +309,7 @@ cockpit loads it while somebody has the cockpit open, without a reload of the pa
 
 `npm run write:bc-build` (`scripts/write-bc-build.mjs`) writes `src/bc-build.js` before the type
 check: `WORKFLOW_MODULE_ID` from `config.workflowModuleId` in `package.json`, and `BUILD_ID`.
-`scripts/build-micro-frontends.mjs` passes the same time to `createManifest`, so the manifest and
+`scripts/write-manifest.mjs` passes the same time to `createManifest`, so the manifest and
 the names speak of one build. The file is written for every build and not checked in, its types
 are in `src/bc-build.d.ts`. The browser tests read the build id from it, and
 `test/build-id.test.js` proves that two builds give different names.
@@ -330,10 +330,8 @@ An import names what it wants, not where the file is. A file which moves changes
 `tsconfig.json` and no import. `src/shared/index.ts` exports what the other parts use, and
 nothing else. Inside one directory a file imports its neighbour with `./`.
 
-`ngc` keeps an alias in the JavaScript it writes, and the alias points into `src`. So
-`scripts/build-micro-frontends.mjs` has a small esbuild plugin which reads the same `paths` and
-points each alias to the file `ngc` wrote in `build/ngc`. The browser tests import no source file,
-they load the build. So they need no aliases.
+The Angular CLI reads the same `paths`, so the build needs nothing more for the aliases. The
+browser tests import no source file, they load the build. So they need no aliases.
 
 `npm run build` starts with `npm run check:imports`. `scripts/check-imports.mjs` fails the build
 if a file in `src` imports with `../`, so the rule stays. The generated client is left out. The
@@ -379,12 +377,18 @@ An Angular application normally owns the whole page. Here the page belongs to th
 Angular only draws inside the web components of this module. That changes how the project is
 built and how the components are written.
 
-The Angular CLI builds one application with one entry point, but the cockpit needs one ES module
-per entry and a manifest. So `npm run compile` runs only the Angular compiler, `ngc`. It checks
-the types and the templates and writes plain JavaScript into `build/ngc`, and esbuild bundles
-that, as in the React frontend. The packages of Angular come partly compiled. The Angular linker
-finishes them while esbuild loads them, the same step the Angular CLI runs on
-`node_modules/@angular/`.
+The project builds with the Angular CLI and its `application` builder from `@angular/build`, the
+way every Angular project builds. So the usual Angular documentation and the usual answers on the
+web apply. The CLI compiles ahead of time, checks the templates and bundles with esbuild inside.
+
+The cockpit needs one ES module per entry and a manifest, not one application. `angular.json`
+asks for no `index.html` and no polyfills, and its entry point `src/entries.ts` imports each entry
+with `import()`. The CLI writes each of these as a file of its own with the hash of its content
+in the name, the same way it writes a lazy loaded route, and puts Angular into a chunk the two
+forms share. The cockpit never loads `src/entries.ts` itself, it loads the entries. With
+`statsJson` the CLI also writes its list of outputs. `scripts/write-manifest.mjs` takes the file of
+each entry from that list and writes `bc-manifest.json`. That script is the only part of the build
+which is not Angular's own.
 
 All web components of this module share one Angular application. `createApplication` creates it
 when the first web component is drawn, and `createComponent` draws each component into the shadow

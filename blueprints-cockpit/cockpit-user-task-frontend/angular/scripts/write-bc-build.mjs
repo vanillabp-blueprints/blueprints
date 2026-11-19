@@ -6,7 +6,7 @@
 //   browser defines a name only once per page, so with new names a new build of the module loads
 //   while somebody has the cockpit open, without a reload of the page.
 //
-// scripts/build-micro-frontends.mjs reads the time back from BUILD_ID and passes it to
+// scripts/write-manifest.mjs reads the time back from BUILD_ID and passes it to
 // createManifest, so the manifest and the names speak of one build. `npm run build` runs this
 // script before the type check. The file is written for every build and not checked in, see
 // .gitignore. Its types are in src/bc-build.d.ts.

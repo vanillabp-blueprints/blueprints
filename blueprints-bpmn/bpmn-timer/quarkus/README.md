@@ -19,7 +19,8 @@ timers around that:
 
 - **A timer in the sequence flow.** After the rating the workflow just waits. Only then is the
   partner asked. Nothing of the application runs in the meantime: no thread, no scheduler, no
-  `sleep`. The BPMS holds the instance and wakes it up.
+  `sleep`. The BPMS holds the instance and wakes it up. How long it waits is worked out by a
+  getter of the workflow aggregate.
 - **A deadline on the waiting task.** The task which asks the partner carries an interrupting
   timer boundary event. If no answer arrives in time, the workflow leaves the task and takes
   the path behind the timer. There the process decides what a missed deadline means.
@@ -36,18 +37,41 @@ says which engines deliver cancellations. The test of this blueprint asserts the
 only where it is delivered.
 
 The two timers get their durations in two different ways, and that is a decision, not a
-detail. The cool-off period is a literal in the model, `PT10S`. It belongs to the process, so
-changing it means a new process version, with instances still running on the old one. The
-deadline belongs to the business. The partner has three days to answer, so it is configuration
-of the module, `partner-deadline: P3D` in `loan-approval.yaml`. The aggregate copies it when
-the loan is requested, and the timer boundary event reads it with an expression:
+detail. The cool-off period follows a rule: a large loan, 10000 or more, gives the customer
+twice as long to withdraw. That rule is Java, a getter of the aggregate:
+
+```java
+@SyncWithBPMS
+public String getCoolOffPeriod() {
+
+  return amount >= LARGE_LOAN ? COOL_OFF_PERIOD_OF_A_LARGE_LOAN : COOL_OFF_PERIOD;
+
+}
+```
+
+The timer reads only the name: `${coolOffPeriod}` on Camunda 7, `=coolOffPeriod` on Camunda 8.
+So the rule can change, for example to count business days, and the model stays the same. A
+literal such as `PT10S` would work too, for a period which never depends on the business case.
+But changing a literal means a new process version, with instances still running on the old
+one.
+
+The BPMS does not call the getter. VanillaBP calls it whenever it talks to the BPMS for the
+workflow, and the BPMS keeps the result. The timer reads the result of the last such moment.
+Here that is the end of the credit rating, the task right before the timer. A value worked out
+from the amount is still right then. A value counted from the current time is as old as that
+moment, so count from a point in time the aggregate stores.
+
+The deadline belongs to the business. The partner has three days to answer, so it is
+configuration of the module, `partner-deadline: P3D` in `loan-approval.yaml`. The aggregate
+copies it when the loan is requested, and the timer boundary event reads it with an expression:
 `${partnerDeadline}` on Camunda 7, `=partnerDeadline` on Camunda 8. The value a workflow
 started with stays its deadline, even if the configuration changes later.
 
 An expression reads the aggregate, so the attribute it names has to travel to the BPMS. The
-class carries `@NoSyncWithBPMS`, and `partnerDeadline` alone carries `@SyncWithBPMS`. So the
-engine holds the aggregate's ID and that one value. It is a `String`, because a `Duration` of
-three days reaches the model as `PT72H`. The wiki page
+class carries `@NoSyncWithBPMS`. The getter `getCoolOffPeriod` and the attribute
+`partnerDeadline` carry `@SyncWithBPMS`, and so does `withdrawn`, see below. So the engine
+holds the aggregate's ID and these three values. Both durations are a `String`, because a
+`Duration` of three days reaches the model as `PT72H`. The wiki page
 [Timers](https://github.com/vanillabp/adapter-platform-integration/wiki/Timers#a-deadline-out-of-the-workflow-aggregate)
 explains the expression and which Java types fit.
 
@@ -76,22 +100,22 @@ task runs in.
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-quarkus):
 
-|                        File                         |                                                             What is different                                                              |
-|-----------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`                                | a timer catch event, a gateway behind it which reads `withdrawn`, a task waiting for a partner, and a timer boundary event on it           |
-| `WorkflowTaskHandler.java`                          | the `@WorkflowTask` method of the waiting task, taking `@TaskId` and `@TaskEvent`, and `confirmWithdrawal`                                 |
-| `Workflow.java`                                     | `completeTask` and `aggregateChanged` in addition to `startWorkflow`                                                                       |
-| `Service.java`                                      | copies the deadline, takes a withdrawal, sends the request, keeps the task id, answers it, and notes a missed deadline                     |
-| `PartnerApprovalClient.java`                        | new: the port to the partner, so a test can replace it                                                                                     |
-| `LocalPartnerApprovalClient.java`                   | new: a stand-in partner, so the blueprint runs without one                                                                                 |
-| `ApiController.java`                                | the withdrawal, and the callback carrying the partner's answer and the task id                                                             |
-| `loan-approval/openapi/loan-approval.yaml`          | the URLs `withdraw` and `partner-approved/{taskId}`                                                                                        |
-| `Aggregate.java`                                    | `partnerApprovalTaskId`, `partnerApproved`, `timedOut`, `withdrawalConfirmed`, and `partnerDeadline` and `withdrawn`, which the BPMS reads |
-| `loan-approval.yaml`, `LoanApprovalProperties.java` | `partner-deadline: P3D`, the business value of the deadline                                                                                |
-| `application.yaml`                                  | `partner-deadline: PT3S` in the test and in the demo application, so nobody waits three days                                               |
-| `LoanApprovalIT.java`                               | one test per outcome: answered in time, not answered at all, and withdrawn during the cool-off period                                      |
-| `PartnerApprovalSimulator.java`, `Simulator.java`   | new in the tests: the simulator which stands in for the partner, and its base class from the test harness                                  |
-| `pom.xml`, `loan-approval/pom.xml`                  | hands the BPMS of the build to the tests, for the assertion about cancellations                                                            |
+|                        File                         |                                                                             What is different                                                                             |
+|-----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | a timer catch event which reads `coolOffPeriod`, a gateway behind it which reads `withdrawn`, a task waiting for a partner, and a timer boundary event on it              |
+| `WorkflowTaskHandler.java`                          | the `@WorkflowTask` method of the waiting task, taking `@TaskId` and `@TaskEvent`, and `confirmWithdrawal`                                                                |
+| `Workflow.java`                                     | `completeTask` and `aggregateChanged` in addition to `startWorkflow`                                                                                                      |
+| `Service.java`                                      | copies the deadline, takes a withdrawal, sends the request, keeps the task id, answers it, and notes a missed deadline                                                    |
+| `PartnerApprovalClient.java`                        | new: the port to the partner, so a test can replace it                                                                                                                    |
+| `LocalPartnerApprovalClient.java`                   | new: a stand-in partner, so the blueprint runs without one                                                                                                                |
+| `ApiController.java`                                | the withdrawal, and the callback carrying the partner's answer and the task id                                                                                            |
+| `loan-approval/openapi/loan-approval.yaml`          | the URLs `withdraw` and `partner-approved/{taskId}`                                                                                                                       |
+| `Aggregate.java`                                    | `partnerApprovalTaskId`, `partnerApproved`, `timedOut`, `withdrawalConfirmed`, and `partnerDeadline`, `withdrawn` and the getter `getCoolOffPeriod`, which the BPMS reads |
+| `loan-approval.yaml`, `LoanApprovalProperties.java` | `partner-deadline: P3D`, the business value of the deadline                                                                                                               |
+| `application.yaml`                                  | `partner-deadline: PT3S` in the test and in the demo application, so nobody waits three days                                                                              |
+| `LoanApprovalIT.java`                               | one test per outcome: answered in time, not answered at all, and withdrawn during the cool-off period, and one for the cool-off period of a large loan                    |
+| `PartnerApprovalSimulator.java`, `Simulator.java`   | new in the tests: the simulator which stands in for the partner, and its base class from the test harness                                                                 |
+| `pom.xml`, `loan-approval/pom.xml`                  | hands the BPMS of the build to the tests, for the assertion about cancellations                                                                                           |
 
 ## Running it
 
@@ -172,9 +196,9 @@ Start a loan approval. This is the only URL you need:
 http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
-The rating is done at once. The partner is asked ten seconds later, and from then on the
-clock runs. The module gives the partner three days, but the demo application shortens that to
-three seconds in its `application.yaml`:
+The rating is done at once. The partner is asked ten seconds later, twenty for a loan of 10000
+or more. From then on the clock runs. The module gives the partner three days, but the demo
+application shortens that to three seconds in its `application.yaml`:
 
 ```
 Loan approval '0f7c…' started. The customer may withdraw during the cool-off period:
@@ -219,10 +243,10 @@ that this request is not open any more. The application decides that on its own.
 | `.../loanapproval/WorkflowTaskHandler.java`                                            | the method of the waiting task: `@TaskId` to keep, `@TaskEvent` to hear about the cancellation                       |
 | `.../loanapproval/Service.java`                                                        | takes a withdrawal, asks the partner once, answers the task, and notes a missed deadline                             |
 | `.../loanapproval/Workflow.java`                                                       | `aggregateChanged` and `completeTask`, the only place `ProcessService` is used                                       |
-| `.../loanapproval/model/Aggregate.java`                                                | the task id, the answer, whether the deadline ran out, and the two values the model reads                            |
+| `.../loanapproval/model/Aggregate.java`                                                | the task id, the answer, whether the deadline ran out, and the three values the model reads, one of them a getter    |
 | `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | the deadline as the business wants it, three days                                                                    |
 | `loan-approval/src/test/resources/application.yaml`                                    | the same key, three seconds, so the test is fast                                                                     |
-| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | answered in time, not answered at all, and withdrawn while the workflow waits                                        |
+| `loan-approval/src/test/.../LoanApprovalIT.java`                                       | answered in time, not answered at all, withdrawn while the workflow waits, and the cool-off period of a large loan   |
 
 Neither timer costs the application anything while it runs. The BPMS stores the due date, wakes
 the instance up and delivers the next task. That is the reason to model waiting instead of
@@ -236,6 +260,12 @@ The test of the withdrawal waits until the rating is stored. From then on the wo
 for its timer, and the BPMS holds `withdrawn` as `false`. The test withdraws and expects the
 withdrawn branch. Take `aggregateChanged` out of `Workflow`, and the gateway asks the partner
 instead. The test fails then, which is the point of it.
+
+The test of the large loan measures the time from the request to the question to the partner.
+A timer never fires before it is due, on any BPMS. So the partner cannot be asked before the
+twenty seconds the getter works out for a large loan. If the timer read `PT10S` instead, the
+partner would be asked after ten seconds, and the test fails. That is the reason for the test.
+Only this one test waits twenty seconds. The others request a small loan.
 
 A deadline of three days cannot be tested by waiting for it. Because it comes from
 configuration, the test does not need to. Its own `application.yaml` sets
@@ -254,6 +284,8 @@ model you deploy.
 - [Tell the BPMS that the aggregate changed](https://github.com/vanillabp/spi-for-java/wiki/The-workflow-aggregate#tell-the-bpms-that-the-aggregate-changed): `aggregateChanged`, and the form which writes into the scope of a task
 - [Telling the BPMS that the aggregate changed](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#telling-the-bpms-that-the-aggregate-changed): when the values are written, and what each BPMS does with them
 - [Timers](https://github.com/vanillabp/adapter-platform-integration/wiki/Timers#a-deadline-out-of-the-workflow-aggregate): a deadline read from the workflow aggregate, and which Java types fit
+- [Wiring an expression](https://github.com/vanillabp/spi-for-java/wiki/Wiring-an-expression): how an expression in the model reads a getter of the aggregate
+- [What is shared, and when](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#what-is-shared-and-when): when VanillaBP calls a getter, and why its value is the one of the last sync point
 - the wiki of the BPMS adapter you use: how timers are executed, and what an expression instead of a literal duration may read
 
 This blueprint is developed in the monorepo
