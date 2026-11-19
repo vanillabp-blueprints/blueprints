@@ -1,0 +1,245 @@
+package blueprint.workflowmodule;
+
+import static org.awaitility.Awaitility.await;
+
+import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+import org.awaitility.core.ConditionTimeoutException;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.repository.CrudRepository;
+
+/**
+ * Base class for the integration test of a workflow module. It boots
+ * {@link TestApplication} - the workflow module, a database and a BPMS adapter - and adds
+ * the one thing such a test always needs: waiting for a workflow to have made progress.
+ *
+ * <p>
+ * <strong>Assert on the workflow aggregate, never on the engine.</strong> The aggregate is
+ * the state of the business case, and it is the only thing that means the same on every
+ * BPMS. A test reaching into engine internals stops being a test of your application and
+ * starts being a test of that engine - and it will not survive the next one.
+ * </p>
+ *
+ * <p>
+ * <strong>Wait, do not assert immediately.</strong> A BPMS runs tasks in transactions of
+ * its own, and a remote one does so eventually. Asserting right after having started a
+ * workflow passes on an embedded engine and fails on a remote one, which is the kind of
+ * test that makes people believe the BPMS is unreliable.
+ * </p>
+ *
+ * <p>
+ * Do not annotate subclasses with {@code @Transactional}: the polling below has to see the
+ * writes of the BPMS' own transactions, which a test-managed transaction would hide.
+ * </p>
+ *
+ * <p>
+ * Part of the test harness which every blueprint carries in the same form. In a project
+ * made from a blueprint it is a file of that project, so change it as the project needs.
+ * </p>
+ */
+@SpringBootTest
+public abstract class WorkflowModuleTest {
+
+  /**
+   * How long a test waits for what VanillaBP and the blueprint do themselves: a reply to a
+   * call of the API, a handler which ran, an aggregate which was written. Generous on
+   * purpose, so that a slow CI machine does not turn into a flaky test.
+   *
+   * <p>
+   * It is one minute, so that ONE retry of the outbox fits in. Two engine commands for the
+   * same workflow may collide, for example a message which is correlated while the user
+   * task is completed. Camunda 7 then rejects one of them with an optimistic locking error,
+   * and the outbox tries it again after {@code vanillabp.outbox.attempt-frequency}, which is
+   * thirty seconds by default. That is expected behaviour and not a fault, so it must not
+   * fail a test. The second retry comes a minute after the first one, and that is beyond
+   * this time. So a step which fails again and again still fails the test. A test which
+   * passes is not slower, because the wait ends as soon as the condition holds.
+   * </p>
+   *
+   * <p>
+   * Use {@link #SCHEDULER_TIMEOUT} instead if the test waits for a timer of the model.
+   * </p>
+   */
+  protected static final Duration TIMEOUT = Duration.ofMinutes(1);
+
+  /**
+   * How long a test waits for what the scheduler of a BPMS has to do: a timer which is due
+   * and has to fire. This is much longer than {@link #TIMEOUT}, because here the test does
+   * not wait for code. It waits for a pool of threads in the engine, and when many builds
+   * run on one machine, they all share it. A test which waits for a scheduler should fail
+   * because the thing did not happen, not because the machine was busy.
+   *
+   * <p>
+   * Choose it only for the steps which wait for a timer, and pass it to
+   * {@code awaitAggregate}. Every other step keeps {@link #TIMEOUT}, so that a real fault
+   * still shows up quickly.
+   * </p>
+   */
+  protected static final Duration SCHEDULER_TIMEOUT = Duration.ofMinutes(2);
+
+  private static final Duration POLL_INTERVAL = Duration.ofMillis(200);
+
+  /**
+   * Waits until the workflow aggregate exists and satisfies the given condition.
+   *
+   * @param <A>        The type of the workflow aggregate.
+   * @param repository The repository of the workflow aggregate.
+   * @param id         The aggregate's ID, which is the natural ID of the business case.
+   * @param condition  What the process is expected to have achieved.
+   * @return The aggregate as it satisfied the condition.
+   */
+  protected <A> A awaitAggregate(
+      final CrudRepository<A, String> repository,
+      final String id,
+      final Predicate<A> condition) {
+
+    return awaitAggregate(repository::findById, id, condition);
+
+  }
+
+  /**
+   * Waits as long as the given time until the workflow aggregate exists and satisfies the
+   * given condition. Pass {@link #SCHEDULER_TIMEOUT} if the condition needs a timer of the
+   * model to fire.
+   *
+   * @param <A>        The type of the workflow aggregate.
+   * @param repository The repository of the workflow aggregate.
+   * @param id         The aggregate's ID, which is the natural ID of the business case.
+   * @param timeout    How long to wait, {@link #TIMEOUT} or {@link #SCHEDULER_TIMEOUT}.
+   * @param condition  What the process is expected to have achieved.
+   * @return The aggregate as it satisfied the condition.
+   */
+  protected <A> A awaitAggregate(
+      final CrudRepository<A, String> repository,
+      final String id,
+      final Duration timeout,
+      final Predicate<A> condition) {
+
+    return awaitAggregate(repository::findById, id, timeout, condition);
+
+  }
+
+  /**
+   * Waits until the workflow aggregate exists and satisfies the given condition, reading it
+   * through a function rather than a repository.
+   *
+   * <p>
+   * For an application whose aggregates are not managed by a repository at all: it brings a
+   * persistence of its own, and then the way to read an aggregate is whatever that
+   * persistence offers.
+   * </p>
+   *
+   * @param <A>       The type of the workflow aggregate.
+   * @param load      Loads the workflow aggregate by its ID.
+   * @param id        The aggregate's ID, which is the natural ID of the business case.
+   * @param condition What the process is expected to have achieved.
+   * @return The aggregate as it satisfied the condition.
+   */
+  protected <A> A awaitAggregate(
+      final Function<String, Optional<A>> load,
+      final String id,
+      final Predicate<A> condition) {
+
+    return awaitAggregate(load, id, TIMEOUT, condition);
+
+  }
+
+  /**
+   * Waits as long as the given time until the workflow aggregate exists and satisfies the
+   * given condition. Pass {@link #SCHEDULER_TIMEOUT} if the condition needs a timer of the
+   * model to fire.
+   *
+   * @param <A>       The type of the workflow aggregate.
+   * @param load      Loads the workflow aggregate by its ID.
+   * @param id        The aggregate's ID, which is the natural ID of the business case.
+   * @param timeout   How long to wait, {@link #TIMEOUT} or {@link #SCHEDULER_TIMEOUT}.
+   * @param condition What the process is expected to have achieved.
+   * @return The aggregate as it satisfied the condition.
+   */
+  protected <A> A awaitAggregate(
+      final Function<String, Optional<A>> load,
+      final String id,
+      final Duration timeout,
+      final Predicate<A> condition) {
+
+    final var lastSeen = new AtomicReference<Optional<A>>(Optional.empty());
+
+    try {
+
+      await()
+          .atMost(timeout)
+          // The first look comes at once. Awaitility would otherwise wait one poll interval
+          // before it, and that pause could hide a test which only passes because the BPMS
+          // had time to catch up.
+          .pollDelay(Duration.ZERO)
+          .pollInterval(POLL_INTERVAL)
+          .until(() -> {
+            // A fresh read per poll - otherwise the writes of the BPMS' own transactions
+            // would never become visible.
+            final var found = load.apply(id);
+            lastSeen.set(found);
+            return found
+                .filter(condition)
+                .isPresent();
+          });
+
+    } catch (ConditionTimeoutException e) {
+
+      throw new AssertionError(
+          "The workflow '"
+              + id
+              + "' did not reach the expected state within "
+              + timeout
+              + ". Last seen: "
+              + lastSeen
+                  .get()
+                  .map(Object::toString)
+                  .orElse("no aggregate at all - was the workflow started?"), e);
+
+    }
+
+    return lastSeen
+        .get()
+        .orElseThrow();
+
+  }
+
+  /**
+   * Waits until the workflow aggregate exists at all. Useful right after having started a
+   * workflow.
+   *
+   * @param <A>        The type of the workflow aggregate.
+   * @param repository The repository of the workflow aggregate.
+   * @param id         The aggregate's ID.
+   * @return The aggregate.
+   */
+  protected <A> A awaitAggregate(
+      final CrudRepository<A, String> repository,
+      final String id) {
+
+    return awaitAggregate(repository, id, aggregate -> true);
+
+  }
+
+  /**
+   * Waits until the workflow aggregate exists at all, reading it through a function rather
+   * than a repository.
+   *
+   * @param <A>  The type of the workflow aggregate.
+   * @param load Loads the workflow aggregate by its ID.
+   * @param id   The aggregate's ID.
+   * @return The aggregate.
+   */
+  protected <A> A awaitAggregate(
+      final Function<String, Optional<A>> load,
+      final String id) {
+
+    return awaitAggregate(load, id, aggregate -> true);
+
+  }
+
+}

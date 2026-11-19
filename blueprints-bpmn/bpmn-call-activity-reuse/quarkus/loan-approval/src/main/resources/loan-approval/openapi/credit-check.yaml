@@ -1,0 +1,64 @@
+openapi: 3.0.3
+info:
+  title: Credit check
+  description: >
+    The API of the use case 'credit-check'. It has GET requests only, so a person can walk through
+    the process in a browser, without any tool and without a request body. Nobody starts a credit
+    check here, because only other processes do that.
+
+    The build generates the Java interface 'CreditCheckApi' from this file, and 'ApiController'
+    implements it. So the paths, the parameters and the answers below are the contract, and nobody
+    writes them by hand.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: credit-check
+    description: Operating the use case 'credit-check'
+paths:
+  /loan-approval/api/credit-checks/{creditCheckId}/agency-answered:
+    get:
+      tags:
+        - credit-check
+      operationId: agencyAnswered
+      summary: The credit agency answers
+      parameters:
+        - name: creditCheckId
+          in: path
+          required: true
+          description: The id of the credit check, as logged
+          schema:
+            type: string
+        - name: score
+          in: query
+          description: The score the agency gives, from 0 to 100
+          schema:
+            type: integer
+            default: 70
+      responses:
+        '200':
+          description: What was done, for the browser to show
+          content:
+            text/plain:
+              schema:
+                type: string
+  /loan-approval/api/credit-checks/{creditCheckId}:
+    get:
+      tags:
+        - credit-check
+      operationId: show
+      summary: Shows what the credit check did
+      parameters:
+        - name: creditCheckId
+          in: path
+          required: true
+          description: The id of the credit check, as logged
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The workflow aggregate as it is stored right now
+          content:
+            text/plain:
+              schema:
+                type: string
