@@ -109,8 +109,8 @@ controllers in line, or the page reaches nothing.
    `@Path` of the class instead of the one of the interface. Answer 404 for an unknown id and 409
    for a case which cannot be withdrawn any more.
 8. Copy `CockpitSimulator`, `dev-shell-simulator.yaml` and the dependency plugin execution of
-   `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the test
-   which checks every OpenAPI operation against the endpoints.
+   `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the tests
+   which check every operation of both OpenAPI files against the endpoints.
    The test calls the endpoints through the client which the execution `case-page-test-client` of
    `loan-approval/pom.xml` generates from the OpenAPI file, and writes no path and no field by
    hand.

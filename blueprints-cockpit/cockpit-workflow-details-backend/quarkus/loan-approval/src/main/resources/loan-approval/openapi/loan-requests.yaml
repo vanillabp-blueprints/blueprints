@@ -8,14 +8,18 @@ info:
     The build generates the Java interface 'LoanRequestsApi' from this file, and 'ApiController'
     implements it. So the paths, the parameters and the answers below are the contract, and nobody
     writes them by hand.
+
+    The server names the workflow module, so the paths below start with /api. 'ApiController'
+    puts /loan-approval in front of the paths of the interface, which gives the URLs of the
+    server plus the path.
   version: 1.0.0
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:8080/loan-approval
 tags:
   - name: loan-requests
     description: Operating the use case 'loan-requests'
 paths:
-  /loan-approval/api/loan-requests/start:
+  /api/loan-requests/start:
     get:
       tags:
         - loan-requests
@@ -41,7 +45,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /loan-approval/api/loan-requests/{loanRequestId}/approve:
+  /api/loan-requests/{loanRequestId}/approve:
     get:
       tags:
         - loan-requests
@@ -61,7 +65,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /loan-approval/api/loan-requests/{loanRequestId}:
+  /api/loan-requests/{loanRequestId}:
     get:
       tags:
         - loan-requests

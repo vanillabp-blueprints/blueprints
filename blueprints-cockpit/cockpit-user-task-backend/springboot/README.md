@@ -329,7 +329,10 @@ and checks that every operation in it has its endpoint at that path.
 
 The GET endpoints a person uses to start a loan approval and to look at it are an OpenAPI file
 as well, `loan-approval/openapi/loan-requests.yaml`. `ApiController` implements the interface
-`LoanRequestsApi` generated from it. The frontends do not read this file.
+`LoanRequestsApi` generated from it. The frontends do not read this file. Its server is
+`http://localhost:8080/loan-approval`, so its paths start with `/api`. `ApiController` puts
+`/loan-approval` in front with a `@RequestMapping` of its own, the same way as the forms, and the
+URLs stay the server plus the path. A second test checks this file the same way.
 
 Completing a task is a POST, because a form calls it. The
 [rules for blueprints](https://github.com/vanillabp-blueprints/blueprints/blob/main/CONTRIBUTING.md#endpoints-which-a-form-calls)

@@ -120,9 +120,13 @@ request. Keep the server of the OpenAPI, the path of `workflow-module-uri` and t
    application sets `<workflow-module-id>.cockpit.base-url`, and asks nothing without it. Write
    no call of the cockpit by hand. Keep `WithoutTheCockpitAddressIT`, which starts the module
    without the key.
+   The GET endpoints for a person with a browser (`loan-requests.yaml`) follow the same pattern:
+   the server of the file is `http://localhost:8080/<workflow-module-id>`, its paths start with
+   `/api`, and `ApiController` carries `@Path("/<workflow-module-id>/api/loan-requests")`. The
+   URLs stay the server plus the path.
 8. Copy `CockpitSimulator`, `CockpitGuiApi`, `dev-shell-simulator.yaml` and the dependency plugin
    execution of `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`,
-   keeping the test which checks every OpenAPI operation against the endpoints.
+   keeping the tests which check every operation of both OpenAPI files against the endpoints.
    The test calls the endpoints through the client which the execution `user-task-forms-test-client` of
    `loan-approval/pom.xml` generates from the OpenAPI file, and writes no path and no field by
    hand.

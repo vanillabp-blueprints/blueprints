@@ -81,8 +81,9 @@ correlation reaches no waiting event. The call then fails at runtime, not at sta
    return, decided by the state of the aggregate.
 5. Add the `correlateMessage` call to `Workflow` and keep the message name there as a
    constant.
-6. Add the endpoint the message arrives at. When the workflow starts waiting, log the URL which
-   continues the process.
+6. Add the endpoint the message arrives at. Make it a GET request, like every endpoint of a
+   blueprint, also when a surrounding system calls it. Then a person can send the message from
+   a browser. When the workflow starts waiting, log the URL which continues the process.
 7. Copy `LoanApprovalIT`: one test for the waiting workflow, one for the message which lets it
    continue, one for a repeat.
 
@@ -113,6 +114,25 @@ blueprint sets none. A person opens its message URL by hand, long after the work
 the catch event. The
 [wiki](https://github.com/vanillabp/adapter-platform-integration/wiki/Message-correlation#a-message-which-comes-before-the-workflow-waits-for-it)
 explains the levels of the key and what happens when the time is over.
+
+Choose the time-to-live as the longest time the message may come before the workflow waits
+for it. A message which comes a moment early, right after a task was completed, needs minutes.
+Longer values work as well. The Camunda 7 family keeps the correlation in the outbox for the
+whole time and asks again, with longer waits between the tries. Camunda 8 keeps the message in
+the cluster. But a message which may come days before the workflow waits, for example while a
+user task in front of the catch event is still open, is better not left waiting. Write what it
+brought to the aggregate when it comes, and put an exclusive gateway in front of the catch event
+which goes past it if the aggregate has the answer already. Keep a short time-to-live for the
+moment between that gateway and the catch event.
+
+A message may also come after the workflow stopped waiting for it, for example because the
+timer of an event-based gateway won. Nothing will ever wait for it again. With a time-to-live
+it waits until the time is over, and on the Camunda 7 family the outbox entry then ends
+blocked. Without one, the Camunda 7 family refuses it at your call.
+So let `Service` decide by the state of the aggregate before it correlates: if the workflow went
+the other way, store what the message brought, or answer the sender, and do not correlate. A
+small race stays, a message which comes while the timer fires. Such a message waits out its
+time-to-live like any other.
 
 If several occurrences of the same message may wait at once, for example one per ordered item,
 pass a correlation id as the third argument. That variant drops repeats among the correlations

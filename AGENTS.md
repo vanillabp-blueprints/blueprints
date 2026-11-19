@@ -66,6 +66,11 @@ Business Cockpit the same endpoint is `/wm/loan-approval/api/{loanRequestId}`, b
 `workflow-module-uri` of the module ends with `/loan-approval`. Rule 7 in `CONTRIBUTING.md`
 says when a resource name follows `api`.
 
+Every endpoint is a GET request, also the start, the completion of a user task and the callback
+which a surrounding system calls. So a person can walk through every blueprint in a browser.
+Only an endpoint which a user interface calls may use another method, because the user
+interface calls it, not the user. Rule 3 in `CONTRIBUTING.md` has the details.
+
 ## How we write
 
 Most people who read this repository read English as a second language, and so does the
