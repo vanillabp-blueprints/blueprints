@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_portfolio_review" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="portfolio_review" name="Portfolio review" isExecutable="true">
+    <!--
+      The timer start event. The engine schedules it when the model is deployed, and it
+      starts a workflow every time it fires. A new version of the model replaces the
+      schedule of the old one.
+
+      R/PT5S fires every five seconds, without an end, so the blueprint can be watched. A
+      real review would use a cycle such as R/P1D. The cycle has no end on purpose: a model
+      deployed again without a change is no new version, so it keeps the schedule it has, and
+      a cycle which already ended would start nothing in the next run. The cycle is a literal
+      of the model: there is no workflow aggregate before the timer fires, so there is nothing
+      an expression could read.
+
+      Its id is what @WorkflowStartedByBpms(id = "StartEvent_ScheduledReview") names.
+    -->
+    <bpmn:startEvent id="StartEvent_ScheduledReview" name="Review is due">
+      <bpmn:outgoing>Flow_FromSchedule</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_ScheduledReview">
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/PT5S</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_FromSchedule" sourceRef="StartEvent_ScheduledReview" targetRef="ServiceTask_ReviewPortfolio" />
+    <!--
+      The second start event, so somebody can ask for a review without waiting for the
+      timer. It has a @WorkflowStartedByBpms method of its own, which names this id.
+    -->
+    <bpmn:startEvent id="StartEvent_ReviewRequested" name="Review requested">
+      <bpmn:outgoing>Flow_FromRequest</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_ReviewRequested" signalRef="Signal_PortfolioReviewRequested" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_FromRequest" sourceRef="StartEvent_ReviewRequested" targetRef="ServiceTask_ReviewPortfolio" />
+    <bpmn:serviceTask id="ServiceTask_ReviewPortfolio" name="Review portfolio">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reviewPortfolio" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_FromSchedule</bpmn:incoming>
+      <bpmn:incoming>Flow_FromRequest</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToReviewDone</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToReviewDone" sourceRef="ServiceTask_ReviewPortfolio" targetRef="EndEvent_ReviewDone" />
+    <bpmn:endEvent id="EndEvent_ReviewDone" name="Review done">
+      <bpmn:incoming>Flow_ToReviewDone</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <!-- The signal name is the string the business code passes to 'sendSignal'. -->
+  <bpmn:signal id="Signal_PortfolioReviewRequested" name="PortfolioReviewRequested" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="portfolio_review">
+      <bpmndi:BPMNShape id="StartEvent_ScheduledReview_di" bpmnElement="StartEvent_ScheduledReview">
+        <dc:Bounds x="152" y="82" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="135" y="125" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_ReviewRequested_di" bpmnElement="StartEvent_ReviewRequested">
+        <dc:Bounds x="152" y="192" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="130" y="235" width="83" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ReviewPortfolio_di" bpmnElement="ServiceTask_ReviewPortfolio">
+        <dc:Bounds x="290" y="115" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ReviewDone_di" bpmnElement="EndEvent_ReviewDone">
+        <dc:Bounds x="452" y="137" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="440" y="180" width="63" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_FromSchedule_di" bpmnElement="Flow_FromSchedule">
+        <di:waypoint x="188" y="100" />
+        <di:waypoint x="239" y="100" />
+        <di:waypoint x="239" y="155" />
+        <di:waypoint x="290" y="155" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_FromRequest_di" bpmnElement="Flow_FromRequest">
+        <di:waypoint x="188" y="210" />
+        <di:waypoint x="239" y="210" />
+        <di:waypoint x="239" y="155" />
+        <di:waypoint x="290" y="155" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToReviewDone_di" bpmnElement="Flow_ToReviewDone">
+        <di:waypoint x="390" y="155" />
+        <di:waypoint x="452" y="155" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
