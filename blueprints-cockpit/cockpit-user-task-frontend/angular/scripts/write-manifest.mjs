@@ -4,8 +4,11 @@
 // The list of outputs comes from the Angular CLI itself: with `statsJson` in angular.json it writes
 // browser-stats.json, the metafile of esbuild, which the CLI uses inside. This script moves that file
 // to build/meta.json, because bc-check-entries reads it and the cockpit does not.
+//
+// The CLI also writes main-<hash>.js, the build of src/entries.ts. The cockpit never loads it, and
+// no other file imports it, so this script deletes it. The CLI has no option to leave it out.
 
-import { readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createManifest, USER_TASK_FORM, USER_TASK_LIST } from '@vanillabp/bc-module-kit';
@@ -28,8 +31,19 @@ const entries = {
   CheckDocumentsForm: 'src/forms/check-documents-form.ts',
 };
 
-renameSync(join(outdir, 'browser-stats.json'), metafilePath);
-const { outputs } = JSON.parse(readFileSync(metafilePath, 'utf8'));
+const metafile = JSON.parse(readFileSync(join(outdir, 'browser-stats.json'), 'utf8'));
+const { outputs } = metafile;
+const BROWSER_ENTRY = 'src/entries.ts';
+for (const [output, { entryPoint }] of Object.entries(outputs)) {
+  if (entryPoint !== BROWSER_ENTRY) continue;
+  const importers = Object.keys(outputs).filter((other) => outputs[other].imports.some(({ path }) => path === output));
+  if (importers.length > 0) throw new Error(`write-manifest: ${importers.join(', ')} import ${output}, so it cannot be deleted.`);
+  unlinkSync(join(outdir, output));
+  delete outputs[output];
+}
+writeFileSync(metafilePath, JSON.stringify(metafile));
+unlinkSync(join(outdir, 'browser-stats.json'));
+
 const files = {};
 for (const [output, { entryPoint }] of Object.entries(outputs)) {
   const name = Object.keys(entries).find((key) => entries[key] === entryPoint);

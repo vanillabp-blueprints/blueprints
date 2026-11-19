@@ -461,7 +461,8 @@ mvn deploy:deploy-file -Dfile=dist/cockpit-user-task-ui-1.0.0-SNAPSHOT.jar \
 The nginx image serves the same files at the same paths, for an application which forwards to an
 nginx instead of serving the files itself. `bc-manifest.json` is sent with
 `Cache-Control: no-cache`. Every other file has the hash of its content in its name, so the image
-lets browsers keep it for good.
+lets browsers keep it for good. The JavaScript files and the manifest go out compressed with gzip
+when the browser asks for it, which is about a third of the bytes.
 
 ## Documentation
 

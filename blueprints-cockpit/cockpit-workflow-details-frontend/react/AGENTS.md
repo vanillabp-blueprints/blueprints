@@ -49,7 +49,7 @@ the page. `npm run build` writes the module id and the build id into `src/bc-bui
 | `src/pages/loan-approval-page.tsx`   | visual entry `LoanApprovalPage`: the four web components (`all`, `body`, `information`, `actions`), `getUserTasks` and the messages between the areas |
 | `src/shared/api.ts`                  | `loanApproval`, the one instance of the generated `CasesApi` and `ResponseError`; base URL `/wm/loan-approval` from the OpenAPI file                  |
 | `src/shared/style.ts`                | the styles, put into each shadow root. `overflow-wrap: anywhere` keeps long content from widening the page                                            |
-| `scripts/build-micro-frontends.mjs`  | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs                                                                             |
+| `scripts/build-micro-frontends.mjs`  | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs; a new import from a React package goes into `frameworkImports`             |
 | `test/browser/workflow-page.test.js` | the browser tests, with areas and with `all` only                                                                                                     |
 
 ## Boilerplate files
@@ -71,7 +71,7 @@ the page. `npm run build` writes the module id and the build id into `src/bc-bui
 | `src/shared/react-element.tsx` | a React component as a web component, with `defineBcElement` of the kit                                                   |
 | `src/shared/texts.ts`          | the texts in English and German                                                                                           |
 | `docker/Dockerfile`            | the nginx image                                                                                                           |
-| `docker/nginx.conf`            | serves `/loan-approval/`, the manifest without caching                                                                    |
+| `docker/nginx.conf`            | serves `/loan-approval/`, the manifest without caching, JavaScript and JSON with gzip                                     |
 | `test/browser/page.js`         | the test page with `createModuleHost`, which answers `workflow.getUserTasks`                                              |
 | `test/browser/server.js`       | serves the test page and `dist/micro-frontends` below `/wm/loan-approval/`                                                |
 

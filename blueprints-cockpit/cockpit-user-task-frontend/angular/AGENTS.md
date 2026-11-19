@@ -47,7 +47,7 @@ the page. `npm run build` writes the module id and the build id into `src/bc-bui
 | `src/shared/angular-element.ts`        | an Angular component as a web component: one application, no zone.js, the style in each shadow root                                      |
 | `src/shared/api.ts`                    | `loanApproval`, the one instance of the generated `UserTasksApi` and `ResponseError`; base URL `/wm/loan-approval` from the OpenAPI file |
 | `src/entries.ts`                       | the entry point of `ng build`: one `import()` per entry, so each entry becomes an ES module of its own                                   |
-| `scripts/write-manifest.mjs`           | `bc-manifest.json` from the list of outputs of the Angular CLI                                                                           |
+| `scripts/write-manifest.mjs`           | `bc-manifest.json` from the list of outputs of the Angular CLI; deletes `main-<hash>.js`, which nobody loads                             |
 | `test/browser/user-task-forms.test.js` | the browser tests, with areas and with `all` only                                                                                        |
 
 ## Boilerplate files
@@ -70,7 +70,7 @@ the page. `npm run build` writes the module id and the build id into `src/bc-bui
 | `src/shared/texts.ts`        | the texts in English and German                                                                                                         |
 | `src/shared/style.ts`        | the styles, put into each shadow root                                                                                                   |
 | `docker/Dockerfile`          | the nginx image                                                                                                                         |
-| `docker/nginx.conf`          | serves `/loan-approval/`, the manifest without caching                                                                                  |
+| `docker/nginx.conf`          | serves `/loan-approval/`, the manifest without caching, JavaScript and JSON with gzip                                                   |
 | `test/browser/page.js`       | the test page with `createModuleHost`                                                                                                   |
 | `test/browser/server.js`     | serves the test page and `dist/micro-frontends` below `/wm/loan-approval/`                                                              |
 

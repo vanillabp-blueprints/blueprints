@@ -175,6 +175,15 @@ the names speak of one build. The file is written for every build and not checke
 are in `src/bc-build.d.ts`. The browser tests read the build id from it, and
 `test/build-id.test.js` proves that two builds give different names.
 
+The build id changes the names of the web components, but not the name of the file with React.
+esbuild puts its own helpers, which React needs because it is CommonJS, into the one chunk every
+entry imports. If `src/bc-build.js` were in that chunk too, its name would change with every build,
+and so would the name of the chunk with React, which imports it. So
+`scripts/build-micro-frontends.mjs` adds one more entry which imports React only and deletes it
+after the build. Then the helpers have a chunk of their own and React keeps its name. After a new
+build the browser loads the entries and one small chunk again, and takes React from its cache.
+`test/framework-chunk.test.js` builds twice and checks that the name stays.
+
 ### Imports through path aliases
 
 A file imports from another directory through a path alias, never with `../`. The aliases are
