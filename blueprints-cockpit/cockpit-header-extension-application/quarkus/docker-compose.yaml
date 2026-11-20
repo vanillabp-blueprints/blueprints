@@ -30,7 +30,7 @@ services:
       retries: 30
   # The user directory of the cockpit, on port 8079.
   users:
-    image: eclipse-temurin:21-jre
+    image: eclipse-temurin:25-jre
     container_name: cockpit-header-extension-users
     network_mode: host
     volumes:
@@ -46,7 +46,7 @@ services:
       interval: 5s
       retries: 30
   cockpit:
-    image: eclipse-temurin:21-jre
+    image: eclipse-temurin:25-jre
     container_name: cockpit-header-extension-cockpit
     network_mode: host
     depends_on:
