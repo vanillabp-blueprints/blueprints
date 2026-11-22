@@ -145,7 +145,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
-          java-version: 25.0.5+8
+          java-version: 25.0.5+100000002
           distribution: temurin
       - name: Use Maven 3.9
         uses: ./.github/actions/use-maven
@@ -322,7 +322,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
-          java-version: 25.0.5+8
+          java-version: 25.0.5+100000002
           distribution: temurin
       # The Maven of this action and not ./mvnw. The wrapper downloads a Maven distribution
       # of its own from Central, which no cache holds, and when that one download failed the

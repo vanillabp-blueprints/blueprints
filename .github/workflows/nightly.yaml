@@ -178,7 +178,7 @@ jobs:
       # answered with 504 for half an hour, 142 jobs went red before Maven started.
       - uses: actions/setup-java@v6
         with:
-          java-version: 25.0.5+8
+          java-version: 25.0.5+100000002
           distribution: temurin
       - name: Use Maven 3.9
         uses: ./.github/actions/use-maven
