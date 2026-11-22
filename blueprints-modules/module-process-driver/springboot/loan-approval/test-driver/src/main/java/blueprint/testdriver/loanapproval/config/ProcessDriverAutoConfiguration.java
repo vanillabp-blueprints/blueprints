@@ -9,9 +9,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.FilterType;
 
-import blueprint.testdriver.GeneratedClients;
 import blueprint.testdriver.loanapproval.ProcessDriver;
-import blueprint.testdriver.loanapproval.gui.LoanApprovalApi;
 import blueprint.testdriver.simulator.SimulatorTestApi;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,6 +20,12 @@ import lombok.extern.slf4j.Slf4j;
  * <p>
  * The driver sits in a package of its own, not below the package of the workflow module. The
  * component scan of the module does not reach it, so the property decides alone.
+ * </p>
+ *
+ * <p>
+ * The driver plays the users through the client of the API of the user interface. The module
+ * {@code loan-approval-gui-api-client} brings that client, at the address
+ * {@code loan-approval-gui-api.client.base-url}.
  * </p>
  *
  * <p>
@@ -55,23 +59,6 @@ public class ProcessDriverAutoConfiguration {
         properties.getSimulatorBaseUrl());
 
     return SimulatorTestApi.at(properties.getSimulatorBaseUrl());
-
-  }
-
-  /**
-   * The client of the API of the user interface of the workflow module, generated from its
-   * OpenAPI file. The driver uses it like the browser of a person does.
-   *
-   * @param properties The configuration of the driver.
-   * @return The client.
-   */
-  @Bean
-  public LoanApprovalApi loanApprovalApi(
-      final ProcessDriverProperties properties) {
-
-    return GeneratedClients
-        .at(properties.getApplicationBaseUrl())
-        .of(LoanApprovalApi.class);
 
   }
 

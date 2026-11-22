@@ -15,8 +15,8 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import blueprint.testdriver.loanapproval.Scenario;
 import blueprint.testdriver.loanapproval.config.ProcessDriverProperties;
-import blueprint.testdriver.loanapproval.gui.LoanApprovalApi;
-import blueprint.testdriver.loanapproval.gui.model.LoanRequest;
+import blueprint.workflowmodule.loanapproval.api.client.LoanApprovalApi;
+import blueprint.workflowmodule.loanapproval.api.client.model.LoanRequest;
 
 /**
  * Waiting, which every step needs. The driver asks the API of the user interface how far a loan

@@ -27,20 +27,23 @@ Replace all of these consistently; they are the same in every blueprint.
 
 Names this blueprint adds:
 
-|                             Name                             |                                               What it is                                               |
-|--------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| `loan-approval/workflow-module`                              | the workflow module, artifact `loan-approval-workflow-module`, with all its tests                      |
-| `loan-approval/test-driver`                                  | the process driver, artifact `loan-approval-test-driver`                                               |
-| `simulator/api`, `simulator/application`                     | the test API (`simulator-api-client`, `simulator-api-server`) and the simulator itself                 |
-| `blueprint.testdriver.loanapproval`                          | the package of the driver, deliberately NOT below the package of the workflow module                   |
-| `blueprint.testdriver.loanapproval.gui`                      | the client of the API of the user interface, generated from `loan-approval/openapi/loan-approval.yaml` |
-| `blueprint.testdriver.simulator`                             | `SimulatorTestApi`, the client of the test API of the simulator                                        |
-| `ProcessState`                                               | the states a scenario can reach, each with the step which finishes it                                  |
-| `*Step`                                                      | one step, named after what is true when it is done, with its direct predecessors                       |
-| `TestData`                                                   | what a scenario says about the case, with defaults which make sense for the business                   |
-| `John Signing`, `Jack Nosign`, ...                           | signers the simulated e-signature service acts on, see the table in the README                         |
-| `process-driver.*`                                           | the configuration of the driver: `enabled`, `simulator-base-url`, `application-base-url`, `timeout`    |
-| `/loan-approval/api/process-driver/states`, `.../advance-to` | the REST API of the driver, for the dev shell and the tests of a user interface                        |
+|                             Name                             |                                              What it is                                               |
+|--------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| `loan-approval/gui-api`                                      | the API of the user interface: `loan-approval.yaml`, with `client` and `server`                       |
+| `loan-approval/workflow-module`                              | the workflow module, artifact `loan-approval-workflow-module`, with all its tests                     |
+| `loan-approval/test-driver`                                  | the process driver, artifact `loan-approval-test-driver`                                              |
+| `simulator/api`, `simulator/application`                     | the test API (`simulator-api-client`, `simulator-api-server`) and the simulator itself                |
+| `blueprint.testdriver.loanapproval`                          | the package of the driver, deliberately NOT below the package of the workflow module                  |
+| `blueprint.workflowmodule.loanapproval.api.server`           | the interface of the API of the user interface, which `ApiController` implements                      |
+| `blueprint.workflowmodule.loanapproval.api.client`           | the client of the API of the user interface, which the driver and the tests use                       |
+| `blueprint.testdriver.simulator`                             | `SimulatorTestApi`, the client of the test API of the simulator                                       |
+| `ProcessState`                                               | the states a scenario can reach, each with the step which finishes it                                 |
+| `*Step`                                                      | one step, named after what is true when it is done, with its direct predecessors                      |
+| `TestData`                                                   | what a scenario says about the case, with defaults which make sense for the business                  |
+| `John Signing`, `Jack Nosign`, ...                           | signers the simulated e-signature service acts on, see the table in the README                        |
+| `process-driver.*`                                           | the configuration of the driver: `enabled`, `simulator-base-url`, `timeout`                           |
+| `loan-approval-gui-api.client.*`                             | the keys of the client of the API of the user interface; `base-url` is the address of the application |
+| `/loan-approval/api/process-driver/states`, `.../advance-to` | the REST API of the driver, for the dev shell and the tests of a user interface                       |
 
 **The rules this blueprint is built on:**
 
@@ -86,58 +89,59 @@ Names this blueprint adds:
 
 ## Core files
 
-|                                              File                                              |                                                       Why it matters                                                        |
-|------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/test-driver/src/main/java/.../ProcessState.java`                                | the states and the step which finishes each; with the steps, all the tests know of the process                              |
-| `loan-approval/test-driver/src/main/java/.../ProcessDriver.java`                               | follows the prerequisites of the steps; `advanceTo` prepares the test data, runs the steps and logs where the case is       |
-| `loan-approval/test-driver/src/main/java/.../TestData.java`                                    | the defaults of a scenario, the signers the simulator acts on, and the withers a test changes them with                     |
-| `loan-approval/test-driver/src/main/java/.../steps/StepSupport.java`                           | waits until the API shows the loan request in a state, turns a timeout into the reason                                      |
-| `loan-approval/test-driver/src/main/java/.../steps/RiskAssessedOnTheWayStep.java`              | the branch: submits the form of "Assess risk" only if the amount needs it                                                   |
-| `loan-approval/test-driver/src/main/java/.../steps/RiskAssessmentOpenedStep.java`              | refuses a small amount at once, before it waits                                                                             |
-| `loan-approval/test-driver/src/main/java/.../steps/ContractSignedStep.java`                    | chooses the customer who signs by himself in `prepare()`, and waits for the signature                                       |
-| `loan-approval/test-driver/src/main/java/.../steps/ContractDeclinedStep.java`                  | chooses the customer who declines by himself, and waits until the workflow took "Check contract" away                       |
-| `loan-approval/test-driver/src/main/java/.../steps/ContractCheckOpenedStep.java`               | the last wait of a state: for what the workflow writes after the engine moved on                                            |
-| `loan-approval/test-driver/src/main/java/.../ProcessDriverController.java`                     | the REST API of the driver, implements the interface generated from `process-driver.yaml`                                   |
-| `loan-approval/test-driver/src/main/java/.../config/ProcessDriverProducer.java`                | makes the two clients; it and every other bean of the driver say `@IfBuildProperty` for `process-driver.enabled`            |
-| `loan-approval/test-driver/src/main/resources/loan-approval/openapi/process-driver.yaml`       | the REST API of the driver as an OpenAPI file                                                                               |
-| `loan-approval/test-driver/src/main/java/blueprint/testdriver/simulator/SimulatorTestApi.java` | the client of the test API of the simulator                                                                                 |
-| `loan-approval/test-driver/pom.xml`                                                            | the driver; generates the client of the API of the user interface from the file of the module                               |
-| `loan-approval/workflow-module/pom.xml`                                                        | the module, its tests with the driver in the test scope, the start of the simulator, JaCoCo, the BPMS profiles of the tests |
-| `loan-approval/workflow-module/src/test/java/.../ScenarioTest.java`                            | base class of the tests: one application for all of them, pointed at the simulator                                          |
-| `loan-approval/workflow-module/src/test/java/.../EverySystemIsTheSimulator.java`               | points every adapter and the driver at the simulator and picks the port of the application, before it starts                |
-| `loan-approval/workflow-module/src/test/java/.../CheckContractIT.java`                         | one task, two scenarios: a small and a large amount                                                                         |
-| `loan-approval/workflow-module/src/test/java/.../CheckContractWithoutSignatureIT.java`         | the same task in the other situation: refused until the customer signed, in the browser and in the form                     |
-| `loan-approval/workflow-module/src/test/java/.../ContractSigningIT.java`                       | one test per behaviour of the simulated e-signature service, the misbehaving ones included                                  |
-| `loan-approval/workflow-module/src/test/java/.../ProcessDriverIT.java`                         | the REST API of the driver, and the reason for a state the test data cannot reach                                           |
-| `loan-approval/workflow-module/src/main/java/.../ApiController.java`                           | completes each task with GET, for a person, and with POST, for its form; the 409; the loan request as JSON                  |
-| `loan-approval/workflow-module/src/main/resources/loan-approval/openapi/loan-approval.yaml`    | the API of the use case; the form calls `completeAssessRisk` and `completeCheckContract`, the driver reads `show`           |
-| `loan-approval/workflow-module/src/main/java/.../Service.java`                                 | writes the id of each open task into the aggregate, refuses to check an unsigned contract, correlates the decline           |
-| `loan-approval/workflow-module/src/main/java/.../model/Aggregate.java`                         | `riskAssessmentNeeded` as a plain `boolean` for the gateway, the ids of the open tasks, `@DynamicUpdate`                    |
-| `loan-approval/workflow-module/src/main/resources/.../loan_approval.bpmn`                      | the gateway, "Assess risk", "Send contract for signing", "Check contract" with its message "Contract declined"              |
-| `loan-approval/workflow-module/src/main/java/.../WorkflowTaskHandler.java`                     | `@TaskEvent` on "Check contract": the aggregate drops the id when the decline takes the task away                           |
-| `simulator/application/src/main/java/.../esignature/SignerBehaviour.java`                      | what the simulated e-signature service does for each signer                                                                 |
-| `simulator/api/simulator-test-api.yaml`                                                        | the test API: sign now, a report of any contract, the reports sent, the refusals                                            |
-| `application/pom.xml`                                                                          | the Maven profile `test-driver`, which a production build never names                                                       |
+|                                              File                                              |                                                                                Why it matters                                                                                 |
+|------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/test-driver/src/main/java/.../ProcessState.java`                                | the states and the step which finishes each; with the steps, all the tests know of the process                                                                                |
+| `loan-approval/test-driver/src/main/java/.../ProcessDriver.java`                               | follows the prerequisites of the steps; `advanceTo` prepares the test data, runs the steps and logs where the case is                                                         |
+| `loan-approval/test-driver/src/main/java/.../TestData.java`                                    | the defaults of a scenario, the signers the simulator acts on, and the withers a test changes them with                                                                       |
+| `loan-approval/test-driver/src/main/java/.../steps/StepSupport.java`                           | waits until the API shows the loan request in a state, turns a timeout into the reason                                                                                        |
+| `loan-approval/test-driver/src/main/java/.../steps/RiskAssessedOnTheWayStep.java`              | the branch: submits the form of "Assess risk" only if the amount needs it                                                                                                     |
+| `loan-approval/test-driver/src/main/java/.../steps/RiskAssessmentOpenedStep.java`              | refuses a small amount at once, before it waits                                                                                                                               |
+| `loan-approval/test-driver/src/main/java/.../steps/ContractSignedStep.java`                    | chooses the customer who signs by himself in `prepare()`, and waits for the signature                                                                                         |
+| `loan-approval/test-driver/src/main/java/.../steps/ContractDeclinedStep.java`                  | chooses the customer who declines by himself, and waits until the workflow took "Check contract" away                                                                         |
+| `loan-approval/test-driver/src/main/java/.../steps/ContractCheckOpenedStep.java`               | the last wait of a state: for what the workflow writes after the engine moved on                                                                                              |
+| `loan-approval/test-driver/src/main/java/.../ProcessDriverController.java`                     | the REST API of the driver, implements the interface generated from `process-driver.yaml`                                                                                     |
+| `loan-approval/test-driver/src/main/java/.../config/ProcessDriverProducer.java`                | makes the two clients, the one of the API of the user interface with `RestClients`; it and every other bean of the driver say `@IfBuildProperty` for `process-driver.enabled` |
+| `loan-approval/test-driver/src/main/resources/loan-approval/openapi/process-driver.yaml`       | the REST API of the driver as an OpenAPI file                                                                                                                                 |
+| `loan-approval/test-driver/src/main/java/blueprint/testdriver/simulator/SimulatorTestApi.java` | the client of the test API of the simulator                                                                                                                                   |
+| `loan-approval/test-driver/pom.xml`                                                            | the driver; depends on `loan-approval-gui-api-client`, never on the workflow module                                                                                           |
+| `loan-approval/workflow-module/pom.xml`                                                        | the module, its tests with the driver in the test scope, the start of the simulator, JaCoCo, the BPMS profiles of the tests                                                   |
+| `loan-approval/workflow-module/src/test/java/.../ScenarioTest.java`                            | base class of the tests: one application for all of them, pointed at the simulator                                                                                            |
+| `loan-approval/workflow-module/src/test/java/.../EverySystemIsTheSimulator.java`               | points every adapter and the driver at the simulator and picks the port of the application, before it starts                                                                  |
+| `loan-approval/workflow-module/src/test/java/.../CheckContractIT.java`                         | one task, two scenarios: a small and a large amount                                                                                                                           |
+| `loan-approval/workflow-module/src/test/java/.../CheckContractWithoutSignatureIT.java`         | the same task in the other situation: refused until the customer signed, in the browser and in the form                                                                       |
+| `loan-approval/workflow-module/src/test/java/.../ContractSigningIT.java`                       | one test per behaviour of the simulated e-signature service, the misbehaving ones included                                                                                    |
+| `loan-approval/workflow-module/src/test/java/.../ProcessDriverIT.java`                         | the REST API of the driver, and the reason for a state the test data cannot reach                                                                                             |
+| `loan-approval/workflow-module/src/main/java/.../ApiController.java`                           | completes each task with GET, for a person, and with POST, for its form; the 409; the loan request as JSON                                                                    |
+| `loan-approval/gui-api/loan-approval.yaml`                                                     | the API of the use case; the form calls `completeAssessRisk` and `completeCheckContract`, the driver reads `show`                                                             |
+| `loan-approval/workflow-module/src/main/java/.../Service.java`                                 | writes the id of each open task into the aggregate, refuses to check an unsigned contract, correlates the decline                                                             |
+| `loan-approval/workflow-module/src/main/java/.../model/Aggregate.java`                         | `riskAssessmentNeeded` as a plain `boolean` for the gateway, the ids of the open tasks, `@DynamicUpdate`                                                                      |
+| `loan-approval/workflow-module/src/main/resources/.../loan_approval.bpmn`                      | the gateway, "Assess risk", "Send contract for signing", "Check contract" with its message "Contract declined"                                                                |
+| `loan-approval/workflow-module/src/main/java/.../WorkflowTaskHandler.java`                     | `@TaskEvent` on "Check contract": the aggregate drops the id when the decline takes the task away                                                                             |
+| `simulator/application/src/main/java/.../esignature/SignerBehaviour.java`                      | what the simulated e-signature service does for each signer                                                                                                                   |
+| `simulator/api/simulator-test-api.yaml`                                                        | the test API: sign now, a report of any contract, the reports sent, the refusals                                                                                              |
+| `application/pom.xml`                                                                          | the Maven profile `test-driver`, which a production build never names                                                                                                         |
 
 ## Boilerplate files
 
-|                                         File                                         |                                              Purpose                                               |
-|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
-| `pom.xml` (blueprint root)                                                           | the Maven modules, the versions, the enforcer rule and the settings of the OpenAPI generator       |
-| `loan-approval/pom.xml`                                                              | the aggregator of the workflow module and the driver                                               |
-| `simulator/pom.xml`                                                                  | the aggregator of the test API and the simulator                                                   |
-| `loan-approval/workflow-module/src/main/resources/loan-approval/loan-approval.yaml`  | the module's own configuration, with the limit of the risk assessment and the message time-to-live |
-| `loan-approval/workflow-module/src/main/java/.../config/LoanApprovalProperties.java` | `minimumCreditScore` and `riskAssessmentLimit`                                                     |
-| `loan-approval/test-driver/src/main/java/.../config/ProcessDriverProperties.java`    | `enabled`, `simulatorBaseUrl`, `applicationBaseUrl`, `timeout`                                     |
-| `loan-approval/test-driver/src/main/java/blueprint/testdriver/GeneratedClients.java` | turns a generated HTTP interface into a client                                                     |
-| `loan-approval/workflow-module/src/test/resources/application.yaml`                  | the database of the tests, and `process-driver.enabled: true`, a build property                    |
-| `loan-approval/workflow-module/src/test/java/.../WorkflowModuleTest.java`            | base class of the integration test, identical in every blueprint                                   |
-| `loan-approval/workflow-module/src/test/java/.../SimulatorExtension.java`            | skips without a simulator, and prints its log when a test fails                                    |
-| `loan-approval/workflow-module/src/test/java/.../SuppressOutputExtension.java`       | keeps a green build log empty and shows the output of a failing test, from the test harness        |
-| `loan-approval/test-driver/src/test/java/.../ProcessDriverSwitchTest.java`           | the driver is off unless the property says otherwise; Quarkus builds a small application for it    |
-| `loan-approval/test-driver/src/test/java/.../StepOrderTest.java`                     | the order of the steps, without an application                                                     |
-| `application/src/test/java/.../ApplicationSmokeTest.java`                            | boots the application with the parent profile `local`, identical in every blueprint                |
-| `docs/loan_approval.png`                                                             | the picture of the process the README shows                                                        |
+|                                         File                                         |                                                      Purpose                                                      |
+|--------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| `pom.xml` (blueprint root)                                                           | the Maven modules, the versions, the enforcer rule and the settings of the OpenAPI generator                      |
+| `loan-approval/pom.xml`                                                              | the aggregator of the API of the user interface, the workflow module and the driver                               |
+| `loan-approval/gui-api/pom.xml`, `.../client/pom.xml`, `.../server/pom.xml`          | the API of the user interface and the two modules generated from it                                               |
+| `simulator/pom.xml`                                                                  | the aggregator of the test API and the simulator                                                                  |
+| `loan-approval/workflow-module/src/main/resources/loan-approval/loan-approval.yaml`  | the module's own configuration, with the limit of the risk assessment and the message time-to-live                |
+| `loan-approval/workflow-module/src/main/java/.../config/LoanApprovalProperties.java` | `minimumCreditScore` and `riskAssessmentLimit`                                                                    |
+| `loan-approval/test-driver/src/main/java/.../config/ProcessDriverProperties.java`    | `enabled`, `simulatorBaseUrl`, `timeout`                                                                          |
+| `loan-approval/test-driver/src/main/java/blueprint/testdriver/GeneratedClients.java` | turns a generated HTTP interface into a client at one address, for the test API of the simulator and in the tests |
+| `loan-approval/workflow-module/src/test/resources/application.yaml`                  | the database of the tests, and `process-driver.enabled: true`, a build property                                   |
+| `loan-approval/workflow-module/src/test/java/.../WorkflowModuleTest.java`            | base class of the integration test, identical in every blueprint                                                  |
+| `loan-approval/workflow-module/src/test/java/.../SimulatorExtension.java`            | skips without a simulator, and prints its log when a test fails                                                   |
+| `loan-approval/workflow-module/src/test/java/.../SuppressOutputExtension.java`       | keeps a green build log empty and shows the output of a failing test, from the test harness                       |
+| `loan-approval/test-driver/src/test/java/.../ProcessDriverSwitchTest.java`           | the driver is off unless the property says otherwise; Quarkus builds a small application for it                   |
+| `loan-approval/test-driver/src/test/java/.../StepOrderTest.java`                     | the order of the steps, without an application                                                                    |
+| `application/src/test/java/.../ApplicationSmokeTest.java`                            | boots the application with the parent profile `local`, identical in every blueprint                               |
+| `docs/loan_approval.png`                                                             | the picture of the process the README shows                                                                       |
 
 ## Adding this blueprint to an existing project
 
@@ -153,12 +157,17 @@ Names this blueprint adds:
 4. Turn the Maven module of the workflow module into `<use case>/workflow-module` below an
    aggregator `<use case>`, and the simulator and its test API into `simulator/application` and
    `simulator/api`.
+   Move the OpenAPI file of the module into a Maven module `<use case>/gui-api`, with the
+   submodules `client` and `server`, built like the `<name>-api` modules of the systems around
+   and both indexed with the `jandex-maven-plugin`. The workflow module depends on `server`, and
+   its resource class implements the generated interface.
 5. Create the Maven module `<use case>/test-driver`. It depends on the client of the test API,
-   on `quarkus-rest-jackson`, on `quarkus-rest-client-jackson` and on `awaitility`, but never on
-   the workflow module. It generates the client of the API of the user interface from the
-   OpenAPI file of the module, by its path. Put it in a package of its own, outside the package
-   of the module, and index it with the `jandex-maven-plugin`, so Quarkus finds its beans, its
-   REST API and the generated interfaces.
+   on the client of the API of the user interface, on `business-cockpit-quarkus-support`, on
+   `quarkus-rest-jackson`, on `quarkus-rest-client-jackson` and on `awaitility`, but never on the
+   workflow module. Its producer builds the client with `RestClients`, from the keys below
+   `<use case>-gui-api.client`. Put it in a package of its own, outside the package of the
+   module, and index it with the `jandex-maven-plugin`, so Quarkus finds its beans, its REST API
+   and the generated interfaces.
 6. Give the workflow module the driver as a test dependency, and keep its tests, their
    resources, the plugins which start the simulator, JaCoCo and the BPMS profiles of the tests
    there. On Quarkus the test dependency `quarkus-jacoco` measures, not the agent of JaCoCo,

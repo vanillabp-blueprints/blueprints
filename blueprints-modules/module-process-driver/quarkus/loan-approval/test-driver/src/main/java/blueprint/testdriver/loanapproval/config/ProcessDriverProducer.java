@@ -1,9 +1,9 @@
 package blueprint.testdriver.loanapproval.config;
 
-import blueprint.testdriver.GeneratedClients;
-import blueprint.testdriver.loanapproval.gui.LoanApprovalApi;
 import blueprint.testdriver.simulator.SimulatorTestApi;
+import blueprint.workflowmodule.loanapproval.api.client.LoanApprovalApi;
 import io.quarkus.arc.properties.IfBuildProperty;
+import io.vanillabp.cockpit.support.rest.restclient.RestClients;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +21,12 @@ import lombok.extern.slf4j.Slf4j;
 @Singleton
 @IfBuildProperty(name = "process-driver.enabled", stringValue = "true")
 public class ProcessDriverProducer {
+
+  /**
+   * Where the keys of the client of the API of the user interface are, for example
+   * {@code loan-approval-gui-api.client.base-url}.
+   */
+  public static final String GUI_API_KEYS = "loan-approval-gui-api.client";
 
   /**
    * The client of the simulator's test API, at the address of the configuration.
@@ -43,20 +49,19 @@ public class ProcessDriverProducer {
   }
 
   /**
-   * The client of the API of the user interface of the workflow module, generated from its
-   * OpenAPI file. The driver uses it like the browser of a person does.
+   * The client of the API of the user interface of the workflow module, from the module
+   * {@code loan-approval-gui-api-client}. The driver uses it like the browser of a person does. The
+   * support library of the Business Cockpit builds it from the keys below {@value #GUI_API_KEYS}.
    *
-   * @param properties The configuration of the driver.
+   * @param restClients The builder of the support library.
    * @return The client.
    */
   @Produces
   @Singleton
   public LoanApprovalApi loanApprovalApi(
-      final ProcessDriverProperties properties) {
+      final RestClients restClients) {
 
-    return GeneratedClients
-        .at(properties.applicationBaseUrl())
-        .of(LoanApprovalApi.class);
+    return restClients.build(LoanApprovalApi.class, GUI_API_KEYS);
 
   }
 

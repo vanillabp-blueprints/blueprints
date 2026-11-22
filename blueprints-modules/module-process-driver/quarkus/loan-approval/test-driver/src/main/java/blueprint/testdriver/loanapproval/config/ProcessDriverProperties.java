@@ -34,16 +34,6 @@ public interface ProcessDriverProperties {
   String simulatorBaseUrl();
 
   /**
-   * Where the application answers. The driver uses the API of the user interface of the
-   * workflow module there, as a person in the browser does. The default is where the application
-   * of this blueprint starts.
-   *
-   * @return The address of the application.
-   */
-  @WithDefault("http://localhost:8080")
-  String applicationBaseUrl();
-
-  /**
    * How long a step waits for the application, one minute like the tests. One retry of the
    * outbox fits in.
    *

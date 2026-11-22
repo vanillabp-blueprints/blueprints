@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import blueprint.testdriver.loanapproval.Scenario;
-import blueprint.testdriver.loanapproval.gui.LoanApprovalApi;
+import blueprint.workflowmodule.loanapproval.api.client.LoanApprovalApi;
 
 /**
  * The branch of a large amount. If the test data chose it, somebody has to assess the risk

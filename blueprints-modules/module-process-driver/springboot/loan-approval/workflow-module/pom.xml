@@ -52,6 +52,16 @@
       <artifactId>e-signature-port</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!--
+      The interface of the API of the user interface, generated from '../gui-api/loan-approval.yaml'.
+      'ApiController' implements it. The file is not in this module, because the process driver
+      calls the API from Java and needs a client of the same file.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
+      <artifactId>loan-approval-gui-api-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
@@ -77,6 +87,13 @@
     <dependency>
       <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
       <artifactId>loan-approval-test-driver</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- The client of the API of the user interface. The tests call the module with it, as a form does. -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-springboot</groupId>
+      <artifactId>loan-approval-gui-api-client</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -142,36 +159,13 @@
   <build>
     <plugins>
       <!--
-        The API of this module is written as the OpenAPI file
-        'src/main/resources/loan-approval/openapi/loan-approval.yaml'. This plugin generates the
-        Java interface 'LoanApprovalApi' and the records of its answers from it. 'ApiController'
-        implements the interface and holds nothing but the code of each call. The settings all
-        generated code shares are in the POM of the blueprint.
+        The API of this module is in '../gui-api'. Only the client of the REST API of the
+        process driver is generated here, for the tests.
       -->
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
         <executions>
-          <execution>
-            <id>loan-approval-api</id>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-            <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/loan-approval.yaml</inputSpec>
-              <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
-              <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
-              <configOptions>
-                <!-- Only the interface. The controller implements it. -->
-                <interfaceOnly>true</interfaceOnly>
-                <skipDefaultInterface>true</skipDefaultInterface>
-                <!-- The paths in the file are complete, so the interface needs no path of its own. -->
-                <requestMappingMode>none</requestMappingMode>
-                <!-- A method returns the answer itself. Spring Boot turns it into the response. -->
-                <useResponseEntity>false</useResponseEntity>
-              </configOptions>
-            </configuration>
-          </execution>
           <!--
             The client of the REST API of the process driver, for its integration test only. The
             dev shell and the tests of a user interface use the API from TypeScript, so the

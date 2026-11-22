@@ -4,8 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import blueprint.testdriver.loanapproval.Scenario;
-import blueprint.testdriver.loanapproval.gui.LoanApprovalApi;
 import blueprint.testdriver.simulator.SimulatorTestApi;
+import blueprint.workflowmodule.loanapproval.api.client.LoanApprovalApi;
 
 /**
  * A customer requests a loan. The step reserves a customer at the simulated credit rating, gives

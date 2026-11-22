@@ -6,10 +6,10 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 import blueprint.externalsystems.creditrating.CreditRatingUnavailableException;
-import blueprint.workflowmodule.loanapproval.api.LoanApprovalApi;
-import blueprint.workflowmodule.loanapproval.api.model.Answer;
-import blueprint.workflowmodule.loanapproval.api.model.LoanRequest;
-import blueprint.workflowmodule.loanapproval.api.model.Unavailable;
+import blueprint.workflowmodule.loanapproval.api.server.LoanApprovalApi;
+import blueprint.workflowmodule.loanapproval.api.server.model.Answer;
+import blueprint.workflowmodule.loanapproval.api.server.model.LoanRequest;
+import blueprint.workflowmodule.loanapproval.api.server.model.Unavailable;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
@@ -29,8 +29,8 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>
  * The paths, the parameters and the classes {@link Answer} and {@link Unavailable} come from {@link
- * LoanApprovalApi}, the interface the build generates from {@code
- * src/main/resources/loan-approval/openapi/loan-approval.yaml}. This class only implements it.
+ * LoanApprovalApi}, the interface the module {@code loan-approval-gui-api-server} generates from
+ * {@code loan-approval/gui-api/loan-approval.yaml}. This class only implements it.
  * </p>
  */
 @Slf4j

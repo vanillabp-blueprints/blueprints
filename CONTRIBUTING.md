@@ -420,7 +420,15 @@ Where the file lives depends on who calls the API:
 - An API which only people in a browser call, or only the TypeScript of the module's own user
   interface: `src/main/resources/<workflow-module-id>/openapi/<use-case>.yaml` in the module whose
   controller implements it. Its tag is the use case, so the interface is called `LoanApprovalApi`
-  and is generated into the package `<use case package>.api`. Every `ApiController` is such an API.
+  and is generated into the package `<use case package>.api`. Most `ApiController` classes
+  implement such an API.
+- The API of a workflow module which a Java client in the project calls as well, for example the
+  test driver: a Maven module `<use-case>/gui-api` next to the workflow module, with the file
+  `<use-case>.yaml` and the submodules `client` and `server`. The workflow module depends on
+  `server`, and its `ApiController` implements the generated interface. The Java caller depends
+  on `client`. The packages are `<use case package>.api.server` and
+  `<use case package>.api.client`. `module-process-driver` shows it. A test of the module itself
+  is no such caller. It generates a client of its own in the test scope, see below.
 - An API with a Java client, such as a system around the application, its simulator or another
   module: a Maven module `<name>-api` with the file and two submodules. `client` generates what
   the caller uses, `server` generates the interface the other side implements.
@@ -443,7 +451,10 @@ writes no client configuration of its own: no check of the address, no timeouts,
 `HttpServiceProxyFactory`, no properties class. On Spring Boot the `client` module brings an
 auto-configuration: an empty sub-interface of the generated one, imported with
 `@ImportHttpServices` into an HTTP service group, and an `HttpServiceGroupPrefix` bean for its
-keys. The application adds the dependency, sets the keys and injects the interface. On Quarkus
+keys. The application adds the dependency, sets the keys and injects the interface. The
+`client` of a `gui-api` module adds `@ConditionalOnHttpServiceGroupAddress`, so its group is there
+only if `<use-case>-gui-api.client.base-url` is set. Its caller, such as a test driver, is only in
+a build for tests, and an application without the key still starts. On Quarkus
 the adapter builds the client with `RestClients`. The keys live below `<system>.client`, for
 example `credit-rating.client.base-url`, and never below `vanillabp`, so two workflow modules
 which call the same system keep values of their own. A key of the adapter itself, such as a

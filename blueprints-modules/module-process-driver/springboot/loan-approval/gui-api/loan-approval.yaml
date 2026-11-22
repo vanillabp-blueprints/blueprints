@@ -1,15 +1,9 @@
 openapi: 3.0.3
 info:
   title: Loan approval
-  description: >
-    The API of the use case 'loan-approval'. A person walks through the process in a browser
-    with its GET requests, without any tool and without a request body. The forms of the user
-    tasks complete them with POST on the same paths. They send no body, because the user tasks
-    take no input.
-
-    The build generates the Java interface 'LoanApprovalApi' and the classes of the schemas below
-    from this file, and 'ApiController' implements it. So the paths, the parameters and the answers below
-    are the contract, and nobody writes them by hand.
+  description: |
+    The API of the use case 'loan-approval'. A person walks through the process in a browser with its GET requests, without any tool and without a request body. The forms of the user tasks complete them with POST on the same paths. They send no body, because the user tasks take no input.
+    The build generates Java code from this file twice. The module 'server' generates the interface 'LoanApprovalApi' and the classes of the schemas below, and 'ApiController' of the workflow module implements it. The module 'client' generates the client, which the process driver uses. So the paths, the parameters and the answers below are the contract, and nobody writes them by hand.
   version: 1.0.0
 servers:
   - url: http://localhost:8080
@@ -32,9 +26,8 @@ paths:
             default: C-1001
         - name: customerName
           in: query
-          description: >
-            The name of the customer, who signs the contract. The simulator of the e-signature
-            service acts on some names by itself, see the README.
+          description: |
+            The name of the customer, who signs the contract. The simulator of the e-signature service acts on some names by itself, see the README.
           schema:
             type: string
             default: Jane Doe
@@ -45,20 +38,19 @@ paths:
             type: integer
             default: 5000
       responses:
-        '200':
+        "200":
           description: Whether a workflow started for the loan request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Answer'
-        '503':
-          description: >
-            The credit rating does not answer while the user waits for it. The answer names the
-            role of the system which is missing.
+                $ref: "#/components/schemas/Answer"
+        "503":
+          description: |
+            The credit rating does not answer while the user waits for it. The answer names the role of the system which is missing.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/Unavailable'
+                $ref: "#/components/schemas/Unavailable"
   /loan-approval/api/{loanRequestId}/assess-risk/{taskId}:
     get:
       tags:
@@ -66,10 +58,10 @@ paths:
       operationId: assessRisk
       summary: Completes the user task "Assess risk"
       parameters:
-        - $ref: '#/components/parameters/LoanRequestId'
-        - $ref: '#/components/parameters/TaskId'
+        - $ref: "#/components/parameters/LoanRequestId"
+        - $ref: "#/components/parameters/TaskId"
       responses:
-        '200':
+        "200":
           description: A confirmation
           content:
             text/plain:
@@ -79,12 +71,12 @@ paths:
       tags:
         - loan-approval
       operationId: completeAssessRisk
-      summary: Completes the user task "Assess risk", called by its form
+      summary: "Completes the user task \"Assess risk\", called by its form"
       parameters:
-        - $ref: '#/components/parameters/LoanRequestId'
-        - $ref: '#/components/parameters/TaskId'
+        - $ref: "#/components/parameters/LoanRequestId"
+        - $ref: "#/components/parameters/TaskId"
       responses:
-        '200':
+        "200":
           description: A confirmation
           content:
             text/plain:
@@ -95,21 +87,21 @@ paths:
       tags:
         - loan-approval
       operationId: checkContract
-      summary: Completes the user task "Check contract", once the customer signed the contract
+      summary: "Completes the user task \"Check contract\", once the customer signed\
+        \ the contract"
       parameters:
-        - $ref: '#/components/parameters/LoanRequestId'
-        - $ref: '#/components/parameters/TaskId'
+        - $ref: "#/components/parameters/LoanRequestId"
+        - $ref: "#/components/parameters/TaskId"
       responses:
-        '200':
+        "200":
           description: A confirmation
           content:
             text/plain:
               schema:
                 type: string
-        '409':
-          description: >
-            The customer has not signed the contract yet. The task stays open, and the user may
-            try again later.
+        "409":
+          description: |
+            The customer has not signed the contract yet. The task stays open, and the user may try again later.
           content:
             text/plain:
               schema:
@@ -118,23 +110,21 @@ paths:
       tags:
         - loan-approval
       operationId: completeCheckContract
-      summary: >
-        Completes the user task "Check contract", once the customer signed the contract, called
-        by its form
+      summary: |
+        Completes the user task "Check contract", once the customer signed the contract, called by its form
       parameters:
-        - $ref: '#/components/parameters/LoanRequestId'
-        - $ref: '#/components/parameters/TaskId'
+        - $ref: "#/components/parameters/LoanRequestId"
+        - $ref: "#/components/parameters/TaskId"
       responses:
-        '200':
+        "200":
           description: A confirmation
           content:
             text/plain:
               schema:
                 type: string
-        '409':
-          description: >
-            The customer has not signed the contract yet. The task stays open, and the form says
-            so.
+        "409":
+          description: |
+            The customer has not signed the contract yet. The task stays open, and the form says so.
           content:
             text/plain:
               schema:
@@ -145,19 +135,18 @@ paths:
         - loan-approval
       operationId: show
       summary: Shows what the process did
-      description: >
-        A person reads here how far a loan approval came, and which user task is open. The
-        process driver reads the same to know when a step of the process is done.
+      description: |
+        A person reads here how far a loan approval came, and which user task is open. The process driver reads the same to know when a step of the process is done.
       parameters:
-        - $ref: '#/components/parameters/LoanRequestId'
+        - $ref: "#/components/parameters/LoanRequestId"
       responses:
-        '200':
+        "200":
           description: The loan request as it is stored right now
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoanRequest'
-        '404':
+                $ref: "#/components/schemas/LoanRequest"
+        "404":
           description: There is no loan request of this id
 components:
   parameters:
@@ -172,7 +161,7 @@ components:
       name: taskId
       in: path
       required: true
-      description: The id of the user task, as the log and the cockpit show it
+      description: "The id of the user task, as the log and the cockpit show it"
       schema:
         type: string
   schemas:
@@ -191,9 +180,8 @@ components:
           description: started or declined
     LoanRequest:
       type: object
-      description: >
-        A loan request and how far its process came. A field which is not there has not
-        happened yet.
+      description: |
+        A loan request and how far its process came. A field which is not there has not happened yet.
       required:
         - loanRequestId
         - customerId
@@ -210,7 +198,7 @@ components:
           description: The customer asking for the loan
         customerName:
           type: string
-          description: The name of the customer, who signs the contract
+          description: "The name of the customer, who signs the contract"
         amount:
           type: integer
           description: The amount requested
@@ -219,10 +207,11 @@ components:
           description: The answer of the credit rating
         riskAssessmentNeeded:
           type: boolean
-          description: Whether somebody has to assess the risk before the contract goes out
+          description: Whether somebody has to assess the risk before the contract
+            goes out
         assessRiskTaskId:
           type: string
-          description: The id of the user task "Assess risk", while it is open
+          description: "The id of the user task \"Assess risk\", while it is open"
         riskAssessed:
           type: boolean
           description: Set when somebody assessed the risk
@@ -231,28 +220,26 @@ components:
           description: Set when the e-signature service took the contract
         checkContractTaskId:
           type: string
-          description: The id of the user task "Check contract", while it is open
+          description: "The id of the user task \"Check contract\", while it is open"
         contractSigned:
           type: boolean
           description: Set when the e-signature service reported the signature
         contractChecked:
           type: boolean
-          description: Set when somebody checked the signed contract, which approves the loan
+          description: "Set when somebody checked the signed contract, which approves\
+            \ the loan"
         contractDeclined:
           type: boolean
-          description: Set when the e-signature service reported that the customer declined to sign
+          description: Set when the e-signature service reported that the customer
+            declined to sign
         loanDeclined:
           type: boolean
-          description: >
-            Set when the workflow took the user task "Check contract" away because the customer
-            declined to sign. The loan is declined, and the workflow ended.
+          description: |
+            Set when the workflow took the user task "Check contract" away because the customer declined to sign. The loan is declined, and the workflow ended.
     Unavailable:
       type: object
-      description: >
-        The answer when a system around the module does not answer, in the fields of a problem
-        detail (RFC 9457). It is a schema of its own and not the problem detail class of the
-        platform, because how such a class is written as JSON depends on the Jackson version on
-        the classpath, and an engine may bring another one.
+      description: |
+        The answer when a system around the module does not answer, in the fields of a problem detail (RFC 9457). It is a schema of its own and not the problem detail class of the platform, because how such a class is written as JSON depends on the Jackson version on the classpath, and an engine may bring another one.
       required:
         - status
         - title
@@ -261,7 +248,7 @@ components:
       properties:
         status:
           type: integer
-          description: The HTTP status, 503
+          description: "The HTTP status, 503"
         title:
           type: string
           description: A short summary

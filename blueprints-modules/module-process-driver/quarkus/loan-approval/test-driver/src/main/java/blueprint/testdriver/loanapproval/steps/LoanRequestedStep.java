@@ -1,8 +1,8 @@
 package blueprint.testdriver.loanapproval.steps;
 
 import blueprint.testdriver.loanapproval.Scenario;
-import blueprint.testdriver.loanapproval.gui.LoanApprovalApi;
 import blueprint.testdriver.simulator.SimulatorTestApi;
+import blueprint.workflowmodule.loanapproval.api.client.LoanApprovalApi;
 import io.quarkus.arc.properties.IfBuildProperty;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;

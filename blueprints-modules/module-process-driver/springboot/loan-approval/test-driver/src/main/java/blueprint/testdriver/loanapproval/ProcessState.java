@@ -3,12 +3,12 @@ package blueprint.testdriver.loanapproval;
 import java.util.List;
 import java.util.function.Function;
 
-import blueprint.testdriver.loanapproval.gui.model.LoanRequest;
 import blueprint.testdriver.loanapproval.steps.ContractCheckOpenedStep;
 import blueprint.testdriver.loanapproval.steps.ContractDeclinedStep;
 import blueprint.testdriver.loanapproval.steps.ContractSignedStep;
 import blueprint.testdriver.loanapproval.steps.RiskAssessmentOpenedStep;
 import blueprint.testdriver.loanapproval.steps.Step;
+import blueprint.workflowmodule.loanapproval.api.client.model.LoanRequest;
 
 /**
  * The points of the process a scenario can bring a loan approval to. Each one is a point where

@@ -15,13 +15,17 @@
   <dependencies>
     <!--
       The driver does not depend on the workflow module. It is a user of the module, not a part
-      of it: it knows the module only through the API of its user interface, and it generates
-      the client of that API from the OpenAPI file of the module, see below. So the tests of the
-      workflow module can depend on the driver without a cycle.
+      of it: it knows the module only through the client of the API of its user interface, from
+      '../gui-api'. So the tests of the workflow module can depend on the driver without a cycle.
 
       The second thing the driver uses is the client of the simulator's test API, generated from
       its OpenAPI file.
     -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+      <artifactId>loan-approval-gui-api-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
       <artifactId>simulator-api-client</artifactId>
@@ -35,6 +39,15 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-rest-client-jackson</artifactId>
+    </dependency>
+    <!--
+      The support library of the Business Cockpit, which builds the client of the API of the user
+      interface from keys with RestClients.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.businesscockpit</groupId>
+      <artifactId>business-cockpit-quarkus-support</artifactId>
+      <version>${businesscockpit.version}</version>
     </dependency>
     <!-- The driver waits for the application to reach a state. -->
     <dependency>
@@ -88,25 +101,6 @@
               <modelPackage>blueprint.testdriver.loanapproval.api.model</modelPackage>
               <configOptions>
                 <!-- A method returns the answer itself. Quarkus turns it into the response. -->
-                <returnResponse>false</returnResponse>
-              </configOptions>
-            </configuration>
-          </execution>
-          <!--
-            The client of the API of the user interface of the workflow module, generated from
-            its OpenAPI file. The driver uses it like the browser of a person uses the API.
-          -->
-          <execution>
-            <id>loan-approval-api-client</id>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-            <configuration>
-              <inputSpec>${project.basedir}/../workflow-module/src/main/resources/loan-approval/openapi/loan-approval.yaml</inputSpec>
-              <apiPackage>blueprint.testdriver.loanapproval.gui</apiPackage>
-              <modelPackage>blueprint.testdriver.loanapproval.gui.model</modelPackage>
-              <configOptions>
-                <!-- The method returns the body. An error status comes as an exception of the REST client. -->
                 <returnResponse>false</returnResponse>
               </configOptions>
             </configuration>
