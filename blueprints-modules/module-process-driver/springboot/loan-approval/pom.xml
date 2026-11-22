@@ -11,23 +11,25 @@
   <artifactId>loan-approval</artifactId>
   <packaging>pom</packaging>
   <name>Use case 'loan-approval'</name>
-  <description>The workflow module 'loan-approval' and the process driver its tests use.</description>
+  <description>The API of the user interface of 'loan-approval', the workflow module, and the process driver its tests use.</description>
 
   <!--
-    Two modules for one use case:
+    Three modules for one use case:
 
-      workflow-module  the code, the BPMN models, the API of the user interface, and all
-                       integration tests of the module
+      gui-api          the API of the user interface as an OpenAPI file, with a module 'server'
+                       for the workflow module and a module 'client' for the process driver
+      workflow-module  the code, the BPMN models, the controller of the API of the user
+                       interface, and all integration tests of the module
       test-driver      the process driver, which plays the users. It is a module of its own, so
                        the application in production never has it
 
     The tests of the workflow module use the driver, so the workflow module depends on the
     driver in the test scope. The driver does not depend on the workflow module. It knows the
-    module only from the outside: through the API of the user interface, whose client it
-    generates from the OpenAPI file of the module. So there is no cycle, and Maven builds the
-    driver first.
+    module only from the outside: through the client of the API of the user interface. So there
+    is no cycle, and Maven builds the driver first.
   -->
   <modules>
+    <module>gui-api</module>
     <module>workflow-module</module>
     <module>test-driver</module>
   </modules>

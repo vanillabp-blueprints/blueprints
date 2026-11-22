@@ -53,6 +53,16 @@
       <artifactId>e-signature-port</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!--
+      The interface of the API of the user interface, generated from '../gui-api/loan-approval.yaml'.
+      'ApiController' implements it. The file is not in this module, because the process driver
+      calls the API from Java and needs a client of the same file.
+    -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+      <artifactId>loan-approval-gui-api-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-rest-jackson</artifactId>
@@ -80,6 +90,13 @@
     <dependency>
       <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
       <artifactId>loan-approval-test-driver</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- The client of the API of the user interface. The tests call the module with it, as a form does. -->
+    <dependency>
+      <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+      <artifactId>loan-approval-gui-api-client</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -181,31 +198,13 @@
   <build>
     <plugins>
       <!--
-        The API of this module is written as the OpenAPI file
-        'src/main/resources/loan-approval/openapi/loan-approval.yaml'. This plugin generates the
-        Java interface 'LoanApprovalApi' and the classes of its answers from it. 'ApiController'
-        implements the interface and holds nothing but the code of each call. The settings all
-        generated code shares are in the POM of the blueprint.
+        The API of this module is in '../gui-api'. Only the client of the REST API of the
+        process driver is generated here, for the tests.
       -->
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
         <executions>
-          <execution>
-            <id>loan-approval-api</id>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-            <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/loan-approval/openapi/loan-approval.yaml</inputSpec>
-              <apiPackage>blueprint.workflowmodule.loanapproval.api</apiPackage>
-              <modelPackage>blueprint.workflowmodule.loanapproval.api.model</modelPackage>
-              <configOptions>
-                <!-- A method returns the answer itself. Quarkus turns it into the response. -->
-                <returnResponse>false</returnResponse>
-              </configOptions>
-            </configuration>
-          </execution>
           <!--
             The client of the REST API of the process driver, for its integration test only. The
             dev shell and the tests of a user interface use the API from TypeScript, so the
@@ -359,9 +358,10 @@
         only, not those of the process driver or of the adapters. The check below reads the same
         file and fails the build when less than 85 percent of the instructions run.
 
-        The classes generated from the OpenAPI file are left out of both. The generator of this
-        platform writes beans with setters, equals, hashCode and toString, which no test of the
-        process calls. They are not code of the module.
+        The classes generated from the OpenAPI file in '../gui-api' are left out of both. They
+        are in the package of the module, but the generator of this platform writes beans with
+        setters, equals, hashCode and toString, which no test of the process calls. They are not
+        code of the module.
       -->
       <plugin>
         <groupId>org.jacoco</groupId>

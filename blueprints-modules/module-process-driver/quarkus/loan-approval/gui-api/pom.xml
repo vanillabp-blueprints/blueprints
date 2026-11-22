@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.vanillabp.blueprint.module-process-driver-quarkus</groupId>
+    <artifactId>loan-approval</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>loan-approval-gui-api</artifactId>
+  <packaging>pom</packaging>
+  <name>API of the user interface of 'loan-approval'</name>
+  <description>The API of the user interface of the workflow module as an OpenAPI file, and the Java code generated from it: the server interface for the workflow module, the client for the process driver.</description>
+
+  <!--
+    The OpenAPI file 'loan-approval.yaml' next to this POM is the contract between the workflow
+    module and whoever uses its user interface: a person in a browser, a form, and the process
+    driver. The driver is Java, so the file is not kept in the workflow module but here, with two
+    modules which read it:
+
+      server  the interface which 'ApiController' of the workflow module implements
+      client  the client which the process driver uses, and the tests of the workflow module
+
+    Both read the same file, so both sides always agree.
+  -->
+  <modules>
+    <module>client</module>
+    <module>server</module>
+  </modules>
+</project>

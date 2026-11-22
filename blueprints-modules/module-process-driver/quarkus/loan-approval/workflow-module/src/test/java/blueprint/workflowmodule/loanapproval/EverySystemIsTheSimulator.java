@@ -37,7 +37,7 @@ public class EverySystemIsTheSimulator implements QuarkusTestResourceLifecycleMa
             + "/e-signature/callback",
         "vanillabp.cockpit.rest.base-url", simulator,
         "process-driver.simulator-base-url", simulator,
-        "process-driver.application-base-url", "http://localhost:"
+        "loan-approval-gui-api.client.base-url", "http://localhost:"
             + port);
 
   }

@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import blueprint.simulator.testapi.client.model.SignatureStatus;
 import blueprint.testdriver.loanapproval.TestData;
-import blueprint.testdriver.loanapproval.gui.model.Answer;
+import blueprint.workflowmodule.loanapproval.api.client.model.Answer;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 

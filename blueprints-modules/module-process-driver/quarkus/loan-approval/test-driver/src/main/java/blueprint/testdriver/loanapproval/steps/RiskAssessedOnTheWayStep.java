@@ -3,7 +3,7 @@ package blueprint.testdriver.loanapproval.steps;
 import java.util.List;
 
 import blueprint.testdriver.loanapproval.Scenario;
-import blueprint.testdriver.loanapproval.gui.LoanApprovalApi;
+import blueprint.workflowmodule.loanapproval.api.client.LoanApprovalApi;
 import io.quarkus.arc.properties.IfBuildProperty;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;

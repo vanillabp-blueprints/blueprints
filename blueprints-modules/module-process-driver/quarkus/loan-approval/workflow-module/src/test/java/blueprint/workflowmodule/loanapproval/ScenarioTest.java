@@ -12,9 +12,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import blueprint.testdriver.GeneratedClients;
 import blueprint.testdriver.loanapproval.ProcessDriver;
-import blueprint.testdriver.loanapproval.gui.LoanApprovalApi;
 import blueprint.workflowmodule.SuppressOutputExtension;
 import blueprint.workflowmodule.WorkflowModuleTest;
+import blueprint.workflowmodule.loanapproval.api.client.LoanApprovalApi;
 import blueprint.workflowmodule.loanapproval.model.AggregateRepository;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -33,7 +33,7 @@ import jakarta.ws.rs.core.Response;
  * The simulator plays the environment, and the {@link ProcessDriver} plays the users. A test brings
  * a loan approval to a state with the driver. It does not know the steps on the way. Then it acts
  * like the people and systems around the application: through the API of the user interface, with
- * the client generated from {@code loan-approval/openapi/loan-approval.yaml}, and through the test
+ * the client generated from {@code loan-approval/gui-api/loan-approval.yaml}, and through the test
  * API of the simulator. At the end it checks the workflow aggregate and what the simulated systems
  * were told.
  * </p>

@@ -17,6 +17,12 @@ e-signature:
     read-timeout: 5s
   # Where the e-signature service reaches this application.
   callback-url: http://localhost:8080/e-signature/callback
+loan-approval-gui-api:
+  # The keys of the client of the API of the user interface. Only the process driver uses it,
+  # and only a build with the Maven profile 'test-driver' has the driver. It plays the users of
+  # this application, so the address is the one of the application.
+  client:
+    base-url: http://localhost:8080
 vanillabp:
   cockpit:
     # The simulator plays the Business Cockpit as well, so the cockpit adapter reports there.

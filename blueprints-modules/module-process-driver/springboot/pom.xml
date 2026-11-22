@@ -21,7 +21,8 @@
     belong together. Two of them are aggregators with modules of their own:
 
       simulator      the API of its test API (with client and server) and the application
-      loan-approval  the workflow module and the process driver, which its tests use
+      loan-approval  the API of the user interface (with client and server), the workflow
+                     module, and the process driver, which its tests use
 
     That the simulator is built before the integration tests of the workflow module run against
     it comes from a dependency in loan-approval/workflow-module/pom.xml.

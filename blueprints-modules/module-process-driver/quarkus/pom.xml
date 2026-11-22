@@ -14,7 +14,8 @@
     belong together. Two of them are aggregators with modules of their own:
 
       simulator      the API of its test API (with client and server) and the application
-      loan-approval  the workflow module and the process driver, which its tests use
+      loan-approval  the API of the user interface (with client and server), the workflow
+                     module, and the process driver, which its tests use
 
     That the simulator is built before the integration tests of the workflow module run against
     it comes from a dependency in loan-approval/workflow-module/pom.xml.
@@ -131,15 +132,15 @@
           <version>${jandex-maven-plugin.version}</version>
         </plugin>
         <!--
-          The settings every 'client' module and the workflow module share. Each one adds an
-          execution per OpenAPI file, with its packages:
+          The settings every module which generates code shares. Each one adds an execution per
+          OpenAPI file, with its packages:
 
             client    a Jakarta REST interface. The REST client of Quarkus implements it for
                       the caller.
             callback  the same kind of interface for the API the application offers. A
                       resource class implements it.
-            api       the same kind of interface for the API of the workflow module, which
-                      its resource class implements.
+            server    the same kind of interface for the API of the user interface of the
+                      workflow module, which its resource class implements.
 
           The generated code needs no library beyond Jakarta REST, Jackson and the Jakarta
           annotations: no Swagger annotations, no bean validation.
