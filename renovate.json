@@ -106,6 +106,17 @@
       "description": "The JDK of the workflows is written as '25.0.5+8', not as '25.0.5+8.0.LTS' which the Adoptium API reports. setup-java matches a version with a build number exactly against the runner's tool cache, which spells it the short way. With the long spelling every job downloads the JDK from GitHub's release storage, and a 504 there turned a whole nightly red. This keeps an update in the short spelling.",
       "matchDatasources": ["java-version"],
       "extractVersion": "^(?<version>\\d+\\.\\d+\\.\\d+\\+\\d+)"
+    },
+    {
+      "description": "Adoptium's hotfix jdk-25.0.5.1+2 reaches Renovate as '25.0.5+100000002'. No JDK carries that version, so setup-java cannot find it and every build of such a pull request fails before it starts. Only this one version is left out. Closing its pull requests instead would make Renovate ignore every later 25.x update of the repository. The same rule is in vanillabp/renovate-config, which this repository does not extend.",
+      "matchDatasources": ["java-version"],
+      "allowedVersions": "!/^25\\.0\\.5\\+100000002$/"
+    },
+    {
+      "description": "The workflows stay on the long-term-support JDK 25. A new major JDK such as 27 is not proposed, because a feature release is only supported for six months. A move to the next LTS is a decision for a person and is made by hand. Disabling the major update keeps the 25.x patches coming.",
+      "matchDatasources": ["java-version"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     }
   ]
 }
