@@ -14,7 +14,7 @@
 # Used by .github/workflows/build.yaml and usable locally for the same purpose:
 #
 #   bin/camunda8_cluster.sh start
-#   cd blueprints-bpmn/bpmn-service-task/springboot && mvn -Pcamunda8 install verify
+#   cd blueprints-bpmn/bpmn-service-task/springboot && mvn -s ../../../.github/maven/settings.xml -Pcamunda8 install verify
 #   bin/camunda8_cluster.sh stop
 #
 # One cluster may serve several runs, one after the other. The timer start events of the
