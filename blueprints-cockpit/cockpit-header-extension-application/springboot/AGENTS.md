@@ -51,14 +51,14 @@ Blueprint-specific names, each occurring in more than one place:
 
 ## Boilerplate files
 
-|                      File                      |                                         Purpose                                          |
-|------------------------------------------------|------------------------------------------------------------------------------------------|
-| `src/main/java/.../Application.java`           | `@SpringBootApplication` in a package which is not above the module                      |
-| `src/main/resources/application-camunda7.yaml` | the Camunda 7 settings, and the same file per other BPMS                                 |
-| `src/test/java/.../ApplicationSmokeTest.java`  | the context starts and every workflow module is wired                                    |
-| `docker-compose.yaml`                          | MongoDB, the user directory and the cockpit, for trying the application                  |
-| `docker/dev-shell-simulator.yaml`              | the users of that cockpit: Jane in `LOAN_OFFICERS`, John outside                         |
-| `docs/loan_approval.png`                       | the picture of the process the README shows, rendered from the BPMN model of the backend |
+|                      File                      |                                              Purpose                                               |
+|------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| `src/main/java/.../Application.java`           | `@SpringBootApplication` in a package which is not above the module                                |
+| `src/main/resources/application-camunda7.yaml` | the Camunda 7 settings, and the same file per other BPMS                                           |
+| `src/test/java/.../ApplicationSmokeTest.java`  | the context starts and every workflow module is wired                                              |
+| `docker-compose.yaml`                          | MongoDB, the user directory and the cockpit, for trying the application                            |
+| `docker/dev-shell-simulator.yaml`              | the users of that cockpit: Jane in `LOAN_OFFICERS`, Mary in `LOAN_APPROVAL_USERS`, John in neither |
+| `docs/loan_approval.png`                       | the picture of the process the README shows, rendered from the BPMN model of the backend           |
 
 `ApplicationSmokeTest` is identical in every blueprint. Copy it unchanged.
 
@@ -79,8 +79,10 @@ Blueprint-specific names, each occurring in more than one place:
    module. The test calls the API of the module through
    clients which `openapi-generator-maven-plugin` in `pom.xml` generates from the OpenAPI files in
    the JAR of the module. Copy that plugin too, and write no path and no field of the API by hand.
-7. Nothing in the application says who sees the module. The workflow module brings its
-   `WorkflowModuleDetailsProvider`.
+7. Nothing in the application says who sees the module or the button. The workflow module
+   brings its `WorkflowModuleDetailsProvider` with the access group, and the group hierarchy
+   which makes the feature role `LOAN_OFFICERS` stand for it. The frontend shows the button to
+   that role only.
 
 ## Verifying
 

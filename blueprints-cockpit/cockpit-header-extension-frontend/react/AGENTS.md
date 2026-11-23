@@ -45,15 +45,15 @@ extension point differently. Then its types library says so, and these two names
 
 ## Core files
 
-|                File                 |                                                                Why it matters                                                                 |
-|-------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| `src/loan-approval.ts`              | module id, entry name and web component names, in one place                                                                                   |
-| `src/data/header.ts`                | data entry `Header`: returns `[{ entry, element }]` of the button. Plain TypeScript, it must never import React or the form; checks no rights |
-| `src/start-form/start-form.tsx`     | visual entry `StartForm`: the button with `openDialog`, the form with `closeDialog`, the call of the module API                               |
-| `src/shared/api.ts`                 | `loanApproval`, the one instance of the generated `StartFormApi` and `ResponseError`; base URL `/wm/loan-approval` from the OpenAPI file      |
-| `scripts/build-micro-frontends.mjs` | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs; a new import from a React package goes into `frameworkImports`     |
-| `package.json`                      | `check:entries` with `--data-entry Header`, without which `bc-check-entries` would not check the data entry                                   |
-| `test/browser/header.test.js`       | the browser tests, with a header and without, and next to a module without the entry                                                          |
+|                File                 |                                                                                     Why it matters                                                                                      |
+|-------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `src/loan-approval.ts`              | module id, entry name, web component names and the feature role `LOAN_OFFICERS`, in one place                                                                                           |
+| `src/data/header.ts`                | data entry `Header`: returns `[{ entry, element }]` of the button to a member of `LOAN_OFFICERS`, and nothing to anybody else. Plain TypeScript, it must never import React or the form |
+| `src/start-form/start-form.tsx`     | visual entry `StartForm`: the button with `openDialog`, the form with `closeDialog`, the call of the module API                                                                         |
+| `src/shared/api.ts`                 | `loanApproval`, the one instance of the generated `StartFormApi` and `ResponseError`; base URL `/wm/loan-approval` from the OpenAPI file                                                |
+| `scripts/build-micro-frontends.mjs` | the entry list for esbuild, and `bc-manifest.json` from esbuild's outputs; a new import from a React package goes into `frameworkImports`                                               |
+| `package.json`                      | `check:entries` with `--data-entry Header`, without which `bc-check-entries` would not check the data entry                                                                             |
+| `test/browser/header.test.js`       | the browser tests, with a header and without, next to a module without the entry, and for a user who sees the module but is no loan officer                                             |
 
 ## Boilerplate files
 
@@ -84,7 +84,10 @@ extension point differently. Then its types library says so, and these two names
 1. If the workflow module has no frontend project yet, copy this one and replace the placeholders.
    If it has one, take the files below `src`, the scripts it lacks and `openapi-ts.config.mjs`.
 2. Add `src/data/header.ts`. It returns the buttons as `{ entry, element }` and imports nothing
-   but names. Do not check rights there. The cockpit asks it only of the modules the user may see.
+   but names. The cockpit asks it only of the modules the user may see, so the access group of
+   the module needs no check there. A button for a feature role checks that role in
+   `currentUser.groups`, which the cockpit has already completed with the group hierarchies.
+   Never make the backend return the feature role as the access group to hide a button.
 3. Put the button and the form into one visual entry. The button opens the form with
    `openDialog({ entry, element })`, and the form closes itself with `closeDialog(result)`.
 4. The form calls the module API, never the cockpit. The module starts the process.
@@ -109,6 +112,6 @@ npm test
 (`git submodule update --init`), the backend directory next to this one in the monorepo, or
 `OPENAPI_FILE`. `bc-check-entries` has to pass with `--data-entry Header`. It runs inside
 `npm run build` and says `Header: ... bytes`. Every browser test has to pass, the ones with a
-header and the one without.
+header, the one without, and the one for a user who sees the module but is no loan officer.
 
 Do not report success without having run this.

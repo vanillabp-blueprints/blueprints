@@ -51,8 +51,11 @@ interface are both below `/loan-approval` here:
 | `POST /wm/loan-approval/api/loan-requests` | `/loan-approval/api/loan-requests` | the workflow module    |
 
 Whether the browser asks at all is decided before. The cockpit lists the module only for the
-members of `LOAN_OFFICERS`, the group the module names. A cockpit user interface loads the button
-only from the modules in that list.
+members of `LOAN_APPROVAL_USERS`, the access group the module names. The module also reports a
+group hierarchy in which `LOAN_OFFICERS` stands for `LOAN_APPROVAL_USERS`, so a loan officer is
+in the list as well. A cockpit user interface asks the entry `Header` only of the modules in the
+list, and the entry answers the button only to members of `LOAN_OFFICERS`. A user who is only in
+the access group sees the module, but no button.
 
 ## Delta to the base blueprint
 
@@ -64,7 +67,7 @@ Compared to [`cockpit-workflow-details-application`](https://github.com/vanillab
 | `UserInterfaceSmokeTest.java`     | the manifest lists `Header` and `StartForm`, and the endpoint of the start form starts a loan approval      |
 | `pom.xml`                         | the clients of `UserInterfaceSmokeTest`, generated from the OpenAPI files in the JAR of the workflow module |
 | `docker-compose.yaml`             | other names of the containers                                                                               |
-| `docker/dev-shell-simulator.yaml` | two users: Jane is a loan officer, John is not                                                              |
+| `docker/dev-shell-simulator.yaml` | three users: Jane is a loan officer, Mary may only see the module, John may do neither                      |
 
 ## Running it
 
@@ -109,9 +112,12 @@ http://localhost:9080/gui/api/v1/workflow-module
 http://localhost:9080/wm/loan-approval/bc-manifest.json
 ```
 
-The list holds `loan-approval`, because Jane is a loan officer. Log in as `john` instead, and the
-list is empty: John sees no button. A cockpit with a user interface draws the button for Jane in
-its header, and the start form starts a loan approval. Without one, start it here:
+The list holds `loan-approval`, because Jane is a loan officer and the group hierarchy of the
+module gives her the access group. Log in as `mary`, and the list holds `loan-approval` as well,
+but a cockpit with a user interface draws no button for her, because she is no loan officer.
+Log in as `john`, and the list is empty: John sees neither the module nor the button. A cockpit
+with a user interface draws the button for Jane in its header, and the start form starts a loan
+approval. Without one, start it here:
 
 ```
 http://localhost:8080/loan-approval/api/loan-requests/start?applicant=Jane%20Doe&amount=5000
@@ -131,16 +137,17 @@ The cockpit now has the case and its user task "Review loan request". Stop the c
 | `src/test/.../ApplicationSmokeTest.java`       | the context starts, and every workflow module is wired                                                    |
 | `src/test/.../UserInterfaceSmokeTest.java`     | the manifest comes from the user interface JAR, and the endpoint of the start form starts a loan approval |
 | `docker-compose.yaml`                          | MongoDB, the user directory and the cockpit, on the network of your machine                               |
-| `docker/dev-shell-simulator.yaml`              | the users of that cockpit, one inside the group of the module and one outside                             |
+| `docker/dev-shell-simulator.yaml`              | the users of that cockpit: a loan officer, one only in the access group of the module, and one outside    |
 
 The application starts, and VanillaBP deploys the process of the module. The module registers
 with the cockpit, with its `workflow-module-uri`, `ui-uri-type: ES_MODULES`,
-`ui-uri-path: /bc-manifest.json` and the group `LOAN_OFFICERS` of its
-`WorkflowModuleDetailsProvider`.
+`ui-uri-path: /bc-manifest.json`, the access group `LOAN_APPROVAL_USERS` of its
+`WorkflowModuleDetailsProvider`, and the group hierarchy in which `LOAN_OFFICERS` stands for it.
 
 A loan officer opens the cockpit. Its user interface reads the list of modules, finds
 `loan-approval`, and loads `/wm/loan-approval/bc-manifest.json`, which is the manifest of the user
-interface JAR in this application. It asks the entry `Header` and draws the button. The start
+interface JAR in this application. It asks the entry `Header`, which answers the button because
+the user is a loan officer, and draws it. The start
 form behind it posts to `/wm/loan-approval/api/loan-requests`, which is the controller of the
 workflow module. The module starts the process, and the cockpit adapter reports the new case.
 
