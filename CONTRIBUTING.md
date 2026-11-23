@@ -330,13 +330,13 @@ A second setting is written out in every `camunda8` profile, for a different rea
 `job-lease`. The Camunda 8 adapter has no default for it. On a cluster of the 8.10 line it
 stops the boot while the key is missing. With a lease, the cluster only takes the answer of the
 current activation. So a run whose lock ran out while it was working can no longer overwrite
-what the newer run wrote. Still, the blueprints write `do-not-use`. On 8.10 the gateway of
-the cluster can lose a leased job when a long poll ends, and the job then waits for a whole
-`job-timeout`. Blueprint builds went red from it. Until Camunda fixes that, the adapter advises
-`do-not-use`, and a blueprint shows the advised way. Moving to `use` later costs nothing,
-because a job which was never leased can be leased at any time. The other way does not work, because the cluster never takes a lease off a job again.
-`do-not-use` is also what every release line before 8.10 did. Why the adapter advises it, and
-what a lease costs, is in the [wiki of the adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds).
+what the newer run wrote. On an 8.10 cluster older than 8.10.10, a leased job can wait a whole
+`job-timeout` for nobody. The adapter then warns at startup, so choose `do-not-use` there. The
+blueprints write `do-not-use`, so they run on every cluster of the line. `do-not-use` is also
+what every release line before 8.10 did. Moving to `use` later costs nothing, because a job
+which was never leased can be leased at any time. The other way does not work, because the
+cluster never takes a lease off a job again. What a lease costs is in the
+[wiki of the adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds).
 
 ### A build without a profile runs on the default BPMS
 
