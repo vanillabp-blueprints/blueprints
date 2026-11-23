@@ -14,7 +14,7 @@
 # Used by .github/workflows/build.yaml and usable locally for the same purpose:
 #
 #   bin/camunda8_cluster.sh start
-#   cd blueprints-bpmn/bpmn-service-task/springboot && mvn -Pcamunda8 install verify
+#   cd blueprints-bpmn/bpmn-service-task/springboot && mvn -s ../../../.github/maven/settings.xml -Pcamunda8 install verify
 #   bin/camunda8_cluster.sh stop
 #
 # One cluster may serve several runs, one after the other. The timer start events of the
@@ -94,10 +94,12 @@ start() {
 # adapter version is the one the blueprint POMs name. They all name the same one, and this
 # function stops if they do not.
 #
-# Maven fetches the POM, so this works wherever the build itself can fetch the adapter. In CI
-# the settings of the CI build are used, which point at the snapshot repository of Maven
-# Central. Locally your own Maven settings are used, so a run does not replace an adapter you
-# installed yourself with the published one.
+# Maven fetches the POM. Locally it first tries your own Maven settings, so a run does not
+# replace an adapter you installed yourself with the published one. Those settings often do not
+# name the snapshot repository of Maven Central, or name it only in a profile you have to pass.
+# So if that fails, the script tries again with .github/maven/settings.xml, which names that
+# repository, and you need no profile. In CI the script goes straight to that file, because the
+# CI build uses it too.
 adapter_client_version() {
   local adapter
   adapter="$(adapter_version)" || exit 1
@@ -105,20 +107,20 @@ adapter_client_version() {
   local work
   work="$(mktemp -d)"
 
-  local settings=()
+  local ci_settings="${ROOT}/.github/maven/settings.xml"
+  local tried
   if [ -n "${CI:-}" ]; then
-    settings=(--settings "${ROOT}/.github/maven/settings.xml")
+    tried="${ci_settings}"
+    fetch_adapter_pom "${adapter}" "${work}" --settings "${ci_settings}" || true
+  else
+    tried="your own Maven settings, then ${ci_settings}"
+    fetch_adapter_pom "${adapter}" "${work}" \
+      || fetch_adapter_pom "${adapter}" "${work}" --settings "${ci_settings}" \
+      || true
   fi
 
-  # --update-snapshots, because the adapter is a SNAPSHOT: a cached POM may be days old and
-  # name an older client than the one the build will get.
-  if ! maven --batch-mode --quiet --update-snapshots "${settings[@]}" \
-      org.apache.maven.plugins:maven-dependency-plugin:3.10.0:copy \
-      "-Dartifact=io.vanillabp:camunda8-adapter:${adapter}:pom" \
-      "-DoutputDirectory=${work}" >&2; then
-    echo "Maven could not fetch the POM of camunda8-adapter ${adapter}, so the Camunda" >&2
-    echo "version the adapter accepts is unknown. Let your Maven settings read the snapshot" >&2
-    echo "repository of Maven Central, or set CAMUNDA_VERSION to the version you want." >&2
+  if ! compgen -G "${work}/*.pom" >/dev/null; then
+    cannot_fetch_adapter_pom "${adapter}" "${tried}" "${work}/maven.log"
     rm -rf "${work}"
     exit 1
   fi
@@ -147,6 +149,49 @@ PYTHON
 
   echo "camunda8-adapter ${adapter} is built against Camunda client ${client}" >&2
   echo "${client}"
+}
+
+# Copies the POM of the adapter into the given directory. Further arguments go to Maven, such
+# as the settings to use. What Maven says goes into maven.log in that directory. Each attempt
+# starts the file again, so after a failure it holds the reasons of the last attempt.
+fetch_adapter_pom() {
+  local adapter="$1"
+  local work="$2"
+  shift 2
+
+  # Maven runs in the empty work directory. In the root of this repository it would read the
+  # whole build first, and that fails for the same reason when the snapshots cannot be fetched.
+  # --update-snapshots, because the adapter is a SNAPSHOT: a cached POM may be days old and
+  # name an older client than the one the build will get.
+  (cd "${work}" && maven --batch-mode --update-snapshots "$@" \
+    org.apache.maven.plugins:maven-dependency-plugin:3.10.0:copy \
+    "-Dartifact=io.vanillabp:camunda8-adapter:${adapter}:pom" \
+    "-DoutputDirectory=${work}") >"${work}/maven.log" 2>&1
+}
+
+cannot_fetch_adapter_pom() {
+  local adapter="$1"
+  local tried="$2"
+  local log="$3"
+
+  echo "Maven could not fetch the POM of io.vanillabp:camunda8-adapter:${adapter}." >&2
+  echo "This script needs it to know which Camunda version to start." >&2
+  echo "It tried with ${tried}." >&2
+  echo "Maven said:" >&2
+  grep '^\[ERROR\] .' "${log}" \
+    | grep --invert-match --extended-regexp \
+        '^\[ERROR\] (BUILD FAILURE|-> \[Help|\[Help|To see the full|Re-run Maven|For more information)' \
+    | head -n 10 >&2 || true
+  echo "Do one of these, and then start the script again:" >&2
+  echo "  1. Check that this machine can reach Maven Central and its snapshot repository" >&2
+  echo "     https://central.sonatype.com/repository/maven-snapshots/ (no proxy or firewall" >&2
+  echo "     in the way, Maven not set to offline)." >&2
+  echo "  2. Check that the adapter version ${adapter} exists. It comes from" >&2
+  echo "     'camunda8-adapter.version' in the blueprint POMs." >&2
+  echo "  3. Build that adapter version yourself with 'mvn install' in the camunda8-adapter" >&2
+  echo "     repository, so Maven finds it in your local repository." >&2
+  echo "  4. Skip the lookup and name the Camunda version yourself:" >&2
+  echo "     CAMUNDA_VERSION=<a tag of the image camunda/camunda> bin/camunda8_cluster.sh start" >&2
 }
 
 # The version of the Camunda 8 adapter which the blueprints build against. Each blueprint

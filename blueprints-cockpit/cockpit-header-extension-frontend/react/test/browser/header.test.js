@@ -20,8 +20,13 @@ const projectDir = resolve(import.meta.dirname, '..', '..');
 const microFrontends = join(projectDir, 'dist', 'micro-frontends');
 const hostBundle = join(projectDir, 'build', 'test-host.js');
 
-/** The cockpit asks the entry Header with the user who is logged in. */
-const jane = { id: 'jane' };
+/**
+ * The cockpit asks the entry Header with the user who is logged in, with the groups the cockpit
+ * answers for that user. Jane is a loan officer: the group hierarchy of the backend gave her the
+ * access group as well. Mary is in the access group only.
+ */
+const jane = { id: 'jane', groups: [{ id: 'LOAN_OFFICERS' }, { id: 'LOAN_APPROVAL_USERS' }] };
+const mary = { id: 'mary', groups: [{ id: 'LOAN_APPROVAL_USERS' }] };
 
 /** The id of the build, which the last `npm run build` wrote into src/bc-build.js. Every name carries it. */
 const { BUILD_ID } = await import(pathToFileURL(join(projectDir, 'src', 'bc-build.js')).href);
@@ -107,13 +112,15 @@ async function fillIn(page, { applicant, amount }) {
 const dialogs = (page) => page.locator('dialog[data-bc-dialog]');
 
 describe('the data entry Header', () => {
-  it('names the button of the start form for the user who is logged in', async () => {
+  it('names the button of the start form for a loan officer, and for nobody else', async () => {
     const { page } = await openPage('?header');
-    const answers = await page.evaluate(async (user) => [
-      await window.bcTest.host.ask('loan-approval', 'Header', [user]),
+    const answers = await page.evaluate(async (users) => [
+      await window.bcTest.host.ask('loan-approval', 'Header', [users.jane]),
+      await window.bcTest.host.ask('loan-approval', 'Header', [users.mary]),
+      await window.bcTest.host.ask('loan-approval', 'Header', [{ id: 'nobody' }]),
       await window.bcTest.host.ask('loan-approval', 'Header', [undefined]),
-    ], jane);
-    assert.deepEqual(answers, [[{ entry: 'StartForm', element: BUTTON }], undefined]);
+    ], { jane, mary });
+    assert.deepEqual(answers, [[{ entry: 'StartForm', element: BUTTON }], undefined, undefined, undefined]);
     await page.close();
   });
 
@@ -228,13 +235,27 @@ describe('a cockpit with a header', () => {
 });
 
 describe('who sees the button', () => {
-  it('a user outside the group of the module gets no button, and nothing of the module is loaded', async () => {
+  it('a user outside the access group of the module gets no button, and nothing of the module is loaded', async () => {
     // The cockpit leaves loan-approval out of the list of modules for this user, because the
-    // backend names the group LOAN_OFFICERS and the user is not in it.
+    // backend names the access group LOAN_APPROVAL_USERS and the user is not in it.
     const { page, pageErrors } = await openPage('?header&modules=module-without-header');
     assert.deepEqual(await showHeader(page), []);
     assert.equal(await page.locator(BUTTON).count(), 0);
     assert.deepEqual((await loadedFiles(page)).filter((path) => path.startsWith('/wm/loan-approval/')), []);
+    assert.deepEqual(pageErrors, []);
+    await page.close();
+  });
+
+  it('a user who sees the module but is no loan officer gets no button, and the start form is not loaded', async () => {
+    // Mary is in the access group LOAN_APPROVAL_USERS, so the cockpit lists loan-approval for her
+    // and asks its entry Header. She is not in the feature role LOAN_OFFICERS.
+    const { page, pageErrors } = await openPage('?header&user=mary');
+    assert.deepEqual(await showHeader(page), []);
+    assert.equal(await page.locator(BUTTON).count(), 0);
+    const loaded = await loadedFiles(page);
+    assert.ok(loaded.includes(`/wm/loan-approval/${manifest().entries.Header}`), loaded.join(', '));
+    assert.ok(!loaded.some((path) => path.includes('StartForm-')), loaded.join(', '));
+    assert.deepEqual(await page.evaluate(() => window.bcTest.errors), []);
     assert.deepEqual(pageErrors, []);
     await page.close();
   });

@@ -330,12 +330,13 @@ A second setting is written out in every `camunda8` profile, for a different rea
 `job-lease`. The Camunda 8 adapter has no default for it. On a cluster of the 8.10 line it
 stops the boot while the key is missing. With a lease, the cluster only takes the answer of the
 current activation. So a run whose lock ran out while it was working can no longer overwrite
-what the newer run wrote. On an 8.10 cluster older than 8.10.10, a leased job can wait a whole
-`job-timeout` for nobody. The adapter then warns at startup, so choose `do-not-use` there. The
-blueprints write `do-not-use`, so they run on every cluster of the line. `do-not-use` is also
-what every release line before 8.10 did. Moving to `use` later costs nothing, because a job
-which was never leased can be leased at any time. The other way does not work, because the
-cluster never takes a lease off a job again. What a lease costs is in the
+what the newer run wrote. The blueprints write `use`. The cluster their builds start comes from
+the Camunda client of the adapter, and that client is 8.10.10 or newer. On an 8.10 cluster older
+than 8.10.10, a leased job can wait a whole `job-timeout` for nobody. The adapter then warns at
+startup, so choose `do-not-use` there. `do-not-use` is also what every release line before 8.10
+did. A job which was never leased can be leased at any time, but the cluster never takes a lease
+off a job again. So moving from `do-not-use` to `use` costs nothing, and the other way does not
+work. What a lease costs is in the
 [wiki of the adapter](https://github.com/vanillabp/camunda8-adapter/wiki/Configuration#a-job-somebody-else-holds).
 
 ### A build without a profile runs on the default BPMS
@@ -873,6 +874,11 @@ accepts. So the cluster moves with the adapter. A pin used to be here, and it fe
 said 8.10.0 while the adapter was built against 8.10.5. Set `CAMUNDA_VERSION` to run another
 version on purpose.
 
+Locally the script first asks Maven with your own settings, so an adapter you installed yourself
+wins. If that does not find the adapter, it asks again with `.github/maven/settings.xml`, which
+reads the snapshot repository of Maven Central. So you need no profile and no settings of your
+own to start the cluster. If both fail, the script says what Maven reported and what you can do.
+
 ## What CI builds
 
 There are four workflows, and they answer four different questions.
@@ -914,9 +920,15 @@ started first. `bin/camunda8_cluster.sh` starts the one this repository builds a
 
 ```bash
 bin/camunda8_cluster.sh start
-cd blueprints-bpmn/bpmn-service-task/springboot && mvn -Pcamunda8 clean install verify
+cd blueprints-bpmn/bpmn-service-task/springboot
+mvn -s ../../../.github/maven/settings.xml -Pcamunda8 clean install verify
 bin/camunda8_cluster.sh stop
 ```
+
+The cluster script finds the adapter snapshot on its own, but the build does not. `-s` names
+the settings which read the snapshot repository of Maven Central, see
+`Reading the VanillaBP snapshots`. Leave it out when your own settings already reach that
+repository.
 
 `clean` matters when you switch the profile in a tree you have already built. The output of the
 previous profile stays in `target/`. The build then runs against the adapter of that profile,

@@ -18,6 +18,15 @@ export { WORKFLOW_MODULE_ID };
 export const START_FORM = 'StartForm';
 
 /**
+ * The feature role of the button "Request a loan". Only its members may start a loan approval in
+ * the cockpit. It is a group of its own and not the access group LOAN_APPROVAL_USERS, which the
+ * backend names for the module: a user who may only look at the module sees it, but not the
+ * button. The backend reports a group hierarchy in which LOAN_OFFICERS stands for the access
+ * group, so a loan officer sees the module as well.
+ */
+export const LOAN_OFFICERS = 'LOAN_OFFICERS';
+
+/**
  * Builds the names of the web components: the prefix of the module id, the id of this build, and
  * then a short name. The prefix keeps them apart from the names of other modules, and the build id
  * from the names of an earlier build of this module, so a new build loads without a reload of the

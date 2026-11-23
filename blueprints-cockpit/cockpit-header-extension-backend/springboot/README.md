@@ -61,13 +61,31 @@ process starts. The OpenAPI says the same, and the form checks it as well.
 The cockpit asks every workflow module the user may see whether it has something for the header.
 Which modules a user may see, the cockpit decides from the groups each module names when it
 registers. The module names them with a bean which implements `WorkflowModuleDetailsProvider`.
-Here it is `LoanApprovalModuleDetails`, and it names the group `LOAN_OFFICERS`.
+Here it is `LoanApprovalModuleDetails`, and it names the access group `LOAN_APPROVAL_USERS`.
+
+Seeing the module and requesting a loan are two different rights, so they are two groups. The
+button is for the feature role `LOAN_OFFICERS`. A loan officer has to see the module as well.
+Nobody should have to put each loan officer into both groups, so `loan-approval.yaml` reports a
+group hierarchy with the registration:
+
+```yaml
+group-hierarchy:
+  LOAN_OFFICERS:
+    - LOAN_APPROVAL_USERS
+```
+
+The cockpit gives every member of `LOAN_OFFICERS` the group `LOAN_APPROVAL_USERS` as well, on
+each request. A user interface reads the groups of the user signed in, with the hierarchy
+already applied, at `GET /gui/api/v1/app/current-user`, and shows the button only to loan
+officers. A user who is only in `LOAN_APPROVAL_USERS` sees the module but not the button. The
+wiki page [Security](https://github.com/vanillabp/business-cockpit/wiki/Security) explains group
+hierarchies.
 
 A cockpit user interface reads the list of modules with `GET /gui/api/v1/workflow-module`. The
 cockpit leaves out every module whose groups the user is not in. The user interface loads the
 parts which belong to no case, like the button in the header, only from the modules in that list.
-So John, who is not a loan officer, never sees the button, and his browser never loads the code
-of the start form.
+So John, who is in neither group, never sees the button, and his browser never loads the code of
+the start form.
 
 The bean decides nothing about the task list and the case list. Whether a user sees a task or a
 case is decided for each of them, from what the cockpit adapter reported. A module without such a
@@ -107,7 +125,8 @@ Compared to [`cockpit-workflow-details-backend`](https://github.com/vanillabp-bl
 |--------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `loan-approval/openapi/loan-approval.yaml` | the one endpoint of the start form instead of the two of the case page                                                                                                     |
 | `loan_approval.bpmn`                       | the one user task, without the event subprocess                                                                                                                            |
-| `LoanApprovalModuleDetails.java`           | new: names the group `LOAN_OFFICERS`, the only users who see the module, and so the button                                                                                 |
+| `LoanApprovalModuleDetails.java`           | new: names the access group `LOAN_APPROVAL_USERS`, the only users who see the module, and the feature role `LOAN_OFFICERS` of the button                                   |
+| `loan-approval.yaml`                       | the group hierarchy: `LOAN_OFFICERS` stands for `LOAN_APPROVAL_USERS`                                                                                                      |
 | `StartFormController.java`                 | new, instead of `CasePageController.java`: starts a loan approval with what the user typed, below `/loan-approval/api`                                                     |
 | `CasePageController.java`                  | deleted, `StartFormController.java` takes its place                                                                                                                        |
 | `WorkflowTaskHandler.java`                 | the `@WorkflowTask` method of the user task only, and no `@WorkflowDetailsProvider` method                                                                                 |
@@ -117,7 +136,7 @@ Compared to [`cockpit-workflow-details-backend`](https://github.com/vanillabp-bl
 | `ApiController.java`                       | the id of a loan request comes from the service                                                                                                                            |
 | `LoanApprovalIT.java`                      | starts a loan approval through the start form, finds the case in the case list, and checks who sees the module                                                             |
 | `CockpitSimulator.java`                    | also asks the simulator which workflow modules a user sees                                                                                                                 |
-| `dev-shell-simulator.yaml` (test)          | two users: Jane is a loan officer, John is not                                                                                                                             |
+| `dev-shell-simulator.yaml` (test)          | three users: Jane is a loan officer, Mary may only see the module, John may do neither                                                                                     |
 | `LoanApprovalAutoConfiguration.java`       | its Javadoc names `LoanApprovalModuleDetails`                                                                                                                              |
 | `pom.xml`, `loan-approval/pom.xml`         | the generator builds the interface `StartFormApi` and the test client of the start form, instead of `CasesApi`; the test also gets the client of the simulator's own paths |
 
@@ -174,8 +193,8 @@ form posts to `/loan-approval/api/loan-requests`, which a browser cannot do from
 | `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`            | the contract between the start form and the module: one operation, below the server `/wm/loan-approval`                                                         |
 | `loan-approval/src/main/resources/loan-approval/openapi/loan-requests.yaml`            | the GET endpoints for a person with a browser                                                                                                                   |
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process: one user task                                                                                                                                      |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest                                                                        |
-| `.../loanapproval/config/LoanApprovalModuleDetails.java`                               | names the group whose members see the module in the cockpit                                                                                                     |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | what the cockpit has to know about the module: address, kind of user interface, manifest, and the group hierarchy which gives loan officers the access group    |
+| `.../loanapproval/config/LoanApprovalModuleDetails.java`                               | names the access group whose members see the module in the cockpit, and the feature role of the button                                                          |
 | `.../loanapproval/StartFormController.java`                                            | the endpoint of the start form: checks the values, starts the loan approval, answers 201 with its id                                                            |
 | `.../loanapproval/Service.java`                                                        | picks the id, starts the process through `Workflow`, keeps the id of the user task                                                                              |
 | `.../loanapproval/Workflow.java`                                                       | `startWorkflow` and `completeUserTask`, the only place `ProcessService` is used                                                                                 |
@@ -187,11 +206,12 @@ form posts to `/loan-approval/api/loan-requests`, which a browser cannot do from
 
 The order of events: the application starts, and the cockpit adapter registers the module with
 the cockpit. It asks `LoanApprovalModuleDetails` for the groups, and the registration carries
-`LOAN_OFFICERS`.
+`LOAN_APPROVAL_USERS`, and the group hierarchy in which `LOAN_OFFICERS` stands for it.
 
 Jane opens the cockpit. Its user interface reads the list of modules, and `loan-approval` is in
-it, because Jane is a loan officer. The cockpit asks the module for the parts of its header and
-draws the button "Request a loan". Jane clicks it, and the start form opens in a dialog. She types
+it, because Jane is a loan officer and the hierarchy gives her the access group. The cockpit asks
+the module for the parts of its header and draws the button "Request a loan", because she is a
+loan officer. Mary sees the module as well, but no button. Jane clicks it, and the start form opens in a dialog. She types
 the applicant and the amount and clicks OK.
 
 The form sends `POST .../api/loan-requests`. `StartFormController#requestLoan` checks the values
@@ -204,9 +224,10 @@ cockpit adapter reports the task as well.
 The integration test talks to the module the way the start form does, only without the proxy of
 the cockpit in between. It starts the dev shell simulator of the cockpit and points
 `vanillabp.cockpit.rest.base-url` at it. It finds the new case in the simulator by the id the
-endpoint answered with, and the open user task of the case. The simulator stores the groups of
-the module, but it does not show them and has no list of modules per user. So the test checks the
-groups where the module names them, in the bean. Filtering the list is the cockpit's part.
+endpoint answered with, and the open user task of the case. The simulator applies the rule of the
+cockpit, the group hierarchy included, and answers which modules a user sees. So the test checks
+that Jane and Mary see the module and John does not. Jane sees it only through the hierarchy,
+because she is in no other group.
 
 The endpoint is generated from the OpenAPI file, as in `cockpit-workflow-details-backend`. The
 integration test reads the file from the classpath and checks that its operation has its

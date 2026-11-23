@@ -56,11 +56,19 @@ error. So this module runs in both. In the second one only the button is missing
 
 ### Who sees the button
 
-The data entry checks no rights. A cockpit user interface reads the list of modules with
+Two decisions, two groups. A cockpit user interface reads the list of modules with
 `GET /gui/api/v1/workflow-module`, and the cockpit leaves out every module whose groups the user
-is not in. The backend names the group `LOAN_OFFICERS`. A cockpit asks the entry `Header` only of
-the modules in the list. So a user outside the group never sees the button, and the browser does
-not even load the file of the entry. The README of the backend says more.
+is not in. The backend names the access group `LOAN_APPROVAL_USERS`. A cockpit asks the entry
+`Header` only of the modules in the list. So a user outside the access group never sees the
+button, and the browser does not even load the file of the entry.
+
+The button itself is for the feature role `LOAN_OFFICERS`. The data entry `header(currentUser)`
+answers the button only if the groups of the user signed in contain it, and no button otherwise.
+The cockpit answers these groups at `GET /gui/api/v1/app/current-user`, already completed with
+the group hierarchy of the backend, in which `LOAN_OFFICERS` stands for `LOAN_APPROVAL_USERS`. So
+a loan officer sees the module and the button, and a user who is only in the access group sees
+the module but no button. The check hides the button. It does not protect the endpoint, which
+is the backend's part. The README of the backend says more.
 
 ### Other parts of the cockpit a module can fill
 
@@ -119,17 +127,17 @@ tests are the way to see the button and the form.
 
 ## How it works
 
-|                 File                  |                                                     Role                                                     |
-|---------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| `src/loan-approval.ts`                | the names shared with the backend and the cockpit: module id, entry, web components                          |
-| `src/data/header.ts`                  | data entry `Header`: `header(currentUser)` names the visual entry and the web component of the button        |
-| `src/start-form/start-form.tsx`       | visual entry `StartForm`: the button, which opens the dialog, and the start form, which closes it            |
-| `src/shared/api.ts`                   | `loanApproval`, the one instance of the generated `StartFormApi` and `ResponseError`, which keeps the status |
-| `src/shared/react-element.tsx`        | makes a React component a web component with `defineBcElement` of the kit                                    |
-| `src/shared/style.ts`                 | the styles in each shadow root: a button one line high, a form which wraps long words                        |
-| `scripts/build-micro-frontends.mjs`   | builds the entries with esbuild and writes `bc-manifest.json` with `createManifest` of the kit               |
-| `test/browser/header.test.js`         | the browser tests in the host of the module kit                                                              |
-| `test/browser/module-without-header/` | a second module for the tests, with a form of a user task and no entry `Header`                              |
+|                 File                  |                                                             Role                                                              |
+|---------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `src/loan-approval.ts`                | the names shared with the backend and the cockpit: module id, entry, web components, the feature role `LOAN_OFFICERS`         |
+| `src/data/header.ts`                  | data entry `Header`: `header(currentUser)` names the visual entry and the web component of the button, for loan officers only |
+| `src/start-form/start-form.tsx`       | visual entry `StartForm`: the button, which opens the dialog, and the start form, which closes it                             |
+| `src/shared/api.ts`                   | `loanApproval`, the one instance of the generated `StartFormApi` and `ResponseError`, which keeps the status                  |
+| `src/shared/react-element.tsx`        | makes a React component a web component with `defineBcElement` of the kit                                                     |
+| `src/shared/style.ts`                 | the styles in each shadow root: a button one line high, a form which wraps long words                                         |
+| `scripts/build-micro-frontends.mjs`   | builds the entries with esbuild and writes `bc-manifest.json` with `createManifest` of the kit                                |
+| `test/browser/header.test.js`         | the browser tests in the host of the module kit                                                                               |
+| `test/browser/module-without-header/` | a second module for the tests, with a form of a user task and no entry `Header`                                               |
 
 ### From the header to a new case
 

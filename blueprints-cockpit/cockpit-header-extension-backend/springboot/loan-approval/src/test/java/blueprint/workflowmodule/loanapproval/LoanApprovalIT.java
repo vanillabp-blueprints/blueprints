@@ -153,14 +153,17 @@ public class LoanApprovalIT extends WorkflowModuleTest {
   }
 
   /**
-   * The cockpit lists this workflow module only for the members of the group the module names,
-   * and a cockpit user interface loads the button in the header only from the modules in that
-   * list. The simulator applies the same rule as the cockpit, so it shows who sees the module:
-   * Jane, a loan officer, sees it, and John, who works in customer service, does not. The users
-   * and their groups are in {@code dev-shell-simulator.yaml}.
+   * The cockpit lists this workflow module only for the members of the access group the module
+   * names, and a cockpit user interface loads the button in the header only from the modules in
+   * that list. The simulator applies the same rules as the cockpit, the group hierarchy of the
+   * module included, so it shows who sees the module. Jane is a loan officer and in no other
+   * group. She sees the module only because the hierarchy makes her feature role stand for the
+   * access group. Mary is in the access group only and sees the module as well, but she is no
+   * loan officer, so the user interface shows her no button. John, who works in customer service,
+   * does not see the module. The users and their groups are in {@code dev-shell-simulator.yaml}.
    */
   @Test
-  public void onlyLoanOfficersSeeTheModuleAndSoTheButton() {
+  public void theAccessGroupAndTheLoanOfficersSeeTheModule() {
 
     final var cockpit = CockpitSimulator.start();
 
@@ -168,6 +171,7 @@ public class LoanApprovalIT extends WorkflowModuleTest {
     // would pass for the wrong reason.
     assertThat(cockpit.awaitWorkflowModulesSeenBy("jane", modules -> modules.contains("loan-approval")))
         .contains("loan-approval");
+    assertThat(cockpit.workflowModulesSeenBy("mary")).contains("loan-approval");
     assertThat(cockpit.workflowModulesSeenBy("john")).doesNotContain("loan-approval");
 
   }

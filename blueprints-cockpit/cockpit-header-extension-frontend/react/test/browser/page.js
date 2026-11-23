@@ -7,6 +7,8 @@
 // ?modules=loan-approval,module-without-header is the list of modules the user may see. A cockpit
 // gets it from GET /gui/api/v1/workflow-module, which leaves out every module whose groups the user
 // is not in. By default the list holds loan-approval only.
+//
+// ?user=mary is the user signed in, one of USERS below. By default it is Jane.
 
 import { createModuleHost } from '@vanillabp/bc-module-host';
 
@@ -14,7 +16,16 @@ const notifications = [];
 const errors = [];
 const query = new URLSearchParams(location.search);
 const visibleModules = (query.get('modules') ?? 'loan-approval').split(',').filter(Boolean);
-const currentUser = { id: 'jane' };
+/**
+ * The users signed in, with their groups as GET /gui/api/v1/app/current-user answers them: already
+ * completed by the group hierarchy of the backend. Jane is a loan officer, and LOAN_OFFICERS stands
+ * for the access group. Mary is in the access group only.
+ */
+const USERS = {
+  jane: { id: 'jane', groups: [{ id: 'LOAN_OFFICERS' }, { id: 'LOAN_APPROVAL_USERS' }] },
+  mary: { id: 'mary', groups: [{ id: 'LOAN_APPROVAL_USERS' }] },
+};
+const currentUser = USERS[query.get('user') ?? 'jane'];
 /** What a cockpit hands every web component of a module. */
 const properties = { language: query.get('language') ?? 'en', currentUser };
 

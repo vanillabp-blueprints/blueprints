@@ -32,15 +32,16 @@ coordinates, which carry the name of the blueprint.
 
 Blueprint-specific names, each occurring in more than one place:
 
-|        Name         |                                                          Where it occurs                                                           |
-|---------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| `reviewLoanRequest` | the `@WorkflowTask` method, the Camunda 7 `camunda:formKey` and the Camunda 8 `zeebe:formDefinition externalReference` of the task |
-| `LOAN_OFFICERS`     | `LoanApprovalModuleDetails.LOAN_OFFICERS`, the groups of the users in `dev-shell-simulator.yaml` of the test                       |
-| `applicant`         | the field of the OpenAPI, the aggregate, the field of the start form in the frontend                                               |
-| `amount`            | the field of the OpenAPI, the aggregate, the field of the start form in the frontend                                               |
-| `loanRequestId`     | the id of the aggregate, and the field of the answer of the start form                                                             |
-| `/wm/loan-approval` | the server of the OpenAPI: the path the cockpit serves the module at                                                               |
-| `/loan-approval`    | the path every endpoint of the module starts with, and the path of `workflow-module-uri`                                           |
+|         Name          |                                                                            Where it occurs                                                                             |
+|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `reviewLoanRequest`   | the `@WorkflowTask` method, the Camunda 7 `camunda:formKey` and the Camunda 8 `zeebe:formDefinition externalReference` of the task                                     |
+| `LOAN_APPROVAL_USERS` | `LoanApprovalModuleDetails.LOAN_APPROVAL_USERS`, the target of `group-hierarchy` in `loan-approval.yaml`, the groups of Mary in `dev-shell-simulator.yaml` of the test |
+| `LOAN_OFFICERS`       | `LoanApprovalModuleDetails.LOAN_OFFICERS`, the key of `group-hierarchy` in `loan-approval.yaml`, the groups of Jane in `dev-shell-simulator.yaml` of the test          |
+| `applicant`           | the field of the OpenAPI, the aggregate, the field of the start form in the frontend                                                                                   |
+| `amount`              | the field of the OpenAPI, the aggregate, the field of the start form in the frontend                                                                                   |
+| `loanRequestId`       | the id of the aggregate, and the field of the answer of the start form                                                                                                 |
+| `/wm/loan-approval`   | the server of the OpenAPI: the path the cockpit serves the module at                                                                                                   |
+| `/loan-approval`      | the path every endpoint of the module starts with, and the path of `workflow-module-uri`                                                                               |
 
 The cockpit replaces `/wm/loan-approval` by the path of `workflow-module-uri` when it forwards a
 request. Keep the server of the OpenAPI, the path of `workflow-module-uri` and the prefix of the
@@ -48,19 +49,19 @@ controllers in line, or the start form reaches nothing.
 
 ## Core files
 
-|                                      File                                       |                                                            Why it matters                                                            |
-|---------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`     | the contract with the frontend: one operation, `servers: /wm/loan-approval`. Change it together with `StartFormController`           |
-| `loan-approval/src/main/java/.../config/LoanApprovalModuleDetails.java`         | the `WorkflowModuleDetailsProvider` of the module: its id and the group `LOAN_OFFICERS`, the only users who see the module           |
-| `loan-approval/src/main/java/.../StartFormController.java`                      | the endpoint of the start form, below `/loan-approval/api/loan-requests`. POST, 400 for an empty applicant or an amount below 1, 201 |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`             | `vanillabp.workflow-modules.loan-approval.cockpit.*`: `workflow-module-uri`, `ui-uri-type: ES_MODULES`, `ui-uri-path`                |
-| `loan-approval/src/main/java/.../Service.java`                                  | picks the id of the new loan request and starts the process through `Workflow`                                                       |
-| `loan-approval/src/main/java/.../WorkflowTaskHandler.java`                      | the `@WorkflowTask` method which keeps `@TaskId`                                                                                     |
-| `loan-approval/src/main/java/.../Workflow.java`                                 | `startWorkflow` and `completeUserTask`                                                                                               |
-| `loan-approval/src/test/java/.../LoanApprovalIT.java`                           | the start form starts a case which reaches the cockpit, refused values, who sees the module, every OpenAPI operation mapped          |
-| `loan-approval/src/test/java/.../CockpitSimulator.java`                         | starts the dev shell simulator as the cockpit of the test, and reads cases, user tasks and who sees a module from it                 |
-| `loan-approval/src/main/java/.../config/LoanApprovalAutoConfiguration.java`     | the module wires itself: component scan, `@EntityScan` and `@EnableJpaRepositories` of its own package, with fully qualified names   |
-| `loan-approval/src/main/resources/META-INF/spring/...AutoConfiguration.imports` | names the auto-configuration                                                                                                         |
+|                                      File                                       |                                                                                             Why it matters                                                                                              |
+|---------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`     | the contract with the frontend: one operation, `servers: /wm/loan-approval`. Change it together with `StartFormController`                                                                              |
+| `loan-approval/src/main/java/.../config/LoanApprovalModuleDetails.java`         | the `WorkflowModuleDetailsProvider` of the module: its id and the access group `LOAN_APPROVAL_USERS`, the only users who see the module; the feature role `LOAN_OFFICERS`                               |
+| `loan-approval/src/main/java/.../StartFormController.java`                      | the endpoint of the start form, below `/loan-approval/api/loan-requests`. POST, 400 for an empty applicant or an amount below 1, 201                                                                    |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`             | `vanillabp.workflow-modules.loan-approval.cockpit.*`: `workflow-module-uri`, `ui-uri-type: ES_MODULES`, `ui-uri-path`, and `group-hierarchy`, in which `LOAN_OFFICERS` stands for `LOAN_APPROVAL_USERS` |
+| `loan-approval/src/main/java/.../Service.java`                                  | picks the id of the new loan request and starts the process through `Workflow`                                                                                                                          |
+| `loan-approval/src/main/java/.../WorkflowTaskHandler.java`                      | the `@WorkflowTask` method which keeps `@TaskId`                                                                                                                                                        |
+| `loan-approval/src/main/java/.../Workflow.java`                                 | `startWorkflow` and `completeUserTask`                                                                                                                                                                  |
+| `loan-approval/src/test/java/.../LoanApprovalIT.java`                           | the start form starts a case which reaches the cockpit, refused values, who sees the module, every OpenAPI operation mapped                                                                             |
+| `loan-approval/src/test/java/.../CockpitSimulator.java`                         | starts the dev shell simulator as the cockpit of the test, and reads cases, user tasks and who sees a module from it                                                                                    |
+| `loan-approval/src/main/java/.../config/LoanApprovalAutoConfiguration.java`     | the module wires itself: component scan, `@EntityScan` and `@EnableJpaRepositories` of its own package, with fully qualified names                                                                      |
+| `loan-approval/src/main/resources/META-INF/spring/...AutoConfiguration.imports` | names the auto-configuration                                                                                                                                                                            |
 
 ## Boilerplate files
 
@@ -75,7 +76,7 @@ controllers in line, or the start form reaches nothing.
 | `loan-approval/src/main/resources/loan-approval/processes/camunda7/loan_approval.bpmn` | the process with its one user task, and the same file per other BPMS                                                                          |
 | `loan-approval/src/test/resources/application.yaml`                                    | the database, a short outbox poll interval, the address of the simulator                                                                      |
 | `loan-approval/src/test/resources/application-camunda7.yaml`                           | the Camunda 7 settings of the test, and the same file per other BPMS                                                                          |
-| `loan-approval/src/test/resources/dev-shell-simulator.yaml`                            | the users the simulator knows: Jane in `LOAN_OFFICERS`, John outside                                                                          |
+| `loan-approval/src/test/resources/dev-shell-simulator.yaml`                            | the users the simulator knows: Jane in `LOAN_OFFICERS`, Mary in `LOAN_APPROVAL_USERS`, John in neither                                        |
 | `loan-approval/src/test/java/.../ModuleTestApplication.java`                           | the minimal application the module's test boots. It scans nothing, the auto-configuration wires the module                                    |
 | `loan-approval/src/test/java/.../WorkflowModuleTest.java`                              | base class of the integration test: waits for workflow progress                                                                               |
 | `loan-approval/src/test/java/.../LocalBackend.java`                                    | runs the module with `spring-boot:test-run` for the development of the user interface                                                         |
@@ -98,9 +99,13 @@ controllers in line, or the start form reaches nothing.
    OpenAPI requires and answer 400 before a process starts. Let the service pick the id of the
    aggregate and start the process through `Workflow`. Never ask the cockpit to start a case.
 4. If not every user of the cockpit may start the process, add a bean which implements
-   `WorkflowModuleDetailsProvider`, with the id of the module and the groups which may see it.
-   One bean per module. It decides which modules the cockpit lists for a user, and so who sees
-   the button. It does not decide about tasks and cases, and it does not protect the endpoint.
+   `WorkflowModuleDetailsProvider`, with the id of the module and the access group which may
+   see it. One bean per module. It decides which modules the cockpit lists for a user, and so
+   who may get the button at all. It does not decide about tasks and cases, and it does not
+   protect the endpoint. Keep the feature role, the right to use the button, apart from the
+   access group: list it in `group-hierarchy` of the module's configuration, standing for the
+   access group, so its members see the module as well. Never return the feature role as the
+   access group, or a user who only may look at the module does not see it.
 5. Keep the bean inside the package the auto-configuration scans, so the module brings it along.
 6. Copy `CockpitSimulator`, `dev-shell-simulator.yaml` and the dependency plugin execution of
    `loan-approval/pom.xml` which copies the simulator. Adapt `LoanApprovalIT`, keeping the tests
@@ -125,8 +130,10 @@ profile as a defect of the generated code.
 - the start form endpoint answers 201 with the id of a new loan request, the process waits in its
   user task, and the cockpit lists the new case under that id with its open user task,
 - an empty applicant, an amount of 0 and a missing amount get 400, and no loan request is started,
-- the simulator lists `loan-approval` for Jane, who is in `LOAN_OFFICERS`, and not for John,
-  who is not. It applies the rule of the cockpit to the groups the module registered,
+- the simulator lists `loan-approval` for Jane, who is only in `LOAN_OFFICERS` and gets
+  `LOAN_APPROVAL_USERS` through the group hierarchy, for Mary, who is in `LOAN_APPROVAL_USERS`,
+  and not for John, who is in neither. It applies the rule of the cockpit and the hierarchy to
+  the groups the module registered,
 - an approved loan request ends its case (`endReason` says `COMPLETED`),
 - every operation of the OpenAPI of the start form has its endpoint.
 
