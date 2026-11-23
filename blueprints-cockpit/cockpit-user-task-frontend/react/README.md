@@ -379,6 +379,11 @@ neither React nor a form, that opening one form does not load the other, and tha
 stays when the cockpit sets a property such as the language, and that a 404 and a 409 each show
 their own message.
 
+One more test shows that a new build of the module loads without a reload of the page. It
+starts the host with a short `manifestRecheckMs`, so the host reads the manifest again after 100
+milliseconds. The test then serves a manifest of a new build, whose web components have new
+names. The host loads it and draws the form of the new build next to the form of the first one.
+
 ### Three repositories, and the order of their releases
 
 Many companies give their build agents one Docker image with Java and Maven and another one with
