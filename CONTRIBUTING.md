@@ -873,6 +873,11 @@ accepts. So the cluster moves with the adapter. A pin used to be here, and it fe
 said 8.10.0 while the adapter was built against 8.10.5. Set `CAMUNDA_VERSION` to run another
 version on purpose.
 
+Locally the script first asks Maven with your own settings, so an adapter you installed yourself
+wins. If that does not find the adapter, it asks again with `.github/maven/settings.xml`, which
+reads the snapshot repository of Maven Central. So you need no profile and no settings of your
+own to start the cluster. If both fail, the script says what Maven reported and what you can do.
+
 ## What CI builds
 
 There are four workflows, and they answer four different questions.
