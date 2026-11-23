@@ -31,3 +31,13 @@ vanillabp:
         # is named. An application with a login writes 'by-application' and sets the initiator
         # in the details provider.
         initiator-source: system
+        # Which groups a group stands for. The cockpit lists the module for the access group
+        # LOAN_APPROVAL_USERS, which LoanApprovalModuleDetails names. A loan officer may request
+        # a loan, and so has to see the module as well. With this entry the cockpit gives every
+        # member of LOAN_OFFICERS the group LOAN_APPROVAL_USERS, too, and nobody has to put a
+        # loan officer into both groups. The user interface shows the button only to members of
+        # LOAN_OFFICERS.
+        # https://github.com/vanillabp/business-cockpit/wiki/Security
+        group-hierarchy:
+          LOAN_OFFICERS:
+            - LOAN_APPROVAL_USERS

@@ -211,7 +211,9 @@ public final class CockpitSimulator {
 
   /**
    * The workflow modules the cockpit lists for a user. The simulator applies the rule of the
-   * cockpit: a module which names groups is listed only for the members of these groups.
+   * cockpit: a module which names groups is listed only for the members of these groups. Before
+   * it compares, it completes the groups of the user with the group hierarchies the modules
+   * registered.
    *
    * @param user The id of the user, as {@code dev-shell-simulator.yaml} lists it.
    * @return The ids of the workflow modules the user sees.
