@@ -241,6 +241,14 @@ the aggregate is there to read. A timer on a start event is scheduled when the m
 deployed, and no aggregate exists yet. So the short cycle of this blueprint is in the model
 itself. A project writes its real schedule there, and its test waits for the first start.
 
+A schedule in business time, such as "the first of every month at 06:00 in Vienna", would be a
+cron expression in the cycle. The BPMS reads a cron in the time zone of the machine the engine
+runs on. For a remote engine that is the machine of its cluster, which often runs on UTC. The
+BPMS never knows the zone of the business. A cycle written as a duration, such as `R/PT5S` here, depends on no zone. Do not set
+the time zone of the machine to make a cron fit, because that moves every other time of the
+application as well. [`bpmn-timer`](https://github.com/vanillabp-blueprints/bpmn-timer-springboot)
+shows how a timer inside a workflow keeps a time of day in the time zone of the business.
+
 The test is the unusual part. It has no call to make. So it waits for an aggregate with the
 expected occasion to appear. The occasion is written by the method which built the aggregate,
 so the test proves that each start event reached its own method. For the signal it broadcasts

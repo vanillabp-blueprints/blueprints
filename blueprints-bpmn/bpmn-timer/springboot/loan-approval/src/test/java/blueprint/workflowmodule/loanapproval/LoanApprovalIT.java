@@ -112,9 +112,12 @@ public class LoanApprovalIT extends WorkflowModuleTest {
 
     assertThat(loanRequest.getCustomerInformed()).isNull();
 
-    // The module says three days. The test configuration shortened the deadline, and the
-    // aggregate copied that value when the loan was requested. The model read it from there.
-    assertThat(loanRequest.getPartnerDeadline()).isEqualTo("PT3S");
+    // The module says three days and the rest of the day. The test configuration shortened
+    // the deadline to one minute, in a time zone fourteen hours ahead of UTC. The aggregate
+    // worked out the moment when the loan was requested, and the model read it from there.
+    // It ends with the offset of that zone. Without the offset the timer above would have fired
+    // hours late or not at all, depending on the BPMS.
+    assertThat(loanRequest.getPartnerDeadline()).endsWith("+14:00");
 
     if (System.getProperty("blueprint.bpms", "").matches("camunda7|operaton|cibseven")) {
       // The handler heard about it: an interrupting boundary event cancels the task, and

@@ -33,6 +33,10 @@ container. All of that holds here as well.
 | `cockpit-workflow-details-frontend-react`         | the case page and the columns of the case list, as a JAR of the user interface          | npm        |
 | `cockpit-workflow-details-application-springboot` | this repository: the application which takes the workflow module and the user interface | Maven      |
 
+The frontend exists in React and in Vue: `cockpit-workflow-details-frontend-react` and
+`cockpit-workflow-details-frontend-vue`. Both publish their JAR of the user interface under the same
+coordinates, so the application takes either one and does not know which.
+
 Release them in this order: the backend, then the frontend, then this application. The two
 versions this application takes are properties in `pom.xml`. A bot such as Renovate opens the
 pull request which moves them from a snapshot to a release.

@@ -22,7 +22,9 @@ which shows the page of a case, and like
 which shows the forms of user tasks. The README of the second one explains what this one only links:
 micro-frontends and the two kinds of entries, why the parts come at runtime, the module kit as the
 minimum, the OpenAPI file through a git submodule and the client generated from it, why npm builds
-apart from Maven, and the UI jar and the nginx image.
+apart from Maven, and the UI jar and the nginx image. The same button and form in Vue are
+[`cockpit-header-extension-frontend-vue`](https://github.com/vanillabp-blueprints/cockpit-header-extension-frontend-vue).
+Both have the same tests and the same contract with the module kit.
 
 ## What this blueprint shows
 

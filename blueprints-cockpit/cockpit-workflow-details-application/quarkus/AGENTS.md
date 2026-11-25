@@ -10,7 +10,8 @@ first. It has the procedure, the reference structure and the list of things neve
 
 This is the last of three parts. The workflow module and the API of the case page are in
 `cockpit-workflow-details-backend-quarkus`. The case page is in
-`cockpit-workflow-details-frontend-react`, built with npm. Change those two there, release them,
+`cockpit-workflow-details-frontend-react` or
+`cockpit-workflow-details-frontend-vue`, built with npm. Change those two there, release them,
 and then raise their versions here. Apart from the names, this part is the same as
 `cockpit-user-task-application-quarkus`.
 

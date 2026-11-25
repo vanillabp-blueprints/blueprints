@@ -69,7 +69,10 @@ Blueprint-specific names, each occurring in more than one place:
 
 1. Model the start events. A timer start event takes a cycle (`bpmn:timeCycle`, for example
    `R/P1D`) or a date (`bpmn:timeDate`), written as a literal: no aggregate exists before the
-   timer fires, so an expression would have nothing to read. A MESSAGE start event is
+   timer fires, so an expression would have nothing to read. A cron expression in the cycle
+   runs in a time zone the BPMS chooses, never in the zone of the business. Never set the time
+   zone of the machine to make it fit. A time of day in the zone of the business belongs to a
+   timer inside a workflow, see `bpmn-timer`. A MESSAGE start event is
    something else. `startWorkflowByMessage` triggers that one, and it belongs to
    `bpmn-message-start`.
 2. Add one `@WorkflowStartedByBpms(id = "...")` method per start event the BPMS fires on its

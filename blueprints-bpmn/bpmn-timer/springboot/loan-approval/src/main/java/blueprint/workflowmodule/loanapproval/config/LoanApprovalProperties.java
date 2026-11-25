@@ -1,5 +1,8 @@
 package blueprint.workflowmodule.loanapproval.config;
 
+import java.time.LocalTime;
+import java.time.ZoneId;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import lombok.Data;
@@ -25,5 +28,17 @@ public class LoanApprovalProperties {
    * value, so it is configuration and not a literal in the model.
    */
   private String partnerDeadline = "P3D";
+
+  /**
+   * When the office closes. The partner's time to answer runs until then, on the day the
+   * {@link #partnerDeadline} runs out. Empty means the deadline is the end of the period.
+   */
+  private LocalTime officeClosesAt;
+
+  /**
+   * The time zone of the business. Every time of day of this module is a time in this zone,
+   * whatever zone the machine runs in.
+   */
+  private ZoneId zone = ZoneId.of("Europe/Vienna");
 
 }

@@ -728,7 +728,8 @@ Every blueprint README shows its process in the first section, before a word is 
 Nobody reads a BPMN file, and the model usually shows what a blueprint is about.
 
 The pictures are rendered from the BPMN files and committed. So a README renders on GitHub
-without any tooling:
+without any tooling. `bpmn-to-image` draws them with bpmn-js, the same viewer a user interface
+uses to show a diagram:
 
 ```bash
 npm install -g bpmn-to-image     # once

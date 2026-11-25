@@ -27,7 +27,10 @@ spring:
 logging:
   level:
     blueprint.workflowmodule: INFO
-# The partner deadline of the workflow module is three days. Nobody watches a demo that long,
-# so this application shortens it. A real application leaves it out or sets its own value.
+# The partner deadline of the workflow module is three days and the rest of the day until
+# the office closes. Nobody watches a demo that long, so this application shortens it to thirty
+# seconds and no closing time. The deadline counts from the request, so it has to be longer than
+# the cool-off period. A real application leaves both out or sets its own values.
 loan-approval:
-  partner-deadline: PT3S
+  partner-deadline: PT60S
+  office-closes-at: ""

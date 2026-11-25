@@ -1,5 +1,9 @@
 package blueprint.workflowmodule.loanapproval.config;
 
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.Optional;
+
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
@@ -26,5 +30,18 @@ public interface LoanApprovalProperties {
    */
   @WithDefault("P3D")
   String partnerDeadline();
+
+  /**
+   * When the office closes. The partner's time to answer runs until then, on the day the
+   * {@link #partnerDeadline} runs out. Empty means the deadline is the end of the period.
+   */
+  Optional<LocalTime> officeClosesAt();
+
+  /**
+   * The time zone of the business. Every time of day of this module is a time in this zone,
+   * whatever zone the machine runs in.
+   */
+  @WithDefault("Europe/Vienna")
+  ZoneId zone();
 
 }

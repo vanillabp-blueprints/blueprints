@@ -10,7 +10,8 @@ Read
 first. It has the procedure, the reference structure and the list of things never to do.
 
 This is one of three parts. The button and the start form are in
-`cockpit-header-extension-frontend-react`, built with npm. The application which runs the workflow
+`cockpit-header-extension-frontend-react` or
+`cockpit-header-extension-frontend-vue`, built with npm. The application which runs the workflow
 module and serves the button is the blueprint `cockpit-header-extension-application`. Change this
 part first. The other two take it as a released version.
 

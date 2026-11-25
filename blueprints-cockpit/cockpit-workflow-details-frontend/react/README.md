@@ -20,7 +20,9 @@ The project is built like
 which shows the forms of user tasks. Its README explains what this one only links: micro-frontends
 and the two kinds of entries, why the parts come at runtime, the module kit as the minimum, the
 OpenAPI file through a git submodule and the client generated from it, why npm builds apart from
-Maven, and the UI jar and the nginx image.
+Maven, and the UI jar and the nginx image. The same case page in Vue is
+[`cockpit-workflow-details-frontend-vue`](https://github.com/vanillabp-blueprints/cockpit-workflow-details-frontend-vue).
+Both have the same tests and the same contract with the module kit.
 
 ## What this blueprint shows
 

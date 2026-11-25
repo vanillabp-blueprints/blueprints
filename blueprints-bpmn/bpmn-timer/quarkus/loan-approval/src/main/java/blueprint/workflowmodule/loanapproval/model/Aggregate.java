@@ -27,7 +27,7 @@ import lombok.NoArgsConstructor;
  * The class carries {@code @NoSyncWithBPMS}, so its attributes are not shared with the BPMS
  * unless one says so. Three do. The cool-off timer reads {@link #getCoolOffPeriod()}, a
  * getter which works out its value. The deadline on the waiting task reads
- * {@link #partnerDeadline}, and the gateway behind the cool-off timer reads
+ * {@link #partnerDeadline}, a point in time, and the gateway behind the cool-off timer reads
  * {@link #withdrawn}. So the BPMS needs these three values. Apart from them the BPMS holds the
  * aggregate's ID, because that is how VanillaBP finds the workflow again.
  * </p>
@@ -73,15 +73,18 @@ public class Aggregate {
   private Integer creditRating;
 
   /**
-   * How long the partner may take to answer, as an ISO-8601 duration such as {@code P3D}.
-   * The timer boundary event on the waiting task reads it, so it is shared with the BPMS.
-   * It is set once, when the loan is requested, from the configuration of the module. So a
-   * test or a demo can shorten it in its own configuration, and the model stays the same.
+   * When the partner's time to answer ends, as an ISO-8601 date and time with offset, such
+   * as {@code 2026-11-28T17:00:00+01:00}. The timer boundary event on the waiting task reads
+   * it, so it is shared with the BPMS. It is set once, when the loan is requested, from the
+   * configuration of the module. So a test or a demo can shorten it in its own
+   * configuration, and the model stays the same.
    *
    * <p>
-   * It is a {@code String} and not a {@link java.time.Duration}. A {@code Duration} would
-   * reach the model as {@code PT72H}. That fires at the same moment, but an operator reads
-   * {@code P3D} more easily.
+   * The offset is what keeps the deadline in the time zone of the business.
+   * {@link blueprint.workflowmodule.loanapproval.PartnerDeadline} works it out in that zone.
+   * A text without an offset is read in the time zone of the machine, or refused, depending on
+   * the BPMS. It is a {@code String} and not an {@code OffsetDateTime}, because
+   * the model reads the text as it is written here, the offset included.
    * </p>
    *
    * @see <a href=
