@@ -35,8 +35,11 @@ element which has started and not ended is where the workflow stands. Draw the d
 Load bpmn-js only on the page which shows the diagram, in a chunk of its own, so no other page
 pays for it. bpmn-js comes from npm, under the bpmn.io license. That license asks you to keep the
 bpmn.io logo in the corner of the diagram visible. The pictures in the READMEs of the blueprints
-are drawn with bpmn-js as well, by `bpmn-to-image`. This blueprint stops at the API, because a
-blueprint should not teach a UI (user interface).
+are drawn with bpmn-js as well, by `bpmn-to-image`. This blueprint stops at the API. The
+Business Cockpit blueprint
+[`cockpit-process-view-frontend`](https://github.com/vanillabp-blueprints/cockpit-process-view-frontend-react)
+is the user interface on top of it. It draws the diagram and the markers on the page of a case,
+in React and in Vue.
 
 **A process definition id is opaque.** It looks like something you could take apart, and you
 must not. VanillaBP puts the adapter which can resolve it in front of the BPMS' own id. A
@@ -223,6 +226,7 @@ model of
 - [Viewing workflows](https://github.com/vanillabp/adapter-platform-integration/wiki/Viewing-workflows): the three methods, opaque ids, ended workflows and what differs per BPMS
 - [Viewing BPMN and execution history](https://github.com/vanillabp/spi-for-java/wiki/Showing-BPMN-and-history): the record types and how a viewer is fed
 - [bpmn-js](https://bpmn.io/toolkit/bpmn-js/): the viewer which draws the diagram and the markers on it
+- [`cockpit-process-view-frontend`](https://github.com/vanillabp-blueprints/cockpit-process-view-frontend-react): the page of a case in the Business Cockpit which draws them, with this API
 - [Workflow aggregates](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates): why the aggregate is all VanillaBP needs to find the workflow again
 - the wiki of the [BPMS adapter](https://github.com/vanillabp/adapter-platform-integration/wiki/BPMS-adapters) you use: what that engine records, and what it needs to record it
 

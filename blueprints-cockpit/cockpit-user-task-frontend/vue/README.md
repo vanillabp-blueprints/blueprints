@@ -317,6 +317,14 @@ the names speak of one build. The file is written for every build and not checke
 are in `src/bc-build.d.ts`. The browser tests read the build id from it, and
 `test/build-id.test.js` proves that two builds give different names.
 
+The build id changes the names of the web components, but not the name of the file with Vue.
+The two forms share Vue, and they also share `src/shared` and `src/bc-build.js`. esbuild would put
+all of that into one chunk, whose name changes with every build, and the browser would load Vue
+again. So `scripts/build-micro-frontends.mjs` adds one more entry which imports Vue only and
+deletes it after the build. Then Vue has a chunk of its own, which imports nothing. After a new
+build the browser loads the entries and one small chunk again, and takes Vue from its cache.
+`test/framework-chunk.test.js` builds twice and checks that the name stays.
+
 ### Imports through path aliases
 
 A file imports from another directory through a path alias, never with `../`. The aliases are
@@ -379,13 +387,18 @@ neither Vue nor a form, that opening one form does not load the other, and that 
 stays when the cockpit sets a property such as the language, and that a 404 and a 409 each show
 their own message.
 
+One more test shows that a new build of the module loads without a reload of the page. It
+starts the host with a short `manifestRecheckMs`, so the host reads the manifest again after 100
+milliseconds. The test then serves a manifest of a new build, whose web components have new
+names. The host loads it and draws the form of the new build next to the form of the first one.
+
 ### Vue inside web components
 
 Here the page belongs to the cockpit, and Vue only draws inside the web components of this
 module. `src/shared/vue-element.ts` holds the code for that. When the cockpit draws a web
 component, `createApp` makes a small Vue application for it and mounts it into the shadow root. When the cockpit removes the web component, the
 application is unmounted. Vue applications are cheap, and they all share the one copy of Vue in
-the chunk of the forms. Vue does not patch anything of the page, so there is nothing to switch off.
+the chunk of the framework. Vue does not patch anything of the page, so there is nothing to switch off.
 
 The properties of the cockpit, such as `userTask` and `language`, go into the application with
 `provide`, as one shallow ref. The components read them with `useBcElement()`. When the cockpit
