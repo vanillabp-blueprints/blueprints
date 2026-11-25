@@ -12,6 +12,8 @@ name: Build the cockpit frontends
 # It also takes the OpenAPI file of the cockpit's official API out of the cockpit's jar, in the
 # version of 'businesscockpit.version' in the pom.xml of that backend. A new version there
 # changes the client, so that pom.xml is listed too.
+# cockpit-process-view-frontend reads the OpenAPI file of blueprints-bpmn/bpmn-history-and-diagram,
+# a blueprint outside blueprints-cockpit, so its 'openapi' folder is listed as well.
 "on":
   push:
     branches:
@@ -22,6 +24,7 @@ name: Build the cockpit frontends
       - "blueprints-modules/module-process-driver/**/openapi/**"
       - "blueprints-modules/module-process-driver/**/gui-api/*.yaml"
       - "blueprints-modules/module-process-driver/springboot/pom.xml"
+      - "blueprints-bpmn/bpmn-history-and-diagram/**/openapi/**"
       - ".github/workflows/frontend.yaml"
   pull_request:
     paths:
@@ -30,6 +33,7 @@ name: Build the cockpit frontends
       - "blueprints-modules/module-process-driver/**/openapi/**"
       - "blueprints-modules/module-process-driver/**/gui-api/*.yaml"
       - "blueprints-modules/module-process-driver/springboot/pom.xml"
+      - "blueprints-bpmn/bpmn-history-and-diagram/**/openapi/**"
       - ".github/workflows/frontend.yaml"
   workflow_dispatch:
 concurrency:
