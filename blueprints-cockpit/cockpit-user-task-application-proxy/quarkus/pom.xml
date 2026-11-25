@@ -49,8 +49,8 @@
       the BPMS adapter it belongs to. The BOM of the cockpit is not imported, because it
       imports the BOM of another platform. So the version is named here.
     -->
-    <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
-    <businesscockpit-camunda8.version>0.9.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
+    <businesscockpit.version>1.0.0-SNAPSHOT</businesscockpit.version>
+    <businesscockpit-camunda8.version>1.0.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
     <!-- The workflow module, released by the backend repository. -->
     <cockpit-user-task-backend.version>1.0.0-SNAPSHOT</cockpit-user-task-backend.version>
     <!--

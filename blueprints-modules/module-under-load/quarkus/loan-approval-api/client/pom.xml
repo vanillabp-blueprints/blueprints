@@ -25,7 +25,7 @@
     <java.version>21</java.version>
     <openapi-generator.version>7.27.0</openapi-generator.version>
     <!-- The support library of the Business Cockpit, which builds the REST clients from keys. -->
-    <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
+    <businesscockpit.version>1.0.0-SNAPSHOT</businesscockpit.version>
   </properties>
 
   <!--

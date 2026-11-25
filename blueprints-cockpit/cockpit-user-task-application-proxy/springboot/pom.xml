@@ -42,8 +42,8 @@
       is one per BPMS. The one for Camunda 8 carries the Camunda 8 line in its version, like
       the BPMS adapter it belongs to.
     -->
-    <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
-    <businesscockpit-camunda8.version>0.9.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
+    <businesscockpit.version>1.0.0-SNAPSHOT</businesscockpit.version>
+    <businesscockpit-camunda8.version>1.0.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
     <!-- The workflow module, released by the backend repository. -->
     <cockpit-user-task-backend.version>1.0.0-SNAPSHOT</cockpit-user-task-backend.version>
     <!--

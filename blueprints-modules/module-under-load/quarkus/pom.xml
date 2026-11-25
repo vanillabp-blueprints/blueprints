@@ -42,7 +42,7 @@
     <quarkus.version>3.40.1.2</quarkus.version>
     <jandex-maven-plugin.version>3.6.1</jandex-maven-plugin.version>
     <!-- The support library of the Business Cockpit, which builds the REST clients from keys. -->
-    <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
+    <businesscockpit.version>1.0.0-SNAPSHOT</businesscockpit.version>
     <!--
       Without a parent POM nothing manages the versions of the build plugins, and an
       unversioned plugin is resolved to whatever the local repository last learned about.

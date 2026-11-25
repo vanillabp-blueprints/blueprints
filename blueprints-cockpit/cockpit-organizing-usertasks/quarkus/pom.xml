@@ -55,8 +55,8 @@
       cockpit is not imported, because it imports the BOM of another platform. So the version
       is named here.
     -->
-    <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
-    <businesscockpit-camunda8.version>0.9.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
+    <businesscockpit.version>1.0.0-SNAPSHOT</businesscockpit.version>
+    <businesscockpit-camunda8.version>1.0.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
     <!-- Renders the titles and the search texts of the user tasks. Not part of the Quarkus BOM. -->
     <freemarker.version>2.3.35</freemarker.version>
     <!-- Generates the Java interfaces of the APIs from their OpenAPI files. -->
