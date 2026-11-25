@@ -44,8 +44,8 @@
       is one per BPMS. The one for Camunda 8 carries the Camunda 8 line in its version, like
       the BPMS adapter it belongs to.
     -->
-    <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
-    <businesscockpit-camunda8.version>0.9.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
+    <businesscockpit.version>1.0.0-SNAPSHOT</businesscockpit.version>
+    <businesscockpit-camunda8.version>1.0.0-8.10-SNAPSHOT</businesscockpit-camunda8.version>
     <!-- Generates the client of the smoke test from the OpenAPI file of the workflow module. -->
     <openapi-generator.version>7.27.0</openapi-generator.version>
     <!--

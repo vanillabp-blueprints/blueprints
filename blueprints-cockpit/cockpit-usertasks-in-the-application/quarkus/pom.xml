@@ -59,7 +59,7 @@
       cockpit is not imported, because it imports the BOM of another platform. So the version
       is named here.
     -->
-    <businesscockpit.version>0.9.0-SNAPSHOT</businesscockpit.version>
+    <businesscockpit.version>1.0.0-SNAPSHOT</businesscockpit.version>
     <!-- Generates the Java interfaces of the APIs from their OpenAPI files. -->
     <openapi-generator.version>7.27.0</openapi-generator.version>
   </properties>

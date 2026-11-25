@@ -18,7 +18,7 @@
       dev shell simulator of the cockpit: a small application of its own which takes the
       reports a workflow module sends and serves them back. The test starts its runnable JAR.
     -->
-    <dev-shell-simulator.version>0.9.0-SNAPSHOT</dev-shell-simulator.version>
+    <dev-shell-simulator.version>1.0.0-SNAPSHOT</dev-shell-simulator.version>
   </properties>
 
   <dependencies>
