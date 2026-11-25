@@ -23,7 +23,9 @@ timers around that:
   getter of the workflow aggregate.
 - **A deadline on the waiting task.** The task which asks the partner carries an interrupting
   timer boundary event. If no answer arrives in time, the workflow leaves the task and takes
-  the path behind the timer. There the process decides what a missed deadline means.
+  the path behind the timer. There the process decides what a missed deadline means. The
+  deadline ends at a time of day in the time zone of the business, whatever zone the machine
+  runs in.
 - **A change while the workflow waits.** The customer may withdraw during the cool-off
   period. A gateway behind the timer reads `withdrawn` and ends the workflow instead of asking
   the partner.
@@ -61,17 +63,28 @@ Here that is the end of the credit rating, the task right before the timer. A va
 from the amount is still right then. A value counted from the current time is as old as that
 moment, so count from a point in time the aggregate stores.
 
-The deadline belongs to the business. The partner has three days to answer, so it is
-configuration of the module, `partner-deadline: P3D` in `loan-approval.yaml`. The aggregate
-copies it when the loan is requested, and the timer boundary event reads it with an expression:
-`${partnerDeadline}` on Camunda 7, `=partnerDeadline` on Camunda 8. The value a workflow
-started with stays its deadline, even if the configuration changes later.
+The deadline belongs to the business. The partner has three days to answer, and then the rest
+of that day until the office closes at 17:00 in Vienna. So it is configuration of the module,
+in `loan-approval.yaml`:
+
+```yaml
+loan-approval:
+  partner-deadline: P3D
+  office-closes-at: "17:00"
+  zone: Europe/Vienna
+```
+
+When the loan is requested, `PartnerDeadline` works out the end of the deadline and the
+aggregate keeps it, for example `2026-11-28T17:00:00+01:00`. The timer boundary event reads it
+with an expression: `${partnerDeadline}` on Camunda 7, `=partnerDeadline` on Camunda 8. The
+value a workflow started with stays its deadline, even if the configuration changes later.
 
 An expression reads the aggregate, so the attribute it names has to travel to the BPMS. The
 class carries `@NoSyncWithBPMS`. The getter `getCoolOffPeriod` and the attribute
 `partnerDeadline` carry `@SyncWithBPMS`, and so does `withdrawn`, see below. So the engine
-holds the aggregate's ID and these three values. Both durations are a `String`, because a
-`Duration` of three days reaches the model as `PT72H`. The wiki page
+holds the aggregate's ID and these three values. The cool-off period is a `String`, because a
+`Duration` of ten seconds would reach the model as `PT10S` anyway, and one of three days as
+`PT72H`. The deadline is a `String` as well, so the model reads it with its offset. The wiki page
 [Timers](https://github.com/vanillabp/adapter-platform-integration/wiki/Timers#a-deadline-out-of-the-workflow-aggregate)
 explains the expression and which Java types fit.
 
@@ -96,26 +109,62 @@ call writes them. The wiki page
 explains the second form, `aggregateChanged(aggregate, taskId)`, which writes into the scope a
 task runs in.
 
+### A time of day in the time zone of the business
+
+"17:00" means nothing until somebody says where. The BPMS does not know the time zone of the
+business, so it cannot read a time in it. A BPMS which runs inside the application reads a date
+without an offset, such as `2026-11-28T17:00:00`, in the time zone of the machine. Another BPMS
+refuses such a date: when the model is deployed, if the date is written into it, and with an
+incident, if an expression returns it. A cron expression in a timer cycle, such as
+`0 0 6 1 * ?`, runs in the time zone of the machine the engine runs on. For a remote engine that
+is the machine of its cluster, which often runs on UTC.
+
+So the module works out the time itself, in Java, where the zone is configuration:
+
+```java
+.partnerDeadline(PartnerDeadline.endsAt(
+    ZonedDateTime.now(properties.getZone()),
+    properties.getPartnerDeadline(),
+    properties.getOfficeClosesAt()))
+```
+
+The result carries its offset: `+01:00` in winter, `+02:00` in summer. A date with an offset
+names one moment, and every BPMS fires the timer at that moment. Java knows when summer time
+starts, so the model needs no rule for it.
+
+Do not set the time zone of the machine instead, for example with `-Duser.timezone`. It moves
+every time of every other module of the application, and every time in the log. And the next
+machine it runs on does not have the setting.
+
+A timer start event is harder. No workflow aggregate exists before it fires, so there is no
+value to read. Its cycle is a literal of the model, and a cron in it runs in the zone the BPMS
+chooses. A cycle written as a duration, such as `R/PT1H`, does not depend on a zone. A
+schedule like "the first of every month at 06:00 in Vienna" cannot be written into the model
+today so that it holds on every BPMS. One way out is a workflow which waits for a date with
+an offset, as the deadline here does, and starts the next round when it fires.
+
 ## Delta to the base blueprint
 
 Compared to [`module-single`](https://github.com/vanillabp-blueprints/module-single-springboot):
 
-|                        File                         |                                                                             What is different                                                                             |
-|-----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `loan_approval.bpmn`                                | a timer catch event which reads `coolOffPeriod`, a gateway behind it which reads `withdrawn`, a task waiting for a partner, and a timer boundary event on it              |
-| `WorkflowTaskHandler.java`                          | the `@WorkflowTask` method of the waiting task, taking `@TaskId` and `@TaskEvent`, and `confirmWithdrawal`                                                                |
-| `Workflow.java`                                     | `completeTask` and `aggregateChanged` in addition to `startWorkflow`                                                                                                      |
-| `Service.java`                                      | copies the deadline, takes a withdrawal, sends the request, keeps the task id, answers it, and notes a missed deadline                                                    |
-| `PartnerApprovalClient.java`                        | new: the port to the partner, so a test can replace it                                                                                                                    |
-| `LocalPartnerApprovalClient.java`                   | new: a stand-in partner, so the blueprint runs without one                                                                                                                |
-| `ApiController.java`                                | the withdrawal, and the callback carrying the partner's answer and the task id                                                                                            |
-| `loan-approval/openapi/loan-approval.yaml`          | the URLs `withdraw` and `partner-approved/{taskId}`                                                                                                                       |
-| `Aggregate.java`                                    | `partnerApprovalTaskId`, `partnerApproved`, `timedOut`, `withdrawalConfirmed`, and `partnerDeadline`, `withdrawn` and the getter `getCoolOffPeriod`, which the BPMS reads |
-| `loan-approval.yaml`, `LoanApprovalProperties.java` | `partner-deadline: P3D`, the business value of the deadline                                                                                                               |
-| `application.yaml`                                  | `partner-deadline: PT3S` in the test and in the demo application, so nobody waits three days                                                                              |
-| `LoanApprovalIT.java`                               | one test per outcome: answered in time, not answered at all, and withdrawn during the cool-off period, and one for the cool-off period of a large loan                    |
-| `PartnerApprovalSimulator.java`, `Simulator.java`   | new in the tests: the simulator which stands in for the partner, and its base class from the test harness                                                                 |
-| `pom.xml`, `loan-approval/pom.xml`                  | hands the BPMS of the build to the tests, for the assertion about cancellations                                                                                           |
+|                        File                         |                                                                                          What is different                                                                                          |
+|-----------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `loan_approval.bpmn`                                | a timer catch event which reads `coolOffPeriod`, a gateway behind it which reads `withdrawn`, a task waiting for a partner, and a timer boundary event on it which reads the date `partnerDeadline` |
+| `WorkflowTaskHandler.java`                          | the `@WorkflowTask` method of the waiting task, taking `@TaskId` and `@TaskEvent`, and `confirmWithdrawal`                                                                                          |
+| `Workflow.java`                                     | `completeTask` and `aggregateChanged` in addition to `startWorkflow`                                                                                                                                |
+| `Service.java`                                      | works out the deadline, takes a withdrawal, sends the request, keeps the task id, answers it, and notes a missed deadline                                                                           |
+| `PartnerDeadline.java`                              | new: the end of the deadline, worked out in the time zone of the business and written with its offset                                                                                               |
+| `PartnerApprovalClient.java`                        | new: the port to the partner, so a test can replace it                                                                                                                                              |
+| `LocalPartnerApprovalClient.java`                   | new: a stand-in partner, so the blueprint runs without one                                                                                                                                          |
+| `ApiController.java`                                | the withdrawal, and the callback carrying the partner's answer and the task id                                                                                                                      |
+| `loan-approval/openapi/loan-approval.yaml`          | the URLs `withdraw` and `partner-approved/{taskId}`                                                                                                                                                 |
+| `Aggregate.java`                                    | `partnerApprovalTaskId`, `partnerApproved`, `timedOut`, `withdrawalConfirmed`, and `partnerDeadline`, `withdrawn` and the getter `getCoolOffPeriod`, which the BPMS reads                           |
+| `loan-approval.yaml`, `LoanApprovalProperties.java` | `partner-deadline: P3D`, `office-closes-at: "17:00"` and `zone: Europe/Vienna`, the business values of the deadline                                                                                 |
+| `application.yaml`                                  | `partner-deadline: PT60S` and no closing time in the test and in the demo application, so nobody waits three days                                                                                   |
+| `LoanApprovalIT.java`                               | one test per outcome: answered in time, not answered at all, and withdrawn during the cool-off period, and one for the cool-off period of a large loan                                              |
+| `PartnerDeadlineTest.java`                          | new: the deadline in winter and in summer, and after the office closed                                                                                                                              |
+| `PartnerApprovalSimulator.java`, `Simulator.java`   | new in the tests: the simulator which stands in for the partner, and its base class from the test harness                                                                                           |
+| `pom.xml`, `loan-approval/pom.xml`                  | hands the BPMS of the build to the tests, for the assertion about cancellations                                                                                                                     |
 
 ## Running it
 
@@ -198,15 +247,16 @@ http://localhost:8080/loan-approval/api/start?amount=5000
 ```
 
 The rating is done at once. The partner is asked ten seconds later, twenty for a loan of 10000
-or more. From then on the clock runs. The module gives the partner three days, but the demo
-application shortens that to three seconds in its `application.yaml`:
+or more. The deadline counts from the request. The module gives the partner three days and the
+rest of the day, but the demo application shortens that to one minute in its
+`application.yaml`:
 
 ```
 Loan approval '0f7c…' started. The customer may withdraw during the cool-off period:
   Withdraw -> http://localhost:8080/loan-approval/api/0f7c…/withdraw
 Credit rating of loan approval '0f7c…' is 50
 Partner was asked to approve loan approval '0f7c…' (5000 at a rating of 50)
-Loan approval '0f7c…' waits for the partner, but not forever - the task carries a deadline of PT3S:
+Loan approval '0f7c…' waits for the partner, but not forever - the task carries a deadline at 2026-11-25T10:15:42+01:00:
   Approved -> http://localhost:8080/loan-approval/api/0f7c…/partner-approved/1a2b…
 ```
 
@@ -250,8 +300,9 @@ catch event with the time it will fire. Where they are served and how to log in 
 | `.../loanapproval/Service.java`                                                        | takes a withdrawal, asks the partner once, answers the task, and notes a missed deadline                             |
 | `.../loanapproval/Workflow.java`                                                       | `aggregateChanged` and `completeTask`, the only place `ProcessService` is used                                       |
 | `.../loanapproval/model/Aggregate.java`                                                | the task id, the answer, whether the deadline ran out, and the three values the model reads, one of them a getter    |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | the deadline as the business wants it, three days                                                                    |
-| `loan-approval/src/test/resources/application.yaml`                                    | the same key, three seconds, so the test is fast                                                                     |
+| `.../loanapproval/PartnerDeadline.java`                                                | the end of the deadline, in the time zone of the business, with its offset                                           |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                    | the deadline as the business wants it: three days, until the office closes at 17:00 in Vienna                        |
+| `loan-approval/src/test/resources/application.yaml`                                    | the same keys: one minute, no closing time and a far away time zone, so the test is fast and proves the offset       |
 | `loan-approval/src/test/.../LoanApprovalIT.java`                                       | answered in time, not answered at all, withdrawn while the workflow waits, and the cool-off period of a large loan   |
 
 Neither timer costs the application anything while it runs. The BPMS stores the due date, wakes
@@ -275,12 +326,19 @@ Only this one test waits twenty seconds. The others request a small loan.
 
 A deadline of three days cannot be tested by waiting for it. Because it comes from
 configuration, the test does not need to. Its own `application.yaml` sets
-`loan-approval.partner-deadline: PT3S`, and that wins over the file of the module. The model,
-the code and the expression stay exactly what the application runs. Only the value the
-aggregate copies is shorter. The test also checks that the aggregate holds `PT3S`, so it fails
-if the shorter value does not arrive. A deadline as a literal in the model cannot be shortened
-like this. You would need a second model for the test, and then the test does not prove the
-model you deploy.
+`loan-approval.partner-deadline: PT60S` and no closing time, and that wins over the file of the
+module. The model, the code and the expression stay exactly what the application runs. Only the
+deadline the aggregate keeps is earlier. A deadline as a literal in the model cannot be
+shortened like this. You would need a second model for the test, and then the test does not
+prove the model you deploy.
+
+The same file sets the zone `Pacific/Kiritimati`, fourteen hours ahead of UTC. No build
+machine runs in it. So if the deadline lost its offset, a BPMS which reads it in the zone of
+the machine would fire the timer many hours late, and a BPMS which refuses it would never fire
+it. Either way the test of the deadline would time out. The test
+also checks that the deadline ends with `+14:00`. `PartnerDeadlineTest` checks the rule
+itself without a BPMS: 17:00 in Vienna is `+01:00` in November and `+02:00` in July, and a
+period which runs out after the office closed ends the next day.
 
 ## Documentation
 
@@ -290,6 +348,7 @@ model you deploy.
 - [Tell the BPMS that the aggregate changed](https://github.com/vanillabp/spi-for-java/wiki/The-workflow-aggregate#tell-the-bpms-that-the-aggregate-changed): `aggregateChanged`, and the form which writes into the scope of a task
 - [Telling the BPMS that the aggregate changed](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#telling-the-bpms-that-the-aggregate-changed): when the values are written, and what each BPMS does with them
 - [Timers](https://github.com/vanillabp/adapter-platform-integration/wiki/Timers#a-deadline-out-of-the-workflow-aggregate): a deadline read from the workflow aggregate, and which Java types fit
+- the wiki of the BPMS adapter you use: in which time zone that BPMS reads a time without an offset, and a cron expression
 - [Wiring an expression](https://github.com/vanillabp/spi-for-java/wiki/Wiring-an-expression): how an expression in the model reads a getter of the aggregate
 - [What is shared, and when](https://github.com/vanillabp/adapter-platform-integration/wiki/Workflow-aggregates#what-is-shared-and-when): when VanillaBP calls a getter, and why its value is the one of the last sync point
 - the wiki of the BPMS adapter you use: how timers are executed, and what an expression instead of a literal duration may read

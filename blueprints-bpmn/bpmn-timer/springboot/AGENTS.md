@@ -2,7 +2,7 @@
 
 Adds waiting to the process: a timer in the sequence flow which delays it, and an interrupting
 timer boundary event which ends a wait nobody answered. The first timer reads a getter of the
-aggregate, the second an attribute copied from configuration. A change made while the workflow
+aggregate, the second a point in time worked out in the time zone of the business. A change made while the workflow
 waits reaches the BPMS through `aggregateChanged`. A delta on top of `module-single`.
 
 Read
@@ -35,13 +35,17 @@ Blueprint-specific names, each occurring in more than one place:
 | `noteTimeout`            | the `@WorkflowTask` method on the path behind the timer and the task definition of that service task              |
 | `confirmWithdrawal`      | the `@WorkflowTask` method on the withdrawn branch and the task definition of that service task                   |
 | `partnerDeadline`        | the aggregate attribute, the expression of the timer boundary event, and the configuration key `partner-deadline` |
+| `office-closes-at`       | the configuration key, read by `PartnerDeadline` together with `zone`                                             |
 | `withdrawn`              | the aggregate attribute and the condition of the gateway behind the cool-off timer                                |
 | `coolOffPeriod`          | the getter `getCoolOffPeriod` of the aggregate and the expression of the cool-off timer                           |
 
 Neither timer has a literal in the model. The cool-off duration is worked out by the getter
 `getCoolOffPeriod` from the amount: twice as long for a loan of `LARGE_LOAN` or more. The
-deadline on the waiting task is `partner-deadline` in `loan-approval.yaml`, copied into the
-aggregate when the loan is requested. Both timers read their value with an expression.
+deadline on the waiting task is a point in time. `PartnerDeadline` works it out when the loan
+is requested, from `partner-deadline`, `office-closes-at` and `zone` in `loan-approval.yaml`,
+and the aggregate keeps it as an ISO-8601 date with offset. Both timers read their value with an
+expression. The deadline is counted in the time zone of the business, never in the zone of the
+machine.
 
 ## Core files
 
@@ -55,8 +59,9 @@ aggregate when the loan is requested. Both timers read their value with an expre
 | `loan-approval/src/main/java/.../loanapproval/ApiController.java`                          | the withdrawal, and the callback the answer arrives at, carrying the task id                                                                                                             |
 | `loan-approval/src/main/resources/loan-approval/openapi/loan-approval.yaml`                | the API as an OpenAPI file. The build generates the interface `LoanApprovalApi` from it, and `ApiController` implements it                                                               |
 | `loan-approval/src/main/java/.../loanapproval/model/Aggregate.java`                        | `partnerApprovalTaskId`, the attributes the service tasks write, and `partnerDeadline`, `withdrawn` and the getter `getCoolOffPeriod` with `@SyncWithBPMS`, because the model reads them |
-| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | `partner-deadline: P3D`, the business value of the deadline                                                                                                                              |
-| `loan-approval/src/test/resources/application.yaml`                                        | `partner-deadline: PT3S`, which keeps the test of the deadline fast                                                                                                                      |
+| `loan-approval/src/main/java/.../loanapproval/PartnerDeadline.java`                        | works out the end of the deadline in the time zone of the business and writes it with its offset, so every BPMS fires at the same moment                                                 |
+| `loan-approval/src/main/resources/loan-approval/loan-approval.yaml`                        | `partner-deadline: P3D`, `office-closes-at: "17:00"` and `zone: Europe/Vienna`, the business values of the deadline                                                                      |
+| `loan-approval/src/test/resources/application.yaml`                                        | `partner-deadline: PT60S`, no closing time, and a zone fourteen hours ahead of UTC, which keeps the test of the deadline fast and proves the offset                                      |
 | `loan-approval/src/test/java/.../LoanApprovalIT.java`                                      | one test per way the workflow ends: answered in time, taken away by the deadline, withdrawn during the cool-off period; and one which proves the cool-off timer reads the getter         |
 
 ## Boilerplate files
@@ -105,7 +110,12 @@ in every blueprint. Copy them unchanged.
 8. Put a deadline which belongs to the business into the configuration of the module, not into
    the model. Copy it into an attribute of the aggregate when the workflow starts, mark that
    attribute `@SyncWithBPMS`, and let the timer read it: `${partnerDeadline}` on Camunda 7,
-   `=partnerDeadline` on Camunda 8. Use a `String`, so `P3D` stays `P3D`. A fixed period of
+   `=partnerDeadline` on Camunda 8. Use a `String`, so `P3D` stays `P3D`. If the deadline
+   names a time of day, such as "until 17:00", work out the point in time in Java, in the time
+   zone of the business from the module's configuration, as `PartnerDeadline` does. Store it
+   as an ISO-8601 date with offset and let a `timeDate` read it. Never write a time without
+   an offset or a cron expression for it, and never set the time zone of the machine. A
+   BPMS reads such a time in its own zone. A fixed period of
    the process may stay a literal. A model you received may carry a business deadline as a
    literal, such as `P3D` on a timer boundary event. Turn it into an expression in the same
    way, and keep its value in the configuration. That is part of making the model run with
@@ -148,19 +158,23 @@ you report a failure of that profile as a defect of the generated code.
 - an answer before the deadline completes the task: the service task behind it has run, and
   the one behind the timer has not,
 - without an answer the deadline takes the task away: the service task behind the timer has
-  run, the one behind the answer has not, the aggregate holds the shortened deadline `PT3S`, and
-  on Camunda 7 the stored id is gone,
+  run, the one behind the answer has not, the aggregate holds a deadline with the offset
+  `+14:00` of the test's zone, and on Camunda 7 the stored id is gone,
 - a withdrawal during the cool-off period reaches the gateway behind it: the service task on the
   withdrawn branch has run, and the partner was never asked,
 - a large loan waits for the cool-off period its getter works out: the partner is asked no
   earlier than `PT20S` after the request.
+
+`PartnerDeadlineTest` has to pass as well. It checks the rule without a BPMS: the deadline in
+winter and in summer, and after the office closed.
 
 If the task is completed as soon as the handler returns, the model wires it in a way that does
 not let it stay open. On Camunda 7 that is `camunda:expression`. If the second test never sees
 the path behind the timer, the timer boundary event is missing from the waiting task. If the
 third test sees the partner asked, `Workflow` does not call `aggregateChanged`, or `withdrawn`
 is not shared with the BPMS. If the fourth test sees the partner asked too early, the cool-off
-timer does not read `coolOffPeriod`. If Camunda 7 warns at startup that an expression reads
+timer does not read `coolOffPeriod`. If the second test times out, check that the deadline
+carries its offset and that the boundary event reads it as a `timeDate`. If Camunda 7 warns at startup that an expression reads
 an attribute which is not shared with the BPMS, the getter lacks `@SyncWithBPMS`.
 
 Do not report success without having run this.

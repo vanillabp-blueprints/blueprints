@@ -6,7 +6,14 @@
 # application.
 loan-approval:
   rating-scale: 100
-  # How long the partner may take to answer. This is the business value. The timer boundary
-  # event on the waiting task reads it from the aggregate, which copies it when the loan is
-  # requested. A test or a demo shortens it in its own configuration, which wins over this file.
+  # How long the partner may take to answer, and the time the office closes. The partner gets
+  # the period and then the rest of that day until the office closes. These are the business
+  # values. When the loan is requested, the aggregate works out the end of the deadline and
+  # keeps it, and the timer boundary event on the waiting task reads it from there. A test or
+  # a demo shortens it in its own configuration, which wins over this file.
   partner-deadline: P3D
+  office-closes-at: "17:00"
+  # The time zone of the business. "The office closes at 17:00" means 17:00 in this zone, also
+  # on a machine which runs on UTC. Never set the time zone of the machine instead: it changes
+  # every other module of the application as well.
+  zone: Europe/Vienna

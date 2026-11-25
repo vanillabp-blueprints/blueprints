@@ -60,13 +60,16 @@
       <bpmn:outgoing>Flow_ToInformCustomer</bpmn:outgoing>
     </bpmn:sendTask>
     <!--
-      The way out other than completing: the application cancels the task with this error
-      code, and the workflow leaves the user task here.
+      The way out other than completing: when the deadline is reached, the workflow leaves the
+      task here. The deadline is a point in time with its offset, such as
+      2026-11-28T17:00:00+01:00, which the aggregate worked out in the time zone of the
+      business. A date with an offset names one moment on every BPMS. A date without one is
+      read in the time zone of the machine, or refused, depending on the BPMS.
     -->
     <bpmn:boundaryEvent id="BoundaryEvent_Deadline" name="No answer in time" attachedToRef="SendTask_RequestPartnerApproval">
       <bpmn:outgoing>Flow_ToNoteTimeout</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_Deadline">
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">${partnerDeadline}</bpmn:timeDuration>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">${partnerDeadline}</bpmn:timeDate>
       </bpmn:timerEventDefinition>
     </bpmn:boundaryEvent>
     <bpmn:sequenceFlow id="Flow_ToInformCustomer" sourceRef="SendTask_RequestPartnerApproval" targetRef="ServiceTask_InformCustomer" />

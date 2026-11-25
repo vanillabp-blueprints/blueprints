@@ -13,8 +13,19 @@ spring:
 logging:
   level:
     blueprint.workflowmodule: INFO
-# The partner deadline of the module is three days. The test shortens it here, because a
-# test which waits three days is no test. The model is the same one the application runs,
-# only the value the aggregate copies is shorter.
+# The partner deadline of the module is three days and the rest of the day until the office
+# closes. The test shortens it to one minute and no closing time, because a test which
+# waits three days is no test. The model is the same one the application runs, only the value
+# the aggregate keeps is earlier. The deadline counts from the request, so it has to be clearly
+# longer than the cool-off period of a large loan, twenty seconds. On a busy machine the engine
+# fires that timer some seconds late, and with thirty seconds the deadline was sometimes over
+# before the test could answer.
+#
+# The time zone is one no build machine runs in, fourteen hours ahead of UTC. So the test of
+# the deadline only passes if the BPMS reads the offset of the deadline. Without the offset,
+# one BPMS would fire the timer hours late and another would refuse the date, and that test
+# would time out.
 loan-approval:
-  partner-deadline: PT3S
+  partner-deadline: PT60S
+  office-closes-at: ""
+  zone: Pacific/Kiritimati

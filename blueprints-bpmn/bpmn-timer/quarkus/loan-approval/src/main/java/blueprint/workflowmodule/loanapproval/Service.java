@@ -1,5 +1,6 @@
 package blueprint.workflowmodule.loanapproval;
 
+import java.time.ZonedDateTime;
 import java.util.Optional;
 
 import blueprint.workflowmodule.loanapproval.config.LoanApprovalProperties;
@@ -61,6 +62,12 @@ public class Service {
   /**
    * A customer requests a loan.
    *
+   * <p>
+   * The deadline of the partner is worked out here, once, in the time zone of the business.
+   * The aggregate keeps the result, so a later change of the configuration does not move the
+   * deadline of a workflow which already runs.
+   * </p>
+   *
    * @param loanRequestId The natural id of the loan request.
    * @param amount        The amount requested.
    */
@@ -72,7 +79,10 @@ public class Service {
         .builder()
         .loanRequestId(loanRequestId)
         .amount(amount)
-        .partnerDeadline(properties.partnerDeadline())
+        .partnerDeadline(PartnerDeadline.endsAt(
+            ZonedDateTime.now(properties.zone()),
+            properties.partnerDeadline(),
+            properties.officeClosesAt().orElse(null)))
         .build();
 
     workflow.loanRequested(loanApproval);
@@ -197,7 +207,7 @@ public class Service {
 
     log.info(
         "Loan approval '{}' waits for the partner, but not forever - the task carries a"
-            + " deadline of {}:"
+            + " deadline at {}:"
             + "\n  Approved -> http://localhost:8080/loan-approval/api/{}/partner-approved/{}",
         loanApproval.getLoanRequestId(),
         loanApproval.getPartnerDeadline(),
