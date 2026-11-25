@@ -10,7 +10,8 @@ first. It has the procedure, the reference structure and the list of things neve
 
 This is the last of three parts. The workflow module and the API of the start form are in
 `cockpit-header-extension-backend-springboot`. The button and the start form are in
-`cockpit-header-extension-frontend-react`, built with npm. Change those two there, release them,
+`cockpit-header-extension-frontend-react` or
+`cockpit-header-extension-frontend-vue`, built with npm. Change those two there, release them,
 and then raise their versions here. Apart from the names, this part is the same as
 `cockpit-user-task-application-springboot`.
 

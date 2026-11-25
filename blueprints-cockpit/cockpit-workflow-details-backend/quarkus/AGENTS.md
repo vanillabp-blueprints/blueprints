@@ -9,7 +9,8 @@ Read
 [the organisation-wide AGENTS.md](https://raw.githubusercontent.com/vanillabp-blueprints/.github/main/AGENTS.md)
 first. It has the procedure, the reference structure and the list of things never to do.
 
-This is one of three parts. The case page is in `cockpit-workflow-details-frontend-react`, built
+This is one of three parts. The case page is in `cockpit-workflow-details-frontend-react` or
+`cockpit-workflow-details-frontend-vue`, built
 with npm. The application which runs the workflow module and serves the page is
 the blueprint `cockpit-workflow-details-application`. Change this part first. The other two take it
 as a released version.
