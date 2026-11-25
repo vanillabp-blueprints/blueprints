@@ -78,7 +78,12 @@ does not make the test a bean.
 6. Assume that the history LAGS on a remote BPMS (business process management system), and that
    it may have fewer details than you expect. Do not build logic on it. A user looks at it, but
    the application does not decide by it. The application decides by the workflow aggregate.
-7. Do not collect the history yourself. A handler which writes "I was here" onto the aggregate
+7. Draw the diagram with bpmn-js (`Viewer` or `NavigatedViewer`), never with an SVG of your
+   own built from the `BPMNDI` part of the model. Mark the passed steps and the current step
+   with markers or overlays, by the element ids of the history. Load bpmn-js only on the page
+   which shows the diagram, in a chunk of its own. It comes from npm, even where the registry of
+   a cockpit does not list it. Keep the bpmn.io logo visible, its license asks for that.
+8. Do not collect the history yourself. A handler which writes "I was here" onto the aggregate
    repeats what the BPMS already knows. It drifts apart from it the first time a workflow is
    cancelled.
 
