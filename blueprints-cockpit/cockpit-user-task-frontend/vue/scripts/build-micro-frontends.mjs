@@ -16,19 +16,25 @@
 //
 // The two forms share one chunk with Vue, so the browser loads Vue once for this module. The data
 // entries never import it. `npm run check:entries` proves that afterwards.
+//
+// Vue keeps the name of its chunk from build to build, so a browser takes it from its cache after
+// a new build of the module. FRAMEWORK below says how; test/framework-chunk.test.js proves it.
+//
+// Usage: node scripts/build-micro-frontends.mjs [<outdir> <metafile>]
+//        (dist/micro-frontends and build/meta.json if not given; the test builds elsewhere)
 
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import { compileScript, compileStyle, parse } from 'vue/compiler-sfc';
 import { createManifest, USER_TASK_FORM, USER_TASK_LIST } from '@vanillabp/bc-module-kit';
 
 const projectDir = resolve(import.meta.dirname, '..');
-const outdir = join(projectDir, 'dist', 'micro-frontends');
-const metafilePath = join(projectDir, 'build', 'meta.json');
+const outdir = resolve(process.argv[2] ?? join(projectDir, 'dist', 'micro-frontends'));
+const metafilePath = resolve(process.argv[3] ?? join(projectDir, 'build', 'meta.json'));
 const { version } = JSON.parse(readFileSync(join(projectDir, 'package.json'), 'utf8'));
 // The time of this build. scripts/write-bc-build.mjs wrote it into src/bc-build.js as BUILD_ID, the
 // names of the web components carry it, and the manifest gets the same time. So the manifest and
@@ -42,6 +48,33 @@ const entries = {
   [USER_TASK_LIST]: 'src/data/user-task-list.ts',
   AssessRiskForm: 'src/forms/assess-risk-form.ts',
   CheckDocumentsForm: 'src/forms/check-documents-form.ts',
+};
+
+/**
+ * The two forms share Vue, and they also share the code of src/shared and src/bc-build.js, which is
+ * new for every build. Without more, esbuild puts all of it into one chunk. The hash in a file's
+ * name covers its content, so Vue would get a new name with every build, and the browser would
+ * load it again.
+ *
+ * So the build gets one more entry, FRAMEWORK, which imports Vue and nothing of this module. Now
+ * three entries share Vue and only two share the rest, and esbuild puts Vue into a chunk of its
+ * own, which imports nothing. A new build changes the names of the entries and of the chunk with
+ * src/bc-build.js only. The extra entry is deleted after the build. No chunk imports an entry, so
+ * nothing refers to it.
+ */
+const FRAMEWORK = 'bc-framework';
+/** What the code of this module imports Vue from. */
+const frameworkImports = ['vue'];
+const frameworkEntry = {
+  name: FRAMEWORK,
+  setup(builder) {
+    builder.onResolve({ filter: new RegExp(`^${FRAMEWORK}$`) }, () => ({ path: FRAMEWORK, namespace: FRAMEWORK }));
+    builder.onLoad({ filter: /.*/, namespace: FRAMEWORK }, () => ({
+      contents: frameworkImports.map((source) => `import ${JSON.stringify(source)};`).join('\n'),
+      resolveDir: projectDir,
+      loader: 'js',
+    }));
+  },
 };
 
 /** The file whose useComponentStyles() puts the styles of a component into its shadow root. */
@@ -88,11 +121,12 @@ const vueComponents = {
 
 rmSync(outdir, { recursive: true, force: true });
 mkdirSync(outdir, { recursive: true });
-mkdirSync(join(projectDir, 'build'), { recursive: true });
+mkdirSync(dirname(metafilePath), { recursive: true });
 
 const entryPoints = Object.fromEntries(Object.entries(entries).map(([name, source]) => [name, join(projectDir, source)]));
 const bundle = await build({
-  entryPoints,
+  entryPoints: { ...entryPoints, [FRAMEWORK]: FRAMEWORK },
+  plugins: [frameworkEntry, vueComponents],
   absWorkingDir: projectDir,
   // The path aliases, such as '@shared', come from the paths of tsconfig.json. So the build, the
   // type check and the editor read them from one place.
@@ -114,7 +148,6 @@ const bundle = await build({
     __VUE_PROD_DEVTOOLS__: 'false',
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
   },
-  plugins: [vueComponents],
   logLevel: 'warning',
 });
 
@@ -122,6 +155,11 @@ const bundle = await build({
 const files = {};
 for (const [output, { entryPoint }] of Object.entries(bundle.metafile.outputs)) {
   if (!entryPoint) continue;
+  if (entryPoint === `${FRAMEWORK}:${FRAMEWORK}`) {
+    unlinkSync(join(projectDir, output));
+    delete bundle.metafile.outputs[output];
+    continue;
+  }
   const name = Object.keys(entryPoints).find((key) => join(projectDir, entryPoint) === entryPoints[key]);
   if (name) files[name] = relative(outdir, join(projectDir, output)).split('\\').join('/');
 }
