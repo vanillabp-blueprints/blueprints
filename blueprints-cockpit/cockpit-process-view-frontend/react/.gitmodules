@@ -1,0 +1,4 @@
+[submodule "backend"]
+	path = backend
+	url = https://github.com/vanillabp-blueprints/bpmn-history-and-diagram-springboot.git
+	branch = main

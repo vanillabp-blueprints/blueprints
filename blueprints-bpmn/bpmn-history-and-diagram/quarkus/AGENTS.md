@@ -83,6 +83,7 @@ does not make the test a bean.
    with markers or overlays, by the element ids of the history. Load bpmn-js only on the page
    which shows the diagram, in a chunk of its own. It comes from npm, even where the registry of
    a cockpit does not list it. Keep the bpmn.io logo visible, its license asks for that.
+   `cockpit-process-view-frontend` does all of this on the page of a case in the Business Cockpit.
 8. Do not collect the history yourself. A handler which writes "I was here" onto the aggregate
    repeats what the BPMS already knows. It drifts apart from it the first time a workflow is
    cancelled.
