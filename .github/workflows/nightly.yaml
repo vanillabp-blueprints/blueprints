@@ -133,6 +133,55 @@ jobs:
           # Read by the report of this run and by nobody afterwards.
           retention-days: 7
 
+  # What the snapshots of today need and the cache of main does not hold, fetched once.
+  #
+  # The matrix reads the cache the last build on main wrote. An adapter which moved to a new
+  # release of its engine since then, as the Operaton adapter did from Operaton 2.2.1 to 2.2.2
+  # on the 26th of November 2026, makes each of its jobs ask Maven Central for that release.
+  # Eighty jobs, twenty at a time, and Central answered with 429: four blueprints went red that
+  # night, and nothing in them was wrong. So this job resolves what every blueprint needs on
+  # every engine, and keeps only what the cache of main lacked, in a small cache of this run
+  # which every job of the matrix lays over the cache of main. bin/collect_what_the_cache_lacks.sh
+  # says more.
+  cache:
+    needs: [platform]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          java-version: 25.0.5+8
+          distribution: temurin
+      - name: Use Maven 3.9
+        uses: ./.github/actions/use-maven
+      # The same cache and the same clean-up as the matrix, so that what this job collects is
+      # exactly what a job of the matrix would otherwise fetch itself.
+      - uses: actions/cache/restore@v6
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            maven-${{ hashFiles('**/pom.xml') }}-
+            maven-
+      - name: Remove the snapshots the cache carried in
+        run: |
+          repository="${HOME}/.m2/repository"
+          if [ -d "${repository}" ]; then
+            find "${repository}" -type d -name '*-SNAPSHOT' -prune -exec rm -rf {} +
+            find "${repository}" -type f -name '*.lastUpdated' -delete
+          fi
+      - name: Collect what the cache of main lacks
+        run: bin/collect_what_the_cache_lacks.sh "${HOME}/.m2/nightly-delta"
+          -s "$GITHUB_WORKSPACE/.github/maven/settings.xml"
+          --batch-mode --no-transfer-progress
+      # Not 'maven-' at the start: build.yaml and the matrix restore the newest cache whose key
+      # starts with that, and this one holds a few files rather than a repository.
+      - uses: actions/cache/save@v6
+        with:
+          path: ~/.m2/nightly-delta
+          key: nightly-delta-${{ github.run_id }}
+
   # The same build as on a push, but against today's snapshots of spi-for-java,
   # adapter-platform-integration and the adapters rather than whatever was cached. A
   # blueprint breaking here means the framework moved, not the blueprint, and that is
@@ -147,10 +196,15 @@ jobs:
     # 'platform' as well, because it is what says the published snapshots can be read at
     # all. A matrix which starts without that turns every blueprint red for a reason which
     # has nothing to do with blueprints.
-    needs: [discover, platform]
+    #
+    # 'cache' too, but a red one does not stop the matrix: without its files the jobs fetch
+    # what they lack themselves, as they did before that job existed.
+    needs: [discover, platform, cache]
     # Only an index without a single blueprint leaves the first part empty, and a matrix
     # without an entry is an error rather than an empty run.
-    if: needs.discover.outputs.part1 != '[]'
+    if: >-
+      !cancelled() && needs.discover.result == 'success' && needs.platform.result == 'success'
+      && needs.discover.outputs.part1 != '[]'
     # Spelled out so the name of a job is stable enough to read: 'Nightly issue' looks for
     # the jobs of this matrix by name, and the name GitHub builds from a matrix entry
     # depends on the order of its keys.
@@ -196,6 +250,12 @@ jobs:
           restore-keys: |
             maven-${{ hashFiles('**/pom.xml') }}-
             maven-
+      # What the snapshots of today need and the cache above lacks, collected by the job
+      # 'cache' of this run. The step below lays it over the cache.
+      - uses: actions/cache/restore@v6
+        with:
+          path: ~/.m2/nightly-delta
+          key: nightly-delta-${{ github.run_id }}
       # "Fresh" is about our own snapshots, and those must not come from the cache. So
       # every snapshot goes, ours and any other. Maven then has nothing old to fall back on
       # and has to ask the snapshot repositories. Released VanillaBP artifacts stay, like
@@ -210,6 +270,11 @@ jobs:
           if [ -d "${repository}" ]; then
             find "${repository}" -type d -name '*-SNAPSHOT' -prune -exec rm -rf {} +
             find "${repository}" -type f -name '*.lastUpdated' -delete
+          fi
+          # holds no snapshots, so it can come after the clean-up
+          if [ -d "${HOME}/.m2/nightly-delta" ]; then
+            mkdir -p "${repository}"
+            cp -a "${HOME}/.m2/nightly-delta/." "${repository}/"
           fi
       # Written before the build, so the upload below has the name whatever the build does.
       # 'Nightly issue' builds the same name out of the job name, so the two have to agree:
@@ -317,7 +382,7 @@ jobs:
   # The second part, after the first one. '!cancelled()' lets it run when the first part is
   # red, because a red blueprint should not hide the result of the others.
   freshness-2:
-    needs: [discover, platform, freshness-1]
+    needs: [discover, platform, cache, freshness-1]
     if: >-
       !cancelled() && needs.discover.result == 'success' && needs.platform.result == 'success'
       && needs.discover.outputs.part2 != '[]'
@@ -333,7 +398,7 @@ jobs:
 
   # The third part, after the second one, for the same reasons.
   freshness-3:
-    needs: [discover, platform, freshness-2]
+    needs: [discover, platform, cache, freshness-2]
     if: >-
       !cancelled() && needs.discover.result == 'success' && needs.platform.result == 'success'
       && needs.discover.outputs.part3 != '[]'
